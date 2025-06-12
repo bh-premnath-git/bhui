@@ -20,19 +20,20 @@ export const DataCatalogRoutes = (
         </Suspense>
       }
     />
-    <Route
-      path={`${ROUTES.DATA_CATALOG}/xplorer/:reportId`}
-      element={
-        <Suspense fallback={<LoadingFallback />}>
-          <ReportDetails />
-        </Suspense>
-      }
-    />
+    {/* Route order matters! Put more specific paths after less specific paths */}
     <Route
       path={`${ROUTES.DATA_CATALOG}/xplorer`}
       element={
         <Suspense fallback={<LoadingFallback />}>
           <XplorerPage />
+        </Suspense>
+      }
+    />
+    <Route
+      path={`${ROUTES.DATA_CATALOG}/xplorer/:reportId`}
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <ReportDetails />
         </Suspense>
       }
     />

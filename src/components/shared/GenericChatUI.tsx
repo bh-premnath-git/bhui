@@ -10,7 +10,6 @@ import { useRecommendation } from '@/hooks/useRecommendation';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { marked } from 'marked';
 import { createShortUUID } from '@/lib/utils';
-import { useDataOps } from '@/context/dataops/DataOpsContext';
   
 
 interface GenericChatUIProps {
@@ -283,6 +282,7 @@ export function GenericChatUI({
                         chart={response.chart}
                         data={response.table}
                         onAddToDashboard={handleAddToDashboard}
+                        variant={variant}
                       />
 
                       {/* Explanation message */}

@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { useDataOpsDashboards, useDataOpsWidgets } from "@/features/dataops/dataOpsHubs/hooks/useDataOpsDash";
 import { decompressValue } from "@/lib/decompress";
+import { XploreDash } from "../../../features/data-catalog/components/xploredash/XploreDash";
 
 const NoWidgetsDisplay = () => {
   const location = useLocation();
@@ -31,9 +32,6 @@ const NoWidgetsDisplay = () => {
 
 const ReportDetailsContent: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const reportName = searchParams.get('reportName');
 
   const { state, dispatch } = useDashboard();
 
@@ -41,7 +39,6 @@ const ReportDetailsContent: React.FC = () => {
     dashboards,
     isLoading: isDashboardsLoading,
     isError: isDashboardsError,
-    refetch: refetchDashboards,
   } = useDataOpsDashboards({
     type: "explorer",
     shouldFetch: true,
@@ -57,12 +54,36 @@ const ReportDetailsContent: React.FC = () => {
     widgets,
     isLoading: isWidgetsLoading,
     isError: isWidgetsError,
-    refetch: refetchWidgets,
     deleteWidget
   } = useDataOpsWidgets({
     shouldFetch: widgetIds.length > 0,
     widgetIds: widgetIds
   });
+
+  // Mirror loading state from data fetches into DashboardContext
+  useEffect(() => {
+    const currentOverallLoading = isDashboardsLoading || isWidgetsLoading;
+    if (state.isLoading !== currentOverallLoading) {
+      dispatch({ type: "SET_LOADING", payload: currentOverallLoading });
+    }
+  }, [isDashboardsLoading, isWidgetsLoading, state.isLoading, dispatch]);
+
+  // Propagate API errors into DashboardContext
+  useEffect(() => {
+    let newErrorMessage: string | null = null;
+
+    if (isDashboardsError) {
+      newErrorMessage = (isDashboardsError as any)?.message ||
+        "Failed to load dashboards. Please try again later.";
+    } else if (isWidgetsError) {
+      newErrorMessage = (isWidgetsError as any)?.message ||
+        "Failed to load widget data. Some items may not display correctly.";
+    }
+
+    if (state.error !== newErrorMessage) {
+      dispatch({ type: "SET_ERROR", payload: newErrorMessage });
+    }
+  }, [isDashboardsError, isWidgetsError, state.error, dispatch]);
 
   // Populate dashboard context when widgets are fetched
   useEffect(() => {
@@ -107,20 +128,17 @@ const ReportDetailsContent: React.FC = () => {
   }
 
   // Only show widgets that belong to this report
-  const widgetsForCurrentReport = state.widgets?.filter(widget => {
-    return widgetIds.includes(widget.id?.toString() || '');
-  }) || [];
-
+  const widgetsForCurrentReport = state.widgets?.filter(widget =>
+    widgetIds.includes(widget.id?.toString() || "")
+  ) || [];
 
   return (
     <div className="w-full p-4 bg-white">
-      <div className="grid grid-cols-1 gap-4">
-        <div className="text-center mb-4">
-          <p className="text-sm">{reportName || "Report"} - ID: {reportId}</p>
-          <p className="text-xs text-gray-500">Widgets: {widgetsForCurrentReport.length}</p>
-        </div>
-      </div>
-
+      {widgetsForCurrentReport.length > 0 ? (
+        <XploreDash widgets={widgetsForCurrentReport} />
+      ) : (
+        <NoWidgetsDisplay />
+      )}
     </div>
   );
 };

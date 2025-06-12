@@ -48,7 +48,7 @@ const LayoutWrapper = () => {
           "flex flex-col overflow-hidden transition-all duration-300",
           isRightAsideOpen ? "w-[calc(100%-25%)]" : "flex-1"
         )}
-        style={{ zIndex: 70 }}>
+        style={{ zIndex: 1 }}>
         <MainContentInternal /> 
         {isBottomDrawerOpen && bottomDrawerContent && (
           <div className="flex-shrink-0 pl-[1%]">

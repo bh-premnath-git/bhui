@@ -79,7 +79,8 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
       intermediate_executed_query_json: data.chartMetadata,
       executed_query:  { ...data.data },
       chart_config: "",
-      dashboardId: data.dashboardId ?? "102"
+      dashboardId: data.dashboardId ?? "102",
+      connectionId: connectionId
     };
     
     // Dispatch a custom event that XplorerMock can listen for
@@ -177,45 +178,49 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
                 />
                 <div className="flex-1 rounded-2xl px-4 py-3 bg-gray-100 shadow">
                   <p className="text-black leading-relaxed">
-                    I'm your AI assistant for data exploration. How can I help you analyze data?
+                    {variant === 'explorer' && !connectionId 
+                      ? "Please select a connection to start exploring your data." 
+                      : "I'm your AI assistant for data exploration. How can I help you analyze data?"}
                   </p>
                 </div>
               </div>
               
-              <div>
-                <p className="text-sm text-gray-500 mb-3 ml-12">You can ask me questions like:</p>
-                <div className="flex flex-col gap-2 ml-12">
-                  {isLoadingRecommendations ? (
-                    <div className="flex justify-center items-center h-20">
-                      <LoadingState classNameContainer="w-16 h-16" />
-                    </div>
-                  ) : isRecommendationsError ? (
-                    <div className="text-sm text-gray-500 italic">
-                      Unable to load suggestions. Please try asking a question directly.
-                    </div>
-                  ) : (recommendedSuggestions || suggestions || ['List the top ten expensive products', 'Show me all orders above $300', 'Find orders with delivery status "Shipped"', 'Which region has the most orders?']).map((s, i) => (
-                    <motion.div
-                      key={i}
-                      className="flex gap-2"
-                      initial={{ opacity: 0, x: -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                    >
-                      <div
-                        style={{ backgroundColor: assistantColor }}
-                      />
-                      <div
-                        onClick={() => setInput(s)}
-                        className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
-                        style={{ color: assistantColor }}
-                      >
-                        <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
-                        {s}
+              {(variant !== 'explorer' || connectionId) && (
+                <div>
+                  <p className="text-sm text-gray-500 mb-3 ml-12">You can ask me questions like:</p>
+                  <div className="flex flex-col gap-2 ml-12">
+                    {isLoadingRecommendations ? (
+                      <div className="flex justify-center items-center h-20">
+                        <LoadingState classNameContainer="w-16 h-16" />
                       </div>
-                    </motion.div>
-                  ))}
+                    ) : isRecommendationsError ? (
+                      <div className="text-sm text-gray-500 italic">
+                        Unable to load suggestions. Please try asking a question directly.
+                      </div>
+                    ) : (recommendedSuggestions || suggestions || ['List the top ten expensive products', 'Show me all orders above $300', 'Find orders with delivery status "Shipped"', 'Which region has the most orders?']).map((s, i) => (
+                      <motion.div
+                        key={i}
+                        className="flex gap-2"
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <div
+                          style={{ backgroundColor: assistantColor }}
+                        />
+                        <div
+                          onClick={() => setInput(s)}
+                          className="flex flex-row items-center italic rounded-xl bg-gray-100 border border-border/40 px-4 py-2 cursor-pointer hover:bg-gray-200 transition"
+                          style={{ color: assistantColor }}
+                        >
+                          <Zap className="w-6 h-6 mr-2 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
+                          {s}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
           ) : (
             <>

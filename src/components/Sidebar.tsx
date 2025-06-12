@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ChevronRight, ChevronLeft, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +52,8 @@ export function Sidebar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [editingReportName, setEditingReportName] = useState("");
+  const [xplorerSearchTerm, setXplorerSearchTerm] = useState("");
+  const [isXplorerOpen, setIsXplorerOpen] = useState(true);
 
   const navItems = useMemo(() => {
     const items = [];
@@ -78,7 +80,10 @@ export function Sidebar() {
 
   const dataXplorerSubItems = useMemo(() => {
     if (dashboardsLoading || !dashboards) return [];
-    return dashboards.map((dashboard: any) => ({
+    return dashboards.filter((dashboard: any) => {
+      if (!dashboard?.name) return false;
+      return dashboard.name.toLowerCase() !== "main";
+    }).map((dashboard: any) => ({
       id: dashboard.id.toString(),
       title: dashboard.name,
       path: `${ROUTES.DATA_CATALOG}/xplorer/${dashboard.id}`,
@@ -87,6 +92,13 @@ export function Sidebar() {
       parentPath: `${ROUTES.DATA_CATALOG}/xplorer`
     }));
   }, [dashboards, dashboardsLoading]);
+
+  const filteredDataXplorerSubItems = useMemo(() => {
+    if (!xplorerSearchTerm.trim()) return dataXplorerSubItems;
+    return dataXplorerSubItems.filter((s) =>
+      s.title.toLowerCase().includes(xplorerSearchTerm.toLowerCase())
+    );
+  }, [dataXplorerSubItems, xplorerSearchTerm]);
 
   const handleCreateNewReport = async () => {
     if (creatingReport) return;
@@ -128,7 +140,7 @@ export function Sidebar() {
 
   const handleSaveReportName = async () => {
     if (updatingDashboard || !editingReportId || !editingReportName.trim()) return;
-    
+
     try {
       await updateDashboard({
         dashboardId: editingReportId,
@@ -266,6 +278,7 @@ export function Sidebar() {
                   "flex-1",
                   !isExpanded && item.showIcon && "justify-center px-3",
                   isExpanded && "px-3",
+                  isExpanded && item.title === "Data Xplorer" && "justify-between",
                   isExpanded && item.isSubItem && "pl-6 text-sm"
                 )}
               >
@@ -284,6 +297,19 @@ export function Sidebar() {
                   )}>
                     {item.title}
                   </span>
+                )}
+                {isExpanded && item.title === "Data Xplorer" && (
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 transition-transform duration-200",
+                      isXplorerOpen ? "rotate-0" : "-rotate-90"
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsXplorerOpen((prev) => !prev);
+                    }}
+                  />
                 )}
               </a>
             );
@@ -306,7 +332,7 @@ export function Sidebar() {
                     navElement
                   )}
 
-                  {isExpanded && item.actions && !item.isSubItem && (
+                  {isExpanded && item.actions && !item.isSubItem && item.title !== "Data Xplorer" && (
                     <div className="flex items-center">
                       {item.actions.map((action, index) => (
                         action.icon === 'ellipsis' ? (
@@ -321,13 +347,15 @@ export function Sidebar() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
-                              <DropdownMenuItem
-                                className="cursor-pointer flex items-center gap-2"
-                                onClick={() => setSearchOpen(true)}
-                              >
-                                <Search className="h-4 w-4" />
-                                <span>Search</span>
-                              </DropdownMenuItem>
+                              {item.title !== "Data Xplorer" && (
+                                <DropdownMenuItem
+                                  className="cursor-pointer flex items-center gap-2"
+                                  onClick={() => setSearchOpen(true)}
+                                >
+                                  <Search className="h-4 w-4" />
+                                  <span>Search</span>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 className="cursor-pointer flex items-center gap-2"
                                 onClick={handleCreateNewReport}
@@ -358,9 +386,26 @@ export function Sidebar() {
                   )}
                 </div>
                 {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
-                {isExpanded && item.title === "Data Xplorer" && dataXplorerSubItems.length > 0 && (
-                  <ul className="mt-1 space-y-1 sidebar-subitems-scrollable max-h-[132px] overflow-y-auto">
-                    {dataXplorerSubItems.map(subItem => (
+                {isExpanded && item.title === "Data Xplorer" && isXplorerOpen && dataXplorerSubItems.length > 0 && (
+                  <ul className="mt-1 space-y-1 max-h-[128px] overflow-y-auto pl-2 border-l border-gray-300 dark:border-gray-700">
+                    <li className="sticky top-0 z-10 px-3 py-1 bg-gray-50 dark:bg-gray-900 flex items-center gap-2">
+                      <Input
+                        placeholder="Search reports…"
+                        value={xplorerSearchTerm}
+                        onChange={(e) => setXplorerSearchTerm(e.target.value)}
+                        className="h-7 text-sm flex-1"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={handleCreateNewReport}
+                        disabled={creatingReport}
+                      >
+                        {creatingReport ? <Spinner className="h-4 w-4" /> : <PlusCircle className="h-4 w-4" />}
+                      </Button>
+                    </li>
+                    {filteredDataXplorerSubItems.map(subItem => (
                       <li key={subItem.path}>
                         <div className="flex items-center">
                           {editingReportId === subItem.id ? (
@@ -414,7 +459,7 @@ export function Sidebar() {
                                     location.pathname === subItem.path
                                       ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
                                       : "text-gray-700 dark:text-gray-300",
-                                    "text-sm pl-6 flex-1"
+                                    "text-sm pl-7 flex-1"
                                   )}
                                 >
                                   {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
@@ -449,6 +494,13 @@ export function Sidebar() {
                                         <Trash2 className="h-3 w-3" />
                                       )}
                                       <span>Delete</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="cursor-pointer flex items-center gap-2 text-xs"
+                                      onClick={() => setSearchOpen(true)}
+                                    >
+                                      <Search className="h-3 w-3" />
+                                      <span>Search</span>
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>

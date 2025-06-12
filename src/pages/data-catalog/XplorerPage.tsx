@@ -2,17 +2,19 @@ import { Xplorer } from "@/features/data-catalog/Xplorer"
 import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { DashboardProvider } from "@/context/DashboardContext";
+import { useLocation } from 'react-router-dom';
 
-const XplorerMockPage = () => {
+const XplorerPage = () => {
+  const location = useLocation();
   return (
     <div className="p-2">
       <DashboardProvider>
         <AnalyticsProvider>
-          <Xplorer />
+          <Xplorer key={location.key || 'default'} />
         </AnalyticsProvider>
       </DashboardProvider>
     </div>
   )
 }
 
-export default withPageErrorBoundary(XplorerMockPage, 'XplorerMockPage');
+export default withPageErrorBoundary(XplorerPage, 'XplorerPage');

@@ -8,6 +8,8 @@ const WIDGET_API_PATH = 'widgets';
 interface UseDataOpsDashOptions {
   shouldFetch?: boolean;
   dashboardId?: number | string;
+  type?: string;
+  id?: number;
 }
 
 interface UseWidgetOptions {
@@ -26,7 +28,15 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
     true
   );
 
-  // Get all dashboards with dashboard_type=dataops filter
+  // Default to data-ops if not provided
+  const dashboardType = options.type || 'data-ops';
+
+  // Build query string based on provided options
+  const queryString = options.id !== undefined && options.id !== null
+    ? `dashboard_type=${dashboardType}&id=${options.id}`
+    : `dashboard_type=${dashboardType}`;
+
+  // Get all dashboards with dashboard_type (and optional id) filter
   const { 
     data: dashboards, 
     isLoading, 
@@ -39,7 +49,7 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
       enabled: options.shouldFetch,
       retry: 2
     },
-    query: 'dashboard_type=data-ops'
+    query: queryString
   }) as {
     data: Dashboards;
     isLoading: boolean;

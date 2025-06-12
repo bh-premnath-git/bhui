@@ -107,9 +107,10 @@ export function Xplorer({ dashboardId = "102" }: XplorerProps) {
           name: restOfChartData.name,
           widget_type: restOfChartData.widget_type,
           sql_query: restOfChartData.sql_query,
-          chart_config: restOfChartData.chart_config,
+          chart_config: compressValue(intermediate_executed_query_json),
           plotly_data: compressValue(intermediate_executed_query_json),
           executed_query: restOfChartData.executed_query,
+          connection_id: restOfChartData.connectionId
         } as const;
 
         // Update local dashboard state ONLY if the widget belongs to the Xplorer dashboard (id 102)

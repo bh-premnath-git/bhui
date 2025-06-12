@@ -138,7 +138,11 @@ export function AIChatInput({
           ref={textareaRef}
           value={input}
           onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={
+            isExplorer && !selectedConnection
+              ? "Select a connection..."
+              : placeholder
+          }
           onKeyDown={e => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();

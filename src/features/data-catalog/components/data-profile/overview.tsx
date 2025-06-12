@@ -2,9 +2,13 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Info } from 'lucide-react'
-import React from 'react'
-
+ 
 export default function Overview({selectedColumn}:any) {
+    // Helper function to format numerical values to 2 decimal places
+    const formatDecimal = (value: number): string => {
+      return value.toFixed(2);
+    };
+ 
     return (
         <div className="space-y-6">
             {/* Column Summary */}
@@ -33,7 +37,7 @@ export default function Overview({selectedColumn}:any) {
                             </Badge>
                         </div>
                     </Card>
-
+ 
                     <Card className="p-3 border shadow-sm bg-gray-50">
                         <TooltipProvider>
                             <div className="flex items-center justify-between">
@@ -50,10 +54,10 @@ export default function Overview({selectedColumn}:any) {
                         </TooltipProvider>
                         <div className="flex flex-col mt-1">
                             <span className="font-medium text-sm">{selectedColumn.uniqueValues.toLocaleString()}</span>
-                            <span className="text-xs text-gray-500">({(selectedColumn.p_distinct * 100).toFixed(1)}% of total)</span>
+                            <span className="text-xs text-gray-500">({(selectedColumn.p_distinct * 100).toFixed(2)}% of total)</span>
                         </div>
                     </Card>
-
+ 
                     <Card className="p-3 border shadow-sm bg-gray-50">
                         <TooltipProvider>
                             <div className="flex items-center justify-between">
@@ -72,11 +76,11 @@ export default function Overview({selectedColumn}:any) {
                             <span className="font-medium text-sm">{selectedColumn.nullCount.toLocaleString()}</span>
                             <Badge variant={selectedColumn.nullPercentage > 5 ? "destructive" : "outline"}
                                 className="text-[9px] px-1 h-4">
-                                {selectedColumn.nullPercentage}%
+                                {formatDecimal(selectedColumn.nullPercentage)}%
                             </Badge>
                         </div>
                     </Card>
-
+ 
                     <Card className="p-3 border shadow-sm bg-gray-50">
                         <TooltipProvider>
                             <div className="flex items-center justify-between">
@@ -101,7 +105,7 @@ export default function Overview({selectedColumn}:any) {
                     </Card>
                 </div>
             </div>
-
+ 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedColumn.pattern && (
                     <Card className="p-3 border shadow-sm bg-gray-50">
@@ -109,7 +113,7 @@ export default function Overview({selectedColumn}:any) {
                         <p className="font-medium text-sm font-mono bg-white p-2 rounded border">{selectedColumn.pattern}</p>
                     </Card>
                 )}
-
+ 
                 {selectedColumn.examples && (
                     <Card className="p-3 border shadow-sm bg-gray-50">
                         <p className="text-xs text-gray-500 mb-2">Examples</p>
@@ -121,7 +125,7 @@ export default function Overview({selectedColumn}:any) {
                     </Card>
                 )}
             </div>
-
+ 
             {/* Top Values */}
             {selectedColumn.value_counts_without_nan && (
                 <div>

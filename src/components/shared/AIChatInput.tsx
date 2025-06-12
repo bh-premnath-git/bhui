@@ -70,7 +70,6 @@ export function AIChatInput({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 250)}px`;
   };
-  debugger;
 
   useEffect(() => {
     if (textareaRef.current) {

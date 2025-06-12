@@ -261,7 +261,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 console.log("response.pipeline_json", response.pipeline_json)
                 throw new Error('Invalid pipeline data received');
             }
-debugger
             console.log(response, "response")
             // Update pipeline name and JSON safely
             setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name);

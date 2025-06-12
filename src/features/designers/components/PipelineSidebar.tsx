@@ -26,6 +26,7 @@ import { ROUTES } from '@/config/routes';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 interface PipelineSidebarProps {
   className?: string;
@@ -137,8 +138,10 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
   };
 
   // Handle pipeline selection
-  const handlePipelineSelect = async (pipelineId: number) => {
+  const handlePipelineSelect = async (pipelineId: number,pipeline:any) => {
     const pipelineIdStr = pipelineId.toString();
+    console.log(pipeline)
+    dispatch(setSelectedPipeline(pipeline))
     
     // Don't do anything if we're already on this pipeline
     if (selectedPipelineId === pipelineIdStr) {
@@ -149,6 +152,8 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
     localStorage.setItem("pipeline_id", pipelineIdStr);
 
     try {
+    dispatch(setSelectedPipeline(pipeline))
+
       // Check if we're already on the correct route
       const targetRoute = ROUTES.DESIGNERS.BUILD_PLAYGROUND(pipelineIdStr);
       const currentRoute = location.pathname;
@@ -286,7 +291,7 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
               {filteredPipelines.map((pipeline) => (
                 <li key={pipeline.pipeline_id} className="px-2">
                   <div
-                    onClick={() => handlePipelineSelect(pipeline.pipeline_id)}
+                    onClick={() => handlePipelineSelect(pipeline.pipeline_id,pipeline)}
                     className={cn(
                       "w-full rounded-md px-2 py-2 text-sm hover:bg-muted transition-colors cursor-pointer",
                       "flex flex-col gap-1",
@@ -360,7 +365,7 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => handlePipelineSelect(pipeline.pipeline_id)}
+                      onClick={() => handlePipelineSelect(pipeline.pipeline_id,pipeline)}
                       className={cn(
                         "w-8 h-8 rounded-full my-1 flex items-center justify-center",
                         selectedPipelineId === pipeline.pipeline_id.toString()

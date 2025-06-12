@@ -191,7 +191,7 @@ export const FlowCanvas = () => {
   if (isLoading) {
     return (
       <div className="w-full h-full bg-background relative flex items-center justify-center">
-        <LoadingState className='w-40 h-40' />
+        <LoadingState className='w-40 h-40' fullScreen={true} />
       </div>
     );
   }

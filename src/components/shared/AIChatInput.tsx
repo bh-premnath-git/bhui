@@ -33,7 +33,7 @@ export function AIChatInput({
   const isExplorer = variant === 'explorer';
   const { connections, isLoading, isFetching, isError } = isExplorer ? useAdminConnections() : { connections: [], isLoading: false, isFetching: false, isError: false };
   const [selectedConnection, setSelectedConnection] = useState('');
-
+  debugger;
   // Only set initial connection when variant is explorer
   useEffect(() => {
     if (isExplorer && !selectedConnection && connections && connections.length > 0) {
@@ -83,6 +83,7 @@ export function AIChatInput({
         flex items-center w-full bg-white rounded-md
         px-2 py-1 space-x-1 shadow-sm
         border transition-all duration-200 ease-in-out
+        relative
         ${isFocused 
           ? "border-green-400 ring-1 ring-green-400/30" 
           : "border-gray-200 hover:border-gray-300"}
@@ -113,7 +114,7 @@ export function AIChatInput({
               }
             />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50">
             {isLoading || isFetching ? (
               <SelectItem value="loading" disabled>
                 Loading...
@@ -122,12 +123,16 @@ export function AIChatInput({
               <SelectItem value="error" disabled>
                 Failed to load
               </SelectItem>
-            ) : (
+            ) : connections && connections.length > 0 ? (
               connections.map(conn => (
-                <SelectItem key={conn.id} value={conn.id?.toString() || `conn-${conn.id}`}>
+                <SelectItem key={conn.id} value={conn.id.toString()}>
                   {conn.connection_config_name}
                 </SelectItem>
               ))
+            ) : (
+              <SelectItem value="no-connections" disabled>
+                No connections available
+              </SelectItem>
             )}
           </SelectContent>
         </Select>

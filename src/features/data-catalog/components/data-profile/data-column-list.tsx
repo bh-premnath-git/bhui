@@ -4,6 +4,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function DataColumnList({profileData, selectedColumn, setSelectedColumn,getQualityBadge}: any){
+    // Helper function to format numerical values to 2 decimal places
+    const formatDecimal = (value: number): string => {
+      return value.toFixed(2);
+    };
+
     return (
         <Card className="col-span-1 shadow-sm border">
           <div className="p-3 border-b flex items-center justify-between bg-gray-50">
@@ -39,11 +44,11 @@ export default function DataColumnList({profileData, selectedColumn, setSelected
                               variant={column.nullPercentage > 5 ? "destructive" : "outline"} 
                               className="text-[9px] px-1 h-4 shrink-0"
                             >
-                              {column.nullPercentage}%
+                              {formatDecimal(column.nullPercentage)}%
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent side="right">
-                            <p className="text-xs">{column.nullPercentage}% missing values</p>
+                            <p className="text-xs">{formatDecimal(column.nullPercentage)}% missing values</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

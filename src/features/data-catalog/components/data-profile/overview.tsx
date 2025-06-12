@@ -5,6 +5,11 @@ import { Info } from 'lucide-react'
 import React from 'react'
 
 export default function Overview({selectedColumn}:any) {
+    // Helper function to format numerical values to 2 decimal places
+    const formatDecimal = (value: number): string => {
+      return value.toFixed(2);
+    };
+
     return (
         <div className="space-y-6">
             {/* Column Summary */}
@@ -50,7 +55,7 @@ export default function Overview({selectedColumn}:any) {
                         </TooltipProvider>
                         <div className="flex flex-col mt-1">
                             <span className="font-medium text-sm">{selectedColumn.uniqueValues.toLocaleString()}</span>
-                            <span className="text-xs text-gray-500">({(selectedColumn.p_distinct * 100).toFixed(1)}% of total)</span>
+                            <span className="text-xs text-gray-500">({(selectedColumn.p_distinct * 100).toFixed(2)}% of total)</span>
                         </div>
                     </Card>
 
@@ -72,7 +77,7 @@ export default function Overview({selectedColumn}:any) {
                             <span className="font-medium text-sm">{selectedColumn.nullCount.toLocaleString()}</span>
                             <Badge variant={selectedColumn.nullPercentage > 5 ? "destructive" : "outline"}
                                 className="text-[9px] px-1 h-4">
-                                {selectedColumn.nullPercentage}%
+                                {formatDecimal(selectedColumn.nullPercentage)}%
                             </Badge>
                         </div>
                     </Card>

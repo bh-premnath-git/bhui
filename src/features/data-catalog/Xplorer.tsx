@@ -16,7 +16,6 @@ export function Xplorer({ dashboardId = "102" }: XplorerProps) {
     dashboards,
     isLoading: isDashboardsLoading,
     isError: isDashboardsError,
-    refetch: refetchDashboards,
   } = useDataOpsDashboards({
     type: "explorer",
     shouldFetch: true,
@@ -35,7 +34,6 @@ export function Xplorer({ dashboardId = "102" }: XplorerProps) {
     isError: isWidgetsError,
     createWidget,
     deleteWidget,
-    refetch: refetchWidgets
   } = useDataOpsWidgets({
     shouldFetch: widgetIds.length > 0,
     widgetIds: widgetIds
@@ -100,19 +98,28 @@ export function Xplorer({ dashboardId = "102" }: XplorerProps) {
           return;
         }
         const chartDataFromEvent = event.detail;
-        const { intermediate_executed_query_json, ...restOfChartData } = chartDataFromEvent;
-        dispatchAsync({ type: "ADD_WIDGET", payload: chartDataFromEvent }).then(() => {
-          const payloadForCreateWidget = {
-            dashboard_id: state.selectedDashboard?.dashboard_id ?? parseInt(dashboardId),
-            name: restOfChartData.name,
-            widget_type: restOfChartData.widget_type,
-            sql_query: restOfChartData.sql_query,
-            chart_config: restOfChartData.chart_config,
-            plotly_data: compressValue(intermediate_executed_query_json),
-            executed_query: restOfChartData.executed_query,
-          };
+        const { intermediate_executed_query_json, dashboardId: dashboardIdFromEvent, ...restOfChartData } = chartDataFromEvent;
+
+        // Prepare data for backend persistence
+        const payloadForCreateWidget = {
+          dashboard_id: parseInt(dashboardIdFromEvent),
+          name: restOfChartData.name,
+          widget_type: restOfChartData.widget_type,
+          sql_query: restOfChartData.sql_query,
+          chart_config: restOfChartData.chart_config,
+          plotly_data: compressValue(intermediate_executed_query_json),
+          executed_query: restOfChartData.executed_query,
+        } as const;
+
+        // Update local dashboard state ONLY if the widget belongs to the Xplorer dashboard (id 102)
+        if (parseInt(dashboardIdFromEvent) === 102) {
+          dispatchAsync({ type: "ADD_WIDGET", payload: chartDataFromEvent }).then(() => {
+            createWidget(payloadForCreateWidget);
+          });
+        } else {
+          // For other dashboards, just persist the widget without mutating Xplorer context
           createWidget(payloadForCreateWidget);
-        });
+        }
       };
       document.addEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
       return () => {

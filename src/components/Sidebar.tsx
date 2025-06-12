@@ -346,7 +346,10 @@ export function Sidebar() {
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                            <DropdownMenuContent
+                              align="end"
+                              className="z-[110] w-auto min-w-[8rem]"
+                            >
                               {item.title !== "Data Xplorer" && (
                                 <DropdownMenuItem
                                   className="cursor-pointer flex items-center gap-2"
@@ -475,7 +478,10 @@ export function Sidebar() {
                                       <MoreHorizontal className="h-3 w-3" />
                                     </Button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-auto min-w-[8rem]">
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="z-[110] w-auto min-w-[8rem]"
+                                  >
                                     <DropdownMenuItem
                                       className="cursor-pointer flex items-center gap-2 text-xs"
                                       onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
@@ -558,7 +564,7 @@ export function Sidebar() {
               </TooltipProvider>
               <DropdownMenuContent
                 align="end"
-                className="w-auto min-w-[8rem]"
+                className="z-[110] w-auto min-w-[8rem]"
               >
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
                   <LogOut className="h-4 w-4" />
@@ -593,7 +599,7 @@ export function Sidebar() {
               <DropdownMenuContent
                 align="end"
                 className={cn(
-                  "transition-all duration-200 ease-in-out",
+                  "z-[110] transition-all duration-200 ease-in-out",
                   isExpanded ? "min-w-[14rem]" : "w-auto min-w-[8rem]"
                 )}
               >

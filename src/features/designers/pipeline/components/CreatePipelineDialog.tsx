@@ -12,6 +12,7 @@ import { Controller } from 'react-hook-form';
 import { FormField } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 interface CreatePipelineDialogProps {
     handleClose: () => void;
@@ -30,7 +31,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {setPipeline_id,setPipeLineName} = usePipelineContext()
+    const { setPipeline_id, setPipeLineName } = usePipelineContext()
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
         defaultValues: {
             bh_project_id: '',
@@ -49,14 +50,17 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
         try {
             setIsLoading(true);
             handleClose();
-            
+
             const body = { ...values, tags: {} };
             const response = await dispatch(insertPipeline(body)).unwrap();
             setPipeLineName(values.pipeline_name);
+            console.log(response)
             if (response?.error) {
                 // Handle error - you might want to show a toast notification here
             } else {
                 dispatch(setBuildPipeLineDtl(response));
+                dispatch(setSelectedPipeline(response))
+
                 setPipeline_id(response?.pipeline_id)
                 localStorage.setItem("pipeline_id", response?.pipeline_id.toString())
                 navigate(`/designers/build-playground/${response?.pipeline_id}`);
@@ -111,7 +115,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent 
+            <DialogContent
                 className="w-[800px] max-w-[90vw]"
                 aria-describedby="dialog-description"
             >

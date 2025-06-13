@@ -60,7 +60,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
                 setPipeline_id(response?.pipeline_id)
                 localStorage.setItem("pipeline_id", response?.pipeline_id.toString())
                 navigate(`/designers/build-playground/${response?.pipeline_id}`);
-                window.location.reload();
+                // window.location.reload();
             }
         } finally {
             setIsLoading(false);

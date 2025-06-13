@@ -17,7 +17,7 @@ export interface NavigationHook {
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setError: React.Dispatch<React.SetStateAction<Error | null>>;
 }
-
+ 
 export function useNavigation(): NavigationHook {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const navigate = useNavigate();

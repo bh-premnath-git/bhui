@@ -18,7 +18,7 @@ export function RightAside({
   width = 'w-[25%]',
   className
 }: RightAsideProps) {
-  const { closeRightAside } = useSidebar();
+  const { closeRightAside, updateRightAsideWidth } = useSidebar();
   const [currentWidth, setCurrentWidth] = useState<number>(0);
   const asideRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
@@ -103,6 +103,7 @@ export function RightAside({
     }
     
     setCurrentWidth(clampedWidth);
+    updateRightAsideWidth(clampedWidth+'%');
   };
 
   // Handle resize end
@@ -145,8 +146,6 @@ export function RightAside({
         onMouseDown={handleResizeStart}
         style={{ transform: 'translateX(-3px)' }}
       >
-        {/* Vertical line indicator */}
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 w-[2px] h-full bg-green-500/0 group-hover:bg-green-500/30 rounded transition-colors duration-200" />
         
         {/* Center grip indicator */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

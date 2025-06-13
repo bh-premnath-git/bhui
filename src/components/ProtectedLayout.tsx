@@ -37,6 +37,8 @@ const LayoutWrapper = () => {
     bottomDrawerTitle
   } = useSidebar();
 
+  const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
+
   return (
     <div className="h-screen w-full flex flex-row overflow-hidden">
       <div className="flex-shrink-0 z-[100]">
@@ -46,9 +48,9 @@ const LayoutWrapper = () => {
         id="main-content-area"
         className={cn(
           "flex flex-col overflow-hidden transition-all duration-300",
-          isRightAsideOpen ? "w-[calc(100%-25%)]" : "flex-1"
+           isRightAsideOpen ? '' : 'flex-1'
         )}
-        style={{ zIndex: 1 }}>
+        style={{ zIndex: 1, width: isRightAsideOpen ? `calc(100% - ${rightAsidePercentage}%)` : undefined }}>
         <MainContentInternal /> 
         {isBottomDrawerOpen && bottomDrawerContent && (
           <div className="flex-shrink-0 pl-[1%]">
@@ -62,7 +64,7 @@ const LayoutWrapper = () => {
         <div 
           id="right-aside-container"
           className="flex-shrink-0 h-full transition-all duration-300" 
-          style={{ width: '25%', zIndex: 80 }}
+          style={{ width: rightAsidePercentage+'%', zIndex: 80 }}
         >
           <RightAside title={rightAsideTitle} width={rightAsideWidth}>
             {rightAsideContent}

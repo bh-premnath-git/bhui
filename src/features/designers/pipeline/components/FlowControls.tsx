@@ -7,7 +7,8 @@ import {
   MdOutlineCenterFocusStrong,
   MdTerminal,
   MdAlignHorizontalCenter,
-  MdAlignVerticalCenter
+  MdAlignVerticalCenter,
+  MdVerticalAlignTop
 } from 'react-icons/md'
 
 // shadcn/ui imports (adjust import paths to match your project setup)
@@ -39,6 +40,7 @@ interface FlowControlsProps {
   proplesLogs?: Log[]
   onAlignHorizontal: () => void
   onAlignVertical: () => void
+  onAlignTopLeft: () => void
 }
 
 export const FlowControls: React.FC<FlowControlsProps> = ({
@@ -51,6 +53,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   proplesLogs,
   onAlignHorizontal,
   onAlignVertical,
+  onAlignTopLeft,
 }) => {
   const [isLogsOpen, setIsLogsOpen] = useState(false)
   const { 
@@ -476,16 +479,71 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     }
   };
 
+  const handleAlignTopLeftClick = () => {
+    console.log("Align Top Left clicked");
+    try {
+      if (!nodes || nodes.length === 0) {
+        console.log("No nodes to align");
+        return;
+      }
+      
+      // Simple grid layout starting from top-left
+      const startX = -250; // Move nodes more to the right
+      const startY = -120; // Move nodes even higher up (can go negative)
+      const gridSpacing = 100; // Space between nodes
+      const nodesPerRow = 4; // Number of nodes per row
+      
+      const newNodes = nodes.map((node, index) => {
+        const row = Math.floor(index / nodesPerRow);
+        const col = index % nodesPerRow;
+        
+        return {
+          ...node,
+          position: {
+            x: startX + (col * gridSpacing),
+            y: startY + (row * gridSpacing)
+          }
+        };
+      });
+
+      // Update nodes with new positions
+      updateSetNode(newNodes, edges);
+
+      // Center the view after a short delay
+      setTimeout(() => {
+        if (reactFlowInstance && reactFlowInstance.setCenter) {
+          // Calculate the center of the grid
+          const rows = Math.ceil(nodes.length / nodesPerRow);
+          const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
+          const centerY = startY + ((rows - 1) * gridSpacing) / 2;
+          
+          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }
+        
+        // Try to click the fitView button directly as a fallback
+        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+        if (fitViewButton instanceof HTMLElement) {
+          console.log("Clicking fitView button after top-left alignment");
+          fitViewButton.click();
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error in align top left:", error);
+    }
+  };
+
   const actions = [
     { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
     { key: 'zoom-out', icon: BiZoomOut, handler: handleZoomOutClick },
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
     { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: handleAlignHorizontalClick },
     { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: handleAlignVerticalClick },
+    { key: 'align-top-left', icon: MdVerticalAlignTop, handler: handleAlignTopLeftClick },
     // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
     // { key: 'stop', icon: MdOutlineStop, handler: onStop },
     // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
-    { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
+    // { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
   ]
   console.log(logs)
   return (

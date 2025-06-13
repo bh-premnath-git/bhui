@@ -51,6 +51,10 @@ interface FormData {
     name?: string;
     target?: {
         target_type?: string;
+        target_name?: string;
+        table_name?: string;
+        file_name?: string;
+        load_mode?: string;
         connection?: {
             connection_config_id?: number;
             [key: string]: any;
@@ -352,56 +356,58 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             } else if (name === 'target_name') {
                 if (!newData.target) newData.target = {};
                 newData.target.target_name = value;
-                // Set table_name to match target_name if target_type is Relational
-                if (newData.target.target_type === 'Relational' && (!newData.target.table_name || newData.target.table_name === '')) {
+                
+                // Auto-sync name field with target_name
+                newData.name = value;
+                console.log('Auto-synced name with target_name:', value);
+                
+                // Auto-sync table_name or file_name based on target_type
+                if (newData.target.target_type === 'Relational') {
                     newData.target.table_name = value;
-                }
-                // Set file_name to match target_name if target_type is File
-                if (newData.target.target_type === 'File' && (!newData.target.file_name || newData.target.file_name === '')) {
+                    console.log('Auto-synced table_name with target_name:', value);
+                } else if (newData.target.target_type === 'File') {
                     newData.target.file_name = value;
+                    console.log('Auto-synced file_name with target_name:', value);
                 }
             } else if (name === 'table_name') {
                 if (!newData.target) newData.target = {};
                 newData.target.table_name = value;
-                // Set target_name to match table_name if target_name is not already set
-                if (!newData.target.target_name) {
-                    newData.target.target_name = value;
-                }
+                
+                // Auto-sync target_name and name with table_name
+                newData.target.target_name = value;
+                newData.name = value;
+                console.log('Auto-synced target_name and name with table_name:', value);
             } else if (name === 'load_mode') {
                 if (!newData.target) newData.target = {};
                 newData.target.load_mode = value;
             } else if (name === 'file_name' && newData.target?.target_type === 'File') {
                 if (!newData.target) newData.target = {};
                 newData.target.file_name = value;
-                // Set target_name to match file_name if target_name is not already set
-                if (!newData.target.target_name || newData.target.target_name === '') {
-                    newData.target.target_name = value;
-                }
+                
+                // Auto-sync target_name and name with file_name
+                newData.target.target_name = value;
+                newData.name = value;
+                console.log('Auto-synced target_name and name with file_name:', value);
             } else if (name === 'file_type' && newData.target?.target_type === 'File') {
                 newData.file_type = value;
             } else if (name === 'name') {
-                // Handle the main name field - auto-fill target_name and file_name
+                // Handle the main name field - auto-sync with target_name and file_name/table_name
                 console.log('Name field changed to:', value);
                 newData.name = value;
                 
                 if (!newData.target) newData.target = {};
                 
-                // Auto-fill target_name if it's empty
-                if (!newData.target.target_name || newData.target.target_name === '') {
-                    newData.target.target_name = value;
-                    console.log('Auto-filled target_name:', value);
-                }
+                // Auto-sync target_name with name
+                newData.target.target_name = value;
+                console.log('Auto-synced target_name with name:', value);
                 
-                // Auto-fill file_name if target_type is File and file_name is empty
-                if (newData.target.target_type === 'File' && (!newData.target.file_name || newData.target.file_name === '')) {
+                // Auto-sync file_name or table_name based on target_type
+                if (newData.target.target_type === 'File') {
                     newData.target.file_name = value;
-                    console.log('Auto-filled file_name for File type:', value);
-                }
-                
-                // Auto-fill table_name if target_type is Relational and table_name is empty
-                if (newData.target.target_type === 'Relational' && (!newData.target.table_name || newData.target.table_name === '')) {
+                    console.log('Auto-synced file_name with name:', value);
+                } else if (newData.target.target_type === 'Relational') {
                     newData.target.table_name = value;
-                    console.log('Auto-filled table_name for Relational type:', value);
+                    console.log('Auto-synced table_name with name:', value);
                 }
             } else {
                 // Handle nested fields using the path parameter
@@ -663,7 +669,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
             // Create a properly structured source data object
             // Make sure we have all the required fields with fallbacks
-            const sourceData = {
+            const sourceData:any = {
                 nodeId,
                 sourceData: {
                     data: {

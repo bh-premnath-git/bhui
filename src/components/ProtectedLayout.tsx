@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -9,6 +9,7 @@ import { BottomDrawer } from "@/components/BottomDrawer";
 
 const MainContentInternal = () => {
   const { isExpanded } = useSidebar(); 
+  const location = useLocation();
   return (
     <div className={cn(
       "flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden",
@@ -18,7 +19,8 @@ const MainContentInternal = () => {
         <Header />
       </div>
       <main className="flex-1 relative overflow-auto h-[calc(100vh-64px)] "> 
-        <Outlet />
+        {/* Key forces remount when location changes and fixes stale DOM issues */}
+        <Outlet key={location.pathname} />
       </main>
     </div>
   );
@@ -46,7 +48,7 @@ const LayoutWrapper = () => {
           "flex flex-col overflow-hidden transition-all duration-300",
           isRightAsideOpen ? "w-[calc(100%-25%)]" : "flex-1"
         )}
-        style={{ zIndex: 70 }}>
+        style={{ zIndex: 1 }}>
         <MainContentInternal /> 
         {isBottomDrawerOpen && bottomDrawerContent && (
           <div className="flex-shrink-0 pl-[1%]">

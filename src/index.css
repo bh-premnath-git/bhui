@@ -48,6 +48,10 @@
     --chart-3-color: #29699d;
     --chart-4-color: #083096;
     --chart-5-color: #3081bf;
+    --popover: 240 10% 3.9%;
+    /* same dark */
+    --popover-foreground: 0 0% 98%;
+    /* light text */
   }
 
   .dark {
@@ -93,13 +97,17 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    
+
     /* Chart colors with same values as light mode for consistency */
     --chart-1-color: #0D2B45;
     --chart-2-color: #3b9bf5;
     --chart-3-color: #29699d;
     --chart-4-color: #083096;
     --chart-5-color: #3081bf;
+    --popover: 240 10% 3.9%;
+    /* same dark */
+    --popover-foreground: 0 0% 98%;
+    /* light text */
   }
 
   /* Add animation compatibility for all browsers */
@@ -115,7 +123,9 @@
   }
 
   /* Ensure consistent box-sizing across browsers */
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -139,8 +149,10 @@
   }
 
   * {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none;    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 
   /* Animation classes with browser prefixes */
@@ -159,43 +171,83 @@
   }
 
   @-webkit-keyframes slideIn {
-    from { -webkit-transform: translateX(-100%); }
-    to { -webkit-transform: translateX(0); }
+    from {
+      -webkit-transform: translateX(-100%);
+    }
+
+    to {
+      -webkit-transform: translateX(0);
+    }
   }
 
   @-moz-keyframes slideIn {
-    from { -moz-transform: translateX(-100%); }
-    to { -moz-transform: translateX(0); }
+    from {
+      -moz-transform: translateX(-100%);
+    }
+
+    to {
+      -moz-transform: translateX(0);
+    }
   }
 
   @-ms-keyframes slideIn {
-    from { -ms-transform: translateX(-100%); }
-    to { -ms-transform: translateX(0); }
+    from {
+      -ms-transform: translateX(-100%);
+    }
+
+    to {
+      -ms-transform: translateX(0);
+    }
   }
 
   @keyframes slideIn {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
   }
 
   @-webkit-keyframes slideOut {
-    from { -webkit-transform: translateX(0); }
-    to { -webkit-transform: translateX(-100%); }
+    from {
+      -webkit-transform: translateX(0);
+    }
+
+    to {
+      -webkit-transform: translateX(-100%);
+    }
   }
 
   @-moz-keyframes slideOut {
-    from { -moz-transform: translateX(0); }
-    to { -moz-transform: translateX(-100%); }
+    from {
+      -moz-transform: translateX(0);
+    }
+
+    to {
+      -moz-transform: translateX(-100%);
+    }
   }
 
   @-ms-keyframes slideOut {
-    from { -ms-transform: translateX(0); }
-    to { -ms-transform: translateX(-100%); }
+    from {
+      -ms-transform: translateX(0);
+    }
+
+    to {
+      -ms-transform: translateX(-100%);
+    }
   }
 
   @keyframes slideOut {
-    from { transform: translateX(0); }
-    to { transform: translateX(-100%); }
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-100%);
+    }
   }
 
   /* Cursor styles during resize with browser compatibility */
@@ -299,23 +351,43 @@ body.resizing * {
 }
 
 @-webkit-keyframes spin {
-  0% { -webkit-transform: rotate(0deg); }
-  100% { -webkit-transform: rotate(360deg); }
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
 }
 
 @-moz-keyframes spin {
-  0% { -moz-transform: rotate(0deg); }
-  100% { -moz-transform: rotate(360deg); }
+  0% {
+    -moz-transform: rotate(0deg);
+  }
+
+  100% {
+    -moz-transform: rotate(360deg);
+  }
 }
 
 @-ms-keyframes spin {
-  0% { -ms-transform: rotate(0deg); }
-  100% { -ms-transform: rotate(360deg); }
+  0% {
+    -ms-transform: rotate(0deg);
+  }
+
+  100% {
+    -ms-transform: rotate(360deg);
+  }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* React grid components with browser prefixes */

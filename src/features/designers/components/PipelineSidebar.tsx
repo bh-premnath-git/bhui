@@ -13,6 +13,7 @@ import {
   Filter,
   Workflow
 } from 'lucide-react';
+import './PipelineSidebar.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ import { ROUTES } from '@/config/routes';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 interface PipelineSidebarProps {
   className?: string;
@@ -137,8 +139,10 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
   };
 
   // Handle pipeline selection
-  const handlePipelineSelect = async (pipelineId: number) => {
+  const handlePipelineSelect = async (pipelineId: number,pipeline:any) => {
     const pipelineIdStr = pipelineId.toString();
+    console.log(pipeline)
+    dispatch(setSelectedPipeline(pipeline))
     
     // Don't do anything if we're already on this pipeline
     if (selectedPipelineId === pipelineIdStr) {
@@ -149,6 +153,8 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
     localStorage.setItem("pipeline_id", pipelineIdStr);
 
     try {
+    dispatch(setSelectedPipeline(pipeline))
+
       // Check if we're already on the correct route
       const targetRoute = ROUTES.DESIGNERS.BUILD_PLAYGROUND(pipelineIdStr);
       const currentRoute = location.pathname;
@@ -202,7 +208,7 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
       <div className="flex items-center justify-between p-3 mt-3 border-b">
         {isOpen && (
           <div className="flex items-center gap-2">
-            <Share size={18} className="text-primary" />
+            {/* <Share size={18} className="text-primary" /> */}
             <h3 className="font-medium text-sm">Data Pipelines</h3>
           </div>
         )}
@@ -286,7 +292,7 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
               {filteredPipelines.map((pipeline) => (
                 <li key={pipeline.pipeline_id} className="px-2">
                   <div
-                    onClick={() => handlePipelineSelect(pipeline.pipeline_id)}
+                    onClick={() => handlePipelineSelect(pipeline.pipeline_id,pipeline)}
                     className={cn(
                       "w-full rounded-md px-2 py-2 text-sm hover:bg-muted transition-colors cursor-pointer",
                       "flex flex-col gap-1",
@@ -353,39 +359,40 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
             </div>
           )
         ) : (
-          // When sidebar is collapsed, show dots for each pipeline
+          // When sidebar is collapsed, show first letter for each pipeline
           <div className="flex flex-col items-center py-2">
             {filteredPipelines.slice(0, 10).map((pipeline) => (
               <TooltipProvider key={pipeline.pipeline_id}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => handlePipelineSelect(pipeline.pipeline_id)}
+                      onClick={() => handlePipelineSelect(pipeline.pipeline_id,pipeline)}
                       className={cn(
-                        "w-8 h-8 rounded-full my-1 flex items-center justify-center",
+                        "w-6 h-6 rounded-full my-1 flex items-center justify-center text-xs font-medium",
                         selectedPipelineId === pipeline.pipeline_id.toString()
-                          ? "bg-primary shadow-sm"
-                          : "bg-muted hover:bg-muted-foreground/20"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80"
                       )}
                     >
-                      {favorites.includes(pipeline.pipeline_id) ? (
-                        <Star size={14} className="text-yellow-500" fill="currentColor" />
-                      ) : (
-                        <span className={cn(
-                          "w-2 h-2 rounded-full",
-                          selectedPipelineId === pipeline.pipeline_id.toString()
-                            ? "bg-primary-foreground"
-                            : "bg-foreground/70"
-                        )} />
-                      )}
+                      <span className="sr-only">{pipeline.pipeline_name}</span>
+                      {pipeline.pipeline_name.charAt(0).toUpperCase()}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p>{pipeline.pipeline_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Updated {formatDate(pipeline.updated_at)}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ))}
+            
+            {filteredPipelines.length > 10 && (
+              <div className="text-xs text-muted-foreground mt-2">
+                +{filteredPipelines.length - 10} more
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -174,7 +174,7 @@ const DataPreviewModal: React.FC<DataPreviewModalProps> = ({ isOpen, onClose }) 
               <div className="p-4">
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2 text-muted-foreground">
-                    <LoadingState className='w-40 h-40' />
+                    <LoadingState className='w-40 h-40' fullScreen={true} />
                   </div>
                 ) : error ? (
                   <div className="text-destructive font-mono text-sm">

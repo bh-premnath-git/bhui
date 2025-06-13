@@ -141,13 +141,14 @@ const BuildPlayGround: React.FC = () => {
         };
     }, [refetch]);
     const handleOpenNodeForm = useCallback((nodeId: string) => {
-        // console.log(nodeId)
-        // // First select the node in the Flow context
-        // selectNode(nodeId);
+        console.log('DataFlow: Opening NodeForm for node:', nodeId);
+        
+        // First select the node in the Flow context
+        selectNode(nodeId);
 
-        // // Then set the selected node ID and open the form
-        // setSelectedNodeId(nodeId);
-        // setIsNodeFormOpen(true);
+        // Then set the selected node ID and open the form
+        setSelectedNodeId(nodeId);
+        setIsNodeFormOpen(true);
     }, [selectNode, setSelectedNodeId, setIsNodeFormOpen]);
 
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
@@ -387,7 +388,7 @@ const BuildPlayGround: React.FC = () => {
     const sidebarWidth = 240; // Default expanded width
     
     const getMainContentStyle = () => {
-        const bottomHeight = isBottomDrawerOpen ? 300 : 0;
+        const bottomHeight = isBottomDrawerOpen ? 0 : 0;
 
         // Calculate the available width
         let availableWidth = `calc(100% - ${sidebarWidth}px`;
@@ -397,7 +398,7 @@ const BuildPlayGround: React.FC = () => {
         availableWidth += ')';
 
         return {
-            height: isBottomDrawerOpen ? `calc(100% - ${bottomHeight}px)` : '100%',
+            height: '100%',
             width: availableWidth,
             marginLeft: `${sidebarWidth}px`,
             transition: 'all 0.3s ease-in-out'
@@ -419,7 +420,7 @@ const BuildPlayGround: React.FC = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         flex: '1 1 auto',
-                        height: isBottomDrawerOpen ? 'calc(100% - 20px)' : '100%'
+                        height:'100%'
                     }}>
                     {isLoading ? (
                         <div className="w-full h-full flex items-center justify-center bg-background">
@@ -533,8 +534,8 @@ const BuildPlayGround: React.FC = () => {
                     <DialogContent className="max-w-[80%] max-h-[80vh] overflow-y-auto">
                         {selectedNodeId && (
                             <NodeForm
-                                nodeId={selectedNodeId}
-                                onClose={() => setIsNodeFormOpen(false)}
+                                id={selectedNodeId}
+                                closeTap={() => setIsNodeFormOpen(false)}
                             />
                         )}
                     </DialogContent>

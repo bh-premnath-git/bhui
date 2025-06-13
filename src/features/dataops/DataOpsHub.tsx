@@ -133,7 +133,7 @@ export function DataOpsHub() {
             name: restOfChartData.name,
             widget_type: restOfChartData.widget_type,
             sql_query: restOfChartData.sql_query,
-            chart_config: restOfChartData.chart_config, 
+            chart_config: compressValue(intermediate_executed_query_json), 
             plotly_data: compressValue(intermediate_executed_query_json), 
             executed_query: restOfChartData.executed_query,
           };

@@ -40,13 +40,19 @@ export const EnvironmentDetailsFields = ({ control }: { control: Control<Environ
         render={({ field }) => (
           <FormItem>
             <RequiredFormLabel>Environment</RequiredFormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select
+              value={field.value?.toString() || ""}
+              onValueChange={(val) => {
+                field.onChange(val);
+                field.onBlur();
+              }}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Environment" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent className="z-[9999]">
                 {environments.map((env) => (
                   <SelectItem key={env.value} value={env.value}>
                     {env.label}
@@ -149,13 +155,16 @@ export function CredentialsFields({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Region</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select
+                value={field.value?.toString() || ""}
+                onValueChange={field.onChange}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Region" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent className="z-[9999]">
                   {regions.map((reg) => (
                     <SelectItem key={reg.value} value={reg.value}>
                       {reg.label}
@@ -269,13 +278,16 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
           render={({ field }) => (
             <FormItem>
               <FormLabel>MWAA Environment</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                value={field.value?.toString() || ""}
+                onValueChange={field.onChange}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select MWAA Environment" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent className="z-[9999]">
                   {mwaaEnvironments?.map((env, key) => (
                     <SelectItem key={key} value={env}>
                       {env}

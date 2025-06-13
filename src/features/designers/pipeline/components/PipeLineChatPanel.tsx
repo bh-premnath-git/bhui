@@ -21,7 +21,7 @@ import CreateFormFormik from './form-sections/CreateForm';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
-// No longer need these imports since we're using TargetPopUp directly
+import { debugNodeData, validateNodeTransformationData, compareBeforeAfterSubmit } from '@/lib/debugPipeline';
 
 // Define the form schema based on Reader.json
 const readerFormSchema = z.object({
@@ -1351,32 +1351,14 @@ const PipeLineChatPanel = () => {
                       <div className="space-y-3">
                         <h3 className="text-base font-semibold">{message.formData.schema?.title} Configuration</h3>
 
-                        {/* Check if this is a target node */}
                         {message.formData.isTarget || message.formData.schema?.title === 'Target' ? (
                           <div className="form-wrapper">
-                            {/* 
-                                Use TargetPopUp for Target nodes in inline mode (not as a dialog)
-                                When isOpen is false, TargetPopUp renders directly in the parent component
-                              */}
+                          
                             <TargetPopUp
                               isOpen={false} // Use inline mode
                               onClose={() => {
                                 // Handle form close
-                                setMessages(prevMessages => [
-                                  ...prevMessages,
-                                  {
-                                    role: 'user',
-                                    content: `Cancelled Target configuration`
-                                  },
-                                  {
-                                    role: 'assistant',
-                                    content: 'What would you like to do next?',
-                                    suggestions: [
-                                      { text: "Add another source", onClick: handleAddAnotherSource },
-                                      { text: "Add another transformation", onClick: handleShowTransformations }
-                                    ]
-                                  }
-                                ]);
+                                
                               }}
                               nodeId={message.formData.currentNodeId}
                               initialData={formStates[message.formData.currentNodeId] || message.formData.initialValues}
@@ -1413,14 +1395,10 @@ const PipeLineChatPanel = () => {
                                   sourceData: sourceData
                                 });
 
-                                // Handle the nested structure from TargetPopUp component
-                                // The structure can be either:
-                                // 1. { sourceData: { data: { ... } } } - from TargetPopUp
-                                // 2. { data: { ... } } - from other components
+                                
                                 let data;
 
                                 if (sourceData.sourceData?.data) {
-                                  // Structure from TargetPopUp
                                   data = sourceData.sourceData.data;
                                   console.log('Using nested sourceData.sourceData.data structure');
                                 } else if (sourceData.data) {
@@ -1531,28 +1509,13 @@ const PipeLineChatPanel = () => {
                             />
                           </div>
                         ) : (
-                          /* Use CreateFormFormik for other transformations */
                           <div className="form-wrapper">
                             <CreateFormFormik
                               schema={message.formData.schema}
                               sourceColumns={message.formData.sourceColumns || []}
                               onClose={() => {
                                 // Handle form close
-                                setMessages(prevMessages => [
-                                  ...prevMessages,
-                                  {
-                                    role: 'user',
-                                    content: `Cancelled ${message.formData?.schema?.title} configuration`
-                                  },
-                                  {
-                                    role: 'assistant',
-                                    content: 'What would you like to do next?',
-                                    suggestions: [
-                                      { text: "Add another source", onClick: handleAddAnotherSource },
-                                      { text: "Add another transformation", onClick: handleShowTransformations }
-                                    ]
-                                  }
-                                ]);
+                                
                               }}
                               currentNodeId={message.formData.currentNodeId}
                               initialValues={{
@@ -1569,9 +1532,13 @@ const PipeLineChatPanel = () => {
                               edges={edges}
                               pipelineDtl={pipelineDtl}
                               onSubmit={(data) => {
-                                console.log('Form submitted with data:', data);
+                                console.log('🚀 Form submitted with data:', data);
                                 const nodeId = message.formData.currentNodeId;
                                 const updatedTitle = data.name || data.title || "Transformation";
+
+                                // Debug: Log current state before update
+                                debugNodeData(pipelineContext.nodes, `📋 Nodes before form submission for ${nodeId}:`);
+                                console.log('📝 Form states before update:', formStates);
 
                                 // Directly update the node in the context
                                 const currentNodes = [...pipelineContext.nodes];
@@ -1581,9 +1548,14 @@ const PipeLineChatPanel = () => {
                                   if (!currentNodeData.transformationData) {
                                     currentNodeData.transformationData = {};
                                   }
-                                  const cleanFormData = { ...data, nodeId: nodeId, name: updatedTitle };
                                   
-                                  // Special handling for Filter nodes
+                                  // Create a clean copy of the form data
+                                  const cleanFormData = { ...data };
+                                  
+                                  // Remove nodeId from the transformation data as it's metadata
+                                  delete cleanFormData.nodeId;
+                                  
+                                  // Special handling for different transformation types
                                   if (currentNodes[nodeIndex].data.label === 'Filter') {
                                     console.log('Processing Filter node in PipeLineChatPanel:', data);
                                     // Ensure condition is properly set
@@ -1592,27 +1564,47 @@ const PipeLineChatPanel = () => {
                                     }
                                   }
                                   
+                                  // Update the node with the transformation data
                                   const updatedNode = {
                                     ...currentNodes[nodeIndex],
                                     data: {
                                       ...currentNodeData,
                                       title: updatedTitle,
-                                      transformationData: cleanFormData,
+                                      transformationData: cleanFormData, // This is the key fix - store the clean data
                                       source: currentNodeData.source || {}
                                     }
                                   };
+                                  
+                                  console.log('✅ Updated node with transformationData:', updatedNode);
+                                  
                                   currentNodes[nodeIndex] = updatedNode;
                                   pipelineContext.setNodes(currentNodes);
-                                  setFormStates(prevStates => ({ ...prevStates, [nodeId]: cleanFormData }));
-                                  setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: data }));
+                                  
+                                  // Debug: Log nodes after update
+                                  debugNodeData(currentNodes, `📋 Nodes after form submission for ${nodeId}:`);
+                                  
+                                  // Update form states with the data including nodeId for tracking
+                                  const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
+                                  setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+                                  setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+                                  
+                                  console.log('📝 Updated form states:', { [nodeId]: formStateData });
+                                  
+                                  // Mark as unsaved
+                                  setUnsavedChanges();
+                                  
+                                  // Validate nodes after update
+                                  validateNodeTransformationData(currentNodes);
+                                  
                                   window.dispatchEvent(new Event('resize'));
                                 }
 
                                 // Call handleFormSubmit to ensure all state is updated properly
-                                handleFormSubmit({ ...data, nodeId: nodeId, name: updatedTitle });
+                                const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
+                                handleFormSubmit(formSubmitData);
 
                                 // Log the data being sent to handleFormSubmit
-                                console.log('Data sent to handleFormSubmit:', { ...data, nodeId: nodeId, name: updatedTitle });
+                                console.log('Data sent to handleFormSubmit:', formSubmitData);
 
                                 // Add a message to show the form was submitted
                                 setMessages(prevMessages => [
@@ -1697,7 +1689,7 @@ const PipeLineChatPanel = () => {
         </div>
       </ScrollArea>
       <div className="p-2 border-t border-slate-200 bg-white">
-        <AIChatInput input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
+        <AIChatInput variant='designer' input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
       </div>
     </div>
   );

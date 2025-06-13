@@ -24,7 +24,7 @@ const MetricsDrawerWrapper: React.FC<{
     metricsData: any[] | null;
     isLoading: boolean;
 }> = ({ metricsData }) => {
-    console.log(metricsData, "metricsData");
+    //console.log(metricsData, "metricsData");
     
     // Create columns for the DataTable based on the first row of data
     const columns = useMemo(() => {
@@ -202,7 +202,7 @@ export const CustomEdge = memo(({
                     isFlow
                 })).unwrap();
                 
-                console.log("Transformation output data:", result);
+                //console.log("Transformation output data:", result);
                 
                 // Format the data for the Terminal component
                 const previewData: PreviewData = {
@@ -233,15 +233,18 @@ export const CustomEdge = memo(({
         }
     };
 
-    // Effect to handle drawer state changes
+    // Effect to handle drawer state synchronization - only reacts to external drawer close
     useEffect(() => {
         // If we're showing our content in the drawer and the drawer is closed externally,
         // update our local state
         if (isShowingInDrawer && !isBottomDrawerOpen) {
             setIsShowingInDrawer(false);
         }
-        
-        // If we have new metrics data and we're showing in drawer, update the drawer content
+    }, [isShowingInDrawer, isBottomDrawerOpen]);
+
+    // Effect to update drawer content when metrics data changes
+    useEffect(() => {
+        // Only update if we have metrics data, we're showing in drawer, and drawer is open
         if (metricsData && isShowingInDrawer && isBottomDrawerOpen) {
             // Format the data for the Terminal component
             const previewData: PreviewData = {
@@ -265,16 +268,7 @@ export const CustomEdge = memo(({
             // Set the drawer content
             setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
         }
-        
-        // Clean up when component unmounts
-        return () => {
-            // If we're showing our content in the drawer, close it when unmounting
-            if (isShowingInDrawer) {
-                closeBottomDrawer();
-                setIsShowingInDrawer(false);
-            }
-        };
-    }, [isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, metricsData, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow]);
+    }, [metricsData, isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow, setBottomDrawerContent]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();

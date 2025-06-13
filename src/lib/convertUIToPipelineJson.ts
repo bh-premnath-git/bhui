@@ -19,7 +19,15 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         // Return early if only validating
         return validation;
     }
-    console.log(uiNodes, "nodes")
+    console.log("🔄 Converting UI to Pipeline JSON...");
+    console.log("📋 Input nodes:", uiNodes);
+    
+    // Debug each node's transformation data
+    uiNodes.forEach(node => {
+        if (!node.id.startsWith('Reader_') && !node.id.startsWith('Target_')) {
+            console.log(`🔧 Node ${node.id} (${node.data.label}) transformationData:`, node.data.transformationData);
+        }
+    });
     // Get ordered nodes using topological sort
     const getOrderedNodes = () => {
         const orderedNodes: UINode[] = [];
@@ -140,6 +148,13 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     const regularTransformations = orderedUiNodes
         .filter(node => !node.id.startsWith('Reader_'))
         .map(node => {
+            console.log(`Processing node ${node.id} (${node.data.label}):`, {
+                title: node.data.title,
+                label: node.data.label,
+                transformationData: node.data.transformationData,
+                nodeData: node.data
+            });
+            
             const baseConfig = {
                 name: node.data.title, // Use the node's title as the transformation name
                 transformation: node.data.label,
@@ -222,6 +237,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                             : { hints: [] }
                     };
                 case 'SchemaTransformation':
+                    console.log('SchemaTransformation transformationData:', node.data.transformationData);
                     return {
                         ...baseConfig,
                         derived_fields: node.data.transformationData?.derived_fields || []
@@ -247,7 +263,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         order_by: node.data.transformationData?.order_by || []
                     };
                 case 'Repartition':
-                    const repartitionConfig = {
+                    const repartitionConfig:any = {
                         ...baseConfig,
                         repartition_type: node.data.transformationData?.repartition_type || "repartition",
                         repartition_value: node.data.transformationData?.repartition_value
@@ -271,13 +287,14 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     
                     return repartitionConfig;
                 case 'Union':
+                case 'SetCombiner': // Handle both Union and SetCombiner as they're the same
                     return {
                         ...baseConfig,
                         operation_type: node.data.transformationData?.operation_type || "union",
                         allow_missing_columns: node.data.transformationData?.allow_missing_columns || false
                     };
                 case 'Select':
-                    const selectConfig = {
+                    const selectConfig:any = {
                         ...baseConfig,
                         column_list: node.data.transformationData?.column_list || []
                     };
@@ -289,7 +306,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     
                     return selectConfig;
                 case 'SequenceGenerator':
-                    const seqGenConfig = {
+                    const seqGenConfig:any = {
                         ...baseConfig,
                         for_column_name: node.data.transformationData?.for_column_name || "",
                         start_with: node.data.transformationData?.start_with || 1
@@ -308,7 +325,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     
                     return seqGenConfig;
                 case 'Drop':
-                    const dropConfig = {
+                    const dropConfig:any = {
                         ...baseConfig
                     };
                     
@@ -327,7 +344,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     
                     return dropConfig;
                 case 'Lookup':
-                    const lookupConfig = {
+                    const lookupConfig:any = {
                         ...baseConfig,
                         lookup_type: node.data.transformationData?.lookup_type || 'Column Based'
                     };
@@ -398,7 +415,20 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                             writeMethod: targetType === 'Relational' ? 'direct' : 'APPEND'
                         },
                     };
+                case 'Drop':
+                    return {
+                        ...baseConfig,
+                        columns: node.data.transformationData?.columns || []
+                    };
+                case 'CustomPySpark':
+                    return {
+                        ...baseConfig,
+                        user_code: node.data.transformationData?.user_code || '',
+                        dependent_on: node.data.transformationData?.dependent_on || []
+                    };
                 default:
+                    console.warn(`Unknown transformation type: ${node.data.label}. Using default handling.`);
+                    console.log('Default case - node.data.transformationData:', node.data.transformationData);
                     return {
                         ...baseConfig,
                         ...node.data.transformationData

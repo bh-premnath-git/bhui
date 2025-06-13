@@ -18,7 +18,7 @@ export function RightAside({
   width = 'w-[25%]',
   className
 }: RightAsideProps) {
-  const { closeRightAside } = useSidebar();
+  const { closeRightAside, updateRightAsideWidth } = useSidebar();
   const [currentWidth, setCurrentWidth] = useState<number>(0);
   const asideRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
@@ -103,6 +103,7 @@ export function RightAside({
     }
     
     setCurrentWidth(clampedWidth);
+    updateRightAsideWidth(clampedWidth+'%');
   };
 
   // Handle resize end

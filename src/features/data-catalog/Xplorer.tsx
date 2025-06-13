@@ -42,8 +42,7 @@ export function Xplorer({ dashboardId = "102" }: XplorerProps) {
 
   const handleWidgetRefresh = async (widgetId: string) => {
     try {
-     
-    } catch (error) {
+      } catch (error) {
       console.error("Failed to refresh widget:", error);
     }
   };
@@ -56,33 +55,21 @@ export function Xplorer({ dashboardId = "102" }: XplorerProps) {
     }
   }, [isDashboardsLoading, isWidgetsLoading, dispatch, state.isLoading]);
 
-  // Process and set widgets once they are fetched or updated from the hook
+  // Process and set widgets once they are fetched
   useEffect(() => {
     try {
-      // Guard against premature updates if essential data is still loading.
-      // If dashboard metadata is loading, or if we expect widgets (widgetIds exist)
-      // AND these specific widgets are still loading AND their data isn't available yet, then wait.
-      if (isDashboardsLoading || (widgetIds.length > 0 && isWidgetsLoading && !widgets)) {
-        return;
-      }
-
-      if (widgets) { // `widgets` is the array from useDataOpsWidgets hook
-        const processedWidgets = widgets.map(w => ({
-          ...w, // Create new objects, avoid mutating hook's data
-          intermediate_executed_query_json: decompressValue(w.plotly_data),
-        }));
-        dispatch({ type: "SET_WIDGETS", payload: processedWidgets });
-      } else {
-        // If `widgets` is null/undefined, and not caught by the loading guard above,
-        // it implies no widgets (e.g., all deleted, none existed, or an error occurred fetching them).
-        // This also handles the case where widgetIds.length is 0 (no widgets expected).
-        dispatch({ type: "SET_WIDGETS", payload: [] });
+      if (widgets?.length && !state.widgets.length) {
+        const intermediateWidgets = widgets.map(widget => {
+          widget.intermediate_executed_query_json = decompressValue(widget.plotly_data);
+          return widget;
+        });
+        dispatch({ type: "SET_WIDGETS", payload: intermediateWidgets });
       }
     } catch (error) {
       console.error("[Xplorer] Failed to process and set widgets:", error);
       dispatch({ type: "SET_ERROR", payload: "Error processing widget data." });
     }
-  }, [widgets, widgetIds, isDashboardsLoading, isWidgetsLoading, dispatch]); // Updated dependencies
+  }, [widgets, dispatch, state.widgets.length]);
 
   // Listen for widget removal events coming from Generic Chat UI
   useEffect(() => {

@@ -27,6 +27,9 @@ export function BasicInformation({
   const projectOptions = getProjectOptions(projects);
   const environmentOptions = getEnvironmentOptions(environments);
 
+  console.log("projectOptions", projectOptions);
+  console.log("environmentOptions", environmentOptions);
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <FormField
@@ -41,9 +44,9 @@ export function BasicInformation({
                   <SelectValue placeholder="Select Project" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent className="z-[110] bg-white" portal={false}>
                 {projectOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem key={option.value} value={option.value} className="text-slate-900 hover:bg-gray-100">
                     {option.label}
                   </SelectItem>
                 ))}
@@ -66,9 +69,9 @@ export function BasicInformation({
                   <SelectValue placeholder="Select Environment" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent className="z-[110] bg-white" portal={false}>
                 {environmentOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem key={option.value} value={option.value} className="text-slate-900 hover:bg-gray-100">
                     {option.label}
                   </SelectItem>
                 ))}

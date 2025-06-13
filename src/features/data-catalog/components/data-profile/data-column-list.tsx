@@ -8,7 +8,6 @@ export default function DataColumnList({profileData, selectedColumn, setSelected
     const formatDecimal = (value: number): string => {
       return value.toFixed(2);
     };
- 
     return (
         <Card className="col-span-1 shadow-sm border">
           <div className="p-3 border-b flex items-center justify-between bg-gray-50">

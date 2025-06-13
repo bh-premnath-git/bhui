@@ -128,14 +128,14 @@ export function RightAside({
     <aside
       ref={asideRef}
       className={cn(
-        "relative flex flex-col h-full bg-background/95 backdrop-blur-sm border-l shadow-sm sidebar-right",
+        "relative flex flex-col h-full bg-background border-l shadow-sm sidebar-right",
         "transition-property-[width] duration-100 ease-in-out", // Only transition width property
         "flex-shrink-0 w-full", // Take up full width of parent
         className
       )}
       data-state="open" // Add a data attribute to assist with CSS selectors
       style={{ 
-        zIndex: 25 // Higher z-index to ensure it's on top
+        zIndex: 55 // Ensure RightAside is on a high stacking layer
       }}
     >
       {/* Resize handle */}

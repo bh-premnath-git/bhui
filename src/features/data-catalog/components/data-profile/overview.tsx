@@ -8,7 +8,6 @@ export default function Overview({selectedColumn}:any) {
     const formatDecimal = (value: number): string => {
       return value.toFixed(2);
     };
- 
     return (
         <div className="space-y-6">
             {/* Column Summary */}

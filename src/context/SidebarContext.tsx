@@ -14,6 +14,7 @@ interface SidebarContextType {
   rightAsideTitle: string;
   rightAsideWidth: string;
   setRightAsideContent: (content: ReactNode, title?: string, width?: string) => void;
+  updateRightAsideWidth: (width: string) => void;
   
   // Bottom Drawer state
   isBottomDrawerOpen: boolean;
@@ -39,7 +40,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isRightAsideOpen, setIsRightAsideOpen] = useState(false);
   const [rightAsideContent, setRightAsideContentState] = useState<ReactNode | null>(null);
   const [rightAsideTitle, setRightAsideTitle] = useState('Details');
-  const [rightAsideWidth, setRightAsideWidth] = useState<string>(DEFAULT_ASIDE_WIDTH);
+  const [rightAsideWidthState, setRightAsideWidthState] = useState<string>(DEFAULT_ASIDE_WIDTH);
   
   // Route change detection
   useEffect(() => {
@@ -47,7 +48,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsRightAsideOpen(false);
     setRightAsideContentState(null);
     setRightAsideTitle('Details');
-    setRightAsideWidth(DEFAULT_ASIDE_WIDTH);
+    setRightAsideWidthState(DEFAULT_ASIDE_WIDTH);
     
     // Close bottom drawer and clear its content when route changes
     setIsBottomDrawerOpen(false);
@@ -80,19 +81,23 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimeout(() => {
       setRightAsideContentState(null);
       setRightAsideTitle('Details');
-      setRightAsideWidth(DEFAULT_ASIDE_WIDTH);
-    }, 300);
+      setRightAsideWidthState(DEFAULT_ASIDE_WIDTH);
+    }, 200);
   };
   
   const setRightAsideContent = (content: ReactNode, title?: string, width?: string) => {
     setRightAsideContentState(content);
     if (title) setRightAsideTitle(title);
-    setRightAsideWidth(content ? (width || DEFAULT_ASIDE_WIDTH) : DEFAULT_ASIDE_WIDTH);
+    setRightAsideWidthState(content ? (width || DEFAULT_ASIDE_WIDTH) : DEFAULT_ASIDE_WIDTH);
     if (content) {
       openRightAside();
     } else {
       closeRightAside();
     }
+  };
+
+  const updateRightAsideWidth = (newWidth: string) => {
+    setRightAsideWidthState(newWidth);
   };
 
   // Bottom Drawer methods
@@ -131,9 +136,9 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
         closeRightAside,
         rightAsideContent,
         rightAsideTitle,
-        rightAsideWidth,
+        rightAsideWidth: rightAsideWidthState,
         setRightAsideContent,
-        
+        updateRightAsideWidth,
         isBottomDrawerOpen,
         toggleBottomDrawer,
         openBottomDrawer,

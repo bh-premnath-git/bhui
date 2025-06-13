@@ -113,10 +113,17 @@ export const CustomEdge = memo(({
     const { setEdges, getNode } = useReactFlow();
     const dispatch = useDispatch<AppDispatch>();
     const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
-    const { debuggedNodesList, pipelineName } = usePipelineContext();
     // Get isFlow from Redux store
     const { isFlow } = useSelector((state: RootState) => state.buildPipeline);
-    
+     const { 
+        handleCenter,
+        pipelineName, 
+        debuggedNodesList,
+        nodes, 
+        edges, 
+        updateSetNode, 
+        reactFlowInstance 
+      } = usePipelineContext()
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
     
@@ -183,16 +190,68 @@ export const CustomEdge = memo(({
         };
     }, [sourceHandle, targetHandle, source, target, getNode]);
 
- 
+ const handleAlignTopLeftClick = () => {
+    console.log("Align Top Left clicked");
+    try {
+      if (!nodes || nodes.length === 0) {
+        console.log("No nodes to align");
+        return;
+      }
+      
+      // Simple grid layout starting from top-left
+      const startX = -250; // Move nodes more to the right
+      const startY = -120; // Move nodes even higher up (can go negative)
+      const gridSpacing = 150; // Space between nodes
+      const nodesPerRow = 4; // Number of nodes per row
+      
+      const newNodes = nodes.map((node, index) => {
+        const row = Math.floor(index / nodesPerRow);
+        const col = index % nodesPerRow;
+        
+        return {
+          ...node,
+          position: {
+            x: startX + (col * gridSpacing),
+            y: startY + (row * gridSpacing)
+          }
+        };
+      });
+
+      // Update nodes with new positions
+      updateSetNode(newNodes, edges);
+
+      // Center the view after a short delay
+      setTimeout(() => {
+        if (reactFlowInstance && reactFlowInstance.setCenter) {
+          // Calculate the center of the grid
+          const rows = Math.ceil(nodes.length / nodesPerRow);
+          const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
+          const centerY = startY + ((rows - 1) * gridSpacing) / 2;
+          
+          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+        }
+        
+        // Try to click the fitView button directly as a fallback
+        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+        if (fitViewButton instanceof HTMLElement) {
+          console.log("Clicking fitView button after top-left alignment");
+          fitViewButton.click();
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error in align top left:", error);
+    }
+  };
 
     const handleMetricsClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        
         // Only proceed if rowCount exists (meaning the node is in debug list)
         if (rowCount) {
             setIsEdgeLoading(true);
             setIsShowingInDrawer(true);
+        await handleAlignTopLeftClick();
             
             try {
                 // First fetch the data
@@ -222,8 +281,6 @@ export const CustomEdge = memo(({
                         // No need to explicitly pass isFlow as it's already in the Redux store
                     />
                 );
-                
-                // Set the drawer content
                 setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
             } catch (error) {
                 console.error("Error fetching transformation output:", error);

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Info } from 'lucide-react';
+import { Info, Play } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import Editor from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 
-interface PythonEditorProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface PythonEditorProps {
   label?: string;
   description?: string;
   error?: string;
@@ -15,108 +16,347 @@ interface PythonEditorProps extends React.TextareaHTMLAttributes<HTMLTextAreaEle
   className?: string;
   containerClassName?: string;
   minHeight?: string;
+  maxHeight?: string;
+  readOnly?: boolean;
+  showMinimap?: boolean;
+  showLineNumbers?: boolean;
+  fontSize?: number;
+  onValidate?: (markers: monaco.editor.IMarker[]) => void;
+  onRun?: (code: string) => void;
 }
 
-export const PythonEditor = React.forwardRef<HTMLTextAreaElement, PythonEditorProps>(
-  ({ 
-    label, 
-    description, 
-    error, 
-    value, 
-    onChange, 
-    className, 
-    containerClassName,
-    minHeight = "300px",
-    ...props 
-  }, ref) => {
-    const [editorValue, setEditorValue] = useState(value || '');
+export const PythonEditor: React.FC<PythonEditorProps> = ({ 
+  label, 
+  description, 
+  error, 
+  value, 
+  onChange, 
+  className, 
+  containerClassName,
+  minHeight = "300px",
+  maxHeight = "600px",
+  readOnly = false,
+  showMinimap = false,
+  showLineNumbers = true,
+  fontSize = 14,
+  onValidate,
+  onRun
+}) => {
+  const [editorValue, setEditorValue] = useState(value || '');
+  const [markers, setMarkers] = useState<monaco.editor.IMarker[]>([]);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-    useEffect(() => {
-      setEditorValue(value || '');
-    }, [value]);
+  useEffect(() => {
+    setEditorValue(value || '');
+  }, [value]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      setEditorValue(newValue);
-      onChange(newValue);
-    };
+  const handleEditorChange = (newValue: string | undefined) => {
+    const val = newValue || '';
+    // Don't update parent if it's just the placeholder text
+    if (val === '# Enter your custom PySpark code...') {
+      setEditorValue('');
+      onChange('');
+    } else {
+      setEditorValue(val);
+      onChange(val);
+    }
+  };
 
-    // Sample Python code template
-    const sampleCode = `# Example PySpark transformation
-from pyspark.sql import functions as F
 
-def transform(df):
-    """
-    Custom PySpark transformation function.
+
+  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor) => {
+    editorRef.current = editor;
     
-    Args:
-        df: Input DataFrame
+    // Add placeholder text functionality
+    const updatePlaceholder = () => {
+      const model = editor.getModel();
+      if (model) {
+        const isEmpty = model.getValue().trim() === '';
+        const placeholder = isEmpty ? '# Enter your custom PySpark code...' : '';
         
-    Returns:
-        Transformed DataFrame
-    """
-    # Your transformation code here
-    # Example: Add a new column
-    result_df = df.withColumn("new_column", F.lit("example"))
-    
-    return result_df
-`;
-
-    const insertSampleCode = () => {
-      setEditorValue(sampleCode);
-      onChange(sampleCode);
+        if (isEmpty && !model.getValue()) {
+          model.setValue(placeholder);
+          // Set selection to after the placeholder
+          editor.setPosition({ lineNumber: 1, column: placeholder.length + 1 });
+        }
+      }
     };
 
-    return (
-      <div className={cn("space-y-2", containerClassName)}>
-        {label && (
+    // Set initial placeholder if editor is empty
+    if (!editorValue.trim()) {
+      updatePlaceholder();
+    }
+
+    // Handle focus/blur for placeholder behavior
+    editor.onDidFocusEditorText(() => {
+      const model = editor.getModel();
+      if (model && model.getValue() === '# Enter your custom PySpark code...') {
+        model.setValue('');
+      }
+    });
+
+    editor.onDidBlurEditorText(() => {
+      const model = editor.getModel();
+      if (model && model.getValue().trim() === '') {
+        model.setValue('# Enter your custom PySpark code...');
+      }
+    });
+    
+    // Add custom Python snippets and completions
+    monaco.languages.registerCompletionItemProvider('python', {
+      provideCompletionItems: (model, position, context, token) => {
+        const word = model.getWordUntilPosition(position);
+        const range = new monaco.Range(
+          position.lineNumber,
+          word.startColumn,
+          position.lineNumber,
+          word.endColumn
+        );
+
+        const suggestions: monaco.languages.CompletionItem[] = [
+          {
+            label: 'pyspark_transform',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: [
+              'def transform(df):',
+              '    """',
+              '    Custom PySpark transformation function.',
+              '    ',
+              '    Args:',
+              '        df: Input DataFrame',
+              '    ',
+              '    Returns:',
+              '        Transformed DataFrame',
+              '    """',
+              '    # Your transformation code here',
+              '    return df'
+            ].join('\n'),
+            documentation: 'PySpark transformation function template',
+            range: range,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+          },
+          {
+            label: 'pyspark_filter',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'df.filter(F.col("${1:column_name}") == "${2:value}")',
+            documentation: 'Filter DataFrame rows',
+            range: range,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+          },
+          {
+            label: 'pyspark_select',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'df.select("${1:col1}", "${2:col2}", F.col("${3:col3}").alias("${4:new_col3}"))',
+            documentation: 'Select columns from DataFrame',
+            range: range,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+          },
+          {
+            label: 'pyspark_withColumn',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'df.withColumn("${1:new_column}", F.${2:lit}("${3:value}"))',
+            documentation: 'Add or replace a column',
+            range: range,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+          },
+          {
+            label: 'pyspark_groupBy',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'df.groupBy("${1:column}").agg(F.${2:sum}("${3:agg_column}"))',
+            documentation: 'Group by and aggregate',
+            range: range,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+          }
+        ];
+        
+        return { suggestions };
+      }
+    });
+  };
+
+  const handleValidationChange = (markers: monaco.editor.IMarker[]) => {
+    setMarkers(markers);
+    if (onValidate) {
+      onValidate(markers);
+    }
+  };
+
+
+
+  const runCode = () => {
+    if (onRun) {
+      onRun(editorValue);
+    }
+  };
+
+  return (
+    <div className={cn("space-y-3", containerClassName)}>
+      {label && (
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Label htmlFor={props.id}>{label}</Label>
+            <Label className="text-sm font-medium text-gray-900">{label}</Label>
             {description && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  <Info className="h-4 w-4 text-gray-500 cursor-help hover:text-gray-700" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">{description}</TooltipContent>
+                <TooltipContent className="max-w-xs bg-gray-900 text-white">{description}</TooltipContent>
               </Tooltip>
             )}
           </div>
-        )}
-        
-        <div className="relative">
-          <Textarea
-            ref={ref}
-            value={editorValue}
-            onChange={handleChange}
-            className={cn(
-              "font-mono text-sm p-4 resize-y",
-              "bg-slate-950 text-slate-50 dark:bg-slate-950 dark:text-slate-50",
-              "border-slate-700 focus:border-slate-500",
-              "placeholder:text-slate-400",
-              { "border-red-500 focus:border-red-500": error },
-              className
-            )}
-            style={{ minHeight }}
-            {...props}
-          />
           
-          <div className="absolute top-2 right-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
-              onClick={insertSampleCode}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
-            >
-              Insert Sample Code
-            </Button>
+          {/* Toolbar */}
+          {onRun && (
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={runCode}
+                    className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <Play className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Run code</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <div className={cn(
+        "relative border border-gray-300 rounded-lg overflow-hidden shadow-sm",
+        { "border-red-300": error },
+        className
+      )}>
+        <Editor
+          height={minHeight}
+          defaultLanguage="python"
+          value={editorValue}
+          onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
+          onValidate={handleValidationChange}
+          options={{
+            theme: 'vs', // Light theme
+            fontSize: fontSize,
+            lineNumbers: showLineNumbers ? 'on' : 'off',
+            minimap: { enabled: showMinimap },
+            readOnly: readOnly,
+            wordWrap: 'on',
+            automaticLayout: true,
+            scrollBeyondLastLine: false,
+            padding: { top: 16, bottom: 16 },
+            roundedSelection: false,
+            cursorBlinking: 'smooth',
+            cursorSmoothCaretAnimation: 'on',
+            smoothScrolling: true,
+            mouseWheelZoom: true,
+            contextmenu: true,
+            folding: true,
+            foldingHighlight: true,
+            foldingImportsByDefault: false,
+            showFoldingControls: 'always',
+            unfoldOnClickAfterEndOfLine: false,
+            bracketPairColorization: { enabled: true },
+            guides: {
+              bracketPairs: true,
+              bracketPairsHorizontal: true,
+              highlightActiveIndentation: true,
+              indentation: true
+            },
+            suggest: {
+              showWords: true,
+              showKeywords: true,
+              showSnippets: true,
+              showFunctions: true,
+              showConstructors: true,
+              showFields: true,
+              showVariables: true,
+              showClasses: true,
+              showModules: true,
+              showMethods: true,
+              showProperties: true,
+              showValues: true,
+              showEnums: true,
+              showConstants: true,
+              showStructs: true,
+              showInterfaces: true,
+              showOperators: true,
+              showUnits: true,
+              showColors: true,
+              showFiles: true,
+              showReferences: true,
+              showFolders: true,
+              showTypeParameters: true,
+              showIssues: true,
+              showUsers: true
+            },
+            quickSuggestions: {
+              other: true,
+              comments: true,
+              strings: true
+            },
+            parameterHints: {
+              enabled: true,
+              cycle: true
+            },
+            acceptSuggestionOnCommitCharacter: true,
+            acceptSuggestionOnEnter: 'on',
+            tabCompletion: 'on',
+            snippetSuggestions: 'top',
+            wordBasedSuggestions: 'matchingDocuments',
+            semanticHighlighting: { enabled: true },
+            occurrencesHighlight: 'singleFile',
+            codeLens: true,
+            lightbulb: { enabled: 'on' },
+            definitionLinkOpensInPeek: false,
+            gotoLocation: {
+              multipleReferences: 'peek',
+              multipleTypeDefinitions: 'peek',
+              multipleDeclarations: 'peek',
+              multipleImplementations: 'peek'
+            }
+          }}
+        />
+        
+        {/* Status Bar */}
+        <div className="flex items-center justify-between px-3 py-1 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
+          <div className="flex items-center gap-4">
+            <span>Python</span>
+            <span>Lines: {editorValue.split('\n').length}</span>
+            <span>Chars: {editorValue.length}</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {markers.length > 0 && (
+              <span className={cn(
+                "flex items-center gap-1 px-2 py-0.5 rounded text-xs",
+                markers.some(m => m.severity === 8) ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+              )}>
+                <span className="w-2 h-2 rounded-full bg-current"></span>
+                {markers.length} issue{markers.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {markers.length === 0 && editorValue.trim() && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
+                <span className="w-2 h-2 rounded-full bg-current"></span>
+                No issues
+              </span>
+            )}
           </div>
         </div>
-        
-        {error && <p className="text-sm text-red-500">{error}</p>}
       </div>
-    );
-  }
-);
+      
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-200">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 PythonEditor.displayName = "PythonEditor";

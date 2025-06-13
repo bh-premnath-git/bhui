@@ -1169,7 +1169,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         try {
             console.log(pipelineName)
             console.log(pipelineDtl)
-            let response = await dispatch(stopPipeLine({ params:pipelineDtl?.name  || pipelineName || pipelineDtl?.pipeline_name })).unwrap();
+            let response = await dispatch(stopPipeLine({ params:pipelineDtl?.name  || pipelineDtl?.pipeline_name || pipelineName })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -1183,10 +1183,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name })).unwrap();
+            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineDtl?.name  || pipelineDtl?.pipeline_name || pipelineName })).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-                let countsResponse = await dispatch(getTransformationCount({ params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name })).unwrap();
+                let countsResponse = await dispatch(getTransformationCount({ params: pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName  })).unwrap();
                 console.log(countsResponse, "countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);

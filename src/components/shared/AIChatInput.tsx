@@ -5,6 +5,11 @@ import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from "@
 import { useState, useRef, useEffect } from "react";
 import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
 
+interface Connection {
+  id: number | string;
+  connection_config_name: string;
+}
+
 interface AIChatInputProps {
   variant: string;
   input: string;
@@ -27,45 +32,45 @@ export function AIChatInput({
   onConnectionChange,
 }: AIChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedConnection, setSelectedConnection] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Only initialize connection-related state when variant is explorer
   const isExplorer = variant === 'explorer';
-  const { connections, isLoading, isFetching, isError } = isExplorer ? useAdminConnections() : { connections: [], isLoading: false, isFetching: false, isError: false };
-  const [selectedConnection, setSelectedConnection] = useState('');
-  debugger;
-  // Only set initial connection when variant is explorer
+  
+  // Always call the hook to avoid conditional hook calls
+  const { 
+    connections: hookConnections, 
+    isLoading: hookIsLoading, 
+    isFetching: hookIsFetching, 
+    isError: hookIsError 
+  } = useAdminConnections();
+
+  // Conditionally use the hook data
+  const connections = isExplorer ? (hookConnections as Connection[] || []) : [];
+  const isLoading = isExplorer ? hookIsLoading : false;
+  const isFetching = isExplorer ? hookIsFetching : false;
+  const isError = isExplorer ? hookIsError : false;
+
+
+  // Set initial connection when connections are loaded
   useEffect(() => {
-    if (isExplorer && !selectedConnection && connections && connections.length > 0) {
+    if (isExplorer && 
+        !selectedConnection && 
+        connections && 
+        connections.length > 0 && 
+        !isLoading && 
+        !isFetching) {
       const connId = connections[0].id.toString();
       setSelectedConnection(connId);
-      // Notify parent component about initial connection ID
-      if (onConnectionChange) {
-        onConnectionChange(connId);
-      }
+      onConnectionChange?.(connId);
     }
-  }, [connections, selectedConnection, isExplorer, onConnectionChange]);
+  }, [connections, selectedConnection, isExplorer, onConnectionChange, isLoading, isFetching]);
 
-  // Handle connection change
   const handleConnectionChange = (connId: string) => {
     setSelectedConnection(connId);
-    // Notify parent component about connection change
-    if (onConnectionChange) {
-      onConnectionChange(connId);
-    }
+    onConnectionChange?.(connId);
   };
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      const ta = textareaRef.current;
-      ta.style.outline = "none";
-      ta.style.border = "none";
-      ta.style.boxShadow = "none";
-      ta.style.webkitAppearance = "none";
-      ta.style.appearance = "none";
-    }
-  }, []);
-
+  
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 250)}px`;
@@ -76,6 +81,40 @@ export function AIChatInput({
       autoResize(textareaRef.current);
     }
   }, [input]);
+
+  const renderConnectionOptions = () => {
+    if (!isExplorer) return null;
+
+    if (isLoading || isFetching) {
+      return (
+        <SelectItem value="loading" disabled>
+          Loading connections...
+        </SelectItem>
+      );
+    }
+
+    if (isError) {
+      return (
+        <SelectItem value="error" disabled>
+          Failed to load connections
+        </SelectItem>
+      );
+    }
+
+    if (!connections || connections.length === 0) {
+      return (
+        <SelectItem value="no-connections" disabled>
+          No connections available
+        </SelectItem>
+      );
+    }
+
+    return connections.map(conn => (
+      <SelectItem key={conn.id} value={conn.id.toString()} className="bg-white text-slate-900 py-2 hover:bg-gray-100">
+        {conn.connection_config_name}
+      </SelectItem>
+    ));
+  };
 
   return (
     <div
@@ -100,9 +139,14 @@ export function AIChatInput({
       >
         <Mic className="h-4 w-4" />
       </Button>
+
       {/* Connection dropdown - shown only for explorer variant */}
       {isExplorer && (
-        <Select value={selectedConnection} onValueChange={handleConnectionChange}>
+        <Select 
+          value={selectedConnection} 
+          onValueChange={handleConnectionChange}
+          disabled={isLoading || isFetching}
+        >
           <SelectTrigger className="h-8 w-32">
             <SelectValue
               placeholder={
@@ -110,33 +154,16 @@ export function AIChatInput({
                   ? 'Loading...'
                   : isError
                   ? 'Error'
-                  : 'Connection'
+                  : 'Select connection'
               }
             />
           </SelectTrigger>
-          <SelectContent className="z-50">
-            {isLoading || isFetching ? (
-              <SelectItem value="loading" disabled>
-                Loading...
-              </SelectItem>
-            ) : isError ? (
-              <SelectItem value="error" disabled>
-                Failed to load
-              </SelectItem>
-            ) : connections && connections.length > 0 ? (
-              connections.map(conn => (
-                <SelectItem key={conn.id} value={conn.id.toString()}>
-                  {conn.connection_config_name}
-                </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="no-connections" disabled>
-                No connections available
-              </SelectItem>
-            )}
+          <SelectContent className="z-[110] bg-white shadow-lg border border-gray-200">
+            {renderConnectionOptions()}
           </SelectContent>
         </Select>
       )}
+
       {/* Auto-resizing textarea */}
       <div className="flex-grow">
         <Textarea

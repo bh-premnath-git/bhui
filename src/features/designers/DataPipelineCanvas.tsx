@@ -200,7 +200,7 @@ console.log(selectedSchema)
             <div className={`relative h-full w-[98%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
                 {/* <ResolveSchema/> */}
                 <div className="p-1 ml-8" style={{
-                    height: isBottomDrawerOpen ? 'calc(100% - 300px)' : '100%',
+                    height: '100%',
                     width: isRightAsideOpen ? 'calc(100% - 500px)' : '100%',
                     transition: 'all 0.3s ease-in-out'
                 }}>

@@ -116,16 +116,16 @@ export const ComposableCanvas = ({
 
   // Memoize fitView function with improved implementation
   const fitView = useCallback((options: any = {}) => {
-    console.log('ComposableCanvas: fitView called with options', options);
+    //console.log('ComposableCanvas: fitView called with options', options);
 
     // Use requestAnimationFrame to ensure the DOM has updated
     window.requestAnimationFrame(() => {
       try {
         if (type === 'flow' && flowContext?.fitView) {
-          console.log('Using flowContext.fitView');
+          //console.log('Using flowContext.fitView');
           flowContext.fitView();
         } else if (reactFlowInstance) {
-          console.log('Using reactFlowInstance.fitView');
+          //console.log('Using reactFlowInstance.fitView');
 
           // Default options that work well
           const defaultOptions = {
@@ -291,7 +291,7 @@ export const ComposableCanvas = ({
   // Initialize ReactFlow instance with improved implementation
   const onInit = useCallback(
     (instance: ReactFlowInstance) => {
-      console.log('ReactFlow instance initialized');
+      //console.log('ReactFlow instance initialized');
 
       // Store the instance for both flow and pipeline types
       if (type === 'flow' && setReactFlowInstance) {
@@ -303,7 +303,7 @@ export const ComposableCanvas = ({
       try {
         // @ts-ignore - Add reactFlowInstance to window
         window.reactFlowInstance = instance;
-        console.log('ReactFlow instance exposed to window.reactFlowInstance');
+        //console.log('ReactFlow instance exposed to window.reactFlowInstance');
       } catch (error) {
         console.error('Error exposing ReactFlow instance to window:', error);
       }
@@ -314,7 +314,7 @@ export const ComposableCanvas = ({
         const timers = [
           setTimeout(() => {
             try {
-              console.log('First fitView attempt');
+              //console.log('First fitView attempt');
               // Use the instance directly for fitView to ensure it works
               instance.fitView({
                 duration: 800,
@@ -331,7 +331,7 @@ export const ComposableCanvas = ({
 
           setTimeout(() => {
             try {
-              console.log('Second fitView attempt');
+              //console.log('Second fitView attempt');
               instance.fitView({
                 duration: 800,
                 padding: 0.2,
@@ -347,7 +347,7 @@ export const ComposableCanvas = ({
 
           setTimeout(() => {
             try {
-              console.log('Final fitView attempt');
+              //console.log('Final fitView attempt');
               instance.fitView({
                 duration: 800,
                 padding: 0.2,
@@ -394,7 +394,7 @@ export const ComposableCanvas = ({
 
     if (element && fitView) {
       observer = new ResizeObserver(() => {
-        // console.log('ResizeObserver triggered: Calling debounced fitView');
+        // //console.log('ResizeObserver triggered: Calling debounced fitView');
         debouncedFitView();
       });
 
@@ -404,7 +404,7 @@ export const ComposableCanvas = ({
     // Cleanup function
     return () => {
       if (observer && element) {
-        // console.log('ResizeObserver cleanup: Unobserving element');
+        // //console.log('ResizeObserver cleanup: Unobserving element');
         observer.unobserve(element);
       }
       // Also clear any pending debounced call
@@ -487,7 +487,7 @@ export const ComposableCanvas = ({
 
     // Handler for center events from various sources
     const handleCenterEvent = (e: Event) => {
-      console.log('ComposableCanvas: Center event received');
+      //console.log('ComposableCanvas: Center event received');
 
       // Use requestAnimationFrame to ensure the DOM has updated
       window.requestAnimationFrame(() => {
@@ -501,7 +501,7 @@ export const ComposableCanvas = ({
               minZoom: 0.5,
               maxZoom: 1.5
             });
-            console.log('ComposableCanvas: fitView called successfully');
+            //console.log('ComposableCanvas: fitView called successfully');
 
             // Force a resize event
             window.dispatchEvent(new Event('resize'));
@@ -516,7 +516,7 @@ export const ComposableCanvas = ({
                   minZoom: 0.5,
                   maxZoom: 1.5
                 });
-                console.log('ComposableCanvas: Second fitView attempt');
+                //console.log('ComposableCanvas: Second fitView attempt');
               } catch (retryError) {
                 console.error('ComposableCanvas: Error in retry fitView:', retryError);
               }
@@ -539,11 +539,11 @@ export const ComposableCanvas = ({
 
                   // Apply a transform that centers the view
                   reactFlowViewport.setAttribute('transform', `translate(${centerX},${centerY}) scale(0.85)`);
-                  console.log('ComposableCanvas: Applied calculated transform');
+                  //console.log('ComposableCanvas: Applied calculated transform');
                 } else {
                   // Fallback to a simple transform
                   reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
-                  console.log('ComposableCanvas: Applied simple transform');
+                  //console.log('ComposableCanvas: Applied simple transform');
                 }
               }
 
@@ -551,7 +551,7 @@ export const ComposableCanvas = ({
               const fitViewButton = document.querySelector('.react-flow__controls-fitview');
               if (fitViewButton instanceof HTMLElement) {
                 fitViewButton.click();
-                console.log('ComposableCanvas: Clicked fitView button');
+                //console.log('ComposableCanvas: Clicked fitView button');
               }
             } catch (fallbackError) {
               console.error('ComposableCanvas: Fallback center failed:', fallbackError);
@@ -670,7 +670,7 @@ export const ComposableCanvas = ({
             }}
           // onViewportChange={(viewport) => {
           //   // Log viewport changes for debugging
-          //   console.log('Viewport changed:', viewport);
+          //   //console.log('Viewport changed:', viewport);
           // }}
           >
             {showBackground && <Background variant={backgroundVariant} gap={12} size={1} />}

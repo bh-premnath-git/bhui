@@ -168,7 +168,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             
             // Create base form data with common fields
             const initialFormData: FormData = {
-                name: source.title || 'Unnamed Target',
+                name: source.source?.name || '', // Use source name or empty, not the generated title
                 target: {
                     target_type: targetType,
                     target_name: source.source?.target_name || '',
@@ -209,7 +209,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             
             // Create base form data with common fields
             const safeInitialData: FormData = {
-                name: initialData.name || '',
+                name: '', // Always start with empty name for Target forms
                 target: {
                     target_type: targetType,
                     target_name: initialData.target?.target_name || '',
@@ -379,6 +379,30 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 }
             } else if (name === 'file_type' && newData.target?.target_type === 'File') {
                 newData.file_type = value;
+            } else if (name === 'name') {
+                // Handle the main name field - auto-fill target_name and file_name
+                console.log('Name field changed to:', value);
+                newData.name = value;
+                
+                if (!newData.target) newData.target = {};
+                
+                // Auto-fill target_name if it's empty
+                if (!newData.target.target_name || newData.target.target_name === '') {
+                    newData.target.target_name = value;
+                    console.log('Auto-filled target_name:', value);
+                }
+                
+                // Auto-fill file_name if target_type is File and file_name is empty
+                if (newData.target.target_type === 'File' && (!newData.target.file_name || newData.target.file_name === '')) {
+                    newData.target.file_name = value;
+                    console.log('Auto-filled file_name for File type:', value);
+                }
+                
+                // Auto-fill table_name if target_type is Relational and table_name is empty
+                if (newData.target.target_type === 'Relational' && (!newData.target.table_name || newData.target.table_name === '')) {
+                    newData.target.table_name = value;
+                    console.log('Auto-filled table_name for Relational type:', value);
+                }
             } else {
                 // Handle nested fields using the path parameter
                 if (path.length === 0) {

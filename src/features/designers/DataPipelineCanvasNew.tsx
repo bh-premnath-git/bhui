@@ -22,7 +22,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
 
   // Calculate sidebar width based on expanded state
-  const sidebarWidth = isExpanded ? 240 : 64; // Adjust these values based on your actual sidebar widths
+  const sidebarWidth = isExpanded ? 0 : 0; // Adjust these values based on your actual sidebar widths
 
   const {
     pipelineDtl,
@@ -216,7 +216,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
 
  
   const getMainContentStyle = () => {
-    const bottomHeight = isBottomDrawerOpen ? 300 : 0;
+    const bottomHeight = isBottomDrawerOpen ? 0 : 0;
 
     // Calculate the available width
     let availableWidth = `calc(100% - ${sidebarWidth}px`;
@@ -228,7 +228,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     availableWidth += ')';
 
     return {
-      height: isBottomDrawerOpen ? `calc(100% - ${bottomHeight}px)` : '100%',
+      height: '100%',
       width: availableWidth,
       marginLeft: `${sidebarWidth}px`,
       transition: 'all 0.3s ease-in-out'
@@ -243,44 +243,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         className={`flex-1 relative p-1 transition-all duration-300`}
         style={getMainContentStyle()}>
 
-
-        {/* Debug mode panel */}
-        {debuggedNodesList?.length > 0 && (
-          <div className={`fixed top-20 ${isRightAsideOpen ? 'right-[524px]' : 'right-4'} z-40 mb-4 p-3 bg-blue-50 rounded-xl shadow-sm w-[400px] border border-blue-100/50 backdrop-blur-sm max-h-[${isBottomDrawerOpen ? '30vh' : '50vh'}] overflow-auto transition-all duration-300`}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Debug Mode
-              </h3>
-              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                {debuggedNodesList.length} nodes
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 overflow-y-auto custom-scrollbar pr-1" style={{ maxHeight: `${Math.min(40 * Math.ceil(debuggedNodesList.length / 2), 300)}px` }}>
-              {debuggedNodesList.map(({ id, title }) => (
-                <div
-                  key={id}
-                  className="group flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg text-sm text-blue-700 border border-blue-100 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
-                >
-                  <span className="truncate max-w-[180px]" title={title}>{title}</span>
-                  <button
-                    onClick={() => handleDebugToggle(id, title)}
-                    className="opacity-70 hover:opacity-100 hover:text-red-500 transition-all duration-200 ml-1"
-                    title="Remove from debug"
-                    aria-label={`Remove ${title} from debug list`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Main Canvas */}
         <div
           className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
@@ -289,7 +251,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             display: 'flex',
             flexDirection: 'column',
             flex: '1 1 auto',
-            height: isBottomDrawerOpen ? 'calc(100% - 20px)' : '100%'
+            height: '100%'
           }}>
 
           <ComposableCanvas

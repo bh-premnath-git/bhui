@@ -187,9 +187,41 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             parameters: [],
         };
 
-    // Add a custom property for cluster_task_id if the node type is EmrAddStepsOperator or EmrTerminateJobFlowOperator
+    // Add custom properties including task_id and cluster_task_id
     const groupedProperties = useMemo(() => {
-        // Only add the cluster_task_id field for specific node types
+        let enhancedProperties = { ...baseGroupedProperties };
+        
+        // Always add task_id field
+        const taskIdProperty: any = {
+            key: "task_id",
+            description: "Unique identifier for this task",
+            ui_properties: {
+                property_name: "Task ID",
+                property_key: "task_id",
+                ui_type: "textfield",
+                order: 1,
+                mandatory: true,
+                group_key: "property"
+            }
+        };
+        
+        // Check if task_id property already exists
+        const taskIdExists = enhancedProperties.property.some(
+            prop => prop.key === "task_id"
+        );
+        
+        // Add task_id if it doesn't exist
+        if (!taskIdExists) {
+            enhancedProperties = {
+                ...enhancedProperties,
+                property: [
+                    taskIdProperty,
+                    ...enhancedProperties.property
+                ]
+            };
+        }
+        
+        // Add cluster_task_id field for specific node types
         if (selectedValue === 'EmrAddStepsOperator' || selectedValue === 'EmrTerminateJobFlowOperator') {
             const clusterTaskIdProperty: any = {
                 key: "cluster_task_id",
@@ -206,23 +238,23 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             };
             
             // Check if cluster_task_id property already exists
-            const clusterTaskIdExists = baseGroupedProperties.property.some(
+            const clusterTaskIdExists = enhancedProperties.property.some(
                 prop => prop.key === "cluster_task_id"
             );
             
             // Only add if it doesn't already exist
             if (!clusterTaskIdExists) {
-                return {
-                    ...baseGroupedProperties,
+                enhancedProperties = {
+                    ...enhancedProperties,
                     property: [
-                        ...baseGroupedProperties.property,
+                        ...enhancedProperties.property,
                         clusterTaskIdProperty
                     ]
                 };
             }
         }
         
-        return baseGroupedProperties;
+        return enhancedProperties;
     }, [baseGroupedProperties, selectedValue]);
 
     const hasParameters = useMemo(
@@ -230,35 +262,41 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         [groupedProperties, selectedValue]
     );
 
-    const currentFormData = useMemo(
-        () => nodeFormData.find((i) => i.nodeId === selectedNode.id)?.formData || {},
-        [nodeFormData, selectedNode.id]
-    );
-
-    const depends_on = useMemo(
-        () => prevNodeFn(selectedNode.id) ?? [],
-        [prevNodeFn, selectedNode.id]
-    );
-
     // Get task ID from flow JSON if available, otherwise generate a new one
     const taskID = useMemo(() => {
-        // First check if there's an existing task_id in the form data
-        if (currentFormData && currentFormData.task_id) {
-            console.log(`Using existing task_id from form data: ${currentFormData.task_id}`);
-            return currentFormData.task_id;
-        }
-        
-        // Then check if there's a task_id in the node data
+        // First check if there's a task_id in the node data
         if (selectedNode.data?.formData?.task_id) {
             console.log(`Using task_id from node data: ${selectedNode.data.formData.task_id}`);
             return selectedNode.data.formData.task_id;
+        }
+        
+        // Then check nodeFormData for existing task_id
+        const existingFormData = nodeFormData.find((i) => i.nodeId === selectedNode.id)?.formData;
+        if (existingFormData?.task_id) {
+            console.log(`Using existing task_id from form data: ${existingFormData.task_id}`);
+            return existingFormData.task_id;
         }
         
         // If no existing task_id is found, generate a new one
         const newTaskId = `${selectedNode.data.label}_${selectedValue}_${createShortUUID()}`;
         console.log(`Generated new task_id: ${newTaskId}`);
         return newTaskId;
-    }, [selectedNode.data, selectedValue, currentFormData]);
+    }, [selectedNode.data, selectedValue, nodeFormData, selectedNode.id]);
+
+    const currentFormData = useMemo(() => {
+        const existingFormData = nodeFormData.find((i) => i.nodeId === selectedNode.id)?.formData || {};
+        
+        // Ensure task_id is always present
+        return {
+            ...existingFormData,
+            task_id: existingFormData.task_id || taskID
+        };
+    }, [nodeFormData, selectedNode.id, taskID]);
+
+    const depends_on = useMemo(
+        () => prevNodeFn(selectedNode.id) ?? [],
+        [prevNodeFn, selectedNode.id]
+    );
 
     /* --------------------------- Input handler --------------------------- */
     const handleInputChange = useNodeFormInput({
@@ -270,7 +308,27 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         taskID,
     });
 
-    /* ---------------------- Parameters initialisation -------------------- */
+    /* ---------------------- Task ID and Parameters initialisation -------------------- */
+    // Initialize task_id when the form is first opened
+    useEffect(() => {
+        if (!currentFormData.task_id) {
+            const updatedData = {
+                ...currentFormData,
+                task_id: taskID,
+                type: selectedValue || currentFormData.type,
+            };
+
+            // Update both the node form data and the form states
+            updateNodeFormData(selectedNode.id, updatedData);
+
+            // Also update in the pipeline context form states
+            setFormStates(prev => ({
+                ...prev,
+                [selectedNode.id]: updatedData
+            }));
+        }
+    }, [selectedNode.id, taskID, currentFormData, selectedValue, updateNodeFormData, setFormStates]);
+
     useEffect(() => {
         console.log(nodes)
         // Check if we have existing parameters in the node form state
@@ -292,6 +350,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                     ...currentFormData,
                     parameters: defaultParameters,
                     type: selectedValue || currentFormData.type,
+                    task_id: currentFormData.task_id || taskID, // Ensure task_id is preserved
                 };
 
                 // Update both the node form data and the form states
@@ -311,6 +370,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                 ...currentFormData,
                 parameters: nodeFormState.parameters,
                 type: selectedValue || nodeFormState.type || currentFormData.type,
+                task_id: currentFormData.task_id || taskID, // Ensure task_id is preserved
             });
         }
     }, [
@@ -321,7 +381,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         updateNodeFormData,
         currentFormData,
         nodeFormState,
-        setFormStates
+        setFormStates,
+        taskID
     ]);
 
     useEffect(() => {
@@ -1022,6 +1083,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     return (
         <Card className="w-full max-w-3xl mx-auto shadow-lg overflow-visible">
             <CardContent className="p-6 space-y-6 overflow-visible">
+               
                 {/* Node type selector */}
                 <div className="grid grid-cols-2 gap-4 items-center">
                     <Label
@@ -1037,7 +1099,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                         >
                             <SelectValue placeholder="Select a type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent style={{ zIndex: 9999,backgroundColor: "white",color: "black" }}>
                             {Array.isArray(selectedNode.data.meta.properties)
                                 ? selectedNode.data.meta.properties.map((p: any) => (
                                     <SelectItem key={p.type} value={p.type}>

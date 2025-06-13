@@ -60,6 +60,13 @@ const ReportDetailsContent: React.FC = () => {
     widgetIds: widgetIds
   });
 
+  const handleWidgetRefresh = async (widgetId: string) => {
+    try {
+      } catch (error) {
+      console.error("Failed to refresh widget:", error);
+    }
+  };
+
   // Mirror loading state from data fetches into DashboardContext
   useEffect(() => {
     const currentOverallLoading = isDashboardsLoading || isWidgetsLoading;
@@ -85,16 +92,33 @@ const ReportDetailsContent: React.FC = () => {
     }
   }, [isDashboardsError, isWidgetsError, state.error, dispatch]);
 
-  // Populate dashboard context when widgets are fetched
+  // Populate dashboard context when widgets are fetched or updated from the hook
   useEffect(() => {
-    if (widgets?.length && !state.widgets.length) {
-      const processedWidgets = widgets.map(widget => {
-        widget.intermediate_executed_query_json = decompressValue(widget.plotly_data);
-        return widget;
-      });
-      dispatch({ type: "SET_WIDGETS", payload: processedWidgets });
+    try {
+      // Guard against premature updates if essential data is still loading.
+      // If dashboard metadata is loading, or if we expect widgets (widgetIds exist)
+      // AND these specific widgets are still loading AND their data isn't available yet, then wait.
+      if (isDashboardsLoading || (widgetIds.length > 0 && isWidgetsLoading && !widgets)) {
+        return;
+      }
+
+      if (widgets) { // `widgets` is the array from useDataOpsWidgets hook
+        const processedWidgets = widgets.map(w => ({
+          ...w, // Create new objects, avoid mutating hook's data
+          intermediate_executed_query_json: decompressValue(w.plotly_data),
+        }));
+        dispatch({ type: "SET_WIDGETS", payload: processedWidgets });
+      } else {
+        // If `widgets` is null/undefined, and not caught by the loading guard above,
+        // it implies no widgets (e.g., all deleted, none existed, or an error occurred fetching them).
+        // This also handles the case where widgetIds.length is 0 (no widgets expected).
+        dispatch({ type: "SET_WIDGETS", payload: [] });
+      }
+    } catch (error) {
+      console.error("[ReportDetails] Failed to process and set widgets:", error);
+      dispatch({ type: "SET_ERROR", payload: "Error processing widget data for the report." });
     }
-  }, [widgets, state.widgets.length, dispatch]);
+  }, [widgets, widgetIds, isDashboardsLoading, isWidgetsLoading, dispatch]);
 
   // Listen for widget removal events coming from the Generic Chat UI
   useEffect(() => {
@@ -135,7 +159,7 @@ const ReportDetailsContent: React.FC = () => {
   return (
     <div className="w-full p-4 bg-white">
       {widgetsForCurrentReport.length > 0 ? (
-        <XploreDash widgets={widgetsForCurrentReport} />
+        <XploreDash widgets={widgetsForCurrentReport} onWidgetRefresh={handleWidgetRefresh} />
       ) : (
         <NoWidgetsDisplay />
       )}

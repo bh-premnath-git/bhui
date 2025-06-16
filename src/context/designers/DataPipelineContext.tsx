@@ -23,6 +23,9 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
 import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
+import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
+import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
+import { ValidationIssue } from '@/components/headers/build-playground-header/components/PipelineControls';
 import {
     getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
 } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
@@ -114,6 +117,9 @@ interface bnPipelineContextProps {
     getTransformationName: (moduleName: string) => string;
     addNodeToHistory: () => void;
     handleCopy: () => void;
+    isPipelineValid: boolean;
+    pipelineValidationErrors: ValidationIssue[];
+    pipelineValidationWarnings: ValidationIssue[];
     handlePaste: () => void;
     handleCut: () => void;
     handleUndo: () => void;
@@ -128,6 +134,7 @@ interface bnPipelineContextProps {
     setIsCanvasLoading: React.Dispatch<React.SetStateAction<boolean>>;
     handleAlignHorizontal: () => void;
     handleAlignVertical: () => void;
+    handleAlignTopLeft: () => void;
     runDialogOpen: boolean;
     setRunDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
     selectedFormState: any;
@@ -213,6 +220,129 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [saveError, setSaveErrorState] = useState<string | null>(null);
     const [pipelineName, setPipeLineName] = useState<any>(null);
+    
+    // Pipeline validation states
+    const [isPipelineValid, setIsPipelineValid] = useState(true);
+    const [pipelineValidationErrors, setPipelineValidationErrors] = useState<ValidationIssue[]>([]);
+    const [pipelineValidationWarnings, setPipelineValidationWarnings] = useState<ValidationIssue[]>([]);
+
+    // Pipeline validation effect - runs when nodes, edges, or form states change
+    useEffect(() => {
+        const validatePipeline = () => {
+            let allErrors: ValidationIssue[] = [];
+            let allWarnings: ValidationIssue[] = [];
+
+            // Validate pipeline structure (connections)
+            if (nodes.length > 0) {
+                // Filter nodes to ensure they have the required 'type' property for UINode
+                const validNodes = nodes.filter(node => node.type && node.data);
+                const connectionValidation = validatePipelineConnections(validNodes as any, edges);
+                if (!connectionValidation.isValid) {
+                    // Convert connection validation errors to ValidationIssue objects
+                    const connectionErrors = connectionValidation.errors.map(error => {
+                        // Extract node name from error message
+                        const nodeMatch = error.match(/(?:node|Node)\s*["']([^"']+)["']|["']([^"']+)["']\s*(?:node|Node)/i);
+                        const nodeName = nodeMatch ? (nodeMatch[1] || nodeMatch[2]) : undefined;
+                        
+                        // Determine error type and suggestion
+                        let type = 'CONNECTION';
+                        let suggestion = undefined;
+                        
+                        if (error.toLowerCase().includes('no input')) {
+                            suggestion = "Connect an input source or transformation to this node";
+                        } else if (error.toLowerCase().includes('no output')) {
+                            suggestion = "Connect this node to a target or another transformation";
+                        } else if (error.toLowerCase().includes('reader')) {
+                            type = 'MISSING_READER';
+                            suggestion = "Add a Reader node to start your data pipeline";
+                        } else if (error.toLowerCase().includes('target')) {
+                            type = 'MISSING_TARGET';
+                            suggestion = "Add a Target node to complete your data pipeline";
+                        }
+
+                        return {
+                            message: error,
+                            nodeName,
+                            type,
+                            severity: 'error' as const,
+                            suggestion
+                        };
+                    });
+                    allErrors.push(...connectionErrors);
+                }
+            }
+
+            // Validate individual node forms
+            nodes.forEach(node => {
+                const nodeId = node.id;
+                const formData = formStates[nodeId];
+                
+                // Safety check for schemaData and schema
+                if (!schemaData || !schemaData.schema || !Array.isArray(schemaData.schema)) {
+                    return;
+                }
+                
+                const nodeSchema = schemaData.schema.find(s => 
+                    s.title === node.data?.module_name
+                );
+
+                if (nodeSchema && !node.id.startsWith('Reader_')) {
+                    try {
+                        const validation = validateFormData(
+                            formData,
+                            nodeSchema,
+                            node.id.startsWith('Source_'),
+                            node.data?.sourceData,
+                            Boolean(formData)
+                        );
+
+                        const nodeName = node.data?.title || node.data?.label;
+                        const nodeType = node.data?.module_name || 'UNKNOWN';
+
+                        if (!validation.isValid) {
+                            const formErrors = validation.warnings.map(warning => ({
+                                message: warning,
+                                nodeId: node.id,
+                                nodeName,
+                                type: 'FORM_VALIDATION',
+                                severity: 'error' as const,
+                                suggestion: "Check the node configuration and fill in required fields"
+                            }));
+                            allErrors.push(...formErrors);
+                        } else if (validation.status === 'warning') {
+                            const formWarnings = validation.warnings.map(warning => ({
+                                message: warning,
+                                nodeId: node.id,
+                                nodeName,
+                                type: 'FORM_WARNING',
+                                severity: 'warning' as const,
+                                suggestion: "Review the node configuration for optimal performance"
+                            }));
+                            allWarnings.push(...formWarnings);
+                        }
+                    } catch (error) {
+                        console.error('Validation error for node:', nodeId, error);
+                        allErrors.push({
+                            message: 'Validation failed due to an internal error',
+                            nodeId: node.id,
+                            nodeName: node.data?.title || node.data?.label,
+                            type: 'SYSTEM_ERROR',
+                            severity: 'error' as const,
+                            suggestion: "Try refreshing the page or contact support if the issue persists"
+                        });
+                    }
+                }
+            });
+
+            // Update validation state
+            const isValid = allErrors.length === 0;
+            setIsPipelineValid(isValid);
+            setPipelineValidationErrors(allErrors);
+            setPipelineValidationWarnings(allWarnings);
+        };
+
+        validatePipeline();
+    }, [nodes, edges, formStates]);
     const [pipelineJson, setPipelineJson] = useState<any>(null);
     const [headerUpdateTrigger, setHeaderUpdateTrigger] = useState(0);
     // Add this at the component level, outside any callbacks
@@ -1820,6 +1950,39 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUnsavedChanges();
     }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
 
+    const handleAlignTopLeft = useCallback(() => {
+        if (nodes.length === 0) return;
+
+        // Simple top-left alignment - place all nodes in a grid starting from top-left
+        const gridSpacing = 200; // Spacing between nodes
+        const startX = 50;
+        const startY = 50;
+        
+        const newNodes = nodes.map((node, index) => {
+            const row = Math.floor(index / 4); // 4 nodes per row
+            const col = index % 4;
+            
+            return {
+                ...node,
+                position: {
+                    x: startX + (col * gridSpacing),
+                    y: startY + (row * gridSpacing)
+                }
+            };
+        });
+
+        setSanitizedNodes(newNodes);
+
+        // Center the view to show the aligned nodes
+        setTimeout(() => {
+            if (reactFlowInstance && reactFlowInstance.fitView) {
+                reactFlowInstance.fitView({ padding: 0.1, duration: 800 });
+            }
+        }, 50);
+
+        setUnsavedChanges();
+    }, [nodes, setSanitizedNodes, dispatch, reactFlowInstance]);
+
     const value = useMemo(() => ({
         nodes,
         setNodes: setSanitizedNodes,
@@ -1899,6 +2062,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsCanvasLoading,
         handleAlignHorizontal,
         handleAlignVertical,
+        handleAlignTopLeft,
         runDialogOpen,
         setRunDialogOpen,
         selectedFormState,
@@ -1930,7 +2094,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSelectedNodeId,
         updatedSelectedNodeId,
         updateSetNode,
-        updateAllNodeDependencies
+        updateAllNodeDependencies,
+        isPipelineValid,
+        pipelineValidationErrors,
+        pipelineValidationWarnings
     }), [
         nodes,
         setSanitizedNodes,
@@ -2009,6 +2176,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isCanvasLoading,
         handleAlignHorizontal,
         handleAlignVertical,
+        handleAlignTopLeft,
         runDialogOpen,
         selectedFormState,
         showLeavePrompt,
@@ -2036,7 +2204,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         selectedNodeId,
         setSelectedNodeId,
         updatedSelectedNodeId,
-        updateSetNode
+        updateSetNode,
+        isPipelineValid,
+        pipelineValidationErrors,
+        pipelineValidationWarnings
     ]);
 
     return (

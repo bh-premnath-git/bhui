@@ -48,10 +48,6 @@
     --chart-3-color: #29699d;
     --chart-4-color: #083096;
     --chart-5-color: #3081bf;
-    --popover: 240 10% 3.9%;
-    /* same dark */
-    --popover-foreground: 0 0% 98%;
-    /* light text */
   }
 
   .dark {
@@ -104,10 +100,6 @@
     --chart-3-color: #29699d;
     --chart-4-color: #083096;
     --chart-5-color: #3081bf;
-    --popover: 240 10% 3.9%;
-    /* same dark */
-    --popover-foreground: 0 0% 98%;
-    /* light text */
   }
 
   /* Add animation compatibility for all browsers */

@@ -6,7 +6,7 @@ export const environmentFormSchema = z.object({
   environment: z.string().min(1, "Please select an environment."),
   platform: z.object({
     type: z.string().min(1, "Please select a platform."),
-    region: z.string().optional(),
+    region: z.string(),
     zone: z.string().optional(),
   }),
   credentials: z.object({

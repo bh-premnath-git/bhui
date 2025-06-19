@@ -13,6 +13,9 @@ import { CATALOG_REMOTE_API_URL, API_PREFIX_URL } from '@/config/platformenv';
 import { useAppSelector } from "@/hooks/useRedux";
 import { RootState } from "@/store";
 import { apiService } from "@/lib/api/api-service";
+import { validatePipelineConnections } from "@/lib/validatePipelineConnections";
+import { validateFormData } from "@/components/bh-reactflow-comps/builddata/validation";
+import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 
 export interface Log {
   timestamp: string
@@ -71,8 +74,16 @@ export const Terminal: React.FC<TerminalProps> = ({
   // State for selected task ID when in flow context
   const [selectedTaskId, setSelectedTaskId] = React.useState<string>("")
   
+  // State for validation logs
+  const [validationLogs, setValidationLogs] = React.useState<Log[]>([])
+  const [validationProblems, setValidationProblems] = React.useState<Log[]>([])
+  const [isValidating, setIsValidating] = React.useState(false)
+  
   // Get all nodes from the pipeline context to extract task IDs
-  const { nodes } = usePipelineContext()
+  const { nodes, edges, formStates } = usePipelineContext()
+  
+  // Add error boundary for validation function
+  const [validationError, setValidationError] = React.useState<string | null>(null)
   
   // Extract task IDs from flow nodes
   const taskIds = React.useMemo(() => {
@@ -93,6 +104,350 @@ export const Terminal: React.FC<TerminalProps> = ({
         };
       });
   }, [isFlow, nodes]);
+
+  // Validation function for both pipelines and flows
+  const runValidation = React.useCallback(() => {
+    // Clear any previous validation errors
+    setValidationError(null);
+    
+    if (!nodes || nodes.length === 0) {
+      const emptyLog: Log = {
+        timestamp: new Date().toISOString(),
+        message: 'No nodes to validate',
+        level: 'warning'
+      };
+      setValidationLogs([emptyLog]);
+      setValidationProblems([emptyLog]);
+      return;
+    }
+
+    setIsValidating(true);
+    const allLogs: Log[] = [];
+    const problemLogs: Log[] = [];
+
+    try {
+      // Start validation log
+      const startLog: Log = {
+        timestamp: new Date().toISOString(),
+        message: `Starting ${isFlow ? 'flow' : 'pipeline'} validation...`,
+        level: 'info'
+      };
+      allLogs.push(startLog);
+
+      // Validate pipeline/flow structure (connections)
+      const connectionValidation = validatePipelineConnections(nodes, edges);
+      
+      // Add connection validation logs
+      connectionValidation.logs.forEach(log => {
+        const validationLog: Log = {
+          timestamp: log.timestamp,
+          message: log.message,
+          level: log.level
+        };
+        allLogs.push(validationLog);
+        
+        // Add errors and warnings to problems
+        if (log.level === 'error' || log.level === 'warning') {
+          problemLogs.push(validationLog);
+        }
+      });
+
+      // Validate individual node forms (only for pipelines, flows handle this differently)
+      if (!isFlow) {
+        nodes.forEach(node => {
+          const nodeId = node.id;
+          const formData = formStates[nodeId];
+          
+          // Log node validation start
+          const nodeStartLog: Log = {
+            timestamp: new Date().toISOString(),
+            message: `Validating node: ${node.data?.title || node.data?.label || nodeId}`,
+            level: 'info'
+          };
+          allLogs.push(nodeStartLog);
+          
+          // Debug log for form data (can be removed in production)
+          if (formData && Object.keys(formData).length > 0) {
+            const debugLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${node.data?.title || node.data?.label}: Form data keys: [${Object.keys(formData).join(', ')}]`,
+              level: 'info'
+            };
+            allLogs.push(debugLog);
+          }
+          
+          // Check if form data exists and is filled
+          const hasFormData = formData && typeof formData === 'object' && Object.keys(formData).length > 0;
+          
+          // More comprehensive check for filled fields
+          const hasRequiredFields = hasFormData && Object.entries(formData).some(([key, value]) => {
+            // Skip empty strings, null, undefined, and empty arrays/objects
+            if (value === null || value === undefined || value === '') return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            if (typeof value === 'object' && Object.keys(value).length === 0) return false;
+            return true;
+          });
+
+          // Safety check for schemaData and schema
+          if (!schemaData || !schemaData.schema || !Array.isArray(schemaData.schema)) {
+            // Even without schema, we can still validate basic form completion
+            if (!hasFormData) {
+              const noFormDataLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: No form data found - please configure this node`,
+                level: 'error'
+              };
+              allLogs.push(noFormDataLog);
+              problemLogs.push(noFormDataLog);
+            } else if (!hasRequiredFields) {
+              const emptyFormLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Form data exists but appears to be empty - please fill required fields`,
+                level: 'error'
+              };
+              allLogs.push(emptyFormLog);
+              problemLogs.push(emptyFormLog);
+            } else {
+              const basicValidLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Form appears to be filled (Schema validation unavailable)`,
+                level: 'info'
+              };
+              allLogs.push(basicValidLog);
+            }
+            return; // Continue to next node
+          }
+          
+          const nodeSchema = schemaData.schema.find(s => 
+            s.title === node.data?.module_name
+          );
+
+          if (nodeSchema && !node.id.startsWith('Reader_')) {
+            try {
+              const validation = validateFormData(
+                formData,
+                nodeSchema,
+                node.id.startsWith('Source_'),
+                node.data?.sourceData,
+                Boolean(formData)
+              );
+
+              if (!validation.isValid) {
+                const errorLog: Log = {
+                  timestamp: new Date().toISOString(),
+                  message: `${node.data?.title || node.data?.label}: ${validation.warnings.join(', ')}`,
+                  level: 'error'
+                };
+                allLogs.push(errorLog);
+                problemLogs.push(errorLog);
+              } else if (validation.status === 'warning') {
+                const warningLog: Log = {
+                  timestamp: new Date().toISOString(),
+                  message: `${node.data?.title || node.data?.label}: ${validation.warnings.join(', ')}`,
+                  level: 'warning'
+                };
+                allLogs.push(warningLog);
+                problemLogs.push(warningLog);
+              } else {
+                const successLog: Log = {
+                  timestamp: new Date().toISOString(),
+                  message: `${node.data?.title || node.data?.label}: Validation passed`,
+                  level: 'info'
+                };
+                allLogs.push(successLog);
+              }
+            } catch (error) {
+              const errorLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Validation failed - ${error instanceof Error ? error.message : 'Unknown error'}`,
+                level: 'error'
+              };
+              allLogs.push(errorLog);
+              problemLogs.push(errorLog);
+            }
+          } else if (!nodeSchema && !node.id.startsWith('Reader_')) {
+            // Schema not found, but we can still validate basic form completion
+            if (!hasFormData) {
+              const noFormDataLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: No form data found - please configure this node (Module: ${node.data?.module_name})`,
+                level: 'error'
+              };
+              allLogs.push(noFormDataLog);
+              problemLogs.push(noFormDataLog);
+            } else if (!hasRequiredFields) {
+              const emptyFormLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Form data exists but appears to be empty - please fill required fields (Module: ${node.data?.module_name})`,
+                level: 'error'
+              };
+              allLogs.push(emptyFormLog);
+              problemLogs.push(emptyFormLog);
+            } else {
+              const noSchemaLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Form appears to be filled but schema validation unavailable (Module: ${node.data?.module_name})`,
+                level: 'warning'
+              };
+              allLogs.push(noSchemaLog);
+              problemLogs.push(noSchemaLog);
+            }
+          } else {
+            // Reader nodes or nodes with schema - check basic form completion
+            if (!hasFormData) {
+              const noFormDataLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: No form data found - please configure this node`,
+                level: 'error'
+              };
+              allLogs.push(noFormDataLog);
+              problemLogs.push(noFormDataLog);
+            } else if (!hasRequiredFields) {
+              const emptyFormLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Form data exists but appears to be empty - please fill required fields`,
+                level: 'error'
+              };
+              allLogs.push(emptyFormLog);
+              problemLogs.push(emptyFormLog);
+            } else {
+              const readerLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${node.data?.title || node.data?.label}: Form validation passed`,
+                level: 'info'
+              };
+              allLogs.push(readerLog);
+            }
+          }
+        });
+      } else {
+        // For flows, add comprehensive node validation
+        nodes.forEach(node => {
+          const nodeId = node.id;
+          const nodeTitle = node.data?.title || node.data?.label || nodeId;
+          
+          // Log flow node validation start
+          const nodeStartLog: Log = {
+            timestamp: new Date().toISOString(),
+            message: `Validating flow node: ${nodeTitle}`,
+            level: 'info'
+          };
+          allLogs.push(nodeStartLog);
+          
+          // Check for basic node requirements
+          if (!node.data) {
+            const noDataLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: No node data found`,
+              level: 'error'
+            };
+            allLogs.push(noDataLog);
+            problemLogs.push(noDataLog);
+            return;
+          }
+          
+          // Check for node type
+          if (!node.type) {
+            const noTypeLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Node type not specified`,
+              level: 'warning'
+            };
+            allLogs.push(noTypeLog);
+            problemLogs.push(noTypeLog);
+          }
+          
+          // Check for required properties based on node type
+          if (node.type === 'sensor' && !node.data.formData?.schedule) {
+            const noScheduleLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Sensor node missing schedule configuration`,
+              level: 'error'
+            };
+            allLogs.push(noScheduleLog);
+            problemLogs.push(noScheduleLog);
+          }
+          
+          // Check for task_id
+          if (!node.data.formData?.task_id) {
+            const noTaskIdLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Missing task ID configuration`,
+              level: 'warning'
+            };
+            allLogs.push(noTaskIdLog);
+            problemLogs.push(noTaskIdLog);
+          }
+          
+          // Check for form data completeness
+          const formData = formStates[nodeId];
+          if (!formData || Object.keys(formData).length === 0) {
+            const noFormDataLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Node configuration is incomplete`,
+              level: 'warning'
+            };
+            allLogs.push(noFormDataLog);
+            problemLogs.push(noFormDataLog);
+          } else {
+            const validFormLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Node configuration is valid`,
+              level: 'info'
+            };
+            allLogs.push(validFormLog);
+          }
+        });
+      }
+
+      // Summary log
+      const errorCount = problemLogs.filter(log => log.level === 'error').length;
+      const warningCount = problemLogs.filter(log => log.level === 'warning').length;
+      const summaryLog: Log = {
+        timestamp: new Date().toISOString(),
+        message: `Validation complete: ${errorCount} errors, ${warningCount} warnings found${errorCount === 0 && warningCount === 0 ? ' - All validations passed!' : ''}`,
+        level: errorCount > 0 ? 'error' : warningCount > 0 ? 'warning' : 'info'
+      };
+      allLogs.push(summaryLog);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setValidationError(errorMessage);
+      
+      const fatalErrorLog: Log = {
+        timestamp: new Date().toISOString(),
+        message: `Fatal validation error: ${errorMessage}`,
+        level: 'error'
+      };
+      allLogs.push(fatalErrorLog);
+      problemLogs.push(fatalErrorLog);
+      
+      console.error('Validation error:', error);
+    } finally {
+      setIsValidating(false);
+    }
+
+    setValidationLogs(allLogs);
+    setValidationProblems(problemLogs);
+  }, [nodes, edges, formStates, isFlow]);
+
+  // Run validation when nodes, edges, or formStates change, or when opening relevant tabs
+  React.useEffect(() => {
+    if (isOpen && (activeTab === 'proples' || (isFlow && activeTab === 'terminal'))) {
+      runValidation();
+    }
+  }, [nodes, edges, formStates, isOpen, activeTab, runValidation]);
+
+  // Run validation when component first opens and relevant tab is active
+  React.useEffect(() => {
+    if (isOpen && (activeTab === 'proples' || (isFlow && activeTab === 'terminal'))) {
+      // Delay validation slightly to allow component to fully mount
+      const timer = setTimeout(() => {
+        runValidation();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, activeTab, runValidation]);
 
   // Get pipeline name from context if not provided as prop
   const { pipelineName: contextPipelineName, pipelineDtl } = usePipelineContext();
@@ -662,9 +1017,14 @@ export const Terminal: React.FC<TerminalProps> = ({
               </TabsTrigger>
               <TabsTrigger
                 value="proples"
-                className="px-4 py-1 text-sm"
+                className="px-4 py-1 text-sm relative"
               >
                 Problems
+                {validationProblems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {validationProblems.length > 9 ? '9+' : validationProblems.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
             
@@ -770,22 +1130,32 @@ export const Terminal: React.FC<TerminalProps> = ({
                 </div>
                 <div className="flex items-center">
                   <div className="text-xs text-gray-400 mr-3">
-                    {localTerminalLogs?.length > 0 ? `${localTerminalLogs?.length} log entries` : ''}
+                    {(isFlow ? validationLogs : localTerminalLogs)?.length > 0 ? 
+                      `${(isFlow ? validationLogs : localTerminalLogs)?.length} log entries` : ''}
                   </div>
-                  {localTerminalLogs?.length > 0 && (
+                  {(isFlow ? validationLogs : localTerminalLogs)?.length > 0 && (
                     <button 
-                      onClick={() => setLocalTerminalLogs([])} 
+                      onClick={() => isFlow ? setValidationLogs([]) : setLocalTerminalLogs([])} 
                       className="text-xs text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded px-2 py-0.5 transition-colors"
                     >
                       Clear
                     </button>
                   )}
+                  {isFlow && (
+                    <button 
+                      onClick={runValidation} 
+                      disabled={isValidating}
+                      className="ml-2 text-xs text-blue-500 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 rounded px-2 py-0.5 transition-colors disabled:opacity-50"
+                    >
+                      {isValidating ? 'Validating...' : 'Re-validate'}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {localTerminalLogs?.length > 0 ? (
+              {(isFlow ? validationLogs : localTerminalLogs)?.length > 0 ? (
                 <>
-                  {localTerminalLogs?.map((log, index) => (
+                  {(isFlow ? validationLogs : localTerminalLogs)?.map((log, index) => (
                     <div
                       key={index}
                       className="mb-1 flex items-start"
@@ -808,37 +1178,100 @@ export const Terminal: React.FC<TerminalProps> = ({
                 </>
               ) : (
                 <div className="italic text-neutral-500">
-                  {isStreaming ? "Waiting for logs..." : "No terminal logs available..."}
+                  {isFlow ? (
+                    isValidating ? "Running validation..." : "No validation logs available..."
+                  ) : (
+                    isStreaming ? "Waiting for logs..." : "No terminal logs available..."
+                  )}
                 </div>
               )}
             </TabsContent>
             <TabsContent value="proples">
-              {localProplesLogs.length > 0 ? (
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium text-gray-700">
+                    {isFlow ? 'Flow Validation Issues' : 'Pipeline Validation Issues'}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-xs text-gray-400 mr-3">
+                    {validationProblems?.length > 0 ? `${validationProblems?.length} issue(s) found` : ''}
+                  </div>
+                  {validationProblems?.length > 0 && (
+                    <button 
+                      onClick={() => setValidationProblems([])} 
+                      className="text-xs text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded px-2 py-0.5 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button 
+                    onClick={runValidation} 
+                    disabled={isValidating}
+                    className="ml-2 text-xs text-blue-500 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 rounded px-2 py-0.5 transition-colors disabled:opacity-50"
+                  >
+                    {isValidating ? 'Validating...' : 'Re-validate'}
+                  </button>
+                </div>
+              </div>
+              {validationProblems.length > 0 ? (
                 <>
-                  {localProplesLogs.map((log, index) => (
+                  {validationProblems.map((log, index) => (
                     <div
                       key={index}
-                      className="mb-1 flex items-start"
+                      className="mb-2 p-2 rounded-md border-l-4 bg-gray-50"
                       style={{
-                        color:
-                          log.level === "error"
-                            ? "#dc3545"
-                            : log.level === "warning"
-                              ? "#ffc107"
-                              : "#28a745",
+                        borderLeftColor: log.level === "error" ? "#dc3545" : "#ffc107",
+                        backgroundColor: log.level === "error" ? "#fff5f5" : "#fffbf0"
                       }}
                     >
-                      <span className="text-neutral-500 mr-2">
-                        {log.timestamp}
-                      </span>
-                      <span>{log.message}</span>
+                      <div className="flex items-start">
+                        <span 
+                          className="inline-block w-2 h-2 rounded-full mr-2 mt-2 flex-shrink-0"
+                          style={{
+                            backgroundColor: log.level === "error" ? "#dc3545" : "#ffc107"
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center mb-1">
+                            <span 
+                              className="text-xs font-medium px-2 py-0.5 rounded-full"
+                              style={{
+                                backgroundColor: log.level === "error" ? "#dc3545" : "#ffc107",
+                                color: "white"
+                              }}
+                            >
+                              {log.level.toUpperCase()}
+                            </span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {new Date(log.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-700">{log.message}</div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                   <div ref={logsEndRef} />
                 </>
               ) : (
-                <div className="italic text-neutral-500">
-                  No problems available...
+                <div className="text-center py-8">
+                  <div className="italic text-neutral-500 mb-2">
+                    {isValidating ? "Running validation..." : "No validation issues found"}
+                  </div>
+                  {!isValidating && validationProblems.length === 0 && validationLogs.length > 0 && (
+                    <div className="text-sm text-green-600">
+                      ✓ All validations passed successfully!
+                    </div>
+                  )}
+                  {!isValidating && validationLogs.length === 0 && (
+                    <button 
+                      onClick={runValidation} 
+                      className="text-sm text-blue-500 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 rounded px-3 py-1 transition-colors"
+                    >
+                      Run Validation
+                    </button>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -897,3 +1330,4 @@ export const Terminal: React.FC<TerminalProps> = ({
     </div>
   )
 }
+  

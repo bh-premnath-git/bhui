@@ -68,7 +68,8 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   });
   const {
     handleNodeClick, addNodeToHistory,
-    isPipelineRunning, handleNext, handleStop, handleRun
+    isPipelineRunning, handleNext, handleStop, handleRun,
+    isPipelineValid, pipelineValidationErrors, pipelineValidationWarnings
   } = usePipelineContext();
   const { isRightAsideOpen } = useSidebar();
 
@@ -177,6 +178,9 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               handleStop={handleStop}
               handleNext={handleNext}
               isPipelineRunning={isPipelineRunning}
+              isValid={isPipelineValid}
+              validationErrors={pipelineValidationErrors}
+              validationWarnings={pipelineValidationWarnings}
             />
           )}
 

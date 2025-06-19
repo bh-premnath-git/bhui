@@ -1,9 +1,42 @@
 import loaderLogo from "/assets/logo/loaderLogo.svg";
+import { cn } from "@/lib/utils";
 
-export const LazyLoading = () => {
+interface LazyLoadingProps {
+  /**
+   * If true, the loader will take up the full screen.
+   * @default true
+   */
+  fullScreen?: boolean;
+  /**
+   * Custom class for the spinning loader container. Can be used to set size (e.g., "w-20 h-20").
+   */
+  className?: string;
+  /**
+   * Custom class for the top-level container div.
+   */
+  containerClassName?: string;
+  /**
+   * Whether to show the "Loading" text.
+   * @default true
+   */
+  showText?: boolean;
+}
+
+export const LazyLoading = ({
+  fullScreen = true,
+  className,
+  containerClassName,
+  showText = true,
+}: LazyLoadingProps) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-      <div className="relative w-40 h-40">
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center",
+        fullScreen && "min-h-screen bg-white",
+        containerClassName
+      )}
+    >
+      <div className={cn("relative w-40 h-40", className)}>
         {/* Outer rotating ring with dashed stroke */}
         <svg className="absolute inset-0 animate-spin" viewBox="0 0 100 100">
           <circle
@@ -30,12 +63,15 @@ export const LazyLoading = () => {
         </div>
       </div>
 
-      <div className="mt-8 text-gray-700 font-light tracking-wider text-xl">
-        Loading
-      </div>
+      {showText && (
+        <div className="mt-8 text-gray-700 font-light tracking-wider text-xl">
+          Loading
+        </div>
+      )}
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
           @keyframes spin {
             to { transform: rotate(360deg); }
           }
@@ -48,8 +84,9 @@ export const LazyLoading = () => {
           .animate-stroke-dash {
             animation: stroke-dash 2s linear infinite;
           }
-        `
-      }} />
+        `,
+        }}
+      />
     </div>
   );
 };

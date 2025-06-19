@@ -146,7 +146,6 @@ export function RightAside({
         onMouseDown={handleResizeStart}
         style={{ transform: 'translateX(-3px)' }}
       >
-        
         {/* Center grip indicator */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="w-[2px] h-8 bg-green-500/50 rounded" />
@@ -154,7 +153,6 @@ export function RightAside({
           <div className="w-[2px] h-8 bg-green-500/50 rounded" />
         </div>
       </div>
-
       {/* Collapse handle */}
       <Button
         variant="ghost"

@@ -52,6 +52,7 @@ export interface EnvironmentMutationData {
   bh_env_name: string;
   bh_env_provider: number;
   cloud_provider_cd: number;
+  location: string;
   cloud_region_cd: number;
   project_id: string;
   access_key: string;

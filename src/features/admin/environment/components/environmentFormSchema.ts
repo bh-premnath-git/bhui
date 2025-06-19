@@ -6,7 +6,7 @@ export const environmentFormSchema = z.object({
   environment: z.string().min(1, "Please select an environment."),
   platform: z.object({
     type: z.string().min(1, "Please select a platform."),
-    region: z.string().optional(),
+    region: z.string(),
     zone: z.string().optional(),
   }),
   credentials: z.object({
@@ -52,11 +52,13 @@ export const regions = [
 ] as const
 
 export const transforFormToAPiData = (formData: EnvironmentFormValues ): FormData => {
+  const regionLabel = regions.find(r => r.value === formData.platform.region)?.label ?? ''
   const apiData: EnvironmentMutationData = {
     bh_env_name: formData.environmentName,
     bh_env_provider: Number(formData.environment),
     cloud_provider_cd: Number(formData.platform.type),
     cloud_region_cd: Number(formData.platform.region),
+    location: regionLabel,
     access_key: formData.credentials.accessKey,
     secret_access_key: formData.credentials.secretKey,
     project_id: formData.credentials.publicId,

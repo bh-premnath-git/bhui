@@ -6,8 +6,8 @@ import { useEnvironments } from "./hooks/useEnvironments";
 import { ROUTES } from '@/config/routes';
 import { EnvironmentForm } from "./components/EnvironmentForm";
 import type { EnvironmentMutationData, EnvironmentTags } from "@/types/admin/environment";
-import type { EnvironmentFormValues } from "./components/environmentFormSchema";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { type EnvironmentFormValues, environments, regions } from "./components/environmentFormSchema";
+import { LazyLoading } from "@/components/shared/LazyLoading";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { EnvironmentPageLayout } from "./components/EnvironmentPageLayout";
 import { encrypt_string } from "@/lib/encryption";
@@ -19,9 +19,11 @@ const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues
     value: value as string
   }));
 
+  const environmentValue = environments.find(env => env.label === environment.bh_env_provider_name)?.value || ''
+
   return {
     environmentName: environment.bh_env_name || '',
-    environment: environment.bh_env_provider_name || '',
+    environment: environmentValue,
     platform: {
       type: environment.cloud_provider_name || '',
       region: environment.cloud_region_cd?.toString() || '',
@@ -43,6 +45,7 @@ const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues
 };
 
 const transformFormToApiData = (data: EnvironmentFormValues, existingEnvironment: any): EnvironmentMutationData => {
+  const regionValue = regions.find(region => region.value === data.platform.region)?.label || ''
   // Transform tags from form format to API format
   const tags: EnvironmentTags = {};
   data.tags.forEach(tag => {
@@ -57,7 +60,7 @@ const transformFormToApiData = (data: EnvironmentFormValues, existingEnvironment
     bh_env_provider_name: data.environment,
     cloud_provider_name: data.platform.type,
     cloud_region_cd: parseInt(data.platform.region) || existingEnvironment.cloud_region_cd || 0,
-    location: data.platform.zone,
+    location: regionValue,
     access_key: data.credentials.accessKey,
     secret_access_key: data.credentials.secretKey,
     pvt_key: data.credentials.pvtKey,
@@ -199,7 +202,7 @@ export function EditEnvironment() {
   if (isEnvironmentLoading) {
     return (
       <div className="p-6">
-        <LoadingState className="w-40 h-40" />
+        <LazyLoading fullScreen={false} className="w-40 h-40" />
       </div>
     );
   }

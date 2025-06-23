@@ -518,97 +518,38 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
     onHoverChange,
     isLoading,
     debuggedNodesList
-}) => (
-    <foreignObject
-        width={140}
-        height={40}
-        x={edgeCenter.x - 70}
-        y={edgeCenter.y - 20}
-        className="edge-buttons"
-        style={{ zIndex: 1000, pointerEvents: 'all' }}
-        onMouseEnter={() => onHoverChange(true)}
-        onMouseLeave={() => onHoverChange(false)}
-        onClick={e => e.stopPropagation()}
-    >
-        <div className="flex items-center justify-between w-full h-full" onClick={e => e.stopPropagation()}>
-            <MetricsButton rowCount={rowCount} onClick={onMetricsClick} isLoading={isLoading} debuggedNodesList={debuggedNodesList} />
-            <RemoveButton isHovered={isHovered} onClick={onRemove} />
-        </div>
-    </foreignObject>
-);
-
-interface MetricsButtonProps {
-    rowCount?: number;
-    onClick: (e: React.MouseEvent) => void;
-    isLoading?: boolean;
-    debuggedNodesList:any
-}
-
-const MetricsButton: React.FC<MetricsButtonProps & { isLoading?: boolean }> = ({ 
-    rowCount, 
-    onClick, 
-    isLoading,
-    debuggedNodesList
 }) => {
-    const handleMetricsClick = (e: React.MouseEvent) => {
-        // Prevent event propagation
-        e.stopPropagation();
-        e.preventDefault();
-        
-        // Only trigger onClick if rowCount exists and debug list is not empty
-        if (rowCount && debuggedNodesList?.length > 0) {
-            onClick(e);
-        }
-    };
-
-    // Determine if the button is clickable
-    const isClickable = rowCount && debuggedNodesList?.length > 0;
-
+    // Check if MetricsButton should be shown (when it has content)
+    const showMetricsButton = rowCount && debuggedNodesList?.length > 0;
+    
     return (
-        <div className="flex items-center" onClick={e => e.stopPropagation()}>
-            {rowCount && (
-                <div className={`
-                    flex flex-col items-center ml-8
-                    ${isClickable ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-60'}
-                    transition-opacity duration-200
-                    bg-transparent p-0 rounded-md 
-                `}>
-                    <button
-                        className={`
-                            w-6 h-6 rounded-full flex items-center justify-center
-                            ${isClickable ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-gray-100'}
-                            transition-colors duration-200
-                        `}
-                        onClick={handleMetricsClick}
-                        disabled={isLoading || !isClickable}
-                        title={isClickable ? "View Data in Bottom Drawer" : "Debug mode not active"}
-                    >
-                        {isLoading ? (
-                            <Loader size={14} className="animate-spin text-emerald-600" />
-                        ) : (
-                            <HiChartBar className={`w-4 h-4 ${isClickable ? 'text-emerald-600' : 'text-gray-400'}`} />
-                        )}
-                    </button>
-                    <span 
-                        className={`
-                            font-medium min-w-[30px] text-center mt-1 text-[10px]
-                            ${isClickable ? 'text-emerald-700 font-bold' : 'text-gray-500'}
-                        `}
-                    >
-                        {rowCount} rows
-                    </span>
-                </div>
-            )}
-        </div>
+        <foreignObject
+            width={140}
+            height={40}
+            x={edgeCenter.x - 30}
+            y={edgeCenter.y - 20}
+            className="edge-buttons"
+            style={{ zIndex: 1000, pointerEvents: 'all' }}
+            onMouseEnter={() => onHoverChange(true)}
+            onMouseLeave={() => onHoverChange(false)}
+            onClick={e => e.stopPropagation()}
+        >
+            <div className="flex items-center justify-center w-full h-full" onClick={e => e.stopPropagation()}>
+               
+                <RemoveButton isHovered={isHovered} onClick={onRemove} showMetricsButton={showMetricsButton} />
+            </div>
+        </foreignObject>
     );
 };
+
 
 interface RemoveButtonProps {
     isHovered: boolean;
     onClick: (e: React.MouseEvent) => void;
+    showMetricsButton?: boolean;
 }
 
-const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
+const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick, showMetricsButton = false }) => (
     <button
         className={`flex items-center justify-center w-6 h-6
                  bg-white rounded-full 
@@ -619,7 +560,8 @@ const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
         onClick={onClick}
         style={{
             pointerEvents: isHovered ? 'all' : 'none',
-            transform: 'translateX(-40px)'
+            // Adjust positioning based on whether MetricsButton is shown
+            transform: showMetricsButton ? 'translateX(-40px)' : 'translateX(0px)'
         }}
         title="Cut Connection"
     >

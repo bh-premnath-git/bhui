@@ -53,6 +53,8 @@ export interface BuildPipelineState {
   lastSaved: string | null;
   isFlow: boolean;
   isRightPanelOpen: boolean;
+  selectedEngineType: 'pyspark' | 'flink';
+  selectedMode: 'engine' | 'debug' | 'interactive';
 }
 
 const initialState: BuildPipelineState = {
@@ -81,7 +83,9 @@ const initialState: BuildPipelineState = {
   hasUnsavedChanges: false,
   lastSaved: null,
   isFlow:false,
-  isRightPanelOpen:false
+  isRightPanelOpen:false,
+  selectedEngineType: 'pyspark',
+  selectedMode: 'engine'
 };
 
 interface ApiResponse {
@@ -562,8 +566,13 @@ const buildPipeLineSlice = createSlice({
     state.hasUnsavedChanges = true;
     state.isSaving = false;
     state.lastSaved = null;
-
-}
+  },
+  setSelectedEngineType: (state, action: PayloadAction<'pyspark' | 'flink'>) => {
+    state.selectedEngineType = action.payload;
+  },
+  setSelectedMode: (state, action: PayloadAction<'engine' | 'debug' | 'interactive'>) => {
+    state.selectedMode = action.payload;
+  }
   },
   extraReducers: (builder) => {
     builder
@@ -884,5 +893,7 @@ export const {
   setIsRun,
   setSavedSlice,
   setUnsavedChangesSlice,
-  setIsRightPanelOpen
+  setIsRightPanelOpen,
+  setSelectedEngineType,
+  setSelectedMode
 } = buildPipeLineSlice.actions;

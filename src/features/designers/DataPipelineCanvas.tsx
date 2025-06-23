@@ -64,11 +64,12 @@ console.log(selectedSchema)
                 handleRunClick={handleRunClick}
                 onSourceUpdate={handleSourceUpdate}
                 handleSearchResultClick={handleSearchResultClick}
+                transformationCounts={transformationCounts}
 
             />
         )
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
-        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet, handleSourceUpdate, pipelineDtl]);
+        setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet, handleSourceUpdate, pipelineDtl, transformationCounts]);
     // console.log(transformationCounts,"transformationCounts")
     useEffect(() => {
         fetchPipelineDetails();

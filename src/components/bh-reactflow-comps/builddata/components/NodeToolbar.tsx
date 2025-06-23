@@ -1,50 +1,93 @@
+import React from "react";
 import { useSelector } from "react-redux";
+import { useAppSelector } from "@/hooks/useRedux";
+import { RootState } from "@/store";
 
 interface NodeToolbarProps {
     show: boolean;
     onEdit: (e: React.MouseEvent) => void;
     onDelete: (e: React.MouseEvent) => void;
-    onInfo: (e: React.MouseEvent) => void;
-    onClone: (e: React.MouseEvent) => void;
     onDebug: (e: React.MouseEvent) => void;
+    onRefresh?: (e: React.MouseEvent) => void;
+    onAiChat: (e: React.MouseEvent) => void;
     isDebugged: boolean;
 }
 
-export const NodeToolbar = ({ show, onEdit, onDelete, onInfo, onClone, onDebug, isDebugged }: NodeToolbarProps) => {
-      const {isFlow}=useSelector((state:any)=>state.buildPipeline)
+export const NodeToolbar = ({ show, onEdit, onDelete, onDebug, onRefresh, onAiChat, isDebugged }: NodeToolbarProps) => {
+      const { isFlow, selectedMode } = useAppSelector((state: RootState) => state.buildPipeline);
     
     if (!show) return null;
 
+    const renderToolbarButtons = () => {
+        const commonButtons = (
+            <>
+                <ToolbarButton title="Edit" onClick={onEdit}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </ToolbarButton>
+                
+                <ToolbarButton title="Delete" onClick={onDelete}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </ToolbarButton>
+                
+                <ToolbarButton title="AI Chat" onClick={onAiChat}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886A8.237 8.237 0 0116.5 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0016.5 3a9.707 9.707 0 00-5.25 1.533zm4.5 9.217a6.22 6.22 0 00-2.25-.42 6.22 6.22 0 00-2.25.42V6.75a7.64 7.64 0 012.25-.75 7.64 7.64 0 012.25.75v7z" />
+                </ToolbarButton>
+            </>
+        );
+
+        if (isFlow) {
+            return commonButtons;
+        }
+
+        // Pipeline mode - show different buttons based on selectedMode
+        switch (selectedMode) {
+            case 'engine':
+                return commonButtons;
+                
+            case 'debug':
+                return (
+                    <>
+                        {commonButtons}
+                        <ToolbarButton 
+                            title="Debug" 
+                            onClick={onDebug}
+                            className={isDebugged ? 'bg-red-100' : ''}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                            />
+                        </ToolbarButton>
+                    </>
+                );
+                
+            case 'interactive':
+                return (
+                    <>
+                        {commonButtons}
+                        {onRefresh && (
+                            <ToolbarButton title="Refresh" onClick={onRefresh}>
+                                <path 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round" 
+                                    strokeWidth={2} 
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                                />
+                            </ToolbarButton>
+                        )}
+                    </>
+                );
+                
+            default:
+                return commonButtons;
+        }
+    };
+
     return (
         <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-lg rounded-md px-1 py-1 z-20 flex gap-1">
-            <ToolbarButton title="Edit" onClick={onEdit}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </ToolbarButton>
-            
-            <ToolbarButton title="Delete" onClick={onDelete}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </ToolbarButton>
-            
-            <ToolbarButton title="Info" onClick={onInfo}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </ToolbarButton>
-            
-            <ToolbarButton title="Clone" onClick={onClone}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </ToolbarButton>
-            
-           {!isFlow&&( <ToolbarButton 
-                title="Debug" 
-                onClick={onDebug}
-                className={isDebugged ? 'bg-blue-100' : ''}
-            >
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-            </ToolbarButton>)}
+            {renderToolbarButtons()}
         </div>
     );
 };

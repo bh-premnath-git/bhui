@@ -110,11 +110,12 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             const source = node.data.source || {};
             const connectionConfig = source?.connection_config?.custom_metadata;
             const source_type = source.type || source.source_type;
+            const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
             console.log(source_type, "firstName")
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
-                source_type: connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3" ? "File" : "Relational",
-                table_name: source?.table_name || source.data_src_name,
+                source_type: isFileSource ? "File" : "Relational",
+                ...(isFileSource ? {} : { table_name: source?.table_name || source.data_src_name }),
                 file_name: source.file_name ? `${source.file_name}` : undefined,
                 data_src_id: source.data_src_id,
                 connection: connectionConfig
@@ -126,6 +127,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
             const connectionConfig = node.data.source?.connection_config?.custom_metadata;
+            const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
             console.log(connectionConfig, "connectionConfig")
             return {
                 name: node.data.title,
@@ -134,7 +136,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 source: {
                     name: node.data.source.name || node.data.title,
                     source_type: capitalizeFirstLetter(node.data.source.type || node.data.source.source_type) || "Relational",
-                    table_name: node.data?.source?.table_name || node.data.source.data_src_name,
+                    ...(isFileSource ? {} : { table_name: node.data?.source?.table_name || node.data.source.data_src_name }),
                     file_name: `${node.data.source.file_name}`,
                     connection: connectionConfig
                 },
@@ -172,23 +174,54 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             switch (node.data.label) {
                 case 'Aggregator':
                     // Transform the group_by array to match the expected format
-                    const formattedGroupBy = Array.isArray(node.data.transformationData?.group_by)
-                        ? node.data.transformationData.group_by.map(group => (group.group_by || ''))
+                    const groupByData = node.data.transformationData?.group_by || [];
+                    const formattedGroupBy = Array.isArray(groupByData)
+                        ? groupByData.map(group => {
+                            // Handle both object format {group_by: "column"} and string format "column"
+                            if (typeof group === 'object' && group.group_by) {
+                              return group.group_by;
+                            } else if (typeof group === 'string') {
+                              return group;
+                            }
+                            return '';
+                          }).filter(item => item.trim())
                         : [];
 
                     // Transform aggregations to match the expected format
-                    const formattedAggregations = node.data.transformationData?.aggregate?.map(agg => ({
-                        target_column: agg.target_column || '',
-                        expression: agg.expression || '',
-                        alias: agg.alias || ''
-                    })) || [];
+                    // Note: Form uses 'aggregations' (plural) but API expects 'aggregate' (singular)
+                    // Also check for 'aggregate' as fallback for backward compatibility
+                    const aggregationsData = node.data.transformationData?.aggregations || 
+                                           node.data.transformationData?.aggregate || 
+                                           [];
+                    
+                    const formattedAggregations = Array.isArray(aggregationsData) 
+                        ? aggregationsData.map(agg => ({
+                            target_column: agg.target_column || '',
+                            expression: agg.expression || '',
+                            alias: agg.alias || ''
+                          }))
+                        : [];
+
+                    console.log('Aggregator conversion debug:', {
+                        nodeId: node.id,
+                        nodeTitle: node.data.title,
+                        transformationData: node.data.transformationData,
+                        groupByData,
+                        formattedGroupBy,
+                        aggregations: node.data.transformationData?.aggregations,
+                        aggregate: node.data.transformationData?.aggregate,
+                        aggregationsData,
+                        formattedAggregations,
+                        pivot_by: node.data.transformationData?.pivot_by,
+                        pivot: node.data.transformationData?.pivot
+                    });
 
                     return {
                         ...baseConfig,
                         name: node.data.title,
                         group_by: formattedGroupBy,
                         aggregate: formattedAggregations,
-                        pivot: node.data.transformationData?.pivot || []
+                        pivot: node.data.transformationData?.pivot_by || node.data.transformationData?.pivot || []
                     };
                 case 'Filter':
                     console.log('Filter node data:', node.data);
@@ -423,8 +456,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 case 'CustomPySpark':
                     return {
                         ...baseConfig,
-                        user_code: node.data.transformationData?.user_code || '',
-                        dependent_on: node.data.transformationData?.dependent_on || []
+                        user_code: node.data.transformationData?.user_code || ''
                     };
                 default:
                     console.warn(`Unknown transformation type: ${node.data.label}. Using default handling.`);
@@ -510,6 +542,61 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
 function capitalizeFirstLetter(str: string): string {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 }
+
+/**
+ * Converts UI to pipeline JSON up to a specific target node (for refresh functionality)
+ * @param nodes - All nodes in the pipeline
+ * @param edges - All edges in the pipeline  
+ * @param pipelineDtl - Pipeline details
+ * @param targetNodeId - The node ID to convert up to (inclusive)
+ * @param pipelineName - Optional pipeline name
+ * @returns Partial pipeline JSON up to the target node
+ */
+export const convertUIToPipelineJsonUpToNode = async (
+    nodes: Node[], 
+    edges: Edge[], 
+    pipelineDtl: any, 
+    targetNodeId: string,
+    pipelineName?: string
+) => {
+    console.log(`🔄 Converting UI to Pipeline JSON up to node: ${targetNodeId}`);
+    
+    // Find all nodes that lead to the target node (including the target node itself)
+    const getNodesUpToTarget = (targetId: string): Set<string> => {
+        const relevantNodes = new Set<string>();
+        const visited = new Set<string>();
+        
+        const traverse = (nodeId: string) => {
+            if (visited.has(nodeId)) return;
+            visited.add(nodeId);
+            relevantNodes.add(nodeId);
+            
+            // Find all nodes that feed into this node
+            const incomingEdges = edges.filter(edge => edge.target === nodeId);
+            incomingEdges.forEach(edge => {
+                traverse(edge.source);
+            });
+        };
+        
+        traverse(targetId);
+        return relevantNodes;
+    };
+    
+    const relevantNodeIds = getNodesUpToTarget(targetNodeId);
+    console.log(`📋 Nodes included in partial pipeline:`, Array.from(relevantNodeIds));
+    
+    // Filter nodes and edges to only include relevant ones
+    const filteredNodes = nodes.filter(node => relevantNodeIds.has(node.id));
+    const filteredEdges = edges.filter(edge => 
+        relevantNodeIds.has(edge.source) && relevantNodeIds.has(edge.target)
+    );
+    
+    // Convert the filtered nodes to pipeline JSON
+    const partialPipelineJson = await convertUIToPipelineJson(filteredNodes, filteredEdges, pipelineDtl, false);
+    
+    console.log(`✅ Partial pipeline JSON created for node ${targetNodeId}:`, partialPipelineJson);
+    return partialPipelineJson;
+};
 
 export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], edges: Edge[], pipelineDtl: any,pipelineName?:string, validateOnly: boolean = false) => {
     let pipelineJson: any = await convertUIToPipelineJson(nodes, edges, pipelineDtl, validateOnly);

@@ -347,9 +347,9 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
         const position = calculateHandlePosition(index, totalOutputs);
         const handleId = `output-${index}`;
         
-        // Check if this output handle has any connections
+        // Check if this output handle has any connections (check both the visual handle and area handle)
         const isConnected = Array.from(edges).some(edge => 
-            edge.source === nodeId && edge.sourceHandle === handleId
+            edge.source === nodeId && (edge.sourceHandle === handleId || edge.sourceHandle === `${handleId}-area`)
         );
         
         // Create port label (out1, out2, etc.)
@@ -363,8 +363,8 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     style={{
                         top: position,
                         right: '0px',
-                        width: isConnectionDragging ? '40px' : '36px', // Increased width for larger clickable area
-                        height: isConnectionDragging ? '40px' : '36px', // Increased height for larger clickable area
+                        width: isConnectionDragging ? '44px' : '40px', // Slightly larger to match the connection area
+                        height: isConnectionDragging ? '44px' : '40px', // Slightly larger to match the connection area
                         transform: 'translateX(50%) translateY(-50%)',
                         background: isConnectionDragging 
                             ? 'radial-gradient(circle, rgba(128,128,128,0.5) 0%, rgba(128,128,128,0) 70%)' 
@@ -405,6 +405,30 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     {portLabel}
                 </div>
                 
+                {/* Invisible larger clickable area for easier connection */}
+                <Handle
+                    type="source"
+                    position={Position.Right} 
+                    id={`${handleId}-area`}
+                    style={{
+                        top: position,
+                        opacity: 0, // Completely invisible
+                        width: isConnectionDragging ? '24px' : '20px', // Larger invisible area
+                        height: isConnectionDragging ? '24px' : '20px', // Larger invisible area
+                        transform: 'translateX(50%) translateY(-50%)',
+                        cursor: 'crosshair',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: '50%', // Circle for larger hit area
+                        zIndex: -14, // Slightly above the visual handle
+                        right: 0,
+                        pointerEvents: 'all'
+                    }}
+                    className="handle-output-area"
+                    isConnectable={true}
+                />
+                
+                {/* Visual handle - smaller but with same appearance */}
                 <Handle
                     type="source"
                     position={Position.Right} 
@@ -412,25 +436,25 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     style={{
                         top: position,
                         opacity: 1,
-                        width: isConnectionDragging ? '14px' : '12px', // Reduced size
-                        height: isConnectionDragging ? '14px' : '12px', // Reduced size
+                        width: isConnectionDragging ? '14px' : '12px',
+                        height: isConnectionDragging ? '14px' : '12px',
                         transform: 'translateX(50%) translateY(-50%)',
-                        cursor: 'crosshair', // Changed to crosshair cursor to indicate connection ability
-                        background: isConnected ? '#4CAF50' : '#ef4444', // Green when connected, red when not
+                        cursor: 'crosshair',
+                        background: isConnected ? '#4CAF50' : '#ef4444',
                         borderRadius: '0',
                         clipPath: 'polygon(0 0, 0 100%, 100% 50%)',
                         transition: 'all 0.3s ease',
-                        zIndex: -15, // Keeping negative z-index as per UI requirements
+                        zIndex: -15,
                         boxShadow: isConnected 
                             ? '0 0 4px rgba(76, 175, 80, 0.5)' 
                             : isConnectionDragging
                                 ? '0 0 5px rgba(239, 68, 68, 0.6)'
                                 : '0 0 4px rgba(239, 68, 68, 0.5)',
                         right: 0,
-                        pointerEvents: 'all' // Explicitly set pointer-events to ensure it's clickable
+                        pointerEvents: 'none' // Disable pointer events for visual element since the area handle handles it
                     }}
                     className={`handle-output ${isConnected ? 'connected-output-handle' : ''}`}
-                    isConnectable={true}
+                    isConnectable={false}
                 />
             </div>
         );
@@ -499,6 +523,22 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     pointer-events: all !important;
                     cursor: crosshair !important;
                     z-index: -10 !important;
+                }
+                
+                /* Enhanced clickable area for output handles */
+                .handle-output-area {
+                    pointer-events: all !important;
+                    cursor: crosshair !important;
+                    z-index: -14 !important;
+                    opacity: 0 !important;
+                    border: none !important;
+                    background: transparent !important;
+                    transition: all 0.2s ease !important;
+                }
+                
+                /* Hover effect for output handles - slightly increase visual indicator */
+                .handle-output-area:hover + .handle-output {
+                    transform: translateX(50%) translateY(-50%) scale(1.1) !important;
                 }
                 
                 /* Specifically target target handles to ensure they're clickable */

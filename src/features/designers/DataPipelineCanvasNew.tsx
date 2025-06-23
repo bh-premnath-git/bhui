@@ -187,6 +187,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         handleRunClick={handleRunClick}
         onSourceUpdate={handleSourceUpdate}
         handleSearchResultClick={handleSearchResultClick}
+        transformationCounts={transformationCounts}
       />
     )
   }), [
@@ -200,7 +201,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     handleDebugToggle,
     debuggedNodesSet,
     handleSourceUpdate,
-    pipelineDtl
+    pipelineDtl,
+    transformationCounts
   ]);
 
   const edgeTypes = useMemo(() => ({

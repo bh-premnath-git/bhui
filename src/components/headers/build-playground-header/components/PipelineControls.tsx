@@ -2,8 +2,11 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { HiOutlinePlay } from 'react-icons/hi';
-import { MdOutlineStop, MdOutlineSkipNext, MdError, MdWarning, MdCheckCircle } from 'react-icons/md';
+import { MdOutlineStop, MdOutlineSkipNext, MdError, MdWarning, MdCheckCircle, MdBugReport } from 'react-icons/md';
+import { Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppSelector } from '@/hooks/useRedux';
+import { RootState } from '@/store';
 
 export interface ValidationIssue {
     message: string;
@@ -95,8 +98,69 @@ const PipelineControls: React.FC<PipelineControlsProps> = ({
     validationErrors = [],
     validationWarnings = []
 }) => {
+    // Get the selected mode from Redux state
+    const { selectedMode } = useAppSelector((state: RootState) => state.buildPipeline);
+    
     // Determine if the run button should be disabled
     const isRunDisabled = !isPipelineRunning && (!isValid || validationErrors.length > 0);
+    
+    // Get the appropriate icon based on the selected mode
+    const getRunIcon = () => {
+        if (isPipelineRunning) {
+            return <MdOutlineStop className="h-4 w-4 text-red-500" />;
+        }
+        
+        switch (selectedMode) {
+            case 'debug':
+                return (
+                    <MdBugReport className={`h-4 w-4 ${
+                        isRunDisabled 
+                            ? "text-gray-400" 
+                            : validationWarnings.length > 0 
+                                ? "text-yellow-500" 
+                                : "text-red-500"
+                    }`} />
+                );
+            case 'interactive':
+                return (
+                    <Terminal className={`h-4 w-4 ${
+                        isRunDisabled 
+                            ? "text-gray-400" 
+                            : validationWarnings.length > 0 
+                                ? "text-yellow-500" 
+                                : "text-purple-500"
+                    }`} />
+                );
+            case 'engine':
+            default:
+                return (
+                    <HiOutlinePlay className={`h-4 w-4 ${
+                        isRunDisabled 
+                            ? "text-gray-400" 
+                            : validationWarnings.length > 0 
+                                ? "text-yellow-500" 
+                                : "text-green-500"
+                    }`} />
+                );
+        }
+    };
+    
+    // Get the appropriate tooltip text based on the selected mode
+    const getRunTooltipText = () => {
+        if (isPipelineRunning) {
+            return "Stop Pipeline";
+        }
+        
+        switch (selectedMode) {
+            case 'debug':
+                return "Debug Pipeline";
+            case 'interactive':
+                return "Run Interactive Pipeline";
+            case 'engine':
+            default:
+                return "Run Pipeline";
+        }
+    };
     
     // Helper function to normalize validation issues
     const normalizeValidationIssues = (issues: string[] | ValidationIssue[], severity: 'error' | 'warning'): ValidationIssue[] => {
@@ -130,7 +194,7 @@ const PipelineControls: React.FC<PipelineControlsProps> = ({
         });
     };
 
-    // Generate tooltip content based on validation state
+    // Generate tooltip content based on validation state and mode
     const getRunTooltipContent = () => {
         if (isPipelineRunning) {
             return "Stop Pipeline";
@@ -141,21 +205,25 @@ const PipelineControls: React.FC<PipelineControlsProps> = ({
         const hasIssues = errors.length > 0 || warnings.length > 0;
 
         if (!hasIssues && isValid) {
+            const modeText = selectedMode === 'debug' ? 'debug' : 
+                           selectedMode === 'interactive' ? 'run interactively' : 'run';
             return (
                 <div className="flex items-center gap-2 text-green-400 font-mono text-sm">
                     <MdCheckCircle className="h-4 w-4" />
-                    Ready to run
+                    Ready to {modeText}
                 </div>
             );
         }
 
         if (!isValid || errors.length > 0) {
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
+                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'PIPELINE';
             return (
                 <div className="max-w-md bg-gray-900 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700">
                         <MdError className="h-4 w-4 text-red-400" />
                         <span className="font-mono text-sm text-red-400 font-medium">
-                            PIPELINE BLOCKED
+                            {modeAction} BLOCKED
                         </span>
                         <span className="text-gray-500 text-xs bg-gray-800 px-2 py-1 rounded">
                             {errors.length} error{errors.length !== 1 ? 's' : ''}
@@ -176,12 +244,14 @@ const PipelineControls: React.FC<PipelineControlsProps> = ({
         }
 
         if (warnings.length > 0) {
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
+                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'PIPELINE';
             return (
                 <div className="max-w-md bg-gray-900 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700">
                         <MdWarning className="h-4 w-4 text-yellow-400" />
                         <span className="font-mono text-sm text-yellow-400 font-medium">
-                            PIPELINE WARNINGS
+                            {modeAction} WARNINGS
                         </span>
                         <span className="text-gray-500 text-xs bg-gray-800 px-2 py-1 rounded">
                             {warnings.length} warning{warnings.length !== 1 ? 's' : ''}
@@ -199,14 +269,16 @@ const PipelineControls: React.FC<PipelineControlsProps> = ({
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-800">
                         <div className="text-gray-400 text-xs font-mono">
-                            ⚠️ Pipeline can run but may have issues
+                            ⚠️ {selectedMode === 'debug' ? 'Debug can proceed' : 
+                                selectedMode === 'interactive' ? 'Interactive mode can proceed' : 
+                                'Pipeline can run'} but may have issues
                         </div>
                     </div>
                 </div>
             );
         }
 
-        return "Run Pipeline";
+        return getRunTooltipText();
     };
 
     return (
@@ -218,20 +290,10 @@ const PipelineControls: React.FC<PipelineControlsProps> = ({
                         variant="ghost"
                         size="sm"
                         disabled={isRunDisabled}
-                        aria-label={isPipelineRunning ? "Stop Pipeline" : "Run Pipeline"}
+                        aria-label={getRunTooltipText()}
                         className="px-2.5"
                     >
-                        {isPipelineRunning ? (
-                            <MdOutlineStop className="h-4 w-4 text-red-500" />
-                        ) : (
-                            <HiOutlinePlay className={`h-4 w-4 ${
-                                isRunDisabled 
-                                    ? "text-gray-400" 
-                                    : validationWarnings.length > 0 
-                                        ? "text-yellow-500" 
-                                        : "text-green-500"
-                            }`} />
-                        )}
+                        {getRunIcon()}
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent className="p-0 border-0 bg-transparent shadow-lg">

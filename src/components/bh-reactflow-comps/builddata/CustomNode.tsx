@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState, useEffect } from 'react';
-import { Handle, Position, useEdges, useReactFlow } from 'reactflow';
+import { Handle, Position, useEdges, useReactFlow, useNodes } from 'reactflow';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import OrderPopUp from './OrderPopUp';
 import { validateFormData } from './validation';
@@ -12,8 +12,13 @@ import { ValidationIndicator } from './components/ValidationIndicator';
 import TargetPopUp from '../TargetPopUp';
 import { useFlow } from "@/context/designers/FlowContext";
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
-import { useDispatch, useSelector } from 'react-redux';
+import { fetchTransformationOutput } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { Terminal, PreviewData } from "./LogsPage";
+import { useSidebar } from "@/context/SidebarContext";
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { RowCountBadge } from './components';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Schema {
     title: string;
@@ -42,12 +47,15 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     onNodeDoubleClick?: (nodeId: string) => void;
     onImageClick?: (nodeId: string) => void;
     type?: any;
+    transformationCounts?: Array<{ transformationName: string; rowCount: number }>;
 }) => {
     const [showToolbar, setShowToolbar] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleValue, setTitleValue] = useState(data.title);
     const reactFlowInstance = useReactFlow();
-    const [showInfo, setShowInfo] = useState(false);
+    const nodesInFlow = useNodes();
+    const edgesInFlow = useEdges();
+
     const [toolbarTimeout, setToolbarTimeout] = useState<NodeJS.Timeout | null>(null);
     const [validationStatus, setValidationStatus] = useState<'none' | 'valid' | 'warning' | 'error'>('none');
     const [validationMessages, setValidationMessages] = useState<string[]>([]);
@@ -60,9 +68,15 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const { selectNode, revertOrSaveData, updateNodeDimensions, setSelectedNode } = useFlow();
     const { 
         setIsNodeFormOpen,
-        setSelectedNodeId, nodes } = usePipelineContext();
-    const { isFlow } = useSelector((state: any) => state.buildPipeline);
-    const dispatch=useDispatch();
+        setSelectedNodeId, 
+        nodes,
+        handleRefreshNode,transformationCounts, pipelineDtl, updateSetNode } = usePipelineContext();
+    const { isFlow } = useAppSelector((state) => state.buildPipeline);
+    const dispatch = useAppDispatch();
+    const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
+    const [isAiChatOpen, setIsAiChatOpen] = useState(false);
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
@@ -206,27 +220,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
     }, [id, setNodes, reactFlowInstance, debuggedNodes, onDebugToggle, data.title]);
 
-    const handleClone = useCallback((e: React.MouseEvent) => {
-        e.stopPropagation();
-        setNodes((nodes: any[]) => {
-            const nodeToClone = nodes.find(node => node.id === id);
-            if (!nodeToClone) return nodes;
 
-            const cloneCount = nodes.filter(node =>
-                node.id.startsWith(`${id}_clone_`)
-            ).length;
-
-            const newNode = {
-                ...nodeToClone,
-                id: `${id}_clone_${Date.now()}`,
-                position: {
-                    x: nodeToClone.position.x + (100 * (cloneCount + 1)),
-                    y: nodeToClone.position.y
-                }
-            };
-            return [...nodes, newNode];
-        });
-    }, [id, setNodes]);
 
     const handleEdit = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -275,10 +269,21 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         );
     }, [id, setNodes, titleValue, data.label, data.title, isTitleDuplicate]);
 
-    const handleInfo = useCallback((e: React.MouseEvent) => {
+    const handleRefresh = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        setShowInfo(true);
-    }, []);
+        console.log('Refreshing node:', id);
+        
+        // Call the context's handleRefreshNode function
+        if (handleRefreshNode) {
+            handleRefreshNode(id);
+        }
+    }, [id, handleRefreshNode]);
+
+    const handleAiChat = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        console.log('Opening AI Chat for node:', id);
+        setIsAiChatOpen(true);
+    }, [id]);
 
     const handleImageClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -372,6 +377,117 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         handleSearchResultClick(id);
     }, [id, handleSearchResultClick]);
 
+    const handleAlignTopLeftClick = useCallback(() => {
+        console.log("Align Top Left clicked");
+        try {
+            if (!nodesInFlow || nodesInFlow.length === 0) {
+                console.log("No nodes to align");
+                return;
+            }
+            
+            // Simple grid layout starting from top-left
+            const startX = -250; // Move nodes more to the right
+            const startY = -120; // Move nodes even higher up (can go negative)
+            const gridSpacing = 150; // Space between nodes
+            const nodesPerRow = 4; // Number of nodes per row
+            
+            const newNodes = nodesInFlow.map((node, index) => {
+                const row = Math.floor(index / nodesPerRow);
+                const col = index % nodesPerRow;
+                
+                return {
+                    ...node,
+                    position: {
+                        x: startX + (col * gridSpacing),
+                        y: startY + (row * gridSpacing)
+                    }
+                };
+            });
+
+            // Update nodes with new positions
+            updateSetNode(newNodes, edgesInFlow);
+
+            // Center the view after a short delay
+            setTimeout(() => {
+                if (reactFlowInstance && reactFlowInstance.setCenter) {
+                    // Calculate the center of the grid
+                    const rows = Math.ceil(nodesInFlow.length / nodesPerRow);
+                    const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
+                    const centerY = startY + ((rows - 1) * gridSpacing) / 2;
+                    
+                    reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
+                }
+                
+                // Try to click the fitView button directly as a fallback
+                const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+                if (fitViewButton instanceof HTMLElement) {
+                    console.log("Clicking fitView button after top-left alignment");
+                    fitViewButton.click();
+                }
+            }, 100);
+            
+        } catch (error) {
+            console.error("Error in align top left:", error);
+        }
+    }, [nodesInFlow, edgesInFlow, reactFlowInstance, updateSetNode]);
+
+    const handleMetricsClick = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        // Find the row count for this node
+        const rowCount = transformationCounts?.find(
+            (t) => t.transformationName?.toLowerCase() === titleValue?.toLowerCase()
+        )?.rowCount;
+        
+        // Only proceed if rowCount exists (meaning the node is in debug list)
+        if (rowCount) {
+            setIsLoading(true);
+            setIsShowingInDrawer(true);
+            await handleAlignTopLeftClick();
+            
+            try {
+                // First fetch the data
+                const result = await dispatch(fetchTransformationOutput({
+                    pipelineName: pipelineDtl?.name || pipelineDtl?.pipeline_name,
+                    transformationName: titleValue,
+                    isFlow
+                })).unwrap();
+                
+                // Format the data for the Terminal component
+                const previewData: PreviewData = {
+                    transformationName: titleValue || 'Transformation',
+                    outputs: result.outputs || []
+                };
+                
+                // Create the Terminal component with the preview data
+                const terminalComponent = (
+                    <Terminal 
+                        isOpen={true}  // Set to true since we're opening it in the drawer
+                        onClose={closeBottomDrawer}
+                        title={`${titleValue || 'Transformation'} Data`}
+                        previewData={previewData}
+                        pipelineName={pipelineDtl?.pipeline_name}
+                        activeTabOnOpen={isFlow ? "terminal" : "preview"}
+                    />
+                );
+                setBottomDrawerContent(terminalComponent, `${titleValue || 'Transformation'} Data`);
+            } catch (error) {
+                console.error("Error fetching transformation output:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    }, [dispatch, pipelineDtl, titleValue, isFlow, transformationCounts, closeBottomDrawer, setBottomDrawerContent, handleAlignTopLeftClick]);
+
+    // Effect to handle drawer state synchronization - only reacts to external drawer close
+    useEffect(() => {
+        // If we're showing our content in the drawer and the drawer is closed externally,
+        // update our local state
+        if (isShowingInDrawer && !isBottomDrawerOpen) {
+            setIsShowingInDrawer(false);
+        }
+    }, [isShowingInDrawer, isBottomDrawerOpen]);
 
     return (
         <div
@@ -387,30 +503,30 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow-sm z-10" />
             )}
 
-            {/* Main node content */}
-            <div className="relative">
-                <NodeToolbar
-                    show={showToolbar}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onInfo={handleInfo}
-                    onClone={handleClone}
-                    onDebug={handleDebug}
-                    isDebugged={debuggedNodes.has(id)}
+            {/* Row count badge positioned above the node */}
+            <div className="flex flex-col items-center">
+                <RowCountBadge 
+                    rowCount={transformationCounts?.find(
+                        (t) => t.transformationName?.toLowerCase() === titleValue?.toLowerCase()
+                    )?.rowCount}
+                    isLoading={isLoading}
+                    onMetricsClick={handleMetricsClick}
+                    className="relative mb-1"
                 />
 
-                <NodeTitle
-                    isEditing={isEditingTitle}
-                    value={titleValue}
-                    onChange={handleTitleChange}
-                    onBlur={handleTitleBlur}
-                    onDoubleClick={handleDoubleClick}
-                    error={titleError}
-                    isSelected={isSelected}
-                    label={data.label}
-                />
+                {/* Main node content */}
+                <div className="relative">
+                    <NodeToolbar
+                        show={showToolbar}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onDebug={handleDebug}
+                        onRefresh={handleRefresh}
+                        onAiChat={handleAiChat}
+                        isDebugged={debuggedNodes.has(id)}
+                    />
 
-                <NodeImage
+                    <NodeImage
                     data={data}
                     isSelected={isSelected}
                     onImageClick={(e: React.MouseEvent) => {
@@ -436,6 +552,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     formStates={formStates}
                     id={id}
                 />
+                </div>
             </div>
 
             <ValidationIndicator
@@ -446,20 +563,21 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 onTooltipEnter={() => setShowValidationTooltip(true)}
                 onTooltipLeave={() => setShowValidationTooltip(false)}
                 type={type}
+                label={ <NodeTitle
+                    isEditing={isEditingTitle}
+                    value={titleValue}
+                    onChange={handleTitleChange}
+                    onBlur={handleTitleBlur}
+                    onDoubleClick={handleDoubleClick}
+                    error={titleError}
+                    isSelected={isSelected}
+                    label={data.label}
+                />}
             />
 
             <NodeHandles data={data} />
 
-            {showInfo && (
-                <NodeInfo
-                    data={data}
-                    titleValue={titleValue}
-                    debuggedNodes={debuggedNodes}
-                    id={id}
-                    formStates={formStates}
-                    onClose={() => setShowInfo(false)}
-                />
-            )}
+
 
             {/* Popups */}
             {selectedSourceLabel === "Source" && (
@@ -481,6 +599,45 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     onSourceUpdate={onSourceUpdate}
                 />
             )}
+
+            {/* AI Chat Dialog */}
+            <Dialog open={isAiChatOpen} onOpenChange={setIsAiChatOpen}>
+                <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>AI Chat - {data.title || data.label}</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 flex flex-col min-h-0">
+                        {/* Chat Interface */}
+                        <div className="flex-1 border rounded-lg p-4 bg-gray-50 overflow-y-auto">
+                            <div className="space-y-4">
+                                {/* Welcome Message */}
+                                <div className="bg-blue-100 p-3 rounded-lg">
+                                    <p className="text-sm text-blue-800">
+                                        👋 Hello! I'm your AI assistant. I can help you with questions about this node ({data.title || data.label}).
+                                    </p>
+                                </div>
+                                
+                                {/* Chat messages would go here */}
+                                <div className="text-center text-gray-500 text-sm">
+                                    Start a conversation by typing your question below...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Chat Input */}
+                        <div className="mt-4 flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="Ask me anything about this node..."
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 });

@@ -20,6 +20,7 @@ interface ValidationIndicatorProps {
     onTooltipEnter: () => void;
     onTooltipLeave: () => void;
     type?: string;
+    label?: any;
 }
 
 export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
@@ -29,7 +30,8 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
     showTooltip,
     onTooltipEnter,
     onTooltipLeave,
-    type
+    type,
+    label
 }) => {
     const getIndicatorColor = () => {
         const { isFlow } = useSelector((state: any) => state.buildPipeline);
@@ -126,8 +128,9 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
     };
 
     return (
-        <div className="absolute -bottom-6 left-0 right-0 flex flex-col items-center">
-            <div className="flex items-center gap-1">
+        <div className="absolute -bottom-8 left-0 right-0 flex flex-col items-center">
+            {/* First row: Validation indicator */}
+            <div className="flex items-center justify-center mb-1">
                 <div
                     className="flex items-center justify-center"
                     onMouseEnter={onTooltipEnter}
@@ -199,9 +202,22 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                         </div>
                     )}
                 </div>
-                <span className="text-black text-[8px]">{data.label}</span>
             </div>
-            <div className="text-black text-[8px]">{data?.type}</div>
+            
+            {/* Second row: Label and type in horizontal layout */}
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+                {label && (
+                    <span className="text-black text-[8px] text-center whitespace-nowrap" title={typeof label === 'string' ? label : ''}>
+                        {label}
+                    </span>
+                )}
+                
+                {data?.type && (
+                    <span className="text-black text-[8px] text-center whitespace-nowrap" title={data.type}>
+                        {data.type}
+                    </span>
+                )}
+            </div>
         </div>
     );
 }; 

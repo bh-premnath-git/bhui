@@ -22,7 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
-import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
+import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson, convertUIToPipelineJsonUpToNode } from '@/lib/convertUIToPipelineJson';
 import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
 import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
 import { ValidationIssue } from '@/components/headers/build-playground-header/components/PipelineControls';
@@ -112,6 +112,7 @@ interface bnPipelineContextProps {
     handleRun: () => void;
     handleStop: () => void;
     handleNext: () => void;
+    handleRefreshNode: (nodeId: string) => Promise<void>;
     fetchSourceColumns: (nodes: any) => void;
     handleLeavePage: () => void;
     getTransformationName: (moduleName: string) => string;
@@ -167,6 +168,7 @@ interface bnPipelineContextProps {
     updatedSelectedNodeId: any
     updateSetNode: (node: any, edges: any) => void
     updateAllNodeDependencies: () => void
+    selectedMode: 'engine' | 'debug' | 'interactive'
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -200,7 +202,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const { pipelineDtl, isFlow } = useSelector((state: RootState) => state.buildPipeline)
+    const { pipelineDtl, isFlow,selectedMode } = useSelector((state: RootState) => state.buildPipeline)
     const [isNodeFormOpen, setIsNodeFormOpen] = useState(false);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
@@ -225,6 +227,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isPipelineValid, setIsPipelineValid] = useState(true);
     const [pipelineValidationErrors, setPipelineValidationErrors] = useState<ValidationIssue[]>([]);
     const [pipelineValidationWarnings, setPipelineValidationWarnings] = useState<ValidationIssue[]>([]);
+    // const { selectedMode } = useAppSelector((state: RootState) => state.buildPipeline);
 
     // Pipeline validation effect - runs when nodes, edges, or form states change
     useEffect(() => {
@@ -1179,10 +1182,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             });
             console.log(debuggedNodesList)
             console.log(pipelineDtl)
+            
+            // Convert selectedMode to API parameter format
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
+                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
+            
+            console.log('Selected Mode:', selectedMode) 
+            console.log('Mode Action for API:', modeAction) 
+
             const params = new URLSearchParams({
                 pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                 pipeline_json: JSON.stringify(pipeline_json),
-                mode: 'DEBUG',
+                mode: modeAction
             });
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title);
@@ -1229,7 +1240,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (error) {
             console.error('Error starting pipeline:', error);
 
-            // Add error log
             setTerminalLogs(prevLogs => [...prevLogs, {
                 timestamp: new Date().toISOString(),
                 message: `Error: ${error.message}`,
@@ -1241,17 +1251,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 setValidationErrors(errorMessages);
             }
 
-            // Check if the error is related to pipeline already existing
-            // This will still call getTransformationCount even if there's an error from the server
-            // about the pipeline already existing
-            
-            // Extract the detailed error message from the Axios response if available
             const errorDetail = error.response?.data?.detail || '';
             const errorMessage = error.message || '';
             
             console.log('Error detail:', errorDetail);
             
-            // Check both the error message and the nested detail for "already exist" or "already running"
             if (
                 errorMessage.includes('already exist') || 
                 errorMessage.includes('already running') ||
@@ -1269,11 +1273,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     
                     if (countsResponse.transformationOutputCounts) {
                         setTransformationCounts(countsResponse.transformationOutputCounts);
-                        
-                        // Since the pipeline is already running, update the state
                         setIsPipelineRunning(true);
                         
-                        // Add info log
                         setTerminalLogs(prevLogs => [...prevLogs, {
                             timestamp: new Date().toISOString(),
                             message: 'Pipeline is already running. Fetched current transformation counts.',
@@ -1283,8 +1284,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 } catch (countError) {
                     console.error('Error getting transformation counts after pipeline error:', countError);
                 }
-                // If we successfully got transformation counts, we don't want to set isPipelineRunning to false
-                return; // Exit early to avoid setting isPipelineRunning to false
+                return;
             }
 
             setSaveError(error.message);
@@ -1292,7 +1292,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } finally {
             setIsCanvasLoading(false);
         }
-    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl, pipelineName, dispatch]);
+    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl, pipelineName, dispatch, selectedMode]);
 
 
     const handleStop = useCallback(async () => {
@@ -1332,6 +1332,101 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Handle error appropriately (e.g., show error message to user)
         }
     }, [pipelineDtl?.pipeline_name]);
+
+    const handleRefreshNode = useCallback(async (nodeId: string) => {
+        try {
+            console.log(`🔄 Refreshing node: ${nodeId}`);
+            setIsCanvasLoading(true);
+
+            // Add log for refresh start
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `Starting refresh for node: ${nodeId}`,
+                level: 'info'
+            }]);
+
+            const partialPipelineJson:any = await convertUIToPipelineJsonUpToNode(
+                nodes, 
+                edges, 
+                pipelineDtl, 
+                nodeId,
+                pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
+            );
+
+            console.log(`📋 Partial pipeline JSON for node ${nodeId}:`, partialPipelineJson);
+
+            // Convert selectedMode to API parameter format
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
+                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
+
+            // Create API parameters for partial pipeline execution
+            const params = new URLSearchParams({
+                pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
+                pipeline_json: JSON.stringify(partialPipelineJson?.pipeline_json || partialPipelineJson),
+                mode: modeAction,
+                target_node: nodeId // Add target node info for backend
+            });
+
+            console.log(`🚀 Executing partial pipeline up to node: ${nodeId}`);
+
+            // Execute the partial pipeline
+            const response:any = await apiService.post({
+                baseUrl: CATALOG_REMOTE_API_URL,
+                url: `/pipeline/debug/reload_and_rerun_pipeline?${params.toString()}`,
+                usePrefix: true,
+                method: 'POST',
+                data: params
+            });
+
+            if (response.error) {
+                throw new Error(response.error);
+            }
+
+            // Add success log
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `✅ Node ${nodeId} refreshed successfully`,
+                level: 'info'
+            }]);
+
+            // Optionally update transformation counts for the refreshed portion
+            try {
+                const countsResponse = await dispatch(getTransformationCount({
+                    params: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`
+                })).unwrap();
+
+                if (countsResponse.transformationOutputCounts) {
+                    // Update only the counts for nodes up to the target node
+                    setTransformationCounts(prevCounts => {
+                        const newCounts = [...prevCounts];
+                        countsResponse.transformationOutputCounts.forEach(newCount => {
+                            const existingIndex = newCounts.findIndex(c => c.transformationName === newCount.transformationName);
+                            if (existingIndex >= 0) {
+                                newCounts[existingIndex] = newCount;
+                            } else {
+                                newCounts.push(newCount);
+                            }
+                        });
+                        return newCounts;
+                    });
+                }
+            } catch (countError) {
+                console.warn('Could not update transformation counts after refresh:', countError);
+            }
+
+        } catch (error) {
+            console.error(`❌ Error refreshing node ${nodeId}:`, error);
+            
+            // Add error log
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `❌ Error refreshing node ${nodeId}: ${error.message}`,
+                level: 'error'
+            }]);
+        } finally {
+            setIsCanvasLoading(false);
+        }
+    }, [nodes, edges, pipelineDtl, pipelineName, selectedMode, dispatch]);
 
     const getTransformationName = (moduleName: string): string => {
         return moduleName.toLowerCase();
@@ -2097,7 +2192,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateAllNodeDependencies,
         isPipelineValid,
         pipelineValidationErrors,
-        pipelineValidationWarnings
+        pipelineValidationWarnings,
+        selectedMode,
+        handleRefreshNode
     }), [
         nodes,
         setSanitizedNodes,
@@ -2207,7 +2304,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateSetNode,
         isPipelineValid,
         pipelineValidationErrors,
-        pipelineValidationWarnings
+        pipelineValidationWarnings,
+        selectedMode,
+        handleRefreshNode
     ]);
 
     return (

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AIChatInput } from '@/components/shared/AIChatInput';
-import { motion } from 'framer-motion';
+import { m, motion } from 'framer-motion';
 import SuggestionButton from './SuggestionButton'; // Import the SuggestionButton
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,8 @@ import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { debugNodeData, validateNodeTransformationData, compareBeforeAfterSubmit } from '@/lib/debugPipeline';
+import { useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 // Define the form schema based on Reader.json
 const readerFormSchema = z.object({
@@ -42,8 +44,10 @@ type Suggestion = {
 
 // Define the type for chat messages
 type ChatMessage = {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
+  msg_owner?: string;
   suggestions?: Suggestion[];
   formData?: {
     schema: any;
@@ -51,11 +55,24 @@ type ChatMessage = {
     currentNodeId: string;
     initialValues: any;
     isTarget?: boolean;
+    isConfirmation?:boolean; // New field to indicate confirmation
   };
 };
 
 const PipeLineChatPanel = () => {
   const dispatch = useAppDispatch();
+  const { id } = useParams<{ id: string }>();
+  
+  // Debug id
+  useEffect(() => {
+    console.log('PipeLineChatPanel id:', id);
+  }, [id]);
+
+  // Helper function to get avatar initials from msg_owner
+  const getAvatarInitials = (msgOwner?: string): string => {
+    if (!msgOwner) return 'AI'; // Default for assistant messages
+    return msgOwner.substring(0, 2).toUpperCase();
+  };
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [showReaderForm, setShowReaderForm] = useState(false);
@@ -67,8 +84,17 @@ const PipeLineChatPanel = () => {
   const [selectedSchema, setSelectedSchema] = useState<any>(null);
   const [sourceColumns, setSourceColumns] = useState<any[]>([]);
   const [formsHanStates, setformsHanStates] = useState<Record<string, any>>({});
+  const [chatHistory, setChatHistory] = useState<any>(null);
+  const [isSavingChatHistory, setIsSavingChatHistory] = useState(false);
+  const [lastSavedMessageCount, setLastSavedMessageCount] = useState(0); // Track how many messages have been saved
+  const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set()); // Track which messages are saved
+  const [isLoadingChatHistory, setIsLoadingChatHistory] = useState(false);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const hasLoadedChatHistoryRef = React.useRef<string | null>(null); // Track which pipeline ID we've loaded
   const pipelineContext = usePipelineContext();
+  const token: any = sessionStorage?.getItem("token");
+  const decoded: any = token ? jwtDecode(token) : null;
+  console.log(decoded, "decoded token in chat panel")
   const {
     handleNodeClick,
     addNodeToHistory,
@@ -90,7 +116,28 @@ const PipeLineChatPanel = () => {
     console.log('Form states updated in context:', formStates);
     setformsHanStates(formStates);
   }, [formStates]);
+ const handleAddAnotherSource = () => {
+    dispatch(setIsRightPanelOpen(true));
+    setMessages(prevMessages => [
+      ...prevMessages,
+      {
+        role: 'user',
+        content: `Add another source`
+      },
+    ]);
 
+    // Show the reader form again
+    setTimeout(() => {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          role: 'assistant',
+          content: "Let's add another data source to your pipeline. Please enter a reader name to search:"
+        },
+      ]);
+      setShowReaderForm(true);
+    }, 300);
+  };
   // Initialize the Reader node from node_display.json and load connection configs
   useEffect(() => {
     // Find the Reader node from the node_display.json file
@@ -105,7 +152,95 @@ const PipeLineChatPanel = () => {
 
   // Track the last added transformation node
   const [lastAddedTransformation, setLastAddedTransformation] = useState<any>(null);
+ const handleShowTransformations = () => {
+    setMessages(prevMessages => [
+      ...prevMessages,
+      {
+        role: 'user',
+        content: `Show transformation options`
+      },
+    ]);
 
+    // Get all transformation nodes from nodeDisplayData (excluding Reader)
+    const transformationNodes = nodeDisplayData.nodes.filter(
+      node => node.ui_properties.module_name !== "Reader"
+    );
+
+    // Show transformation options as suggestion buttons
+    setTimeout(() => {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          role: 'assistant',
+          content: "Here are the available transformations you can add to your pipeline:",
+          suggestions: transformationNodes.map(node => ({
+            text: node.ui_properties.module_name,
+            onClick: () => {
+              // Add a message to show the selection
+              setMessages(prevMessages => [
+                ...prevMessages,
+                {
+                  role: 'user',
+                  content: `Add ${node.ui_properties.module_name} transformation`
+                },
+              ]);
+
+              // Mark unsaved changes
+              setUnsavedChanges();
+
+              // Add node to history for undo functionality
+              addNodeToHistory();
+
+              // Store the transformation info for later use
+              const transformationInfo = {
+                type: node.ui_properties.module_name,
+                maxInputs: node.ui_properties.ports.maxInputs,
+                node: node
+              };
+
+              // Set the last added transformation to track in useEffect
+              setLastAddedTransformation(transformationInfo);
+
+              // Add the transformation node to the pipeline
+              console.log(node, "readerNode")
+
+              handleNodeClick(node, null);
+
+              // Explicitly call handleAlignHorizontal to ensure proper node positioning
+              // Use a longer delay to ensure the node is fully added to the state
+              setTimeout(() => {
+                if (pipelineContext.handleAlignHorizontal) {
+                  console.log('Calling handleAlignHorizontal from chat panel');
+                  pipelineContext.handleAlignHorizontal();
+
+                  // Force a re-render of the ReactFlow component
+                  window.dispatchEvent(new Event('resize'));
+
+                  // Call it again after a short delay to ensure proper alignment
+                  setTimeout(() => {
+                    pipelineContext.handleAlignHorizontal();
+                    window.dispatchEvent(new Event('resize'));
+                  }, 200);
+                }
+              }, 500);
+
+              setTimeout(() => {
+                setMessages(prevMessages => [
+                  ...prevMessages,
+                  {
+                    role: 'assistant',
+                    content: `Adding a ${node.ui_properties.module_name} transformation to your pipeline...`
+                  },
+                ]);
+              }, 300);
+
+              // The nodes will be updated in the context, and our useEffect will handle asking for dependencies
+            }
+          }))
+        },
+      ]);
+    }, 300);
+  };
   // Track node changes to handle dependency selection
   useEffect(() => {
     // If we have a new transformation node added
@@ -132,17 +267,14 @@ const PipeLineChatPanel = () => {
           // No dependencies needed, show confirmation
           setLastAddedTransformation(null);
           setTimeout(() => {
-            setMessages(prevMessages => [
-              ...prevMessages,
-              {
-                role: 'assistant',
-                content: `Great! I've added a ${lastAddedTransformation.type} transformation to your pipeline. What would you like to do next?`,
-                suggestions: [
-                  { text: "Add another source", onClick: handleAddAnotherSource },
-                  { text: "Add another transformation", onClick: handleShowTransformations }
-                ]
-              },
-            ]);
+            addMessageWithFormData({
+              role: 'assistant',
+              content: `Great! I've added a ${lastAddedTransformation.type} transformation to your pipeline. What would you like to do next?`,
+              suggestions: [
+                { text: "Add another source", onClick: handleAddAnotherSource },
+                { text: "Add another transformation", onClick: handleShowTransformations }
+              ]
+            });
           }, 300);
         }
       }
@@ -160,6 +292,11 @@ const PipeLineChatPanel = () => {
     console.log('Form states changed:', formStates);
   }, [formStates]);
 
+  // Debug selectedDataSource changes
+  useEffect(() => {
+    console.log('selectedDataSource changed:', selectedDataSource);
+  }, [selectedDataSource]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -176,6 +313,749 @@ const PipeLineChatPanel = () => {
     }
   }, [messages]);
 
+  // Chat History Functions
+  const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Save only messages with form data to database
+  const saveChatHistoryBatchWithMessages = useCallback(async (messagesToSave: ChatMessage[]) => {
+    console.log('saveChatHistoryBatchWithMessages called with:', {
+      id,
+      isSavingChatHistory,
+      totalMessages: messagesToSave.length,
+      savedMessageIds: savedMessageIds.size,
+      currentSavedIds: Array.from(savedMessageIds),
+      allMessageIds: messagesToSave.map(m => ({ id: m.id, content: m.content.substring(0, 30) }))
+    });
+
+    if (!id) {
+      console.warn('No id available, skipping chat history save');
+      return;
+    }
+
+    if (isSavingChatHistory) {
+      console.warn('Already saving chat history, skipping');
+      return;
+    }
+
+    // Filter to only messages with form data that haven't been saved
+    // Only save confirmation messages (final form data), not initial configuration messages
+    const formDataMessages = messagesToSave.filter(msg => {
+      // Only save messages that have form data
+      if (!msg.formData) {
+        return false;
+      }
+      
+      // Only save confirmation messages (final submitted form data)
+      // Skip initial configuration messages to avoid duplicates
+      if (!msg.formData.isConfirmation) {
+        console.log('Skipping non-confirmation form message:', msg.content.substring(0, 50));
+        return false;
+      }
+      
+      // Check if already saved
+      if (!msg.id) {
+        console.log('Found form data confirmation message without ID:', msg.content);
+        return true; // If no ID, it's definitely new
+      }
+      const isAlreadySaved = savedMessageIds.has(msg.id);
+      console.log(`Form data confirmation message ID ${msg.id} already saved:`, isAlreadySaved, 'Content:', msg.content.substring(0, 50));
+      return !isAlreadySaved;
+    });
+
+    if (formDataMessages.length === 0) {
+      console.log('No new form data messages to save');
+      return;
+    }
+
+    console.log(`Saving ${formDataMessages.length} form data messages out of ${messagesToSave.length} total messages`);
+
+    setIsSavingChatHistory(true);
+    try {
+      // Format only the form data messages
+      const formattedMessages = formDataMessages.map((msg) => {
+        // Ensure message has an ID for local tracking, but don't send to API
+        if (!msg.id) {
+          msg.id = generateMessageId();
+        }
+        
+        // Properly serialize formData to avoid circular references and functions
+        let serializedFormData = undefined;
+        if (msg.formData) {
+          try {
+            serializedFormData = {
+              schema: msg.formData.schema,
+              sourceColumns: msg.formData.sourceColumns || [],
+              currentNodeId: msg.formData.currentNodeId,
+              isTarget: msg.formData.isTarget,
+              // Properly serialize initialValues by creating a clean copy
+              initialValues: msg.formData.initialValues ? JSON.parse(JSON.stringify(msg.formData.initialValues)) : {}
+            };
+            console.log('Serialized formData for message:', msg.id, serializedFormData);
+          } catch (error) {
+            console.error('Error serializing formData for message:', msg.id, error);
+            serializedFormData = {
+              currentNodeId: msg.formData.currentNodeId,
+              initialValues: {}
+            };
+          }
+        }
+        
+        return {
+          // Don't include id - FastAPI will auto-generate primary key
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date().toISOString(),
+          // Don't save suggestions since they contain onClick functions that can't be serialized
+          // and are only meaningful for the current session
+          suggestions: [],
+          formData: serializedFormData
+        };
+      });
+
+      const chatHistoryData = {
+        pipeline_id: id,
+        messages: formattedMessages,
+        append: true, // Always append for batch saves
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Saving form data messages batch:', {
+        formDataMessagesCount: formattedMessages.length,
+        messageIds: formDataMessages.map(m => m.id) // Use original messages for tracking
+      });
+      
+      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      console.log('Form data messages batch saved successfully:', result);
+
+      // Update saved message tracking - keep messages in UI, just track what's been saved
+      const newSavedIds = new Set([...savedMessageIds, ...formDataMessages.map(m => m.id)]);
+      setSavedMessageIds(newSavedIds);
+      setLastSavedMessageCount(messagesToSave.length);
+
+      console.log('Updated saved message tracking:', {
+        totalSavedIds: newSavedIds.size,
+        totalMessages: messagesToSave.length,
+        savedIds: Array.from(newSavedIds),
+        newlySavedIds: formDataMessages.map(m => m.id) // Use original messages for tracking
+      });
+      
+    } catch (error) {
+      console.error('Failed to save form data messages batch:', error);
+      console.error('Error details:', {
+        id,
+        formDataMessagesCount: formDataMessages.length,
+        totalMessagesCount: messagesToSave.length,
+        error: error instanceof Error ? error.message : error
+      });
+    } finally {
+      setIsSavingChatHistory(false);
+    }
+  }, [id, isSavingChatHistory, savedMessageIds]);
+
+  // Save only form data messages from current messages state
+  const saveChatHistoryBatch = useCallback(async () => {
+    console.log('saveChatHistoryBatch called with:', {
+      id,
+      isSavingChatHistory,
+      totalMessages: messages.length,
+      savedMessageIds: savedMessageIds.size,
+      currentSavedIds: Array.from(savedMessageIds),
+      allMessageIds: messages.map(m => ({ id: m.id, content: m.content.substring(0, 30) }))
+    });
+
+    if (!id) {
+      console.warn('No id available, skipping chat history save');
+      return;
+    }
+
+    if (isSavingChatHistory) {
+      console.warn('Already saving chat history, skipping');
+      return;
+    }
+
+    // Filter to only messages with form data that haven't been saved
+    const formDataMessages = messages.filter(msg => {
+      // Only save messages that have form data
+      if (!msg.formData) {
+        return false;
+      }
+      
+      // Check if already saved
+      if (!msg.id) {
+        console.log('Found form data message without ID:', msg.content);
+        return true; // If no ID, it's definitely new
+      }
+      const isAlreadySaved = savedMessageIds.has(msg.id);
+      console.log(`Form data message ID ${msg.id} already saved:`, isAlreadySaved, 'Content:', msg.content.substring(0, 50));
+      return !isAlreadySaved;
+    });
+
+    if (formDataMessages.length === 0) {
+      console.log('No new form data messages to save');
+      return;
+    }
+
+    console.log(`Saving ${formDataMessages.length} form data messages out of ${messages.length} total messages`);
+
+    setIsSavingChatHistory(true);
+    try {
+      // Format only the form data messages
+      const formattedMessages = formDataMessages.map((msg) => {
+        // Ensure message has an ID for local tracking, but don't send to API
+        if (!msg.id) {
+          msg.id = generateMessageId();
+        }
+        
+        // Properly serialize formData to avoid circular references and functions
+        let serializedFormData = undefined;
+        if (msg.formData) {
+          try {
+            serializedFormData = {
+              schema: msg.formData.schema,
+              sourceColumns: msg.formData.sourceColumns || [],
+              currentNodeId: msg.formData.currentNodeId,
+              isTarget: msg.formData.isTarget,
+              // Properly serialize initialValues by creating a clean copy
+              initialValues: msg.formData.initialValues ? JSON.parse(JSON.stringify(msg.formData.initialValues)) : {}
+            };
+            console.log('Serialized formData for message:', msg.id, serializedFormData);
+          } catch (error) {
+            console.error('Error serializing formData for message:', msg.id, error);
+            serializedFormData = {
+              currentNodeId: msg.formData.currentNodeId,
+              initialValues: {}
+            };
+          }
+        }
+        
+        return {
+          // Don't include id - FastAPI will auto-generate primary key
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date().toISOString(),
+          // Don't save suggestions since they contain onClick functions that can't be serialized
+          // and are only meaningful for the current session
+          suggestions: [],
+          formData: serializedFormData
+        };
+      });
+
+      const chatHistoryData = {
+        pipeline_id: id,
+        messages: formattedMessages,
+        append: true, // Always append for batch saves
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Saving form data messages batch:', {
+        formDataMessagesCount: formattedMessages.length,
+        messageIds: formDataMessages.map(m => m.id) // Use original messages for tracking
+      });
+      
+      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      console.log('Form data messages batch saved successfully:', result);
+
+      // Update saved message tracking - keep messages in UI, just track what's been saved
+      const newSavedIds = new Set([...savedMessageIds, ...formDataMessages.map(m => m.id)]);
+      setSavedMessageIds(newSavedIds);
+      setLastSavedMessageCount(messages.length);
+
+      console.log('Updated saved message tracking:', {
+        totalSavedIds: newSavedIds.size,
+        totalMessages: messages.length,
+        savedIds: Array.from(newSavedIds),
+        newlySavedIds: formDataMessages.map(m => m.id) // Use original messages for tracking
+      });
+      
+    } catch (error) {
+      console.error('Failed to save form data messages batch:', error);
+      console.error('Error details:', {
+        id,
+        formDataMessagesCount: formDataMessages.length,
+        totalMessagesCount: messages.length,
+        error: error instanceof Error ? error.message : error
+      });
+    } finally {
+      setIsSavingChatHistory(false);
+    }
+  }, [id, isSavingChatHistory, messages, savedMessageIds]);
+ const handleCreatePipeline = () => {
+    // Define what happens when the "Create Pipeline" suggestion is clicked
+    addMessageWithFormData({ role: 'user', content: 'Create a data pipeline' });
+    // Simulate assistant response
+    setTimeout(() => {
+      addMessageWithFormData({
+        role: 'assistant',
+        content: "Let's start creating your data pipeline. First, I need some information about the data source:"
+      });
+      setShowReaderForm(true);
+    }, 500);
+  };
+
+  // Legacy save function - now also saves only form data messages
+  const saveChatHistory = useCallback(async (messagesToSave: ChatMessage[]) => {
+    console.log('saveChatHistory called with:', {
+      id,
+      isSavingChatHistory,
+      totalMessages: messagesToSave.length,
+      savedMessageIds: savedMessageIds.size,
+      lastSavedCount: lastSavedMessageCount
+    });
+
+    if (!id) {
+      console.warn('No id available, skipping chat history save');
+      return;
+    }
+
+    if (isSavingChatHistory) {
+      console.warn('Already saving chat history, skipping');
+      return;
+    }
+
+    // Filter to only messages with form data that haven't been saved
+    const formDataMessages = messagesToSave.filter(msg => {
+      // Only save messages that have form data
+      if (!msg.formData) {
+        return false;
+      }
+      
+      const messageId = msg.id || generateMessageId();
+      return !savedMessageIds.has(messageId);
+    });
+
+    if (formDataMessages.length === 0) {
+      console.log('No new form data messages to save');
+      return;
+    }
+
+    console.log(`Saving ${formDataMessages.length} form data messages out of ${messagesToSave.length} total messages`);
+
+    setIsSavingChatHistory(true);
+    try {
+      // Format only the form data messages
+      const formattedMessages = formDataMessages.map((msg) => {
+        const messageId = msg.id || generateMessageId();
+        // Ensure original message has ID for local tracking
+        if (!msg.id) {
+          msg.id = messageId;
+        }
+        
+        // Properly serialize formData to avoid circular references and functions
+        let serializedFormData = undefined;
+        if (msg.formData) {
+          try {
+            serializedFormData = {
+              schema: msg.formData.schema,
+              sourceColumns: msg.formData.sourceColumns || [],
+              currentNodeId: msg.formData.currentNodeId,
+              isTarget: msg.formData.isTarget,
+              // Properly serialize initialValues by creating a clean copy
+              initialValues: msg.formData.initialValues ? JSON.parse(JSON.stringify(msg.formData.initialValues)) : {}
+            };
+            console.log('Serialized formData for message (legacy):', messageId, serializedFormData);
+          } catch (error) {
+            console.error('Error serializing formData for message (legacy):', messageId, error);
+            serializedFormData = {
+              currentNodeId: msg.formData.currentNodeId,
+              initialValues: {}
+            };
+          }
+        }
+        
+        return {
+          // Don't include id - FastAPI will auto-generate primary key
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date().toISOString(),
+          // Don't save suggestions since they contain onClick functions that can't be serialized
+          // and are only meaningful for the current session
+          suggestions: [],
+          formData: serializedFormData
+        };
+      });
+
+      const chatHistoryData = {
+        pipeline_id: id,
+        messages: formattedMessages,
+        append: true, // Set append to true for all saves
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Saving form data messages (legacy):', {
+        formDataMessagesCount: formattedMessages.length,
+        messageIds: formDataMessages.map(m => m.id) // Use original messages for tracking
+      });
+      
+      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      console.log('Form data messages saved successfully (legacy):', result);
+
+      // Update saved message tracking
+      const newSavedIds = new Set([...savedMessageIds, ...formDataMessages.map(m => m.id)]);
+      setSavedMessageIds(newSavedIds);
+      setLastSavedMessageCount(messagesToSave.length);
+
+      console.log('Updated saved message tracking (legacy):', {
+        totalSavedIds: newSavedIds.size,
+        newSavedCount: messagesToSave.length
+      });
+      
+    } catch (error) {
+      console.error('Failed to save form data messages (legacy):', error);
+      console.error('Error details:', {
+        id,
+        formDataMessagesCount: formDataMessages.length,
+        totalMessagesCount: messagesToSave.length,
+        error: error instanceof Error ? error.message : error
+      });
+    } finally {
+      setIsSavingChatHistory(false);
+    }
+  }, [id, isSavingChatHistory, savedMessageIds, lastSavedMessageCount,messages]);
+
+  // Helper function to generate contextual messages based on form data
+  const generateContextualMessages = useCallback((formDataMessage: any, index: number, allFormDataMessages: any[]) => {
+    const messages: ChatMessage[] = [];
+    const messageId = formDataMessage.id;
+    const originalMsgOwner = formDataMessage.msg_owner;
+    
+    // Generate welcome message for the first form data message
+    if (index === 0) {
+      messages.push({
+        id: `welcome_${messageId}`,
+        role: 'assistant',
+        content: "Welcome! I'll help you create your data pipeline. Let's start by setting up your data sources and transformations.",
+        msg_owner: originalMsgOwner,
+        suggestions: [
+          { text: "Create Pipeline", onClick: handleCreatePipeline }
+        ]
+      });
+      
+      messages.push({
+        id: `create_pipeline_${messageId}`,
+        role: 'user',
+        content: 'Create a data pipeline',
+        msg_owner: originalMsgOwner
+      });
+      
+      messages.push({
+        id: `start_pipeline_${messageId}`,
+        role: 'assistant',
+        content: "Let's start creating your data pipeline. First, I need some information about the data source:",
+        msg_owner: originalMsgOwner
+      });
+    }
+
+    // Generate messages based on form data type
+    if (formDataMessage.formData) {
+      const formData = formDataMessage.formData;
+      
+      // Handle Reader/Source configuration
+      if (formData.schema && formData.schema.module_name === 'Reader') {
+        // Extract data source info from form data
+        const initialValues = formData.initialValues || {};
+        const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
+        
+        // User search message
+        messages.push({
+          id: `search_${messageId}`,
+          role: 'user',
+          content: `Searching for reader: ${dataSourceName}`,
+          msg_owner: originalMsgOwner
+        });
+        
+        // Assistant response with data source selection
+        messages.push({
+          id: `found_source_${messageId}`,
+          role: 'assistant',
+          content: `Great! I found the data source "${dataSourceName}". Selected data source: ${dataSourceName}`,
+          msg_owner: originalMsgOwner
+        });
+        
+        // Configuration request message
+        messages.push({
+          id: `config_request_${messageId}`,
+          role: 'assistant',
+          content: `Now let's configure the reader for "${dataSourceName}". Please review and adjust the settings below:`,
+          msg_owner: originalMsgOwner
+        });
+        
+        // The actual form data message (from database)
+        messages.push({
+          ...formDataMessage,
+          suggestions: [] // Will be regenerated
+        });
+        
+        // Success message after form submission
+        messages.push({
+          id: `success_${messageId}`,
+          role: 'assistant',
+          content: `Perfect! I've successfully configured the "${dataSourceName}" reader. The data source is now ready to use in your pipeline.`,
+          msg_owner: originalMsgOwner,
+          suggestions: [
+            { text: "Add another source", onClick: handleAddAnotherSource },
+            { text: "Add another transformation", onClick: handleShowTransformations }
+          ]
+        });
+        
+      } else if (formData.schema && formData.schema.module_name) {
+        // Handle other transformation types
+        const transformationType = formData.schema.module_name;
+        const nodeId = formData.currentNodeId;
+        
+        // User request for transformation
+        messages.push({
+          id: `transform_request_${messageId}`,
+          role: 'user',
+          content: `Add ${transformationType} transformation`,
+          msg_owner: originalMsgOwner
+        });
+        
+        // Assistant confirmation
+        messages.push({
+          id: `transform_added_${messageId}`,
+          role: 'assistant',
+          content: `I've added a ${transformationType} transformation to your pipeline. Let's configure it:`,
+          msg_owner: originalMsgOwner
+        });
+        
+        // The actual form data message (from database)
+        messages.push({
+          ...formDataMessage,
+          suggestions: [] // Will be regenerated
+        });
+        
+        // Success message after transformation configuration
+        messages.push({
+          id: `transform_success_${messageId}`,
+          role: 'assistant',
+          content: `Excellent! The ${transformationType} transformation has been configured successfully.`,
+          msg_owner: originalMsgOwner,
+          suggestions: [
+            { text: "Add another transformation", onClick: handleShowTransformations },
+            { text: "Add target destination", onClick: () => console.log('Add target') }
+          ]
+        });
+      } else {
+        // Generic form data message
+        messages.push({
+          ...formDataMessage,
+          suggestions: [] // Will be regenerated
+        });
+      }
+    } else {
+      // Fallback for messages without form data (shouldn't happen with new logic)
+      messages.push({
+        ...formDataMessage,
+        suggestions: []
+      });
+    }
+    
+    return messages;
+  }, [handleCreatePipeline, handleAddAnotherSource, handleShowTransformations]);
+
+
+
+  // Load chat history when id changes
+  useEffect(() => {
+    let isCancelled = false;
+    
+    const loadHistoryForCurrentId = async () => {
+      if (!id) {
+        console.warn('No id available, skipping chat history load');
+        return;
+      }
+
+      // Check if we've already loaded this pipeline's history
+      if (hasLoadedChatHistoryRef.current === id) {
+        console.log('Chat history already loaded for pipeline:', id);
+        return;
+      }
+
+      // Prevent multiple simultaneous loads
+      if (isLoadingChatHistory) {
+        console.log('Already loading chat history, skipping');
+        return;
+      }
+
+      console.log('Loading chat history for pipeline ID:', id);
+      setIsLoadingChatHistory(true);
+      
+      try {
+        const response = await apiService.getPipelineChatHistory(id);
+        
+        // Check if component was unmounted or id changed during the async operation
+        if (isCancelled) {
+          console.log('Load cancelled for id:', id);
+          return;
+        }
+        
+        console.log('Loaded chat history response:', response);
+        
+        // Handle the new API response format: { success: true, data: { messages: [...] } }
+        if (response && response.success && response.data && response.data.messages) {
+          const history = response.data;
+          console.log('Loaded form data messages:', history.messages.length);
+          setChatHistory(history);
+          
+          // Since we only saved form data messages, we need to recreate the full chat flow
+          const formDataMessages = history.messages.filter((msg: any) => msg.formData);
+          console.log('Form data messages to recreate from:', formDataMessages.length);
+          
+          if (formDataMessages.length === 0) {
+            // No form data messages, start fresh
+            setMessages([]);
+            setSavedMessageIds(new Set());
+            setLastSavedMessageCount(0);
+            hasLoadedChatHistoryRef.current = id;
+            return;
+          }
+          
+          // Generate full chat history from form data messages
+          const recreatedMessages: ChatMessage[] = [];
+          
+          formDataMessages.forEach((formDataMsg: any, index: number) => {
+            const contextualMessages = generateContextualMessages(formDataMsg, index, formDataMessages);
+            recreatedMessages.push(...contextualMessages);
+          });
+          
+          // Add final completion message if we have form data messages
+          if (formDataMessages.length > 0) {
+            const lastFormData = formDataMessages[formDataMessages.length - 1];
+            recreatedMessages.push({
+              id: `completion_${lastFormData.id}`,
+              role: 'assistant',
+              content: "Great work! Your pipeline configuration is looking good. What would you like to do next?",
+              msg_owner: lastFormData.msg_owner,
+              suggestions: [
+                { text: "Add another source", onClick: handleAddAnotherSource },
+                { text: "Add another transformation", onClick: handleShowTransformations },
+                { text: "Review pipeline", onClick: () => console.log('Review pipeline') }
+              ]
+            });
+          }
+          
+          console.log('Recreated full chat history with', recreatedMessages.length, 'messages from', formDataMessages.length, 'form data messages');
+          setMessages(recreatedMessages);
+          
+          // Track only the original form data messages as saved
+          const savedFormDataIds:any = new Set(formDataMessages.map((msg: any) => msg.id).filter(Boolean));
+          setSavedMessageIds(savedFormDataIds);
+          setLastSavedMessageCount(recreatedMessages.length);
+          
+          console.log('Tracked form data messages as saved:', {
+            recreatedCount: recreatedMessages.length,
+            savedFormDataIds: savedFormDataIds.size,
+            savedIds: Array.from(savedFormDataIds)
+          });
+          
+          // Restore forms based on the last form data message
+          const lastFormDataMessage = formDataMessages[formDataMessages.length - 1];
+          if (lastFormDataMessage && lastFormDataMessage.formData) {
+            const formData = lastFormDataMessage.formData;
+            
+            // Check if we need to restore reader form
+            if (formData.schema && formData.schema.module_name === 'Reader') {
+              console.log('Restoring reader configuration form from form data');
+              
+              const initialValues = formData.initialValues || {};
+              const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
+              
+              // Set up the initial data for ReaderOptionsForm restoration
+              const initialData = {
+                reader_name: dataSourceName,
+                name: dataSourceName,
+                file_type: initialValues.file_type || 'CSV',
+                source: initialValues.source || {
+                  name: dataSourceName,
+                  type: 'File',
+                  data_src_name: dataSourceName,
+                  file_name: dataSourceName,
+                  connection: {
+                    connection_config_id: 0,
+                    connection_type: 'Local',
+                    file_path_prefix: 'data'
+                  }
+                }
+              };
+              
+              // Restore the ReaderOptionsForm
+              setTimeout(() => {
+                setSelectedDataSource(initialData);
+                setShowReaderOptionsForm(true);
+              }, 500);
+            }
+          }
+          
+          console.log('Chat history recreated successfully');
+          
+        } else if (response && !response.success) {
+          console.warn('API returned unsuccessful response:', response);
+          setMessages([]);
+        } else {
+          console.log('No chat history found or empty response');
+          setMessages([]);
+        }
+        
+        // Mark this pipeline as loaded
+        hasLoadedChatHistoryRef.current = id;
+        
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Failed to load chat history:', error);
+          console.error('Error details:', {
+            id,
+            error: error instanceof Error ? error.message : error
+          });
+          // Initialize with empty messages if loading fails
+          setMessages([]);
+          hasLoadedChatHistoryRef.current = id; // Mark as loaded even if failed
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingChatHistory(false);
+        }
+      }
+    };
+
+    // Reset state when id changes
+    if (id && hasLoadedChatHistoryRef.current !== id) {
+      console.log('Pipeline ID changed to:', id);
+      hasLoadedChatHistoryRef.current = null; // Reset loaded state
+      loadHistoryForCurrentId();
+    }
+
+    // Cleanup function to cancel ongoing operations
+    return () => {
+      isCancelled = true;
+    };
+  }, [id]); // Only depend on id
+
+  // Save chat history when explicitly triggered (on form saves, etc.)
+  const saveChatHistoryOnAction = useCallback(async (actionDescription?: string) => {
+    console.log(`Saving chat history on action: ${actionDescription || 'Manual save'}`);
+    if (messages.length > 0 && id) {
+      await saveChatHistory(messages);
+    } else {
+      console.log('Cannot save chat history:', {
+        noMessages: messages.length === 0,
+        noPipelineId: !id
+      });
+    }
+  }, [messages, id, saveChatHistory]);
+
+  // Helper function to add message with form data
+  const addMessageWithFormData = useCallback((message: ChatMessage) => {
+    const messageWithId = {
+      ...message,
+      id: message.id || generateMessageId()
+    };
+    console.log('Adding message with ID:', messageWithId.id, 'Content:', messageWithId.content);
+    setMessages(prevMessages => [...prevMessages, messageWithId]);
+  }, []);
+
   // We're now using the handleSourceUpdate from the context
 
   const form = useForm<ReaderFormValues>({
@@ -189,54 +1069,30 @@ const PipeLineChatPanel = () => {
   const handleSend = () => {
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
-    setMessages([...messages, { role: 'user', content: trimmedInput }]);
+    addMessageWithFormData({ role: 'user', content: trimmedInput });
     setInput('');
     // Simulate assistant response
     setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        { role: 'assistant', content: 'Processing your request...' },
-      ]);
+      addMessageWithFormData({ role: 'assistant', content: 'Processing your request...' });
     }, 500);
   };
 
-  const handleCreatePipeline = () => {
-    // Define what happens when the "Create Pipeline" suggestion is clicked
-    setMessages([...messages, { role: 'user', content: 'Create a data pipeline' }]);
-    // Simulate assistant response
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "Let's start creating your data pipeline. First, I need some information about the data source:"
-        },
-      ]);
-      setShowReaderForm(true);
-    }, 500);
-  };
-
+ 
   const onSubmitReaderForm = async (data: ReaderFormValues) => {
-    // Add the form data to the messages
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Searching for reader: ${data.reader_name}`
-      },
-    ]);
+    // Add the form data to the messages (no formData needed for search message)
+    addMessageWithFormData({
+      role: 'user',
+      content: `Searching for reader: ${data.reader_name}`
+    });
 
     // Hide the form
     setShowReaderForm(false);
 
     // Show loading message
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'assistant',
-        content: `Searching for data sources matching "${data.reader_name}"...`
-      },
-    ]);
+    addMessageWithFormData({
+      role: 'assistant',
+      content: `Searching for data sources matching "${data.reader_name}"...`
+    });
 
     try {
       // Call the API to get data sources
@@ -256,22 +1112,17 @@ const PipeLineChatPanel = () => {
       // Check if we got results
       if (response && response.length > 0) {
         // Show success message
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            role: 'assistant',
-            content: `I found ${response.length} data source(s) matching "${data.reader_name}".`
-          },
-        ]);
+        addMessageWithFormData({
+          role: 'assistant',
+          content: `I found ${response.length} data source(s) matching "${data.reader_name}".`
+        });
 
         // Show data sources as suggestion buttons
         setTimeout(() => {
-          setMessages(prevMessages => [
-            ...prevMessages,
-            {
-              role: 'assistant',
-              content: "Please select a data source to add to your pipeline:",
-              suggestions: response.map(item => ({
+          addMessageWithFormData({
+            role: 'assistant',
+            content: "Please select a data source to add to your pipeline:",
+            suggestions: response.map(item => ({
                 text: item.data_src_name,
                 onClick: () => {
                   if (readerNode) {
@@ -284,6 +1135,8 @@ const PipeLineChatPanel = () => {
                       reader_name: item?.data_src_name || '',
                       name: item?.data_src_name || '',
                       file_type: item?.connection_config?.custom_metadata?.file_type || item?.file_type || 'CSV',
+                      query: item?.query || '',
+                      read_options: item?.read_options || {},
                       source: {
                         type:
                           item?.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 'local' ||
@@ -301,11 +1154,11 @@ const PipeLineChatPanel = () => {
                         data_src_id: item?.data_src_id || '',
                         file_type: item?.connection_config?.custom_metadata?.file_type || item?.file_type || 'CSV',
                         connection: {
-                          ...item?.connection_config?.custom_metadata,
+                          connection_config_id: item?.connection_config_id || 0,
                           name: item?.connection_config?.connection_config_name || '',
-                          connection_config_id: item?.connection_config_id || ''
+                          ...(item?.connection_config?.custom_metadata || {})
                         },
-                        connection_config_id: item?.connection_config_id || ''
+                        connection_config_id: item?.connection_config_id || 0
                       }
                     };
                     console.log(readerNode, "readerNode");
@@ -322,25 +1175,22 @@ const PipeLineChatPanel = () => {
 
 
                     // Add a message to show that the data source was selected
-                    setMessages(prevMessages => [
-                      ...prevMessages,
-                      {
-                        role: 'user',
-                        content: `Selected data source: ${item.data_src_name}`
-                      },
-                    ]);
+                    addMessageWithFormData({
+                      role: 'user',
+                      content: `Selected data source: ${item.data_src_name}`
+                    });
+
+                    // Data source selected - batch will be saved after form submission
 
                     // Add a message asking to configure the reader
                     setTimeout(() => {
-                      setMessages(prevMessages => [
-                        ...prevMessages,
-                        {
-                          role: 'assistant',
-                          content: `Great! Now let's configure the reader for "${item.data_src_name}". Please review and adjust the settings below:`
-                        },
-                      ]);
+                      addMessageWithFormData({
+                        role: 'assistant',
+                        content: `Great! Now let's configure the reader for "${item.data_src_name}". Please review and adjust the settings below:`
+                      });
 
                       // Set the selected data source and show the ReaderOptionsForm
+                      console.log('Setting selectedDataSource:', initialData);
                       setSelectedDataSource(initialData);
                       setShowReaderOptionsForm(true);
                     }, 300);
@@ -350,35 +1200,34 @@ const PipeLineChatPanel = () => {
                 }
               }))
             },
-          ]);
+          );
         }, 300);
       } else {
         // No results found
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            role: 'assistant',
-            content: `I couldn't find any data sources matching "${data.reader_name}". Would you like to create a new one?`,
-            suggestions: [
-              { text: "Yes, create new", onClick: () => handleCreateNewDataSource(data.reader_name) },
-              { text: "No, try another search", onClick: () => handleRetrySearch() }
-            ]
-          },
-        ]);
+        addMessageWithFormData({
+          role: 'assistant',
+          content: `I couldn't find any data sources matching "${data.reader_name}". Would you like to create a new one?`,
+          suggestions: [
+            { text: "Yes, create new", onClick: () => handleCreateNewDataSource(data.reader_name) },
+            { text: "No, try another search", onClick: () => handleRetrySearch() }
+          ]
+        });
       }
     } catch (error) {
       console.error("API Error:", error);
       toast.error("Failed to fetch data sources. Please try again.");
 
       // Show error message
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "I encountered an error while searching for data sources. Please try again or check your connection."
-        },
-      ]);
+      addMessageWithFormData({
+        role: 'assistant',
+        content: "I encountered an error while searching for data sources. Please try again or check your connection."
+      });
     }
+
+    // Save chat history batch after reader form submission
+    setTimeout(() => {
+      saveChatHistoryBatch();
+    }, 1000);
   };
 
 
@@ -520,20 +1369,32 @@ const PipeLineChatPanel = () => {
     // Create initial data for the ReaderOptionsForm
     const initialData = {
       reader_name: readerName,
+      name: readerName,
+      file_type: 'CSV',
+      query: '',
+      read_options: {},
       source: {
         name: readerName,
         type: sourceType,
+        source_name: readerName,
         data_src_name: readerName,
         data_src_id: `new-${Date.now()}`,
+        file_name: '',
+        table_name: '',
+        bh_project_id: '',
+        file_type: 'CSV',
         connection: {
+          connection_config_id: 0,
           connection_type: sourceType === "File" ? "Local" : "Postgres",
           file_path_prefix: sourceType === "File" ? "data" : "",
           name: "New Connection"
-        }
+        },
+        connection_config_id: 0
       }
     };
 
     // Set the selected data source and show the ReaderOptionsForm
+    console.log('Setting selectedDataSource for new source:', initialData);
     setSelectedDataSource(initialData);
     setShowReaderOptionsForm(true);
 
@@ -542,14 +1403,67 @@ const PipeLineChatPanel = () => {
 
   // Handle the submission of the ReaderOptionsForm
   const handleReaderOptionsSubmit = (sourceData: any) => {
-    // Add a message to show the configuration was saved
-    setMessages(prevMessages => [
-      ...prevMessages,
+    // Find the most recently added Reader node to get the nodeId
+    const readerNodes = nodes.filter(node => 
+      node.data.label === "Reader" || node.data.label.startsWith("Reader ")
+    );
+    const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : `reader-${Date.now()}`;
+
+    // Add messages to show the configuration was saved
+    const readerMessages = [
       {
-        role: 'user',
-        content: `Configured reader: ${sourceData.sourceData.data.label}`
+        role: 'user' as const,
+        content: `Configured reader: ${sourceData.sourceData.data.label}`,
+        id: generateMessageId()
       },
-    ]);
+      {
+        role: 'assistant' as const,
+        content: `Great! I've configured the reader "${sourceData.sourceData.data.label}". What would you like to do next?`,
+        suggestions: [
+          { text: "Add another source", onClick: handleAddAnotherSource },
+          { text: "Add another transformation", onClick: handleShowTransformations }
+        ],
+        id: generateMessageId(),
+        // Include form data to save reader configuration in chat history
+        formData: {
+          schema: {
+            module_name: 'Reader',
+            title: 'Reader',
+            type: 'reader_configuration'
+          },
+          sourceColumns: [],
+          currentNodeId: latestReaderNodeId,
+          isTarget: false,
+          isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
+          initialValues: {
+            nodeId: latestReaderNodeId,
+            reader_name: sourceData.sourceData?.data?.source?.source_name || sourceData.sourceData?.data?.label || '',
+            name: sourceData.sourceData?.data?.source?.source_name || sourceData.sourceData?.data?.label || '',
+            source_type: sourceData.sourceData?.data?.source?.type || 'File',
+            file_type: sourceData.sourceData?.data?.source?.file_type || 'CSV',
+            connection_config_id: sourceData.sourceData?.data?.source?.connection_config_id || 0,
+            data_src_id: sourceData.sourceData?.data?.source?.data_src_id || '',
+            // Store the complete source configuration for reference
+            sourceConfiguration: sourceData.sourceData?.data?.source || sourceData.sourceData?.data || {}
+          }
+        }
+      }
+    ];
+
+    console.log('Reader messages created:', readerMessages);
+    console.log('Reader message with formData:', readerMessages[1]);
+
+    setMessages(prevMessages => {
+      const updatedMessages = [...prevMessages, ...readerMessages];
+      // Save chat history batch after reader configuration with the updated messages
+      setTimeout(() => {
+        console.log('Saving reader configuration to chat history...');
+        console.log('Messages to save:', updatedMessages.length);
+        console.log('Messages with formData:', updatedMessages.filter(msg => msg.formData).length);
+        saveChatHistoryBatchWithMessages(updatedMessages);
+      }, 1000);
+      return updatedMessages;
+    });
 
     // Hide the form
     setShowReaderOptionsForm(false);
@@ -606,119 +1520,10 @@ const PipeLineChatPanel = () => {
   };
 
   // Function to handle adding another source
-  const handleAddAnotherSource = () => {
-    dispatch(setIsRightPanelOpen(true));
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Add another source`
-      },
-    ]);
-
-    // Show the reader form again
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "Let's add another data source to your pipeline. Please enter a reader name to search:"
-        },
-      ]);
-      setShowReaderForm(true);
-    }, 300);
-  };
+ 
 
   // Function to handle showing transformation options
-  const handleShowTransformations = () => {
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Show transformation options`
-      },
-    ]);
-
-    // Get all transformation nodes from nodeDisplayData (excluding Reader)
-    const transformationNodes = nodeDisplayData.nodes.filter(
-      node => node.ui_properties.module_name !== "Reader"
-    );
-
-    // Show transformation options as suggestion buttons
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "Here are the available transformations you can add to your pipeline:",
-          suggestions: transformationNodes.map(node => ({
-            text: node.ui_properties.module_name,
-            onClick: () => {
-              // Add a message to show the selection
-              setMessages(prevMessages => [
-                ...prevMessages,
-                {
-                  role: 'user',
-                  content: `Add ${node.ui_properties.module_name} transformation`
-                },
-              ]);
-
-              // Mark unsaved changes
-              setUnsavedChanges();
-
-              // Add node to history for undo functionality
-              addNodeToHistory();
-
-              // Store the transformation info for later use
-              const transformationInfo = {
-                type: node.ui_properties.module_name,
-                maxInputs: node.ui_properties.ports.maxInputs,
-                node: node
-              };
-
-              // Set the last added transformation to track in useEffect
-              setLastAddedTransformation(transformationInfo);
-
-              // Add the transformation node to the pipeline
-              console.log(node, "readerNode")
-
-              handleNodeClick(node, null);
-
-              // Explicitly call handleAlignHorizontal to ensure proper node positioning
-              // Use a longer delay to ensure the node is fully added to the state
-              setTimeout(() => {
-                if (pipelineContext.handleAlignHorizontal) {
-                  console.log('Calling handleAlignHorizontal from chat panel');
-                  pipelineContext.handleAlignHorizontal();
-
-                  // Force a re-render of the ReactFlow component
-                  window.dispatchEvent(new Event('resize'));
-
-                  // Call it again after a short delay to ensure proper alignment
-                  setTimeout(() => {
-                    pipelineContext.handleAlignHorizontal();
-                    window.dispatchEvent(new Event('resize'));
-                  }, 200);
-                }
-              }, 500);
-
-              setTimeout(() => {
-                setMessages(prevMessages => [
-                  ...prevMessages,
-                  {
-                    role: 'assistant',
-                    content: `Adding a ${node.ui_properties.module_name} transformation to your pipeline...`
-                  },
-                ]);
-              }, 300);
-
-              // The nodes will be updated in the context, and our useEffect will handle asking for dependencies
-            }
-          }))
-        },
-      ]);
-    }, 300);
-  };
+ 
 
   // Function to ask for dependencies based on maxInputs
   const askForDependencies = (node, maxInputs, targetNodeId) => {
@@ -1316,9 +2121,14 @@ const PipeLineChatPanel = () => {
                 <div key={index} className="flex flex-col gap-1.5 py-1.5">
                   <div className="flex items-start gap-2">
                     <div
-                      className="w-6 h-6 mt-1 rounded-full flex-shrink-0"
+                      className="w-6 h-6 mt-1 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
                       style={{ backgroundColor: message.role === 'assistant' ? '#009459' : '#000000' }}
-                    />
+                    >
+                      {message.role === 'assistant' 
+                        ? getAvatarInitials(message.msg_owner)
+                        : getAvatarInitials(message.msg_owner)
+                      }
+                    </div>
                     <div
                       className={`flex-1 rounded-lg px-3 py-2 shadow-sm ${message.role === 'assistant'
                         ? 'bg-gray-100 text-black'
@@ -1344,14 +2154,52 @@ const PipeLineChatPanel = () => {
                     </div>
                   )}
 
-                  {/* Render form if formData exists */}
-                  {message.role === 'assistant' && message.formData && (
+                  {/* Render confirmation summary for saved configurations */}
+                  {message.role === 'assistant' && message.formData && message.formData.isConfirmation && (
+                    <div className="pl-8 mt-2 bg-green-50 rounded-lg shadow-sm border border-green-200 p-3">
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-green-800">✅ Configuration Saved</h4>
+                        <div className="text-xs text-green-700">
+                          {message.formData.schema?.type === 'reader_configuration' ? (
+                            <div className="space-y-1">
+                              <p><strong>Reader:</strong> {message.formData.initialValues?.reader_name || 'N/A'}</p>
+                              <p><strong>Type:</strong> {message.formData.initialValues?.source_type || 'N/A'}</p>
+                            </div>
+                          ) : message.formData.isTarget ? (
+                            <div className="space-y-1">
+                              <p><strong>Target:</strong> {message.formData.initialValues?.name || 'N/A'}</p>
+                              <p><strong>Type:</strong> {message.formData.initialValues?.target_type || 'N/A'}</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <p><strong>Transformation:</strong> {message.formData.schema?.title || 'N/A'}</p>
+                              <p><strong>Name:</strong> {message.formData.initialValues?.name || 'N/A'}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Render form if formData exists and it's not a confirmation message */}
+                  {message.role === 'assistant' && message.formData && message.formData.schema && !message.formData.isConfirmation && (
                     console.log('Rendering form with data:', message.formData),
                     <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
                       <div className="space-y-3">
-                        <h3 className="text-base font-semibold">{message.formData.schema?.title} Configuration</h3>
+                        <h3 className="text-base font-semibold">{message.formData.schema?.title || 'Configuration'}</h3>
 
-                        {message.formData.isTarget || message.formData.schema?.title === 'Target' ? (
+                        {message.formData.schema?.type === 'reader_configuration' ? (
+                          <div className="form-wrapper">
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <h4 className="font-medium mb-2">Reader Configuration Saved</h4>
+                              <div className="text-sm text-gray-600 space-y-1">
+                                <p><strong>Reader Name:</strong> {message.formData.initialValues?.reader_name || 'N/A'}</p>
+                                <p><strong>Source Type:</strong> {message.formData.initialValues?.source_type || 'N/A'}</p>
+                                <p><strong>File Type:</strong> {message.formData.initialValues?.file_type || 'N/A'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : message.formData.isTarget || message.formData.schema?.title === 'Target' ? (
                           <div className="form-wrapper">
                           
                             <TargetPopUp
@@ -1486,43 +2334,95 @@ const PipeLineChatPanel = () => {
                                   console.error('Updated form state:', updatedFormState);
                                 }
 
+                                // Update the chat message's formData.initialValues with the submitted data
+                                setMessages(prevMessages => {
+                                  return prevMessages.map(msg => {
+                                    if (msg.formData && msg.formData.currentNodeId === message.formData.currentNodeId) {
+                                      console.log('🔄 Updating Target chat message formData.initialValues for nodeId:', message.formData.currentNodeId);
+                                      console.log('📝 Previous Target initialValues:', msg.formData.initialValues);
+                                      console.log('📝 Updated Target form state to merge:', updatedFormState);
+                                      const updatedInitialValues = {
+                                        ...msg.formData.initialValues,
+                                        ...updatedFormState
+                                      };
+                                      console.log('📝 Updated Target initialValues:', updatedInitialValues);
+                                      return {
+                                        ...msg,
+                                        formData: {
+                                          ...msg.formData,
+                                          initialValues: updatedInitialValues
+                                        }
+                                      };
+                                    }
+                                    return msg;
+                                  });
+                                });
+
                                 // Mark unsaved changes
                                 setUnsavedChanges();
 
                                 // Add a message to show the form was submitted
-                                setMessages(prevMessages => [
-                                  ...prevMessages,
+                                const newTargetMessages = [
                                   {
-                                    role: 'user',
-                                    content: `Configured Target`
+                                    role: 'user' as const,
+                                    content: `Configured Target`,
+                                    id: generateMessageId()
                                   },
                                   {
-                                    role: 'assistant',
+                                    role: 'assistant' as const,
                                     content: `Great! I've updated the Target with your configuration. What would you like to do next?`,
                                     suggestions: [
                                       { text: "Add another source", onClick: handleAddAnotherSource },
                                       { text: "Add another transformation", onClick: handleShowTransformations }
-                                    ]
+                                    ],
+                                    id: generateMessageId(),
+                                    // Include form data to save target configuration in chat history
+                                    formData: {
+                                      schema: message.formData.schema,
+                                      sourceColumns: message.formData.sourceColumns || [],
+                                      currentNodeId: message.formData.currentNodeId,
+                                      isTarget: true,
+                                      isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
+                                      initialValues: {
+                                        ...message.formData.initialValues,
+                                        ...updatedFormState
+                                      }
+                                    }
                                   }
-                                ]);
+                                ];
+                                
+                                setMessages(prevMessages => {
+                                  const updatedMessages = [...prevMessages, ...newTargetMessages];
+                                  // Save chat history batch after target form submission with updated messages
+                                  setTimeout(() => {
+                                    console.log('Saving target configuration to chat history...');
+                                    console.log('Target messages to save:', updatedMessages.length);
+                                    console.log('Target messages with formData:', updatedMessages.filter(msg => msg.formData).length);
+                                    saveChatHistoryBatchWithMessages(updatedMessages);
+                                  }, 1000);
+                                  return updatedMessages;
+                                });
                               }}
                             />
                           </div>
                         ) : (
                           <div className="form-wrapper">
-                            <CreateFormFormik
-                              schema={message.formData.schema}
-                              sourceColumns={message.formData.sourceColumns || []}
-                              onClose={() => {
-                                // Handle form close
-                                
-                              }}
-                              currentNodeId={message.formData.currentNodeId}
+                            {message.formData && message.formData.schema && message.formData.currentNodeId ? (
+                              <CreateFormFormik
+                                schema={message.formData.schema}
+                                sourceColumns={message.formData.sourceColumns || []}
+                                onClose={() => {
+                                  // Handle form close
+                                  
+                                }}
+                                currentNodeId={message.formData.currentNodeId}
                               initialValues={{
-                                // First try to get values from formStates
+                                // Start with the original form data initial values
+                                ...message.formData.initialValues,
+                                // Then try to get values from formStates (saved form data)
                                 ...formStates[message.formData.currentNodeId],
                                 nodeId: message.formData.currentNodeId,
-                                // Then try to get values from the node's transformationData if it exists
+                                // Finally, try to get values from the node's transformationData if it exists
                                 ...(() => {
                                   const node = nodes.find(n => n.id === message.formData.currentNodeId);
                                   return node?.data?.transformationData || {};
@@ -1589,7 +2489,7 @@ const PipeLineChatPanel = () => {
                                   setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
                                   
                                   console.log('📝 Updated form states:', { [nodeId]: formStateData });
-                                  
+
                                   // Mark as unsaved
                                   setUnsavedChanges();
                                   
@@ -1607,19 +2507,107 @@ const PipeLineChatPanel = () => {
                                 console.log('Data sent to handleFormSubmit:', formSubmitData);
 
                                 // Add a message to show the form was submitted
-                                setMessages(prevMessages => [
-                                  ...prevMessages,
-                                  { role: 'user', content: `Configured ${message.formData?.schema?.title} transformation` },
+                                const newMessages = [
+                                  { role: 'user' as const, content: `Configured ${message.formData?.schema?.title} transformation`, id: generateMessageId() },
                                   {
-                                    role: 'assistant', content: `Great! I've updated the ${message.formData?.schema?.title} transformation with your configuration. What would you like to do next?`, suggestions: [
+                                    role: 'assistant' as const, 
+                                    content: `Great! I've updated the ${message.formData?.schema?.title} transformation with your configuration. What would you like to do next?`, 
+                                    suggestions: [
                                       { text: "Add another source", onClick: handleAddAnotherSource },
                                       { text: "Add another transformation", onClick: handleShowTransformations }
-                                    ]
+                                    ],
+                                    id: generateMessageId(),
+                                    // Include form data to save transformation configuration in chat history
+                                    formData: {
+                                      schema: message.formData.schema,
+                                      sourceColumns: message.formData.sourceColumns || [],
+                                      currentNodeId: message.formData.currentNodeId,
+                                      isTarget: message.formData.isTarget || false,
+                                      isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
+                                      initialValues: {
+                                        ...message.formData.initialValues,
+                                        ...data,
+                                        nodeId: nodeId,
+                                        name: updatedTitle
+                                      }
+                                    }
                                   }
-                                ]);
+                                ];
+                                
+                                // SINGLE STATE UPDATE: Update existing message formData AND add new messages
+                                setMessages(prevMessages => {
+                                  console.log('🔄 SINGLE STATE UPDATE: Updating formData.initialValues and adding new messages');
+                                  
+                                  // Recreate cleanFormData within this scope
+                                  const cleanFormData = { ...data };
+                                  delete cleanFormData.nodeId;
+                                  
+                                  // Special handling for different transformation types
+                                  const currentNode = nodes.find(n => n.id === nodeId);
+                                  if (currentNode && currentNode.data.label === 'Filter') {
+                                    console.log('Processing Filter node in PipeLineChatPanel:', data);
+                                    if (data.condition !== undefined) {
+                                      cleanFormData.condition = data.condition;
+                                    }
+                                  }
+                                  
+                                  console.log('📝 Clean form data to merge:', cleanFormData);
+                                  
+                                  // STEP 1: Update the existing message's formData.initialValues
+                                  const messagesWithUpdatedFormData = prevMessages.map(msg => {
+                                    if (msg.formData && msg.formData.currentNodeId === nodeId) {
+                                      console.log('🔄 Updating chat message formData.initialValues for nodeId:', nodeId);
+                                      console.log('📝 Previous initialValues:', msg.formData.initialValues);
+                                      
+                                      const updatedInitialValues = {
+                                        ...msg.formData.initialValues,
+                                        ...cleanFormData
+                                      };
+                                      console.log('📝 Updated initialValues:', updatedInitialValues);
+                                      
+                                      return {
+                                        ...msg,
+                                        formData: {
+                                          ...msg.formData,
+                                          initialValues: updatedInitialValues
+                                        }
+                                      };
+                                    }
+                                    return msg;
+                                  });
+                                  
+                                  // STEP 2: Add the new messages
+                                  const finalMessages = [...messagesWithUpdatedFormData, ...newMessages];
+                                  
+                                  console.log('📋 Final messages count:', finalMessages.length);
+                                  console.log('📋 Messages with formData after update:');
+                                  finalMessages.forEach((msg, index) => {
+                                    if (msg.formData && msg.formData.initialValues) {
+                                      console.log(`  Message ${index} (${msg.id}):`, {
+                                        content: msg.content.substring(0, 50),
+                                        nodeId: msg.formData.currentNodeId,
+                                        initialValues: msg.formData.initialValues
+                                      });
+                                    }
+                                  });
+                                  
+                                  // STEP 3: Save chat history batch with the correctly updated messages
+                                  setTimeout(() => {
+                                    console.log('💾 About to save chat history batch with updated formData');
+                                    console.log('💾 Passing finalMessages directly to avoid stale closure:', finalMessages.length);
+                                    saveChatHistoryBatchWithMessages(finalMessages);
+                                  }, 500);
+                                  
+                                  return finalMessages;
+                                });
                               }}
 
                             />
+                            ) : (
+                              <div className="p-4 text-center text-gray-500">
+                                Form data is not available. Please refresh the page or start a new configuration.
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1689,6 +2677,7 @@ const PipeLineChatPanel = () => {
         </div>
       </ScrollArea>
       <div className="p-2 border-t border-slate-200 bg-white">
+       
         <AIChatInput variant='designer' input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
       </div>
     </div>
@@ -1696,3 +2685,4 @@ const PipeLineChatPanel = () => {
 };
 
 export default PipeLineChatPanel;
+

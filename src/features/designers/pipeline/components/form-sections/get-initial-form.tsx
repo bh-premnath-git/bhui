@@ -32,7 +32,7 @@ console.log(initialValues,"initialValues")
     case 'Filter':
       return {
         ...baseValues,
-        condition: initialValues.condition || ''
+        condition: baseValues.condition || initialValues?.condition || ''
       };
 
     case 'Aggregator':

@@ -13,6 +13,7 @@ import { FormField } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
+import { EngineSelector } from '@/components/headers/playground-header/EngineSelector';
 
 interface CreatePipelineDialogProps {
     handleClose: () => void;
@@ -158,6 +159,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
                             )}
                         </div>
                     </div>
+              <EngineSelector />
 
                     <div>
                         <button

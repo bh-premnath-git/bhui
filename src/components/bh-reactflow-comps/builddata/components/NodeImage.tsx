@@ -18,7 +18,6 @@ export const NodeImage: React.FC<NodeImageProps> = ({
     onMouseLeave,
 }) => {
     let source = data.source?.connection?.connection_type?.toLowerCase() || data.source?.connection_config?.custom_metadata?.connection_type?.toLowerCase();
-    console.log(source, "source")
     return (
         <div className="relative bg-white rounded-lg">
             <div

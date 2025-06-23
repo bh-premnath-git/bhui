@@ -26,6 +26,8 @@ export interface DataTableProps<TData> {
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
   fullData?: TData[]
+  hasNextPage?: boolean
+  hasPreviousPage?: boolean
 }
 
 export function DataTable<TData>({
@@ -41,7 +43,9 @@ export function DataTable<TData>({
   pageSize,
   onPageChange,
   onPageSizeChange,
-  fullData
+  fullData,
+  hasNextPage,
+  hasPreviousPage
 }: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -71,7 +75,7 @@ export function DataTable<TData>({
         const newState = updater(oldState);
         
         if (onPageChange && newState.pageIndex !== oldState.pageIndex) {
-          onPageChange(newState.pageIndex + 1);
+          onPageChange(newState.pageIndex);
         }
         
         if (onPageSizeChange && newState.pageSize !== oldState.pageSize) {
@@ -84,12 +88,12 @@ export function DataTable<TData>({
     getFilteredRowModel: getFilteredRowModel(),
   })
 
-  // Update the table when data changes
+  // Update the table when page index changes
   useEffect(() => {
     if (table) {
       table.setPageIndex(pageIndex !== undefined ? pageIndex : 0);
     }
-  }, [table, pageIndex, data]);
+  }, [table, pageIndex]);
 
   useEffect(() => {
     if (!isInitialized && table) {
@@ -123,7 +127,11 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      {pagination && <TablePagination table={table} />}
+      {pagination && <TablePagination 
+        table={table} 
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+      />}
     </div>
   );
 }

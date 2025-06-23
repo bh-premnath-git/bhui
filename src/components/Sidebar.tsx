@@ -389,8 +389,8 @@ export function Sidebar() {
                   )}
                 </div>
                 {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
-                {isExpanded && item.title === "Data Xplorer" && isXplorerOpen && dataXplorerSubItems.length > 0 && (
-                  <ul className="mt-1 space-y-1 max-h-[128px] overflow-y-auto pl-2 border-l border-gray-300 dark:border-gray-700">
+                {isExpanded && item.title === "Data Xplorer" && isXplorerOpen && (
+                  <ul className="mt-1 space-y-1 max-h-[128px] overflow-y-auto pl-2 border-l border-gray-300 dark:border-gray-700 sidebar-subitems-scrollable">
                     <li className="sticky top-0 z-10 px-3 py-1 bg-gray-50 dark:bg-gray-900 flex items-center gap-2">
                       <Input
                         placeholder="Search reports…"
@@ -408,114 +408,120 @@ export function Sidebar() {
                         {creatingReport ? <Spinner className="h-4 w-4" /> : <PlusCircle className="h-4 w-4" />}
                       </Button>
                     </li>
-                    {filteredDataXplorerSubItems.map(subItem => (
-                      <li key={subItem.path}>
-                        <div className="flex items-center">
-                          {editingReportId === subItem.id ? (
-                            <div className="flex-1 flex items-center gap-1 px-3 py-1">
-                              <Input
-                                value={editingReportName}
-                                onChange={(e) => setEditingReportName(e.target.value)}
-                                className="h-7 text-sm"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleSaveReportName();
-                                  } else if (e.key === 'Escape') {
-                                    e.preventDefault();
-                                    handleCancelRename();
-                                  }
-                                }}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={handleSaveReportName}
-                                disabled={updatingDashboard || !editingReportName.trim()}
-                              >
-                                {updatingDashboard ? <Spinner className="h-3 w-3" /> : <Check className="h-3 w-3 text-green-500" />}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={handleCancelRename}
-                              >
-                                <X className="h-3 w-3 text-red-500" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center flex-1 group">
-                                <a
-                                  href={subItem.path}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
+                    {filteredDataXplorerSubItems.length > 0 ? (
+                      filteredDataXplorerSubItems.map(subItem => (
+                        <li key={subItem.path}>
+                          <div className="flex items-center">
+                            {editingReportId === subItem.id ? (
+                              <div className="flex-1 flex items-center gap-1 px-3 py-1">
+                                <Input
+                                  value={editingReportName}
+                                  onChange={(e) => setEditingReportName(e.target.value)}
+                                  className="h-7 text-sm"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleSaveReportName();
+                                    } else if (e.key === 'Escape') {
+                                      e.preventDefault();
+                                      handleCancelRename();
+                                    }
                                   }}
-                                  className={cn(
-                                    "flex items-center px-3 py-2 rounded-md",
-                                    "transition-all duration-200 ease-in-out",
-                                    "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
-                                    location.pathname === subItem.path
-                                      ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
-                                      : "text-gray-700 dark:text-gray-300",
-                                    "text-sm pl-7 flex-1"
-                                  )}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={handleSaveReportName}
+                                  disabled={updatingDashboard || !editingReportName.trim()}
                                 >
-                                  {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
-                                  <span className="ml-3 flex-1">{subItem.title}</span>
-                                </a>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
-                                    >
-                                      <MoreHorizontal className="h-3 w-3" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="z-[110] w-auto min-w-[8rem]"
-                                  >
-                                    <DropdownMenuItem
-                                      className="cursor-pointer flex items-center gap-2 text-xs"
-                                      onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
-                                    >
-                                      <Edit className="h-3 w-3" />
-                                      <span>Rename</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="cursor-pointer flex items-center gap-2 text-xs text-red-500 focus:text-red-500"
-                                      onClick={() => handleDeleteReport(subItem.id)}
-                                      disabled={deletingDashboard}
-                                    >
-                                      {deletingDashboard ? (
-                                        <Spinner className="h-3 w-3 mr-2" />
-                                      ) : (
-                                        <Trash2 className="h-3 w-3" />
-                                      )}
-                                      <span>Delete</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="cursor-pointer flex items-center gap-2 text-xs"
-                                      onClick={() => setSearchOpen(true)}
-                                    >
-                                      <Search className="h-3 w-3" />
-                                      <span>Search</span>
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                  {updatingDashboard ? <Spinner className="h-3 w-3" /> : <Check className="h-3 w-3 text-green-500" />}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={handleCancelRename}
+                                >
+                                  <X className="h-3 w-3 text-red-500" />
+                                </Button>
                               </div>
-                            </>
-                          )}
-                        </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center flex-1 group">
+                                  <a
+                                    href={subItem.path}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
+                                    }}
+                                    className={cn(
+                                      "flex items-center px-3 py-2 rounded-md",
+                                      "transition-all duration-200 ease-in-out",
+                                      "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
+                                      location.pathname === subItem.path
+                                        ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
+                                        : "text-gray-700 dark:text-gray-300",
+                                      "text-sm pl-7 flex-1"
+                                    )}
+                                  >
+                                    {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                    <span className="ml-3 flex-1">{subItem.title}</span>
+                                  </a>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                                      >
+                                        <MoreHorizontal className="h-3 w-3" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="z-[110] w-auto min-w-[8rem]"
+                                    >
+                                      <DropdownMenuItem
+                                        className="cursor-pointer flex items-center gap-2 text-xs"
+                                        onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                        <span>Rename</span>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        className="cursor-pointer flex items-center gap-2 text-xs text-red-500 focus:text-red-500"
+                                        onClick={() => handleDeleteReport(subItem.id)}
+                                        disabled={deletingDashboard}
+                                      >
+                                        {deletingDashboard ? (
+                                          <Spinner className="h-3 w-3 mr-2" />
+                                        ) : (
+                                          <Trash2 className="h-3 w-3" />
+                                        )}
+                                        <span>Delete</span>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        className="cursor-pointer flex items-center gap-2 text-xs"
+                                        onClick={() => setSearchOpen(true)}
+                                      >
+                                        <Search className="h-3 w-3" />
+                                        <span>Search</span>
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="px-4 py-2 text-xs text-center text-gray-500 dark:text-gray-400">
+                        {xplorerSearchTerm ? 'No reports found.' : 'Click + to add a report.'}
                       </li>
-                    ))}
+                    )}
                   </ul>
                 )}
               </li>

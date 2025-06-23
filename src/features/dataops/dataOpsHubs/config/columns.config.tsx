@@ -2,6 +2,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import type {TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
 import { DataOpsHub } from '@/types/dataops/dataOpsHub';
 import { Clock } from 'lucide-react';
+import { formatDuration } from '@/lib/date-format';
 
 export const columnHelper = createColumnHelper<DataOpsHub>();
 
@@ -36,12 +37,13 @@ const columns: ColumnDefWithFilters<DataOpsHub>[] = [
     enableColumnFilter: true,
   }),
   columnHelper.accessor('job_start_time', {
-    header: 'Job Start Time',
-    enableColumnFilter: true,
-  }),
-  columnHelper.accessor('created_at', {
-    header: 'Created At',
-    enableColumnFilter: true,
+    header: 'Job Duration',
+    cell: ({ row }) => {
+      const startTime = row.original.job_start_time;
+      const endTime = row.original.job_end_time;
+      return formatDuration(startTime, endTime);
+    },
+    enableColumnFilter: false,
   }),
   columnHelper.accessor('created_by', {
     header: 'Created By',

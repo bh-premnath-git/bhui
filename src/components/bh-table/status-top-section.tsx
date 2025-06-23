@@ -14,9 +14,6 @@ import {
 export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status", fullData }: TopSectionProps<TData>) {
   const statusColumn = table.getColumn(headerFilter)
   const selectedStatuses = (statusColumn?.getFilterValue() as string[]) || []
-  
-  // Add debug log to see what's being selected
-  console.log('Selected statuses:', selectedStatuses)
 
   const metrics: StatusMetric[] = React.useMemo(() => {
     const statusCounts = new Map<string, number>()

@@ -53,7 +53,7 @@ export function OpsHub({
   return (
     <>
       <DataTable<DataOpsHub>
-        key={`${pageIndex}-${pageSize}`}
+        key={`${pageIndex}-${pageSize}opshub`}
         columns={columns}
         data={dataOpsHubs}
         fullData={dataOpsHubs}

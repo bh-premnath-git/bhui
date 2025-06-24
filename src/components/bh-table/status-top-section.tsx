@@ -13,20 +13,36 @@ import {
 
 export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status", fullData }: TopSectionProps<TData>) {
   const statusColumn = table.getColumn(headerFilter)
-  const selectedStatuses = (statusColumn?.getFilterValue() as string[]) || []
 
-  const metrics: StatusMetric[] = React.useMemo(() => {
-    const statusCounts = new Map<string, number>()
+  const metrics = React.useMemo(() => {
+    const statusCounts = new Map<string, { count: number, originalStatuses: Set<string> }>()
     const totalRows = fullData?.length || 0
-    
-    // This ensures we see ALL possible statuses across ALL pages
+
+    const getCanonicalStatus = (status: string): string => {
+      if (!status) return "Unknown";
+      const s = status.toLowerCase().replace(/_/g, ' ');
+      if (s.includes('success')) return 'Success';
+      if (s.includes('failed') || s.includes('failure')) return 'Failed';
+      if (s.includes('progress')) return 'In Progress';
+      return s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+
     fullData?.forEach((row) => {
-      const status = (row as any).flow_status as string
-      statusCounts.set(status, (statusCounts.get(status) || 0) + 1)
+      const originalStatus = (row as any).flow_status as string
+      if (originalStatus === null || originalStatus === undefined) return;
+
+      const canonicalStatus = getCanonicalStatus(originalStatus);
+      
+      if (!statusCounts.has(canonicalStatus)) {
+        statusCounts.set(canonicalStatus, { count: 0, originalStatuses: new Set() });
+      }
+      const statusInfo = statusCounts.get(canonicalStatus)!;
+      statusInfo.count += 1;
+      statusInfo.originalStatuses.add(originalStatus);
     })
     
-    return Array.from(statusCounts.entries()).map(([status, count]) => {
-      const percentage = (count / totalRows) * 100
+    return Array.from(statusCounts.entries()).map(([status, { count, originalStatuses }]) => {
+      const percentage = totalRows > 0 ? (count / totalRows) * 100 : 0;
       let icon: React.ReactNode
       let color: string
 
@@ -54,22 +70,32 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
         percentage,
         icon,
         color,
-        filterValue: status
+        originalStatuses: Array.from(originalStatuses)
       }
     })
-  }, [fullData, headerFilter])
+  }, [fullData])
 
-  const handleStatusFilter = (status: string) => {
+  const handleStatusFilter = (statusesToToggle: string[]) => {
     if (statusColumn) {
-      // Update the filter value while preserving multi-select functionality
-      const currentFilters = statusColumn.getFilterValue() as string[] || []
-      const updatedStatuses = currentFilters.includes(status)
-        ? currentFilters.filter(s => s !== status)
-        : [...currentFilters, status]
+      const currentFilters = (statusColumn.getFilterValue() as string[] || []);
+      const isAdding = !statusesToToggle.some(s => currentFilters.includes(s));
+
+      let updatedStatuses: string[];
+      if (isAdding) {
+        updatedStatuses = [...new Set([...currentFilters, ...statusesToToggle])];
+      } else {
+        const statusesToRemoveSet = new Set(statusesToToggle);
+        updatedStatuses = currentFilters.filter(s => !statusesToRemoveSet.has(s));
+      }
       
-      console.log('Setting filter:', updatedStatuses)
-      statusColumn.setFilterValue(updatedStatuses.length ? updatedStatuses : undefined)
+      statusColumn.setFilterValue(updatedStatuses.length ? updatedStatuses : undefined);
     }
+  }
+
+  const isStatusActive = (originalStatuses: string[]) => {
+    if (!statusColumn) return false;
+    const currentFilters = (statusColumn?.getFilterValue() as string[] || []);
+    return originalStatuses.some(s => currentFilters.includes(s));
   }
 
   return (
@@ -78,21 +104,20 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
         {metrics.map((metric) => (
           <Card
             key={metric.label}
-            className={`cursor-pointer transition-all hover:bg-accent relative ${
-              (statusColumn?.getFilterValue() as string[] || []).includes(metric.label) 
+            className={`cursor-pointer transition-all hover:bg-accent relative ${isStatusActive(metric.originalStatuses)
                 ? `ring-1 ring-${metric.color}-500` 
                 : ""
             }`}
-            onClick={() => handleStatusFilter(metric.label)}
+            onClick={() => handleStatusFilter(metric.originalStatuses)}
           >
-            {(statusColumn?.getFilterValue() as string[] || []).includes(metric.label) && (
+            {isStatusActive(metric.originalStatuses) && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="absolute top-0 right-0 h-4 w-4 p-0 hover:bg-transparent"
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleStatusFilter(metric.label)
+                  handleStatusFilter(metric.originalStatuses)
                 }}
               >
                 <X className="h-2 w-2" />
@@ -169,4 +194,3 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
     </div>
   )
 }
-

@@ -2,6 +2,8 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { useAppSelector } from "@/hooks/useRedux";
 import { RootState } from "@/store";
+import aiIcon from '/assets/ai/ai.svg';
+import { Hammer } from "lucide-react";
 
 interface NodeToolbarProps {
     show: boolean;
@@ -30,7 +32,7 @@ export const NodeToolbar = ({ show, onEdit, onDelete, onDebug, onRefresh, onAiCh
                 </ToolbarButton>
                 
                 <ToolbarButton title="AI Chat" onClick={onAiChat}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886A8.237 8.237 0 0116.5 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0016.5 3a9.707 9.707 0 00-5.25 1.533zm4.5 9.217a6.22 6.22 0 00-2.25-.42 6.22 6.22 0 00-2.25.42V6.75a7.64 7.64 0 012.25-.75 7.64 7.64 0 012.25.75v7z" />
+                   <Hammer />
                 </ToolbarButton>
             </>
         );

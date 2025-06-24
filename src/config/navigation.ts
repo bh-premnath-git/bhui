@@ -15,7 +15,8 @@ import {
   BarChart,
   NotebookText,
   BookMarked,
-  FileText
+  FileText,
+  Server
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -125,6 +126,12 @@ export const navigationItems: NavItem[] = [
         title: "Manage Prompts",
         icon: BookMarked,
         path: ROUTES.ADMIN.PROMPT.INDEX,
+        parent: ROUTES.ADMIN.INDEX
+      },
+      {
+        title: "Manage Compute Cluster",
+        icon: Server,
+        path: ROUTES.ADMIN.COMPUTE_CLUSTER.INDEX,
         parent: ROUTES.ADMIN.INDEX
       }
     ],

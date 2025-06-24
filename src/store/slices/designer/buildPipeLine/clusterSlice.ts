@@ -36,7 +36,7 @@ export const fetchClusters = createAsyncThunk(
   async (params: { bh_env_id: string, region: string }) => {
     const response = await apiService.get<{ clusters: Cluster[] }>({
       baseUrl:CATALOG_REMOTE_API_URL,
-      url: '/bh_cluster/list-clusters',
+      url: '/bh_compute/list-clusters',
       params,
       usePrefix: true,
       method: 'GET',

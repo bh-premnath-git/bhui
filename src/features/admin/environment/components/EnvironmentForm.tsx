@@ -58,12 +58,46 @@ export function EnvironmentForm({ initialData, onSubmit, ...props }: Environment
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const isEditMode = props.mode === "edit";
   
+  // Watch platform type to conditionally show fields
+  const platformType = form.watch("platform.type");
+  const isAwsSelected = platformType === "101"; // AWS platform value
+  
+  // Watch all form values to check if required fields are filled
+  const formValues = form.watch();
+  
+  // Check if all required fields are filled when AWS is selected
+  const isFormComplete = !isAwsSelected || (
+    formValues.environmentName &&
+    formValues.environment &&
+    formValues.platform?.type &&
+    formValues.platform?.region &&
+    formValues.credentials?.publicId &&
+    formValues.credentials?.accessKey &&
+    formValues.credentials?.secretKey &&
+    formValues.advancedSettings?.airflowName &&
+    formValues.advancedSettings?.airflowBucketName &&
+    formValues.advancedSettings?.airflowBucketUrl
+  );
+  
   // Reset form when initialData changes
   useEffect(() => {
     if (initialData) {
       form.reset(initialData);
     }
   }, [initialData, form]);
+
+  // Clear AWS-specific fields when switching away from AWS
+  useEffect(() => {
+    if (platformType && platformType !== "101") {
+      form.setValue("platform.region", "");
+      form.setValue("credentials.publicId", "");
+      form.setValue("credentials.accessKey", "");
+      form.setValue("credentials.secretKey", "");
+      form.setValue("advancedSettings.airflowName", "");
+      form.setValue("advancedSettings.airflowBucketName", "");
+      form.setValue("advancedSettings.airflowBucketUrl", "");
+    }
+  }, [platformType, form]);
 
   const handleSubmit = async (data: EnvironmentFormValues) => {
     const isFormValid = await form.trigger(); // Force validation
@@ -98,43 +132,65 @@ export function EnvironmentForm({ initialData, onSubmit, ...props }: Environment
   
   return (
     <Card className="w-full max-w-8xl mx-auto border-none shadow-none">
-      <CardContent>
+      <CardContent className="p-4">
         <FormProvider {...form}>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <EnvironmentDetailsFields control={form.control} />
               <PlatformFields control={form.control} />
-              <CredentialsFields 
-                control={form.control}
-                onValidateToken={props.onValidate || (() => Promise.resolve())}
-                isEditMode={isEditMode}
-                isValidating={props.isValidating}
-                isTokenValidated={props.isTokenValidated}
-              />
-              <AdvancedSettingsFields 
-                control={form.control}
-                isTokenValidated={props.isTokenValidated} 
-              />
-              <TagsField control={form.control} />
+              
+              {/* Show message when AWS is not selected */}
+              {platformType && !isAwsSelected && (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground text-sm">
+                    Please select AWS to continue with environment configuration.
+                  </p>
+                </div>
+              )}
+              
+              {/* Show remaining fields only when AWS is selected */}
+              {isAwsSelected && (
+                <>
+                  <CredentialsFields 
+                    control={form.control}
+                    onValidateToken={props.onValidate || (() => Promise.resolve())}
+                    isEditMode={isEditMode}
+                    isValidating={props.isValidating}
+                    isTokenValidated={props.isTokenValidated}
+                  />
+                  <AdvancedSettingsFields 
+                    control={form.control}
+                    isTokenValidated={props.isTokenValidated} 
+                  />
+                  <TagsField control={form.control} />
+                </>
+              )}
 
-              <div className="flex justify-center pt-6">
-                <Button type="submit" className={`px-8 w-40 ${getButtonStyles()}`} disabled={formState === "submitting"}>
-                  {formState === "submitting" ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {isEditMode ? "Updating..." : "Creating..."}
-                    </>
-                  ) : formState === "success" ? (
-                    "Success!"
-                  ) : formState === "error" ? (
-                    "Error"
-                  ) : isEditMode ? (
-                    "Update Environment"
-                  ) : (
-                    "Create Environment"
-                  )}
-                </Button>
-              </div>
+              {/* Show submit button only when AWS is selected */}
+              {isAwsSelected && (
+                <div className="flex justify-center pt-4">
+                  <Button 
+                    type="submit" 
+                    className={`px-8 w-40 ${getButtonStyles()}`} 
+                    disabled={formState === "submitting" || !isFormComplete}
+                  >
+                    {formState === "submitting" ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {isEditMode ? "Updating..." : "Creating..."}
+                      </>
+                    ) : formState === "success" ? (
+                      "Success!"
+                    ) : formState === "error" ? (
+                      "Error"
+                    ) : isEditMode ? (
+                      "Update Environment"
+                    ) : (
+                      "Create Environment"
+                    )}
+                  </Button>
+                </div>
+              )}
               {props.error && <p className="text-sm text-red-500 text-center">{props.error}</p>}
             </form>
           </Form>

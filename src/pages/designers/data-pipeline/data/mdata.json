@@ -66,32 +66,64 @@
       ]
     },
     {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "description": "",
-      "type": "object",
-      "title": "SchemaTransformation",
-      "ui_type": "array-container",
-      "properties": {
-        "derived_fields": {
-          "type": "array",
-          "uniqueItems": true,
-          "minItems": 1,
-          "items": {
-            "name": {
-              "type": "string",
-              "minLength": 1
-            },
-            "expression": {
-              "type": "expression",
-              "minLength": 1
-            }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "",
+  "type": "object",
+  "title": "SchemaTransformation",
+  "ui_type": "tab-container",
+  "properties": {
+    "derived_fields": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "required": [
+          "name",
+          "expression"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expression": {
+            "type": "expression",
+            "minLength": 1
           }
         }
-      },
-      "required": [
-        "derived_fields"
-      ]
+      }
     },
+    "select_columns": {
+      "type": "array",
+      "description": "List of column names to select from the dataset",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "drop_columns": {
+      "type": "array",
+      "description": "List of column names to drop from the dataset",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "rename_columns": {
+      "type": "object",
+      "description": "Mapping of old column names to new column names",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "derived_fields"
+  ]
+},
     {
       "$schema": "http://json-schema.org/draft-04/schema#",
       "description": "",

@@ -130,7 +130,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
               <SelectValue placeholder="Select Environment" />
             )}
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent style={{zIndex: 9999}} className="max-h-60">
             {environments.map((env) => (
               <SelectItem key={env.bh_env_id} value={env.bh_env_id.toString()}>
                 <div className="flex items-center gap-2">

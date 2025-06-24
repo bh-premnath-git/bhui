@@ -129,7 +129,9 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             const connectionConfig = node.data.source?.connection_config?.custom_metadata;
             const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
             console.log(connectionConfig, "connectionConfig")
-            return {
+            
+            // Base reader configuration
+            const readerConfig = {
                 name: node.data.title,
                 dependent_on: [],
                 transformation: "Reader",
@@ -144,6 +146,25 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     header: true
                 }
             };
+            
+            // Add schema transformation fields if they exist in transformationData
+            const transformationData = node.data.transformationData;
+            if (transformationData) {
+                // Always include these fields if they exist, even if empty
+                if (transformationData.select_columns !== undefined) {
+                    readerConfig.select_columns = transformationData.select_columns;
+                }
+                
+                if (transformationData.drop_columns !== undefined) {
+                    readerConfig.drop_columns = transformationData.drop_columns;
+                }
+                
+                if (transformationData.rename_columns !== undefined) {
+                    readerConfig.rename_columns = transformationData.rename_columns;
+                }
+            }
+            
+            return readerConfig;
         });
         // debugger
     // Process regular transformations using ordered nodes
@@ -271,10 +292,25 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     };
                 case 'SchemaTransformation':
                     console.log('SchemaTransformation transformationData:', node.data.transformationData);
-                    return {
+                    const schemaTransformConfig: any = {
                         ...baseConfig,
                         derived_fields: node.data.transformationData?.derived_fields || []
                     };
+                    
+                    // Always include these fields, even if empty
+                    if (node.data.transformationData?.select_columns !== undefined) {
+                        schemaTransformConfig.select_columns = node.data.transformationData.select_columns;
+                    }
+                    
+                    if (node.data.transformationData?.drop_columns !== undefined) {
+                        schemaTransformConfig.drop_columns = node.data.transformationData.drop_columns;
+                    }
+                    
+                    if (node.data.transformationData?.rename_columns !== undefined) {
+                        schemaTransformConfig.rename_columns = node.data.transformationData.rename_columns;
+                    }
+                    
+                    return schemaTransformConfig;
                 case 'Sorter':
                     return {
                         ...baseConfig,

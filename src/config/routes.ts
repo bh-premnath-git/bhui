@@ -51,6 +51,11 @@ export const ROUTES = {
       INDEX: '/admin-console/prompt',
       ADD: '/admin-console/prompt/add',
       EDIT: (id: string) => `/admin-console/prompt/edit/${id}`
+    },
+    COMPUTE_CLUSTER: {
+      INDEX: '/admin-console/compute-cluster',
+      ADD: '/admin-console/compute-cluster/add',
+      EDIT: (id: string) => `/admin-console/compute-cluster/edit/${id}`
     }
   }
 } as const;

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
-import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments } from '@/types/admin/environment';
+import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments, EnvironmentListResponse } from '@/types/admin/environment';
 import { toast } from 'sonner';
-import {     CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+
 interface UseEnvironmentsOptions {
   shouldFetch?: boolean;
   environmentId?: string;
@@ -52,9 +53,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
       retry: 2
     },
     params: { limit: 1000 }
-  });
-
-
+  }) as { data: EnvironmentListResponse | undefined, isLoading: boolean, isFetching: boolean, isError: boolean };
 
   // Get single environment
   const {
@@ -137,7 +136,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
   }, [AWSValidationMutation]);
 
   return {
-    environments: environments || [],
+    environments: environments?.data || [],
     environment,
     isLoading,
     isEnvironmentLoading,

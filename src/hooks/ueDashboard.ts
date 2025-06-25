@@ -36,7 +36,7 @@ export function useListDashboards() {
         method: 'GET'
       });
       
-      return response;
+      return response.data;
     }
   });
 }

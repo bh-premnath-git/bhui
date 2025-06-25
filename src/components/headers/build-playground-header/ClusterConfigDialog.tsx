@@ -45,7 +45,7 @@ interface ClusterConfigDialogProps {
 }
 
 export const ClusterConfigDialog: React.FC<any> = () => {
-  const [environments, setEnvironments] = useState<any[]>([]);
+  const [environments, setEnvironments] = useState<any>([]);
   const [selectedEnvId, setSelectedEnvId] = useState<string>("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [clusterName, setClusterName] = useState("");
@@ -131,7 +131,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
             )}
           </SelectTrigger>
           <SelectContent>
-            {environments.map((env) => (
+            {environments.data?.map((env:any) => (
               <SelectItem key={env.bh_env_id} value={env.bh_env_id.toString()}>
                 <div className="flex items-center gap-2">
                   <Cloud className="h-4 w-4 text-blue-500" />

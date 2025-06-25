@@ -601,7 +601,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
 
   const handleUpdateConnection = async () => {
     try {
-      let connectionConfig=connectionConfigList.find((item:any)=>item.id===parseInt(selectedConnection!,10));
+      let connectionConfig=connectionConfigList.data.find((item:any)=>item.id===parseInt(selectedConnection!,10));
       await apiService.patch({
         url: `/data_source/${selectedSource.data_src_id}`,
         baseUrl: CATALOG_REMOTE_API_URL,
@@ -670,7 +670,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
                 <SelectValue placeholder="Select a connection" />
               </SelectTrigger>
               <SelectContent>
-                {connectionConfigList?.map((config: any) => (
+                {connectionConfigList?.data?.map((config: any) => (
                   <SelectItem key={config.id} value={config.id.toString()}>
                                 {config.connection_config_name} ({config.custom_metadata?.type})
                                 </SelectItem>

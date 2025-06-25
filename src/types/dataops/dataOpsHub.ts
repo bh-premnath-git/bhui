@@ -33,6 +33,7 @@ export interface DataOpsHub {
     priority: number;
     task_type: string;
     retry_count: number;
+    task_log_url: string;
   }
   
   export interface TaskStatistics {

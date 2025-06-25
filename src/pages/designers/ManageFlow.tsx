@@ -34,8 +34,8 @@ function ManageFlowPage() {
     
     if (Array.isArray(initialFlows)) {
       return initialFlows;
-    } else if (initialFlows.data && Array.isArray(initialFlows.data)) {
-      return initialFlows.data;
+    } else if ((initialFlows as any).data && Array.isArray((initialFlows as any).data)) {
+      return (initialFlows as any).data;
     }
     
     return [];
@@ -46,7 +46,7 @@ function ManageFlowPage() {
 
   useEffect(() => {
     dispatch(fetchProjects());
-    dispatch(fetchEnvironments());
+    dispatch(fetchEnvironments({offset:0,limit:10}));
   }, [dispatch]);
 
   useEffect(() => {

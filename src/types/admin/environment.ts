@@ -75,4 +75,8 @@ export interface AWSValidationData {
   pvt_key?: string
 };
 
+export interface EnvironmentListResponse {
+  data: (Environment | MWAAEnvironments)[];
+}
+
 export type MWAAEnvironments = string[];

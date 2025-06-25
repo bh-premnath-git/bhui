@@ -56,12 +56,12 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
           color = "red"
           break
         case "In Progress":
-          icon = <Clock className="h-3 w-3 text-orange-600" />
-          color = "orange"
+          icon = <Clock className="h-3 w-3 text-blue-600" />
+          color = "blue"
           break
         default:
-          icon = <CheckCircle2 className="h-3 w-3 text-blue-600" />
-          color = "blue"
+          icon = <CheckCircle2 className="h-3 w-3 text-orange-600" />
+          color = "orange"
       }
 
       return {

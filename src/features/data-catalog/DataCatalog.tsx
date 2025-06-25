@@ -13,11 +13,28 @@ import { columns, getToolbarConfig } from '@/features/data-catalog/config/column
 import { CatalagSlideWrapper } from '@/features/data-catalog/components/CatalagSlideWrapper';
 
 interface DataCatalogProps {
-  datasources: any[];
+  datasources: DataSource[];
   onRefetch: () => void;
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
 }
 
-export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
+export function DataCatalog({ 
+  datasources, 
+  onRefetch,
+  pageCount,
+  pageIndex,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  hasNextPage,
+  hasPreviousPage
+}: DataCatalogProps): any {
   const { handleNavigation } = useNavigation();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DataSource | undefined>();
@@ -30,18 +47,6 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
     ProjectId: project.bh_project_id,
     Project_Name: project.bh_project_name
   })) : [];
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Calculate total count from datasources array
-  const totalCount = datasources?.length || 0;
-  
-  // Calculate the start and end indices for the current page
-  const startIndex = pageIndex * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalCount);
-  
-  // Slice the data for the current page
-  const currentPageData = datasources.slice(startIndex, endIndex);
 
   const onRowClickHandler = (row: Row<DataSource>) => {
     setSelectedRow(row.original);
@@ -53,22 +58,6 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
     setShowImportSection(false);
     dispatch(getSource());
   }; 
-
-  const handlePageChange = (page: number) => {
-    setPageIndex(page - 1);
-    // If you need to fetch new data from API
-    if (onRefetch) {
-      onRefetch();
-    }
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setPageIndex(0); 
-    if (onRefetch) {
-      onRefetch();
-    }
-  };
 
   // Refetch data when sheet is closed
   useEffect(() => {
@@ -105,16 +94,18 @@ export function DataCatalog({ datasources, onRefetch }: DataCatalogProps): any {
       <>
       <DataTable<DataSource>
         columns={columns}
-        data={currentPageData}
+        data={datasources}
         topVariant="simple"
         pagination={true}
         toolbarConfig={getToolbarConfig()}
         onRowClick={onRowClickHandler}
         pageIndex={pageIndex}
         pageSize={pageSize}
-        pageCount={Math.ceil(totalCount / pageSize)}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
+        pageCount={pageCount}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
       />
       </>
      )}

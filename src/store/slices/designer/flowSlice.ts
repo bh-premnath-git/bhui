@@ -13,7 +13,7 @@ interface FlowState {
     dagEunID: Record<string, any> | null;
     dagParserTime: string | null;
     projects: Project[];
-    environments: Environment[];
+    environments: any;
     selectedProject: Project | null;
     selectedEnvironment: Environment | null;
     loading: boolean;
@@ -63,17 +63,17 @@ export const fetchProjects = createAsyncThunk(
 
 export const fetchEnvironments = createAsyncThunk(
     "flows/fetchEnvironments",
-    async () => {
-        const response = await apiService.get<Environment[]>({
+    async (options:any) => {
+        const response = await apiService.get<any>({
             baseUrl:CATALOG_REMOTE_API_URL,
-            url: '/environment/environment/list/',
+            url: `/environment/environment/list/?offset=${options.offset}&limit=${options.limit}&order_by=created_at&order_desc=true`,
             usePrefix: true,
             method: 'GET',
             metadata: {
                 errorMessage: 'Failed to fetch environments'
             }
         });
-        return response;
+        return response.data;
     }
 );
 

@@ -723,7 +723,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
                 <SelectValue placeholder="Select a connection" />
               </SelectTrigger>
               <SelectContent>
-                {connectionConfigList?.map((config: any) => (
+                {connectionConfigList?.data?.map((config: any) => (
                   <SelectItem key={config.id} value={config.id.toString()}>
                                 {config.connection_config_name} ({config.custom_metadata?.type})
                                 </SelectItem>

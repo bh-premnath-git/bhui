@@ -16,7 +16,13 @@ interface Message {
   timestamp: Date
 }
 
-export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,current_node_id}: {
+interface NodeSuggestion {
+  id: string
+  title: string
+  label: string
+}
+
+export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data, current_node_id}: {
   isAiChatOpen: boolean
   setIsAiChatOpen: (open: boolean) => void
   data: any
@@ -27,8 +33,17 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isApiLoading, setIsApiLoading] = useState(false)
+  const [showNodeSuggestions, setShowNodeSuggestions] = useState(false)
+  const [nodeSuggestions, setNodeSuggestions] = useState<NodeSuggestion[]>([])
+  const [filteredSuggestions, setFilteredSuggestions] = useState<NodeSuggestion[]>([])
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
+  const [mentionStartPos, setMentionStartPos] = useState(0)
+  const [mentionQuery, setMentionQuery] = useState('')
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  
   const {
     isListening,
     transcript,
@@ -39,6 +54,18 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
     stopListening,
     resetTranscript
   } = useSpeechRecognition()
+
+  // Extract node suggestions from the pipeline context
+  useEffect(() => {
+    if (nodes && Array.isArray(nodes)) {
+      const suggestions: NodeSuggestion[] = nodes.map(node => ({
+        id: node.id,
+        title: node.data?.title || node.data?.label || `Node ${node.id}`,
+        label: node.data?.label || 'Unknown'
+      }))
+      setNodeSuggestions(suggestions)
+    }
+  }, [nodes])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -61,6 +88,94 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
     }
   }, [inputText, interimTranscript])
 
+  // Handle @ mention detection and filtering
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    const cursorPos = e.target.selectionStart
+    
+    setInputText(value)
+    
+    // Check for @ mention
+    const textBeforeCursor = value.substring(0, cursorPos)
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+    
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
+      
+      // Check if there's no space after @ (valid mention context)
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        const query = textAfterAt.toLowerCase()
+        const filtered = nodeSuggestions.filter(node =>
+          node.title.toLowerCase().includes(query) ||
+          node.label.toLowerCase().includes(query)
+        )
+        
+        setMentionStartPos(lastAtIndex)
+        setMentionQuery(textAfterAt)
+        setFilteredSuggestions(filtered)
+        setSelectedSuggestionIndex(0)
+        setShowNodeSuggestions(filtered.length > 0)
+      } else {
+        setShowNodeSuggestions(false)
+      }
+    } else {
+      setShowNodeSuggestions(false)
+    }
+  }
+
+  // Handle suggestion selection
+  const selectSuggestion = (suggestion: NodeSuggestion) => {
+    const beforeMention = inputText.substring(0, mentionStartPos)
+    const afterMention = inputText.substring(mentionStartPos + mentionQuery.length + 1)
+    const newText = `${beforeMention}@${suggestion.title}${afterMention}`
+    
+    setInputText(newText)
+    setShowNodeSuggestions(false)
+    
+    // Focus back to textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPos = mentionStartPos + suggestion.title.length + 1
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+      }
+    }, 0)
+  }
+
+  // Handle keyboard navigation in suggestions
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showNodeSuggestions && filteredSuggestions.length > 0) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedSuggestionIndex(prev => 
+            prev < filteredSuggestions.length - 1 ? prev + 1 : 0
+          )
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedSuggestionIndex(prev => 
+            prev > 0 ? prev - 1 : filteredSuggestions.length - 1
+          )
+          break
+        case 'Enter':
+          if (!e.shiftKey) {
+            e.preventDefault()
+            selectSuggestion(filteredSuggestions[selectedSuggestionIndex])
+            return
+          }
+          break
+        case 'Escape':
+          e.preventDefault()
+          setShowNodeSuggestions(false)
+          break
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
   const handleSendMessage = async () => {
     if (!inputText.trim() || isApiLoading) return
 
@@ -74,6 +189,7 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
     setMessages(prev => [...prev, userMessage])
     setInputText('')
     setIsApiLoading(true)
+    setShowNodeSuggestions(false)
 
     try {
       // Get available columns for the current node
@@ -143,13 +259,6 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
-    }
-  }
-
   const toggleVoiceRecognition = () => {
     if (isListening) {
       stopListening()
@@ -158,13 +267,25 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
     }
   }
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+          textareaRef.current && !textareaRef.current.contains(event.target as Node)) {
+        setShowNodeSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <Dialog open={isAiChatOpen} onOpenChange={setIsAiChatOpen}>
       <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-slate-50 to-white">
         <DialogHeader className="px-6 py-4 border-b bg-white/80 backdrop-blur-sm">
           <DialogTitle className="flex items-center gap-3 text-xl font-semibold text-gray-800">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center p-1">
-              {/* <Volume2 className="w-5 h-5 text-white" /> */}
               <img src="/assets/ai/ai.svg" alt="AI Assistant" className="w-6 h-6 object-contain rotate-45" />
             </div>
             AI Assistant - {data.title || data.label}
@@ -181,7 +302,8 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
                     <img src="/assets/ai/ai.svg" alt="AI Assistant" className="w-8 h-8 object-contain rotate-45" />
                   </div>
                   <p className="text-lg font-medium mb-2">Pipeline Assistant</p>
-                  <p className="text-sm">Type your pipeline modification requests below. Your messages will be processed to update the pipeline.</p>
+                  <p className="text-sm mb-2">Type your pipeline modification requests below. Your messages will be processed to update the pipeline.</p>
+                  <p className="text-xs text-gray-400">💡 Tip: Type @ to mention specific nodes in your pipeline</p>
                 </div>
               </div>
             )}
@@ -196,7 +318,6 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
                 </div>
               </div>
             ))}
-
 
             <div ref={messagesEndRef} />
           </div>
@@ -215,13 +336,43 @@ export default function AiChatComponent({isAiChatOpen, setIsAiChatOpen, data,cur
                   <textarea
                     ref={textareaRef}
                     value={inputText + interimTranscript}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message or use voice input..."
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type your message or use @ to mention nodes..."
                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm"
                     rows={2}
                     style={{ minHeight: '48px', maxHeight: '120px' }}
                   />
+                  
+                  {showNodeSuggestions && filteredSuggestions.length > 0 && (
+                    <div 
+                      ref={suggestionsRef}
+                      className="absolute bottom-full left-0 right-12 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                    >
+                      <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b bg-gray-50">
+                        Available Nodes ({filteredSuggestions.length})
+                      </div>
+                      {filteredSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.id}
+                          className={`px-3 py-2 cursor-pointer transition-colors ${
+                            index === selectedSuggestionIndex
+                              ? 'bg-blue-50 border-l-4 border-blue-500'
+                              : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => selectSuggestion(suggestion)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-900">{suggestion.title}</div>
+                              <div className="text-xs text-gray-500">{suggestion.label}</div>
+                            </div>
+                            <div className="text-xs text-gray-400">#{suggestion.id}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
                   {interimTranscript && (
                     <div className="absolute bottom-2 right-12 text-xs text-gray-400 italic">

@@ -21,11 +21,11 @@ export function useResource<T>(resource: string, baseUrl: string, usePrefix: boo
   /**
    * ================  GET ALL  ================
    */
-  const getAll = (options?: {
+  const getAll = <TQueryFnData = T[], TData = TQueryFnData>(options?: {
     url?: string;
     params?: Record<string, any>;
     query?: string;
-    queryOptions?: Omit<UseQueryOptions<T[], Error>, 'queryKey' | 'queryFn'>;
+    queryOptions?: Omit<UseQueryOptions<TQueryFnData, Error, TData>, 'queryKey' | 'queryFn'>;
     
   }) => {
     const { url, params, query, queryOptions } = options || {};
@@ -40,17 +40,17 @@ export function useResource<T>(resource: string, baseUrl: string, usePrefix: boo
         errorMessage: `Failed to fetch ${resource} list`,
       },
     };
-    return apiService.useApiQuery<T[]>(queryKey, queryConfig, queryOptions);
+    return apiService.useApiQuery<TQueryFnData, Error, TData>(queryKey, queryConfig, queryOptions);
   };
 
   /**
    * ================  GET ONE  ================
    */
-  const getOne = (options?: {
+  const getOne = <TQueryFnData = T, TData = TQueryFnData>(options?: {
     url?: string;
     params?: Record<string, any>;
     query?: string;
-    queryOptions?: Omit<UseQueryOptions<T, Error>, 'queryKey' | 'queryFn'>;
+    queryOptions?: Omit<UseQueryOptions<TQueryFnData, Error, TData>, 'queryKey' | 'queryFn'>;
   }) => {
     const { url, params, query, queryOptions } = options || {};
     const queryKey = [resource, 'one', JSON.stringify({ params, query })];
@@ -64,7 +64,7 @@ export function useResource<T>(resource: string, baseUrl: string, usePrefix: boo
         errorMessage: `Failed to fetch ${resource}`,
       },
     };
-    return apiService.useApiQuery<T>(queryKey, queryConfig, queryOptions);
+    return apiService.useApiQuery<TQueryFnData, Error, TData>(queryKey, queryConfig, queryOptions);
   };
 
   /**

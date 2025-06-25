@@ -20,13 +20,12 @@ import { Loader2 } from "lucide-react";
 export const EnvironmentSelect = () => {
     const dispatch = useAppDispatch();
     const { environments, selectedEnvironment, selectedFlow, loading } = useAppSelector((state: RootState) => state.flow);
-
     useEffect(() => {
-        dispatch(fetchEnvironments());
+        dispatch(fetchEnvironments({offset:0,limit:10}));
     }, [dispatch]);
 
     useEffect(() => {
-        if (environments.length > 0 && !loading) {
+        if (environments?.length > 0 && !loading) {
             // If there's a selected flow, use its environment
             if (selectedFlow?.flow_deployment?.[0]?.bh_env_id) {
                 dispatch(setSelectedEnv(selectedFlow.flow_deployment[0].bh_env_id));
@@ -59,7 +58,7 @@ export const EnvironmentSelect = () => {
                                 )}
                             </SelectTrigger>
                             <SelectContent>
-                                {environments.map((env) => (
+                                {environments?.map((env:any) => (
                                     <SelectItem
                                         key={env.bh_env_id}
                                         value={env.bh_env_id.toString()}

@@ -95,7 +95,7 @@ export const ReaderFormField: React.FC<{
     formData: FormData;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[]) => void;
     errors: Record<string, string>;
-    connectionConfigList?: any[];
+    connectionConfigList?: any;
     selectedConnection?: any;
     disabled?: boolean;
     disableList?: string[];
@@ -180,7 +180,7 @@ export const ReaderFormField: React.FC<{
                         className="w-full h-8 text-sm px-3 border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                     >
                         <option value="">Select Connection</option>
-                        {connectionConfigList?.map((conn) => (
+                        {connectionConfigList?.data?.map((conn) => (
                             <option key={conn.id} value={conn.id}>
                                 {conn.connection_config_name} ({conn.custom_metadata?.type})
                             </option>

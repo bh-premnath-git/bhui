@@ -1,12 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useResource } from '@/hooks/api/useResource';
-import { DataSourcePaginatedResponse, DataSourceMutationData } from '@/types/data-catalog/dataCatalog';
+import { DataSource, DataSourcePaginatedResponse, DataSourceMutationData } from '@/types/data-catalog/dataCatalog';
 import { toast } from 'sonner';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UseDataCatalogOptions {
   shouldFetch?: boolean;
   dataSourceId?: string;
+  limit?: number;
+  offset?: number;
 }
 
 interface ApiErrorOptions {
@@ -26,8 +28,8 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
 };
 
 export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: true }) => {
-  // For queries - returns DataSourcePaginatedResponse
-  const { getOne: getDataSource, getAll: getAllDataSources } = useResource<DataSourcePaginatedResponse>(
+  // For queries - returns DataSource
+  const { getOne: getDataSource, getAll: getAllDataSources } = useResource<DataSource>(
     'data_source',
     CATALOG_REMOTE_API_URL,
     true
@@ -44,17 +46,28 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     true
   );
 
+  const queryParams = useMemo(() => ({
+    limit: options.limit ?? 10,
+    offset: options.offset ?? 0,
+  }), [options.limit, options.offset]);
+
   // List data sources with pagination
-  const result = getAllDataSources({
+  const {
+    data: dataSourceListResponse,
+    isLoading,
+    isFetching,
+    isError,
+    refetch
+  } = getAllDataSources<DataSourcePaginatedResponse, any>({
     url: '/data_source/list/',
     queryOptions: {
-      enabled: true,
+      enabled: !!options.shouldFetch,
       retry: 2,
       refetchOnWindowFocus: false,
       refetchOnMount: true,
       refetchOnReconnect: true
     },
-    params: {limit:1000}
+    params: queryParams
   });
 
   // If you want to fetch a single data source by ID
@@ -73,7 +86,7 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     mutationOptions: {
       onSuccess: () => {
         toast.success('Data source created successfully');
-        result.refetch();
+        refetch();
       },
       onError: (error) => handleApiError(error, { action: 'create' }),
     },
@@ -84,7 +97,7 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     mutationOptions: {
       onSuccess: () => {
         toast.success('Data source updated successfully');
-        result.refetch();
+        refetch();
       },
       onError: (error) => handleApiError(error, { action: 'update' }),
     },
@@ -95,7 +108,7 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     mutationOptions: {
       onSuccess: () => {
         toast.success('Data source deleted successfully');
-        result.refetch();
+        refetch();
       },
       onError: (error) => handleApiError(error, { action: 'delete' }),
     },
@@ -121,17 +134,29 @@ export const useDataCatalog = (options: UseDataCatalogOptions = { shouldFetch: t
     });
   }, [deleteDataSourceMutation]);
 
+  const datasources = dataSourceListResponse?.data || [];
+  const total = dataSourceListResponse?.total || 0;
+  const offset = dataSourceListResponse?.offset || 0;
+  const limit = dataSourceListResponse?.limit || 0;
+  const prev = dataSourceListResponse?.prev || false;
+  const next = dataSourceListResponse?.next || false;
+
   return {
     // Query results
-    datasources: result.data || [],
+    datasources,
     datasource: datasource?.[0] || null,
-    isLoading: result.isLoading,
-    isFetching: result.isFetching,
-    isError: result.isError,
+    isLoading,
+    isFetching,
+    isError,
     isDataSourceLoading,
     isDataSourceFetching,
     isDataSourceError,
-    refetch: result.refetch,
+    refetch,
+    total,
+    offset,
+    limit,
+    prev,
+    next,
 
     // Mutation handlers
     handleCreateDataSource,

@@ -13,7 +13,7 @@ interface DataSourceState {
   project: Project[];
   selectedProject: Project | null;
   selectedConnection: Connection | null;
-  connectionConfigList: any[];
+  connectionConfigList: any;
 
 }
 

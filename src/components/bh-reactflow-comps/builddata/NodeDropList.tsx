@@ -1,13 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useCallback } from "react"
 import { Node } from "@/types/designer/features/formTypes"
 import { X } from "lucide-react"
-import { useDispatch, useSelector } from "react-redux"
-import { RootState } from "@/store/"
-// import { setUnsavedChanges } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice"
+import { useDispatch} from "react-redux"
 import { CATALOG_REMOTE_API_URL } from "@/config/platformenv"
 import { useInfiniteQuery } from "@tanstack/react-query"
-import axios from "axios"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +58,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   } = useInfiniteQuery({
     queryKey: dataSourceKeys.list(),
     queryFn: async ({ pageParam = 1 }) => {
-      const data =await apiService.get({
+      const response = await apiService.get({
         baseUrl: CATALOG_REMOTE_API_URL,
         url: '/data_source/list/',
         usePrefix: true,
@@ -72,7 +68,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
         },
         params: {limit: 1000}
     })
-      return data;
+      return (response as any).data;
     },
     getNextPageParam: (lastPage:any, allPages) => {
       return lastPage?.length === ITEMS_PER_PAGE ? allPages.length + 1 : undefined;

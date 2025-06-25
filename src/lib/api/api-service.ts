@@ -131,14 +131,19 @@ class ApiService {
   /**
    * React Query GET helper
    */
-  useApiQuery<T>(
+  useApiQuery<TQueryFnData, TError, TData = TQueryFnData>(
     queryKey: string | string[],
     config: ApiConfig,
-    options?: Omit<UseQueryOptions<T, Error>, 'queryKey' | 'queryFn'>
+    options?: Omit<UseQueryOptions<TQueryFnData, TError, TData>, 'queryKey' | 'queryFn'>
   ) {
-    return useQuery<T, Error>({
+    const queryFn = async () => {
+      const { data } = await this.request<TQueryFnData>(config);
+      return data;
+    };
+
+    return useQuery<TQueryFnData, TError, TData>({
       queryKey: typeof queryKey === 'string' ? [queryKey] : queryKey,
-      queryFn: () => this.request<T>(config).then((res) => res.data),
+      queryFn,
       ...options,
       retry: (failureCount, error) => {
         if (axios.isCancel(error)) {

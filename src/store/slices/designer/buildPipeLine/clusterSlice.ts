@@ -70,8 +70,8 @@ export const terminateCluster = createAsyncThunk(
   async (data: { clusterId: string, bh_env_id: string, region: string }) => {
     await apiService.post({
       baseUrl:CATALOG_REMOTE_API_URL,
-      url: `/bh_cluster/terminate-cluster/${data.clusterId}`,
-      data: { bh_env_id: data.bh_env_id, region: data.region },
+      url: `/bh_compute/terminate-cluster/${data.clusterId}`,
+      params: { bh_env_id: data.bh_env_id, region: data.region },
       usePrefix: true,
       method: 'POST',
       metadata: {

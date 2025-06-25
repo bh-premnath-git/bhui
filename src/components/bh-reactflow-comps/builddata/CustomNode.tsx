@@ -19,6 +19,7 @@ import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/Build
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RowCountBadge } from './components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import AiChatComponent from './AiChatComponent';
 
 interface Schema {
     title: string;
@@ -599,45 +600,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     onSourceUpdate={onSourceUpdate}
                 />
             )}
-
-            {/* AI Chat Dialog */}
-            <Dialog open={isAiChatOpen} onOpenChange={setIsAiChatOpen}>
-                <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>AI Chat - {data.title || data.label}</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 flex flex-col min-h-0">
-                        {/* Chat Interface */}
-                        <div className="flex-1 border rounded-lg p-4 bg-gray-50 overflow-y-auto">
-                            <div className="space-y-4">
-                                {/* Welcome Message */}
-                                <div className="bg-blue-100 p-3 rounded-lg">
-                                    <p className="text-sm text-blue-800">
-                                        👋 Hello! I'm your AI assistant. I can help you with questions about this node ({data.title || data.label}).
-                                    </p>
-                                </div>
-                                
-                                {/* Chat messages would go here */}
-                                <div className="text-center text-gray-500 text-sm">
-                                    Start a conversation by typing your question below...
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Chat Input */}
-                        <div className="mt-4 flex gap-2">
-                            <input
-                                type="text"
-                                placeholder="Ask me anything about this node..."
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                Send
-                            </button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <AiChatComponent isAiChatOpen={isAiChatOpen} setIsAiChatOpen={setIsAiChatOpen} data={data} current_node_id={id} />
         </div>
     );
 });

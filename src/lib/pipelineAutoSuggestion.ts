@@ -38,6 +38,7 @@ export const getColumnSuggestions = async (
   edges: Edge[],
   pipelineDtl?:any
 ): Promise<string[]> => {
+
   try {
     console.log(pipelineDtl)
     const columns = new Set<string>();

@@ -21,6 +21,10 @@ const EditConnection = lazy(() => import("@/pages/admin/connection/ConnectionEdi
 const PromtList = lazy(() => import("@/pages/admin/prompt/PromptList"));
 const PromtAdd = lazy(() => import("@/pages/admin/prompt/PromptAdd")); 
 const PromtEdit = lazy(() => import("@/pages/admin/prompt/PromptEdit"));
+//compute cluster
+const ComputeClusterList = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterList"));
+const ComputeClusterAdd = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterAdd"));
+const ComputeClusterEdit = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterEdit"));
 
 export const AdminRoutes = (
   <>
@@ -151,7 +155,32 @@ export const AdminRoutes = (
           <PromtEdit />
         </Suspense>   
       }
-    />  
+    />
+
+   <Route 
+      path={ROUTES.ADMIN.COMPUTE_CLUSTER.INDEX} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <ComputeClusterList />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={ROUTES.ADMIN.COMPUTE_CLUSTER.ADD} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <ComputeClusterAdd />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path="/admin-console/compute-cluster/edit/:id" 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <ComputeClusterEdit />
+        </Suspense>
+      } 
+    />
   </>
 );
 

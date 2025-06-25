@@ -77,7 +77,20 @@ console.log(initialValues,"initialValues")
           : [{
               name: '',
               expression: ''
-            }]
+            }],
+        select_columns: baseValues.select_columns || [],
+        drop_columns: baseValues.drop_columns || [],
+        rename_columns: baseValues.rename_columns || {}
+      };
+
+    case 'Reader':
+      return {
+        ...baseValues,
+        reader_name: baseValues.reader_name || '',
+        source: baseValues.source || {},
+        select_columns: baseValues.select_columns || [],
+        drop_columns: baseValues.drop_columns || [],
+        rename_columns: baseValues.rename_columns || {}
       };
 
       case 'Joiner':

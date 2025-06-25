@@ -104,12 +104,30 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       
       const schemaFormValues = {
         derived_fields: initialValues?.derived_fields || [{ name: '', expression: '' }],
+        select_columns: initialValues?.select_columns || [],
+        drop_columns: initialValues?.drop_columns || [],
+        rename_columns: initialValues?.rename_columns || {},
         dependent_on: initialValues?.dependent_on || [],
         ...values
       };
       
       console.log("Final SchemaTransformation form values:", schemaFormValues);
       return schemaFormValues;
+    }
+    
+    // Add specific initialization for Reader form
+    if (schema?.title === 'Reader') {
+      const readerFormValues = {
+        reader_name: initialValues?.reader_name || '',
+        source: initialValues?.source || {},
+        select_columns: initialValues?.select_columns || [],
+        drop_columns: initialValues?.drop_columns || [],
+        rename_columns: initialValues?.rename_columns || {},
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+      
+      return readerFormValues;
     }
     
     // Add specific initialization for Filter form
@@ -620,6 +638,72 @@ console.log(initialFormValues,"initialFormValues")
         return acc;
       }
       
+      // Special handling for SchemaTransformation select_columns
+      if (key === 'select_columns' && Array.isArray(value) && schema.title === 'SchemaTransformation') {
+        // Filter out empty strings but keep the array even if empty
+        const cleanedColumns = value.filter(item => 
+          typeof item === 'string' ? item.trim() : item
+        );
+        acc[key] = cleanedColumns;
+        return acc;
+      }
+      
+      // Special handling for SchemaTransformation drop_columns
+      if (key === 'drop_columns' && Array.isArray(value) && schema.title === 'SchemaTransformation') {
+        // Filter out empty strings but keep the array even if empty
+        const cleanedColumns = value.filter(item => 
+          typeof item === 'string' ? item.trim() : item
+        );
+        acc[key] = cleanedColumns;
+        return acc;
+      }
+      
+      // Special handling for SchemaTransformation rename_columns
+      if (key === 'rename_columns' && value !== null && typeof value === 'object' && schema.title === 'SchemaTransformation') {
+        // Keep the object even if empty, but clean out empty values
+        const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
+          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
+            objAcc[objKey] = objValue;
+          }
+          return objAcc;
+        }, {} as Record<string, any>);
+        acc[key] = cleanObj;
+        return acc;
+      }
+      
+      // Special handling for Reader select_columns
+      if (key === 'select_columns' && Array.isArray(value) && schema.title === 'Reader') {
+        // Filter out empty strings but keep the array even if empty
+        const cleanedColumns = value.filter(item => 
+          typeof item === 'string' ? item.trim() : item
+        );
+        acc[key] = cleanedColumns;
+        return acc;
+      }
+      
+      // Special handling for Reader drop_columns
+      if (key === 'drop_columns' && Array.isArray(value) && schema.title === 'Reader') {
+        // Filter out empty strings but keep the array even if empty
+        const cleanedColumns = value.filter(item => 
+          typeof item === 'string' ? item.trim() : item
+        );
+        acc[key] = cleanedColumns;
+        return acc;
+      }
+      
+      // Special handling for Reader rename_columns
+      if (key === 'rename_columns' && value !== null && typeof value === 'object' && schema.title === 'Reader') {
+        // Keep the object even if empty, but clean out empty values
+        const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
+          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
+            objAcc[objKey] = objValue;
+          }
+          return objAcc;
+        }, {} as Record<string, any>);
+        acc[key] = cleanObj;
+        return acc;
+      }
+      
       // Special handling for Aggregator fields
       if (key === 'aggregations' && Array.isArray(value) && schema.title === 'Aggregator') {
         // Filter out items where either target_column or expression is empty
@@ -724,7 +808,7 @@ console.log(initialFormValues,"initialFormValues")
     }, {} as Record<string, any>);
 
     // Validate required fields based on schema
-    if (Array.isArray(schema.required) && schema.required.length > 0) {
+    if (schema && Array.isArray(schema.required) && schema.required.length > 0) {
       // Check if all required fields are present in cleanValues
       const missingRequiredFields = schema.required.filter(field => {
         // For array fields, check if they have at least one valid item
@@ -750,7 +834,7 @@ console.log(initialFormValues,"initialFormValues")
     // Update SchemaTransformation validation
     if (schema.title === 'SchemaTransformation') {
       // Only require derived_fields if it's specified as required in the schema
-      const isDerivedFieldsRequired = Array.isArray(schema.required) && schema.required.includes('derived_fields');
+      const isDerivedFieldsRequired = schema && Array.isArray(schema.required) && schema.required.includes('derived_fields');
       if (isDerivedFieldsRequired && (!cleanValues.derived_fields || !cleanValues.derived_fields.length)) {
         console.error('SchemaTransformation requires at least one valid derived field');
         return;
@@ -1032,7 +1116,7 @@ const renderArrayFields = (
     }
   }, []);
 
-  const itemProperties = arraySchema.items.properties || arraySchema.items;
+  const itemProperties = arraySchema.items.properties || arraySchema.items || {};
   const requiredFields = arraySchema.items.required || [];
   
   console.log(`Array field properties for ${section}:`, {
@@ -1040,6 +1124,21 @@ const renderArrayFields = (
     requiredFields,
     fields: control._formValues[section]
   });
+
+  // Safety check for itemProperties
+  if (!itemProperties || typeof itemProperties !== 'object' || Array.isArray(itemProperties)) {
+    console.warn(`Invalid itemProperties for section ${section}:`, itemProperties);
+    return <div>Invalid array item properties configuration</div>;
+  }
+
+  // Additional safety check for Object.entries
+  let itemPropertiesEntries: [string, any][] = [];
+  try {
+    itemPropertiesEntries = Object.entries(itemProperties);
+  } catch (error) {
+    console.error('Error in Object.entries for itemProperties:', error, { itemProperties });
+    return <div>Error processing array item properties</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -1052,7 +1151,7 @@ const renderArrayFields = (
       
       {/* Headers */}
       <div className="flex justify-between gap-2">
-        {Object.entries(itemProperties).map(([fieldKey, fieldSchema]: [string, any]) => (
+        {itemPropertiesEntries.map(([fieldKey, fieldSchema]: [string, any]) => (
           <div key={fieldKey}>
             <div className="font-medium text-sm text-gray-700">
               {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
@@ -1069,7 +1168,7 @@ const renderArrayFields = (
       {/* Form Fields */}
       {fields.map((field, index) => (
         <div key={field.id} className="flex justify-between gap-2">
-          {Object.entries(itemProperties).map(([itemKey, itemSchema]: [string, any]) => {
+          {itemPropertiesEntries.map(([itemKey, itemSchema]: [string, any]) => {
             const isExpression = itemSchema.type === 'expression' || 
                                itemSchema['ui-hint'] === 'expression';
 
@@ -1327,8 +1426,19 @@ const FormContent: React.FC<{
   edges: Edge[];
   watch: any; // Add watch function as a prop
 }> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch }) => {
+
+  
   const [activeTab, setActiveTab] = useState<number>(0);
   const [columnSuggestions, setColumnSuggestions] = useState<string[]>([]);
+  
+  if (!schema) {
+    return <div>No schema provided</div>;
+  }
+  
+  if (!schema.properties) {
+    console.error('Schema has no properties:', schema);
+    return <div>Invalid schema: no properties found</div>;
+  }
 
   // Update useEffect to use a key to force re-render of FormField components
   const [suggestionKey, setSuggestionKey] = useState(0);
@@ -1407,13 +1517,13 @@ const FormContent: React.FC<{
       }
 
       // Check top-level required fields
-      if (Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
+      if (schema && Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
         return true;
       }
     }
 
     // Handle other schema types...
-    if (Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
+    if (schema && Array.isArray(schema.required) && schema.required.includes(fieldKey)) {
       return true;
     }
 
@@ -1534,9 +1644,23 @@ const FormContent: React.FC<{
 
   // Update renderFieldsInRows to handle required fields in tabs
   const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string) => {
-    const fields = Object.entries(properties)
-      .filter(([key, value]) => shouldRenderField(key, value));
-    console.log(fields)
+
+    
+    if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
+      console.warn('renderFieldsInRows: properties is invalid', { properties, type: typeof properties, isArray: Array.isArray(properties) });
+      return <div>Invalid properties configuration</div>;
+    }
+    
+    // Additional safety check for Object.entries
+    let fields: [string, any][] = [];
+    try {
+      fields = Object.entries(properties)
+        .filter(([key, value]) => shouldRenderField(key, value));
+    } catch (error) {
+      console.error('Error in Object.entries:', error, { properties });
+      return <div>Error processing field properties</div>;
+    }
+
     let currentRow: [string, any][] = [];
     const rows: [string, any][][] = [];
 
@@ -1596,11 +1720,184 @@ const FormContent: React.FC<{
     ));
   };
 
+  // Render string array fields (like select_columns, drop_columns)
+  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any) => {
+    const { fields, append, remove } = useFieldArray({
+      control,
+      name: fieldKey
+    });
+
+    return (
+      <div className="space-y-4">
+        <div className="font-medium text-sm">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+        </div>
+        
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex gap-2 items-center">
+            <Controller
+              name={`${fieldKey}.${index}`}
+              control={control}
+              render={({ field }) => (
+                <Autocomplete
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  options={sourceColumns.map(col => col.name)}
+                  placeholder={`Enter column name`}
+                  className="flex-1"
+                />
+              )}
+            />
+            <button
+              type="button"
+              onClick={() => remove(index)}
+              className="text-red-500 hover:text-red-700 p-1"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        
+        <Button
+          type="button"
+          onClick={() => append('')}
+          variant="outline"
+          size="sm"
+        >
+          Add Column
+        </Button>
+      </div>
+    );
+  };
+
+  // Render object field (like rename_columns)
+  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any) => {
+    const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
+    const watchedValue = watch(fieldKey) || {};
+
+    useEffect(() => {
+      const entries = Object.entries(watchedValue).map(([key, value], index) => ({
+        id: `${key}-${index}`,
+        key,
+        value: value as string
+      }));
+      setObjectEntries(entries);
+    }, [watchedValue]);
+
+    const addEntry = () => {
+      const newEntry = { id: `new-${Date.now()}`, key: '', value: '' };
+      setObjectEntries([...objectEntries, newEntry]);
+    };
+
+    const removeEntry = (id: string) => {
+      const updatedEntries = objectEntries.filter(entry => entry.id !== id);
+      setObjectEntries(updatedEntries);
+      
+      // Update form value
+      const newObject = updatedEntries.reduce((acc, entry) => {
+        if (entry.key && entry.value) {
+          acc[entry.key] = entry.value;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+      
+      setValue(fieldKey, newObject);
+    };
+
+    const updateEntry = (id: string, field: 'key' | 'value', newValue: string) => {
+      const updatedEntries = objectEntries.map(entry => 
+        entry.id === id ? { ...entry, [field]: newValue } : entry
+      );
+      setObjectEntries(updatedEntries);
+      
+      // Update form value
+      const newObject = updatedEntries.reduce((acc, entry) => {
+        if (entry.key && entry.value) {
+          acc[entry.key] = entry.value;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+      
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="font-medium text-sm">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+        </div>
+        
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2 text-sm font-medium text-gray-600">
+            <div>Old Column Name</div>
+            <div>New Column Name</div>
+          </div>
+          
+          {objectEntries.map((entry) => (
+            <div key={entry.id} className="flex gap-2 items-center">
+              <Autocomplete
+                value={entry.key}
+                onChange={(value) => updateEntry(entry.id, 'key', value)}
+                options={sourceColumns.map(col => col.name)}
+                placeholder="Old column name"
+                className="flex-1"
+              />
+              <Input
+                value={entry.value}
+                onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
+                placeholder="New column name"
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => removeEntry(entry.id)}
+                className="text-red-500 hover:text-red-700 p-1"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+        
+        <Button
+          type="button"
+          onClick={addEntry}
+          variant="outline"
+          size="sm"
+        >
+          Add Rename Rule
+        </Button>
+      </div>
+    );
+  };
+
   // Update renderTabContent to pass control
   const renderTabContent = (key: string, value: any, control: any) => {
+    if (!value || typeof value !== 'object') {
+      console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
+      return <div>Invalid field configuration for {key}</div>;
+    }
+    
     if (value.type === 'array') {
+      // Check if it's a string array
+      if (value.items && value.items.type === 'string') {
+        return renderStringArrayField(key, value, control);
+      }
+      // Otherwise use the existing array renderer
       return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions);
     } else if (value.type === 'object') {
+      // Check if it's a rename_columns type object
+      if (key === 'rename_columns') {
+        return renderObjectField(key, value, control);
+      }
+      // Ensure properties exist before passing to renderFieldsInRows
+      if (!value.properties || typeof value.properties !== 'object') {
+        console.warn(`Object field ${key} has no valid properties:`, value);
+        return <div>Invalid object field configuration for {key}</div>;
+      }
       return renderFieldsInRows(value.properties, control, key);
     } else {
       return renderField(key, value, control, key);
@@ -1751,12 +2048,17 @@ const FormContent: React.FC<{
               {fieldKey.split('_').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1)
               ).join(' ')}
-              {schema.required.includes(fieldKey) && <span className="text-red-500"> *</span>}
+              {schema && schema.required && schema.required.includes(fieldKey) && <span className="text-red-500"> *</span>}
             </div>
 
             {fields.map((field, index) => (
               <div key={field.id} className="flex gap-2 mb-2">
-                {Object.entries(fieldSchema.items.properties).map(([itemKey, itemSchema]: [string, any]) => (
+                {(() => {
+                  const itemProperties = fieldSchema.items.properties || {};
+                  if (!itemProperties || typeof itemProperties !== 'object') {
+                    return <div>Invalid item properties</div>;
+                  }
+                  return Object.entries(itemProperties).map(([itemKey, itemSchema]: [string, any]) => (
                   <Controller
                     key={`${fieldKey}.${index}.${itemKey}`}
                     name={`${fieldKey}.${index}.${itemKey}`}
@@ -1788,14 +2090,15 @@ const FormContent: React.FC<{
                           name={field.name}
                           value={field.value}
                           onChange={field.onChange}
-                          required={schema.required.includes(fieldKey)}
+                          required={schema && schema.required && schema.required.includes(fieldKey)}
                           fieldKey={itemKey}
                           sourceColumns={sourceColumns}
                         />
                       )
                     )}
                   />
-                ))}
+                ));
+                })()}
                 <button
                   type="button"
                   onClick={() => remove(index)}
@@ -1810,12 +2113,23 @@ const FormContent: React.FC<{
             <Button
               type="button"
               onClick={() => {
-                const defaultValues = Object.fromEntries(
-                  Object.entries(fieldSchema.items.properties).map(([key, schema]: [string, any]) => [
-                    key,
-                    schema.default || (schema.type === 'number' ? 0 : '')
-                  ])
-                );
+                const itemProperties = fieldSchema.items.properties || {};
+                let defaultValues = {};
+                
+                if (itemProperties && typeof itemProperties === 'object') {
+                  try {
+                    defaultValues = Object.fromEntries(
+                      Object.entries(itemProperties).map(([key, schema]: [string, any]) => [
+                        key,
+                        schema.default || (schema.type === 'number' ? 0 : '')
+                      ])
+                    );
+                  } catch (error) {
+                    console.error('Error creating default values:', error);
+                    defaultValues = {};
+                  }
+                }
+                
                 append(defaultValues);
               }}
               className="text-green-600 font-bold"
@@ -1845,7 +2159,7 @@ const FormContent: React.FC<{
               name={field.name}
               value={field.value}
               onChange={field.onChange}
-              required={schema.required.includes(fieldKey)}
+              required={schema && schema.required && schema.required.includes(fieldKey)}
               fieldKey={fieldKey}
               sourceColumns={sourceColumns}
             />
@@ -1856,7 +2170,7 @@ const FormContent: React.FC<{
 
     return (
       <div className="space-y-6">
-        {Object.entries(schema.properties)
+        {Object.entries(schema.properties || {})
           .filter(([key]) => !['name', 'transformation'].includes(key))
           .map(([key, value]: [string, any]) => (
             <div key={key}>
@@ -1884,7 +2198,7 @@ const FormContent: React.FC<{
       ) : schema.ui_type === 'tab-container' ? (
         <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
           <TabsList>
-            {Object.keys(schema.properties).map((key, index) => (
+            {Object.keys(schema.properties || {}).map((key, index) => (
               <TabsTrigger key={key} value={index.toString()}>
                 {key.replace(/_/g, ' ').split(' ').map(word =>
                   word.charAt(0).toUpperCase() + word.slice(1)
@@ -1893,7 +2207,7 @@ const FormContent: React.FC<{
             ))}
           </TabsList>
 
-          {Object.entries(schema.properties).map(([key, value]: [string, any], index) => (
+          {Object.entries(schema.properties || {}).map(([key, value]: [string, any], index) => (
             <TabsContent key={key} value={index.toString()}>
               {renderTabContent(key, value, control)}
             </TabsContent>
@@ -2119,7 +2433,7 @@ const FormContent: React.FC<{
         </div>
       ) : (
         <div className="space-y-1">
-          {renderFieldsInRows(schema.properties, control)}
+          {renderFieldsInRows(schema.properties || {}, control)}
         </div>
       )}
 

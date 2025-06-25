@@ -30,6 +30,59 @@ export const environmentFormSchema = z.object({
     )
     .default([]),
   status: z.enum(["active", "inactive"]).default("active"),
+}).superRefine((data, ctx) => {
+  // If AWS is selected (platform type "101"), validate required fields
+  if (data.platform.type === "101") {
+    if (!data.platform.region) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select a region.",
+        path: ["platform", "region"]
+      });
+    }
+    if (!data.credentials.publicId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Project ID is required.",
+        path: ["credentials", "publicId"]
+      });
+    }
+    if (!data.credentials.accessKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Access Key is required.",
+        path: ["credentials", "accessKey"]
+      });
+    }
+    if (!data.credentials.secretKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Secret Key is required.",
+        path: ["credentials", "secretKey"]
+      });
+    }
+    if (!data.advancedSettings.airflowName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "MWAA Environment is required.",
+        path: ["advancedSettings", "airflowName"]
+      });
+    }
+    if (!data.advancedSettings.airflowBucketName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Airflow Bucket Name is required.",
+        path: ["advancedSettings", "airflowBucketName"]
+      });
+    }
+    if (!data.advancedSettings.airflowBucketUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Airflow URL is required.",
+        path: ["advancedSettings", "airflowBucketUrl"]
+      });
+    }
+  }
 });
 
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>

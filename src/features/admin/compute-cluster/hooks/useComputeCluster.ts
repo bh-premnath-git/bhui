@@ -46,6 +46,10 @@ interface ComputeClusterApiResponse {
   };
 }
 
+interface ComputeClusterListApiResponse {
+  data: ComputeClusterApiResponse[];
+}
+
 export interface Environment {
   created_at: string | null;
   updated_at: string | null;
@@ -98,8 +102,8 @@ export function useComputeCluster() {
   };
 
   // Transform API response to match ComputeCluster interface
-  const transformApiResponseToComputeCluster = (apiData: ComputeClusterApiResponse[]) => {
-    return apiData.map(item => ({
+  const transformApiResponseToComputeCluster = (apiData: ComputeClusterListApiResponse) => {
+    return apiData.data.map(item => ({
       id: item.compute_config_id.toString(),
       name: item.compute_config_name,
       environment: item.bh_env_name,
@@ -126,7 +130,7 @@ export function useComputeCluster() {
       queryKey: ['compute-cluster-list'],
       queryFn: async () => {
         console.log('Fetching compute cluster list');
-        const response = await apiService.get<ComputeClusterApiResponse[]>({
+        const response = await apiService.get<ComputeClusterListApiResponse>({
           baseUrl: CATALOG_REMOTE_API_URL,
           url: '/bh_compute/bh-compute-config/list/',
           usePrefix: true,

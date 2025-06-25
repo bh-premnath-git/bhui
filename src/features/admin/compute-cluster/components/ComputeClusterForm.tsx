@@ -9,6 +9,7 @@ import {
   ComputeClusterFormValues 
 } from './computeClusterFormSchema';
 import { ComputeClusterFormFields } from './ComputeClusterFormFields';
+import { convertApiSchemaToFormSchema, generateDefaultValues } from '../utils/schemaConverter';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import {
@@ -20,7 +21,8 @@ import {
   Loader2,
   Cloud,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -51,39 +53,99 @@ export function ComputeClusterForm({
   formData,
   mode = 'new'
 }: ComputeClusterFormProps) {
-  const { handleCreateComputeCluster, handleUpdateComputeCluster, handleTestComputeCluster } = useComputeCluster();
+  const { handleCreateComputeCluster, handleUpdateComputeCluster, handleTestComputeCluster, useComputeTypes, useComputeConfigSchema, useEnvironmentsList } = useComputeCluster();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean, message: string } | null>(null);
+  const [cloudProvider, setCloudProvider] = useState('AWS');
+  const [selectedComputeType, setSelectedComputeType] = useState<string>('');
   const navigate = useNavigate();
+
+  // Fetch compute types based on cloud provider
+  const { data: computeTypesData, isLoading: isLoadingComputeTypes, error: computeTypesError } = useComputeTypes(cloudProvider);
+
+  // Fetch compute config schema based on selected compute type
+  const { data: computeConfigSchema, isLoading: isLoadingConfigSchema, error: configSchemaError, refetch: refetchConfigSchema } = useComputeConfigSchema(selectedComputeType);
+
+  // Fetch environments list
+  const { data: environmentsData, isLoading: isLoadingEnvironments, error: environmentsError } = useEnvironmentsList();
+
+  // Show error toast if compute types fail to load
+  useEffect(() => {
+    if (computeTypesError) {
+      toast.error('Failed to load compute types. Using default options.');
+    }
+  }, [computeTypesError]);
+
+  // Show error toast if config schema fails to load
+  useEffect(() => {
+    if (configSchemaError && selectedComputeType) {
+      toast.info(`${selectedComputeType} configuration is coming soon! Please use EMR for now.`, {
+        duration: 4000,
+      });
+    }
+  }, [configSchemaError, selectedComputeType]);
+
+  // Show error toast if environments fail to load
+  useEffect(() => {
+    if (environmentsError) {
+      toast.error('Failed to load environments. Please try again.');
+    }
+  }, [environmentsError]);
+
+  // Set initial compute type when compute types are loaded
+  useEffect(() => {
+    if (computeTypesData?.compute_types?.length && !selectedComputeType && mode === 'new') {
+      const defaultType = computeTypesData.compute_types[0];
+      setSelectedComputeType(defaultType);
+    } else if (isEdit && formData?.compute_type) {
+      setSelectedComputeType(formData.compute_type);
+    }
+  }, [computeTypesData, selectedComputeType, mode, isEdit, formData]);
 
   // Generate initial values based on schema defaults
   const generateInitialValues = (): ComputeClusterFormValues => {
+    const defaultComputeType = selectedComputeType || computeTypesData?.compute_types?.[0] || 'EMR';
+    const defaultEnvId = environmentsData?.[0]?.bh_env_id?.toString() || '1';
     const initialValues: any = {
       compute_config_name: mode === 'edit' ? (formData?.compute_config_name || '') : 'aws_emr_test',
-      compute_type: mode === 'edit' ? (formData?.compute_type || 'EMR') : 'EMR',
-      bh_env_id: mode === 'edit' ? (formData?.bh_env_id || 1) : 1,
+      compute_type: mode === 'edit' ? (formData?.compute_type || defaultComputeType) : defaultComputeType,
+      bh_env_id: mode === 'edit' ? (formData?.bh_env_id?.toString() || defaultEnvId) : defaultEnvId,
       tenant_key: mode === 'edit' ? (formData?.tenant_key || 'test') : 'test',
       compute_config: {}
     };
 
-    // Initialize compute_config with defaults from schema
-    if (computeClusterSchema.properties.compute_config?.properties) {
-      const configProps = computeClusterSchema.properties.compute_config.properties;
-      Object.entries(configProps).forEach(([key, field]: [string, any]) => {
-        if (mode === 'edit' && formData?.compute_config?.[key] !== undefined) {
-          initialValues.compute_config[key] = formData.compute_config[key];
-        } else if (field.default !== undefined) {
-          initialValues.compute_config[key] = field.default;
-        } else if (field.type === 'array') {
-          initialValues.compute_config[key] = field.default || [];
-        } else if (field.type === 'number') {
-          initialValues.compute_config[key] = field.default || 0;
-        } else {
-          initialValues.compute_config[key] = '';
-        }
-      });
+    // Initialize compute_config with defaults from dynamic schema
+    if (computeConfigSchema && !configSchemaError) {
+      const formSchema = convertApiSchemaToFormSchema(computeConfigSchema);
+      const configDefaults = generateDefaultValues(formSchema);
+      
+      if (mode === 'edit' && formData?.compute_config) {
+        // Merge existing data with defaults
+        initialValues.compute_config = { ...configDefaults, ...formData.compute_config };
+      } else {
+        initialValues.compute_config = configDefaults;
+      }
+    } else if (!configSchemaError && !selectedComputeType) {
+      // Only fallback to static schema if no compute type is selected and there's no error
+      if (computeClusterSchema.properties.compute_config?.properties) {
+        const configProps = computeClusterSchema.properties.compute_config.properties;
+        Object.entries(configProps).forEach(([key, field]: [string, any]) => {
+          if (mode === 'edit' && formData?.compute_config?.[key] !== undefined) {
+            initialValues.compute_config[key] = formData.compute_config[key];
+          } else if (field.default !== undefined) {
+            initialValues.compute_config[key] = field.default;
+          } else if (field.type === 'array') {
+            initialValues.compute_config[key] = field.default || [];
+          } else if (field.type === 'number') {
+            initialValues.compute_config[key] = field.default || 0;
+          } else {
+            initialValues.compute_config[key] = '';
+          }
+        });
+      }
     }
+    // If there's a schema error, leave compute_config empty
 
     return initialValues;
   };
@@ -94,18 +156,37 @@ export function ComputeClusterForm({
     mode: 'onChange'
   });
 
-  // Update form when formData changes (for edit mode)
+  // Update form when formData changes (for edit mode) or when schemas are loaded
   useEffect(() => {
     if (isEdit && formData) {
       const initialValues = generateInitialValues();
       form.reset(initialValues);
+    } else if (!isLoadingComputeTypes && computeTypesData && !isLoadingConfigSchema && computeConfigSchema && !configSchemaError && !isLoadingEnvironments && environmentsData && mode === 'new') {
+      // Reset form with new default values when all data is loaded for new forms (only if no schema error)
+      const initialValues = generateInitialValues();
+      form.reset(initialValues);
     }
-  }, [isEdit, formData]);
+  }, [isEdit, formData, isLoadingComputeTypes, computeTypesData, isLoadingConfigSchema, computeConfigSchema, configSchemaError, isLoadingEnvironments, environmentsData, mode]);
+
+  // Handle compute type change
+  const handleComputeTypeChange = (newComputeType: string) => {
+    setSelectedComputeType(newComputeType);
+    // Update the form's compute_type field
+    form.setValue('compute_type', newComputeType);
+    // Clear test result when compute type changes
+    setTestResult(null);
+  };
 
   const handleTestConfiguration = async () => {
     try {
       setIsTesting(true);
       setTestResult(null);
+
+      // Prevent testing if there's a schema error
+      if (configSchemaError) {
+        toast.info(`${selectedComputeType} is not ready yet. Please switch to EMR to test configurations.`);
+        return;
+      }
 
       // Get current form values
       const currentValues = form.getValues();
@@ -133,7 +214,13 @@ export function ComputeClusterForm({
     try {
       setIsSubmitting(true);
 
-      console.log('Submitting compute cluster data:', data);
+      // Prevent submission if there's a schema error
+      if (configSchemaError) {
+        toast.info(`${selectedComputeType} configuration is coming soon! Please use EMR to create clusters.`);
+        return;
+      }
+
+      console.log('Submitting compute cluster data:', JSON.stringify(data, null, 2));
 
       if (isEdit && computeClusterId) {
         await handleUpdateComputeCluster(computeClusterId, data);
@@ -164,92 +251,196 @@ export function ComputeClusterForm({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
-    >
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex items-center space-x-3">
-            {getComputeTypeIcon(form.watch('compute_type'))}
-            <div>
-              <CardTitle className="text-2xl">
-                {isEdit ? 'Edit Compute Cluster' : 'Add Compute Cluster'}
-              </CardTitle>
-              <CardDescription>
-                {isEdit 
-                  ? 'Update your compute cluster configuration'
-                  : 'Configure a new compute cluster for your data processing workloads'
-                }
-              </CardDescription>
-            </div>
+    <Card className="w-full max-w-6xl mx-auto h-[calc(100vh-2rem)]">
+      <CardHeader className="relative pb-3">
+        <div className="flex items-center space-x-3">
+          {getComputeTypeIcon(form.watch('compute_type'))}
+          <div>
+            <CardTitle className="text-xl">
+              {isEdit ? 'Edit Compute Cluster' : 'Add Compute Cluster'}
+            </CardTitle>
+            <CardDescription>
+              {isEdit 
+                ? 'Update your compute cluster configuration'
+                : 'Configure a new compute cluster for your data processing workloads'
+              }
+            </CardDescription>
           </div>
-          
-          {/* Status badges */}
-          <div className="flex items-center space-x-2 pt-2">
-            <Badge variant="outline" className="flex items-center space-x-1">
-              <ShieldCheck className="h-3 w-3" />
-              <span>Secure Configuration</span>
+        </div>
+        
+        {/* Status badges */}
+        <div className="flex items-center space-x-2 pt-2">
+         
+          {testResult && (
+            <Badge 
+              variant={testResult.success ? "default" : "destructive"}
+              className="flex items-center space-x-1"
+            >
+              {testResult.success ? (
+                <CheckCircle2 className="h-3 w-3" />
+              ) : (
+                <XCircle className="h-3 w-3" />
+              )}
+              <span>{testResult.success ? 'Validated' : 'Validation Failed'}</span>
             </Badge>
-            {testResult && (
-              <Badge 
-                variant={testResult.success ? "default" : "destructive"}
-                className="flex items-center space-x-1"
-              >
-                {testResult.success ? (
-                  <CheckCircle2 className="h-3 w-3" />
-                ) : (
-                  <XCircle className="h-3 w-3" />
-                )}
-                <span>{testResult.success ? 'Validated' : 'Validation Failed'}</span>
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
+          )}
+        </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-6">
-              <Accordion type="single" defaultValue="basic-config" className="w-full">
-                <AccordionItem value="basic-config">
-                  <AccordionTrigger className="text-lg font-semibold">
+        <div className="absolute top-4 right-4">
+          <Button variant="ghost" size="icon" onClick={onBack} className="text-gray-600 hover:bg-gray-100">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
+          <CardContent className="flex-1 overflow-hidden">
+            <div className="h-full flex flex-col space-y-3">
+              {/* Basic Configuration Section */}
+              <div className="bg-white border rounded-lg">
+                <div className="px-4 py-2 border-b bg-gray-50">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                    <Settings className="h-4 w-4 mr-2" />
                     Basic Configuration
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <ComputeClusterFormFields
-                        schema={{
-                          properties: {
-                            compute_config_name: computeClusterSchema.properties.compute_config_name,
-                            compute_type: computeClusterSchema.properties.compute_type,
-                            bh_env_id: computeClusterSchema.properties.bh_env_id,
-                            tenant_key: computeClusterSchema.properties.tenant_key,
-                          },
-                          required: ['compute_config_name', 'compute_type', 'bh_env_id', 'tenant_key']
-                        }}
-                        form={form}
-                        mode={mode}
-                      />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="compute-config">
-                  <AccordionTrigger className="text-lg font-semibold">
-                    Compute Configuration
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4">
+                  </h3>
+                </div>
+                <div className="p-3">
+                  <div>
                     <ComputeClusterFormFields
-                      schema={computeClusterSchema.properties.compute_config}
+                      schema={{
+                        properties: {
+                          compute_config_name: computeClusterSchema.properties.compute_config_name,
+                          compute_type: {
+                            ...computeClusterSchema.properties.compute_type,
+                            enum: computeTypesData?.compute_types || ['EMR']
+                          },
+                          bh_env_id: {
+                            ...computeClusterSchema.properties.bh_env_id,
+                            enum: Array.isArray(environmentsData) ? environmentsData.map(env => env.bh_env_id.toString()) : [],
+                            enumNames: Array.isArray(environmentsData) ? environmentsData.map(env => env.bh_env_name) : []
+                          },
+                          tenant_key: computeClusterSchema.properties.tenant_key,
+                        },
+                        required: ['compute_config_name', 'compute_type', 'bh_env_id', 'tenant_key']
+                      }}
+                      form={form}
+                      mode={mode}
+                      isLoading={isLoadingComputeTypes || isLoadingEnvironments}
+                      onComputeTypeChange={handleComputeTypeChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Compute Configuration Section */}
+              <div className="bg-white border rounded-lg flex-1 flex flex-col min-h-0">
+                <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                    <Cloud className="h-4 w-4 mr-2" />
+                    Compute Configuration
+                  </h3>
+                  {isLoadingConfigSchema && (
+                    <span className="text-xs text-gray-500">(Loading...)</span>
+                  )}
+                </div>
+                <div className="p-3 flex-1 overflow-y-auto">
+                  {isLoadingConfigSchema ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-6 w-full" />
+                    </div>
+                  ) : configSchemaError ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                      <div className="relative mb-6">
+                        <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                          <Settings className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <div className="absolute -top-1 -right-1 h-6 w-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-yellow-800">⚡</span>
+                        </div>
+                      </div>
+                      
+                      <h4 className="text-xl font-semibold text-gray-900 mb-3">
+                        {selectedComputeType} Configuration Coming Soon!
+                      </h4>
+                      
+                      <div className="max-w-md space-y-3 mb-6">
+                        <p className="text-sm text-gray-700">
+                          We're actively working on <strong className="text-blue-700">{selectedComputeType}</strong> compute type configuration.
+                        </p>
+                        
+                        <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <span className="font-medium text-green-800">Currently Available:</span>
+                          </div>
+                          <p className="text-sm text-green-700 pl-7">
+                            EMR compute type is fully supported and ready to use
+                          </p>
+                        </div>
+                        
+                        <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Clock className="h-5 w-5 text-blue-600" />
+                            <span className="font-medium text-blue-800">In Development:</span>
+                          </div>
+                          <p className="text-sm text-blue-700 pl-7">
+                            {selectedComputeType} configuration interface is being built
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-3">
+                        <Button
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            // Switch to EMR as it's working
+                            setSelectedComputeType('EMR');
+                            form.setValue('compute_type', 'EMR');
+                            setTestResult(null);
+                          }}
+                          className="flex items-center space-x-2 border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          Switch to EMR
+                        </Button>
+                        
+                        <Button
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => refetchConfigSchema()}
+                          disabled={isLoadingConfigSchema}
+                          className="flex items-center space-x-2"
+                        >
+                          <RefreshCw className={cn("h-4 w-4", isLoadingConfigSchema && "animate-spin")} />
+                          {isLoadingConfigSchema ? 'Checking...' : 'Check Again'}
+                        </Button>
+                      </div>
+                      
+                      <p className="text-xs text-gray-500 mt-4">
+                        💡 Tip: Use EMR for now, we'll notify you when {selectedComputeType} is ready!
+                      </p>
+                    </div>
+                  ) : computeConfigSchema ? (
+                    <ComputeClusterFormFields
+                      schema={convertApiSchemaToFormSchema(computeConfigSchema)}
                       form={form}
                       parentKey="compute_config"
                       mode={mode}
                     />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Cloud className="h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-sm text-gray-600">
+                        Select a compute type to view configuration options
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Test Result Display */}
               {testResult && (
@@ -257,7 +448,7 @@ export function ComputeClusterForm({
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className={cn(
-                    "p-4 rounded-lg border",
+                    "p-2 rounded-lg border",
                     testResult.success 
                       ? "bg-green-50 border-green-200 text-green-800" 
                       : "bg-red-50 border-red-200 text-red-800"
@@ -265,72 +456,69 @@ export function ComputeClusterForm({
                 >
                   <div className="flex items-center space-x-2">
                     {testResult.success ? (
-                      <CheckCircle2 className="h-5 w-5" />
+                      <CheckCircle2 className="h-4 w-4" />
                     ) : (
-                      <XCircle className="h-5 w-5" />
+                      <XCircle className="h-4 w-4" />
                     )}
-                    <span className="font-medium">
+                    <span className="font-medium text-sm">
                       {testResult.success ? 'Configuration Valid' : 'Configuration Invalid'}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm">{testResult.message}</p>
+                  <p className="mt-1 text-xs">{testResult.message}</p>
                 </motion.div>
               )}
-            </CardContent>
+            </div>
+          </CardContent>
 
-            <CardFooter className="flex justify-between pt-6 border-t">
+          <CardFooter className="border-t bg-gray-50 mt-auto py-3">
+            <div className="flex items-center justify-between w-full">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={onBack}
                 disabled={isSubmitting || isTesting}
+                className="flex items-center space-x-2 text-gray-600 border-gray-300 hover:bg-gray-100"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Cancel
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back</span>
               </Button>
 
-              <div className="flex space-x-3">
+              <div className="flex items-center space-x-3">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
+                  size="sm"
                   onClick={handleTestConfiguration}
-                  disabled={isSubmitting || isTesting}
+                  disabled={isSubmitting || isTesting || !!configSchemaError}
+                  className="flex items-center space-x-2"
                 >
                   {isTesting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testing...
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Test Configuration
-                    </>
+                    <RefreshCw className="h-4 w-4" />
                   )}
+                  <span>Test Configuration</span>
                 </Button>
 
                 <Button
                   type="submit"
-                  disabled={isSubmitting || isTesting}
-                  className="min-w-[120px]"
+                  size="sm"
+                  disabled={isSubmitting || isTesting || !!configSchemaError}
+                  className="flex items-center space-x-2 min-w-[120px] bg-gray-900 hover:bg-gray-800 text-white"
                 >
                   {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isEdit ? 'Updating...' : 'Creating...'}
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      {isEdit ? 'Update Cluster' : 'Create Cluster'}
-                    </>
+                    <CheckCircle2 className="h-4 w-4" />
                   )}
+                  <span>{isEdit ? 'Update' : 'Create'} Cluster</span>
                 </Button>
               </div>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
-    </motion.div>
+            </div>
+          </CardFooter>
+        </form>
+      </Form>
+    </Card>
   );
 }

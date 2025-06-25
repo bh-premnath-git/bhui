@@ -5,7 +5,16 @@ const emrConfigSchema = z.object({
   emr_version: z.string().min(1, "EMR version is required"),
   custom_image_uri: z.string().optional(),
   instance_type: z.string().min(1, "Instance type is required"),
-  worker_count: z.string().min(1, "Worker count is required"),
+  worker_count: z.union([z.string(), z.number()]).transform((val) => {
+    if (typeof val === 'string') {
+      const parsed = parseInt(val, 10);
+      if (isNaN(parsed)) {
+        throw new Error("Worker count must be a valid number");
+      }
+      return parsed;
+    }
+    return val;
+  }).refine((val) => val >= 1, "Worker count must be at least 1"),
   idle_timeout_seconds: z.number().min(0, "Idle timeout must be non-negative"),
   aws_logs_uri: z.string().min(1, "AWS logs URI is required"),
   ec2_subnet_id: z.string().min(1, "EC2 subnet ID is required"),
@@ -18,14 +27,15 @@ const emrConfigSchema = z.object({
   applications: z.array(z.string()).min(1, "At least one application is required"),
   aws_cloud_connection: z.string().min(1, "AWS cloud connection is required"),
   region: z.string().min(1, "Region is required"),
+  bh_tags: z.array(z.string()).optional().default([]),
 });
 
 // Main Compute Cluster Schema
 export const computeClusterFormSchema = z.object({
   compute_config_name: z.string().min(1, "Compute config name is required"),
   compute_type: z.string().min(1, "Compute type is required"),
-  bh_env_id: z.number().min(1, "Environment ID is required"),
-  tenant_key: z.string().min(1, "Tenant key is required"),
+  bh_env_id: z.string().min(1, "Environment is required").transform((val) => parseInt(val, 10)),
+  tenant_key: z.string().optional(),
   compute_config: emrConfigSchema,
 });
 
@@ -44,15 +54,14 @@ export const computeClusterSchema = {
       type: "string",
       title: "Compute Type",
       description: "The type of compute cluster",
-      enum: ["EMR", "Databricks", "Kubernetes", "Local"],
       default: "EMR"
     },
     bh_env_id: {
-      type: "number",
-      title: "Environment ID",
-      description: "The BigHammer environment ID",
-      minimum: 1,
-      default: 1
+      type: "string",
+      title: "Environment",
+      description: "Select the BigHammer environment",
+      enum: [],
+      enumNames: []
     },
     tenant_key: {
       type: "string",
@@ -87,10 +96,11 @@ export const computeClusterSchema = {
           default: "m5.xlarge"
         },
         worker_count: {
-          type: "string",
+          type: "number",
           title: "Worker Count",
           description: "Number of worker nodes in the cluster",
-          default: "1"
+          default: 1,
+          minimum: 1
         },
         idle_timeout_seconds: {
           type: "number",
@@ -170,6 +180,15 @@ export const computeClusterSchema = {
           description: "AWS region for the EMR cluster",
           enum: ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-1", "ap-northeast-1"],
           default: "us-east-1"
+        },
+        bh_tags: {
+          type: "array",
+          title: "BH Tags",
+          description: "Additional tags for the compute cluster",
+          items: {
+            type: "string"
+          },
+          default: []
         }
       },
       required: [
@@ -181,5 +200,5 @@ export const computeClusterSchema = {
       ]
     }
   },
-  required: ["compute_config_name", "compute_type", "bh_env_id", "tenant_key", "compute_config"]
+  required: ["compute_config_name", "compute_type", "bh_env_id", "compute_config"]
 };

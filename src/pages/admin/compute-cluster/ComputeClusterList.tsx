@@ -3,10 +3,34 @@ import { useComputeCluster } from '@/features/admin/compute-cluster/hooks/useCom
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
 export default function ComputeClusterListPage() {
+  const [offset, setOffset] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const { useComputeClusterList } = useComputeCluster();
-  const { data: clusters, isLoading, isError, error, refetch } = useComputeClusterList();
+  const { data: paginatedResponse, isLoading, isError, error, refetch } = useComputeClusterList({ limit: pageSize, offset });
+
+  const clusters = paginatedResponse?.data || [];
+  const total = paginatedResponse?.total || 0;
+  const next = paginatedResponse?.next || false;
+  const prev = paginatedResponse?.prev || false;
+
+  const pageIndex = Math.floor(offset / pageSize);
+
+  const handlePageChange = (page: number) => {
+    const currentPageIndex = pageIndex;
+    if (page > currentPageIndex && next) {
+      setOffset(o => o + pageSize);
+    } else if (page < currentPageIndex && prev) {
+      setOffset(o => Math.max(0, o - pageSize));
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setOffset(0);
+  };
 
   if (isLoading) {
     return (
@@ -67,7 +91,16 @@ export default function ComputeClusterListPage() {
             </div>
           </div>
         ) : (
-          <ComputeClusterList clusters={clusters || []} />
+          <ComputeClusterList 
+            clusters={clusters || []} 
+            pageCount={Math.ceil(total / pageSize)}
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            hasNextPage={next}
+            hasPreviousPage={prev}
+          />
         )}
       </div>
     </div>

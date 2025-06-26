@@ -7,7 +7,18 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
 import { useProjectManagementServive } from '@/features/admin/projects/services/projMgtSrv';
 
-export function ProjectsList({ projects }: { projects: Project[] }) {
+interface ProjectsListProps {
+  projects: Project[];
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+}
+
+export function ProjectsList({ projects, pageCount, pageIndex, pageSize, onPageChange, onPageSizeChange, hasNextPage, hasPreviousPage }: ProjectsListProps) {
   const { handleNavigation } = useNavigation()
   const projMgntSrv = useProjectManagementServive();
 
@@ -21,9 +32,15 @@ export function ProjectsList({ projects }: { projects: Project[] }) {
       columns={columns}
       data={projects || []}
       topVariant="simple"
-      pagination={true}
       onRowClick={onRowClickHandler}
       toolbarConfig={getToolbarConfig()}
+      pageCount={pageCount}
+      pageIndex={pageIndex}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
+      hasNextPage={hasNextPage}
+      hasPreviousPage={hasPreviousPage}
     />
   );
 }

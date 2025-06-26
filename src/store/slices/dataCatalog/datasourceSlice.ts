@@ -68,7 +68,7 @@ export const fetchConnections = createAsyncThunk(
 export const getConnectionConfigList = createAsyncThunk(
   "catalog/connection",
   async (params: any) => {
-    const response = await apiService.get<any[]>({
+    const response:any = await apiService.get<any[]>({
       baseUrl: CATALOG_REMOTE_API_URL,
       url: '/connection_registry/connection_config/list/',
       usePrefix: true,
@@ -78,7 +78,7 @@ export const getConnectionConfigList = createAsyncThunk(
       },
       params: params
     });
-    return response;
+    return response.data;
   }
 );
 

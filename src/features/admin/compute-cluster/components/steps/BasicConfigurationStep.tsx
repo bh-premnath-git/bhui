@@ -43,9 +43,9 @@ export function BasicConfigurationStep({
               <Sparkles className="h-5 w-5 text-gray-700" />
             </div>
             <div>
-              <CardTitle className="text-lg text-gray-900">Cluster Details</CardTitle>
+              <CardTitle className="text-lg text-gray-900">Compute Details</CardTitle>
               <CardDescription className="text-gray-600">
-                Configure your cluster's identity and environment settings
+                Configure your compute's identity and environment settings
               </CardDescription>
             </div>
           </div>

@@ -118,7 +118,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const [formData, setFormData] = useState<FormData>({});
     const [currentSchema, setCurrentSchema] = useState<FormSchema>(writerSchema);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const { connectionConfigList } = useAppSelector((state) => state.datasource);
+    const { connectionConfigList = [] } = useAppSelector((state) => state.datasource);
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const dispatch = useAppDispatch();
     const { pipelineJson } = usePipelineContext();
@@ -151,7 +151,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             // console.log('Using source data for initialization');
             let connection = source.source?.connection ? { ...source.source.connection } : {};
             connection.connection_config_id = source?.source?.connection?.connection_config_id || 
-                connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
+                (Array.isArray(connectionConfigList) ? connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id : undefined);
             // console.log('Connection data:', connection);
             
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
@@ -188,7 +188,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             setFormData(initialFormData);
 
             // Set selected connection if connection_config_id exists
-            if (source.source?.connection?.connection_config_id) {
+            if (source.source?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
                 const selectedConn = connectionConfigList.find(
                     conn => conn.id === source.source.connection.connection_config_id
                 );
@@ -228,7 +228,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             // console.log('Safe initialData:', safeInitialData);
             setFormData(safeInitialData);
             
-            if (initialData.target?.connection?.connection_config_id) {
+            if (initialData.target?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
                 const selectedConn = connectionConfigList.find(
                     conn => conn.id === initialData.target.connection.connection_config_id
                 );
@@ -276,7 +276,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             const newData = JSON.parse(JSON.stringify(prev));
 
             if (name === 'connection_config_id') {
-                const selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
+                const selectedConn = Array.isArray(connectionConfigList) ? connectionConfigList.find(conn => conn.id === parseInt(value)) : null;
                 setSelectedConnection(selectedConn);
 
                 if (selectedConn) {
@@ -642,7 +642,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
         try {
             // console.log('Finding connection data for ID:', formData.target?.connection?.connection_config_id);
-            const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
+            const connectionData = Array.isArray(connectionConfigList) ? connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id) : null;
             // console.log('Found connection data:', connectionData);
             
             // Create a safe connection object with fallbacks
@@ -727,7 +727,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const getFilteredConnections = () => {
         if (!formData.target?.target_type) return [];
 
-        return connectionConfigList.filter(conn => {
+        return Array.isArray(connectionConfigList) ? connectionConfigList.filter(conn => {
             if (formData.target?.target_type === 'File') {
                 // For File type, show only S3 and Local connections
                 return ['S3', 'Local'].includes(conn.connection_name);
@@ -736,7 +736,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 return !['S3', 'Local'].includes(conn.connection_name);
             }
             return false;
-        });
+        }) : [];
     };
 
     /**

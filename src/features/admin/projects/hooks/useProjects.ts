@@ -8,6 +8,8 @@ import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 interface UseProjectsOptions {
   shouldFetch?: boolean;
   projectId?: string;
+  limit?: number;
+  offset?: number;
 }
 
 interface ApiErrorOptions {
@@ -48,20 +50,20 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     true
   );
 
+  const queryParams = useMemo(() => ({
+    limit: options.limit ?? 10,
+    offset: options.offset ?? 0,
+  }), [options.limit, options.offset]);
+
   // List projects with pagination
-  const { data: projectsResponse, isLoading, isFetching, isError } = getAllProjects({
+  const { data: projectsResponse, isLoading, isFetching, isError } = getAllProjects<ProjectPaginatedResponse>({
     url: '/bh_project/list/',
     queryOptions: {
       enabled: options.shouldFetch,
       retry: 2
     },
-    params: {limit:1000}
-  }) as {
-    data: ProjectPaginatedResponse;
-    isLoading: boolean;
-    isFetching: boolean;
-    isError: boolean;
-  };
+    params: queryParams
+  });
 
   // Get single project
   const { 
@@ -147,8 +149,15 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     return response;
   }, [validateTokenMutation]);
 
+  const projects = projectsResponse?.data || [];
+  const total = projectsResponse?.total || 0;
+  const offset = projectsResponse?.offset || 0;
+  const limit = projectsResponse?.limit || 0;
+  const prev = projectsResponse?.prev || false;
+  const next = projectsResponse?.next || false;
+
   return {
-    projects: projectsResponse || [],
+    projects,
     project,
     isLoading,
     isProjectLoading,
@@ -156,6 +165,11 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     isProjectFetching,
     isError,
     isProjectError,
+    total,
+    offset,
+    limit,
+    prev,
+    next,
     handleCreateProject,
     handleUpdateProject,
     handleDeleteProject,

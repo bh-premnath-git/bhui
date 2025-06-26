@@ -1,7 +1,8 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Trash2,AlertCircle, Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, AlertCircle, Check } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -9,9 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { ConnectionSelector } from './ConnectionSelector';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { mockConnections, mockTables, mockColumns, dataTypes } from '@/utils/mockData';
+import { mockConnections, mockTables, mockColumns } from '@/utils/mockData';
 
 interface MappingTableProps {
   mappings: any[];
@@ -33,15 +40,15 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
       newMappings[index].targetColumn = '';
     }
     
-    if (field === 'sourceConnection') {
-      // Reset source table and column when connection changes
+    if (field === 'targetConnection') {
+      // Reset source table and columns when connection changes
       newMappings[index].sourceTable = '';
-      newMappings[index].sourceColumn = '';
+      newMappings[index].sourceColumns = [];
     }
     
     if (field === 'sourceTable') {
-      // Reset source column when table changes
-      newMappings[index].sourceColumn = '';
+      // Reset source columns when table changes
+      newMappings[index].sourceColumns = [];
     }
 
     setMappings(newMappings);
@@ -62,14 +69,86 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
     const requiredFields = [
       'targetConnection', 
       'targetTable', 
-      'targetColumn', 
-      'targetDataType',
-      'sourceConnection',
+      'targetColumn',
       'sourceTable',
-      'sourceColumn'
+      'sourceColumns'
     ];
     
-    return requiredFields.every(field => mapping && mapping[field]);
+    return requiredFields.every(field => {
+      if (field === 'sourceColumns') {
+        return mapping && mapping[field] && Array.isArray(mapping[field]) && mapping[field].length > 0;
+      }
+      return mapping && mapping[field];
+    });
+  };
+
+  // Multi-select component for source columns
+  const MultiSelectColumns: React.FC<{
+    value: string[];
+    onValueChange: (value: string[]) => void;
+    tableId: string;
+    disabled?: boolean;
+  }> = ({ value = [], onValueChange, tableId, disabled }) => {
+    const availableColumns = getAvailableColumns(tableId);
+    
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+            disabled={disabled}
+          >
+            {value.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {value.slice(0, 2).map((columnId) => {
+                  const column = availableColumns.find(c => c.id === columnId);
+                  return (
+                    <Badge key={columnId} variant="secondary" className="text-xs">
+                      {column?.name}
+                    </Badge>
+                  );
+                })}
+                {value.length > 2 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{value.length - 2} more
+                  </Badge>
+                )}
+              </div>
+            ) : (
+              "Select columns..."
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-0">
+          <div className="p-4 space-y-2">
+            <div className="text-sm font-medium">Select Columns</div>
+            {availableColumns.map((column) => (
+              <div key={column.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`column-${column.id}`}
+                  checked={value.includes(column.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      onValueChange([...value, column.id]);
+                    } else {
+                      onValueChange(value.filter(id => id !== column.id));
+                    }
+                  }}
+                />
+                <label
+                  htmlFor={`column-${column.id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {column.name}
+                </label>
+              </div>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
   };
   
   return (
@@ -81,10 +160,8 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
             <TableHead>Target Connection</TableHead>
             <TableHead>Target Table</TableHead>
             <TableHead>Target Column</TableHead>
-            <TableHead>Data Type</TableHead>
-            <TableHead>Source Connection</TableHead>
             <TableHead>Source Table</TableHead>
-            <TableHead>Source Column</TableHead>
+            <TableHead>Source Columns</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[70px]"></TableHead>
           </TableRow>
@@ -92,7 +169,7 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
         <TableBody>
           {mappings.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center h-32 text-muted-foreground">
+              <TableCell colSpan={8} className="text-center h-32 text-muted-foreground">
                 No mappings defined. Click "Add Mapping" to create your first mapping.
               </TableCell>
             </TableRow>
@@ -157,40 +234,16 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                 </TableCell>
                 <TableCell>
                   <Select
-                    value={mapping.targetDataType || ''}
-                    onValueChange={(value) => updateMapping(index, 'targetDataType', value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Data type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dataTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <ConnectionSelector
-                    value={mapping.sourceConnection || ''}
-                    onValueChange={(value) => updateMapping(index, 'sourceConnection', value)}
-                    connections={mockConnections}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select
                     value={mapping.sourceTable || ''}
                     onValueChange={(value) => updateMapping(index, 'sourceTable', value)}
-                    disabled={!mapping.sourceConnection}
+                    disabled={!mapping.targetConnection}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select table" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mapping.sourceConnection ? (
-                        getAvailableTables(mapping.sourceConnection).map((table) => (
+                      {mapping.targetConnection ? (
+                        getAvailableTables(mapping.targetConnection).map((table) => (
                           <SelectItem key={table.id} value={table.id}>
                             {table.name}
                           </SelectItem>
@@ -204,28 +257,12 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={mapping.sourceColumn || ''}
-                    onValueChange={(value) => updateMapping(index, 'sourceColumn', value)}
+                  <MultiSelectColumns
+                    value={mapping.sourceColumns || []}
+                    onValueChange={(value) => updateMapping(index, 'sourceColumns', value)}
+                    tableId={mapping.sourceTable || ''}
                     disabled={!mapping.sourceTable}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select column" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mapping.sourceTable ? (
-                        getAvailableColumns(mapping.sourceTable).map((column) => (
-                          <SelectItem key={column.id} value={column.id}>
-                            {column.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>
-                          Select table first
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  />
                 </TableCell>
                 <TableCell>
                   <TooltipProvider>
@@ -233,9 +270,15 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                       <TooltipTrigger asChild>
                         <div className="flex justify-center">
                           {validateMapping(mapping) ? (
-                            <Check className="h-5 w-5 text-green-500" />
+                            <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                              <Check className="h-3 w-3 mr-1" />
+                              Valid
+                            </Badge>
                           ) : (
-                            <AlertCircle className="h-5 w-5 text-amber-500" />
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Incomplete
+                            </Badge>
                           )}
                         </div>
                       </TooltipTrigger>
@@ -252,7 +295,7 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(index)}
-                    className="h-8 w-8 text-destructive"
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

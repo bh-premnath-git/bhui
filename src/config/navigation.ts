@@ -98,12 +98,12 @@ export const navigationItems: NavItem[] = [
     icon: Settings,
     path: ROUTES.ADMIN.INDEX,
     subItems: [
-      /* {
+      {
         title: "Manage Users",
         icon: Users,
         path: ROUTES.ADMIN.USERS.INDEX,
         parent: ROUTES.ADMIN.INDEX,
-      }, */
+      },
       {
         title: "Manage Projects",
         icon: FolderGit2,
@@ -129,7 +129,7 @@ export const navigationItems: NavItem[] = [
         parent: ROUTES.ADMIN.INDEX
       },
       {
-        title: "Manage Compute Cluster",
+        title: "Manage Compute Config",
         icon: Server,
         path: ROUTES.ADMIN.COMPUTE_CLUSTER.INDEX,
         parent: ROUTES.ADMIN.INDEX

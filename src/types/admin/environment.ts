@@ -77,6 +77,11 @@ export interface AWSValidationData {
 
 export interface EnvironmentListResponse {
   data: (Environment | MWAAEnvironments)[];
+  total: number;
+  offset: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
 }
 
 export type MWAAEnvironments = string[];

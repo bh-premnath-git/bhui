@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
-import { Connection, ConnectionType, ConnectionValue } from '@/types/admin/connection';
+import { Connection, ConnectionType, ConnectionValue, ConnectionPaginatedResponse } from '@/types/admin/connection';
 import { toast } from 'sonner';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UseConnectionsOptions {
     shouldFetch?: boolean;
     connectionId?: string;
+    limit?: number;
+    offset?: number;
 }
 
 interface UseConnectionTypeOptions {
@@ -44,27 +46,26 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         true
     );
 
-    const { data: connectionResponse, isLoading, isFetching, isError, refetch } = getAllConnection({
+    const queryParams = useMemo(() => ({
+        limit: options.limit ?? 10,
+        offset: options.offset ?? 0,
+      }), [options.limit, options.offset]);
+
+    const { data: connectionResponse, isLoading, isFetching, isError, refetch } = getAllConnection<ConnectionPaginatedResponse>({
         url: '/connection_registry/connection_config/list/',
         queryOptions: {
             enabled: options.shouldFetch,
             retry: 2
         },
-        params: { limit: 1000 }
-    }) as {
-        data: { data: Connection[] };
-        isLoading: boolean;
-        isFetching: boolean;
-        isError: boolean;
-        refetch: () => void;
-    };
+        params: queryParams
+    });
 
-    const connections = useMemo(() => {
-        if (connectionResponse) {
-            return connectionResponse.data;
-        }
-        return [];
-    }, [connectionResponse]);
+    const connections = connectionResponse?.data || [];
+    const total = connectionResponse?.total || 0;
+    const offset = connectionResponse?.offset || 0;
+    const limit = connectionResponse?.limit || 0;
+    const prev = connectionResponse?.prev || false;
+    const next = connectionResponse?.next || false;
 
     const { data: connnectionResponses, isLoading: isConnectionLoading, isFetching: isConnectionFetching, isError: isConnectionError } = options.connectionId ? getConnection({
         url: `/connection_registry/connection_config/${options.connectionId}`,
@@ -126,6 +127,11 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         isLoading,
         isFetching,
         isError,
+        total,
+        offset,
+        limit,
+        prev,
+        next,
         connnectionResponses,
         isConnectionLoading,
         isConnectionFetching,

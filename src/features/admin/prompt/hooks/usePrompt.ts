@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useResource } from '@/hooks/api/useResource';
-import { debounce, remove, update } from 'lodash';
-import { Prompt, PromptModule } from '@/types/admin/prompt';
+import { Prompt, PromptPaginatedResponse } from '@/types/admin/prompt';
 import { toast } from 'sonner';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 interface UsePromptsOptions {
     shouldFetch?: boolean;
     promptId?: string;
+    limit?: number;
+    offset?: number;
 }
 
 interface UsePromptModuleOptions {
@@ -18,14 +19,14 @@ interface UsePromptModuleOptions {
 interface ApiErrorOptions {
     action: 'create' | 'update' | 'delete' | 'search' | 'fetch';
     context?: string;
-    slient?: boolean;
+    silent?: boolean;
 }
 
 const handleApiError = (error: unknown, options: ApiErrorOptions) => {
-    const { action, context = 'prompt', slient = false } = options; 
+    const { action, context = 'prompt', silent = false } = options; 
     const errorMessage = `Failed to ${action} ${context}`;
     console.error(`${errorMessage}:`, error)
-    if (!slient) {
+    if (!silent) {
         toast.error(errorMessage)
     }           
     throw error;
@@ -44,39 +45,45 @@ export const usePrompts = (options: UsePromptsOptions = { shouldFetch: true }) =
             true
     );
 
-    const { data: PromptResponse, isLoading, isFetching, isError, refetch } = getAllPrompt({
+    const queryParams = useMemo(() => ({
+        limit: options.limit ?? 10,
+        offset: options.offset ?? 0,
+    }), [options.limit, options.offset]);
+
+    const { data: promptPaginatedResponse, isLoading, isFetching, isError, refetch } = getAllPrompt<PromptPaginatedResponse>({
             url: '/prompt/prompt/list/',
             queryOptions: {
                 enabled: options.shouldFetch,
                 retry: 2
             },
-            params: { limit: 1000 }
-        }) as {
-            data: Prompt[];
-            isLoading: boolean;
-            isFetching: boolean;
-            isError: boolean;
-            refetch: () => void;
-        };
+            params: queryParams
+        });
     
-        const {
-            data: promptResponse,
-            isLoading: isPromptLoading,
-            isFetching: isPromptFetching,
-            isError: isPromptError,
-        } = options.promptId ? getPrompt({
-            url: `/prompt/prompt/${options.promptId}`,
-            queryOptions: {
-                enabled: !!options.promptId,
-                retry: 2,
-                retryDelay: 1000,
-            }
-        }) : {
-                data: undefined,
-                isLoading: false,
-                isFetching: false,
-                isError: false
-            };
+    const prompts = promptPaginatedResponse?.data || [];
+    const total = promptPaginatedResponse?.total || 0;
+    const offset = promptPaginatedResponse?.offset || 0;
+    const limit = promptPaginatedResponse?.limit || 0;
+    const prev = promptPaginatedResponse?.prev || false;
+    const next = promptPaginatedResponse?.next || false;
+
+    const {
+        data: promptResponse,
+        isLoading: isPromptLoading,
+        isFetching: isPromptFetching,
+        isError: isPromptError,
+    } = options.promptId ? getPrompt({
+        url: `/prompt/prompt/${options.promptId}`,
+        queryOptions: {
+            enabled: !!options.promptId,
+            retry: 2,
+            retryDelay: 1000,
+        }
+    }) : {
+            data: undefined,
+            isLoading: false,
+            isFetching: false,
+            isError: false
+        };
     
     const createPromptMutation = createPrompt({
         url: '/prompt/prompt/',
@@ -95,7 +102,7 @@ export const usePrompts = (options: UsePromptsOptions = { shouldFetch: true }) =
 
     const deletePromptMutation = removePrompt('/prompt/prompt/', {
         mutationOptions: {
-            onSuccess: () => toast.success('prompt Deleted Successfully'),
+            onSuccess: () => toast.success('Prompt Deleted Successfully'),
             onError: (error) => handleApiError(error, { action: 'delete', context: 'prompt' })
         },
     });
@@ -113,7 +120,7 @@ export const usePrompts = (options: UsePromptsOptions = { shouldFetch: true }) =
         });
     }, [updatePromptMutation]);
 
-    const handleDeleteConnection = useCallback(async (id: string) => {
+    const handleDeletePrompt = useCallback(async (id: string) => {
         await deletePromptMutation.mutateAsync({
             url: `/prompt/prompt/${id}/`
         });
@@ -121,15 +128,20 @@ export const usePrompts = (options: UsePromptsOptions = { shouldFetch: true }) =
 
 
     return {
-        prompt: PromptResponse, 
+        prompts, 
+        total,
+        offset,
+        limit,
+        prev,
+        next,
         isLoading,
         isFetching,
         isError,
         refetch,
         handleCreatePrompt,
         handleUpdatePrompt,
-        handleDeleteConnection,
-        PromptResponse,
+        handleDeletePrompt,
+        promptResponse,
         isPromptLoading,
         isPromptFetching,
         isPromptError

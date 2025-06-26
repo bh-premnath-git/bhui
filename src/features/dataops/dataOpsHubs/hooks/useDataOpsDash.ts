@@ -145,7 +145,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
 
     query: widgetIds.map((id) => `ids=${id}`).join('&'),
   }) as {
-    data: { data: Widget[] };
+    data:  Widget[];
     isLoading: boolean;
     isFetching: boolean;
     isError: boolean;
@@ -175,7 +175,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
     });
   };
 
-  const widgets = widgetsResponse?.data || [];
+  const widgets = widgetsResponse || [];
 
   return {
     widgets,

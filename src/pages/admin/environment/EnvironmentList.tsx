@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Settings2 } from 'lucide-react';
 import { withPageErrorBoundary} from '@/components/withPageErrorBoundary';
 import { LazyLoading } from '@/components/shared/LazyLoading';
@@ -14,7 +14,14 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
 
 function Environments() {
-  const { environments, isLoading, isFetching, isError } = useEnvironments();
+  const [offset, setOffset] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  const { environments, total, isFetching, isLoading, isError, next, prev } = useEnvironments({
+    shouldFetch: true,
+    limit: pageSize,
+    offset: offset,
+  });
   const envMgntSrv = useEnvironmentManagementServive();
   const { handleNavigation } = useNavigation();
   
@@ -22,6 +29,22 @@ function Environments() {
   const regularEnvironments = environments?.filter((env): env is Environment => 
     'bh_env_id' in env && 'bh_env_name' in env
   ) || [];
+
+  const pageIndex = Math.floor(offset / pageSize);
+
+  const handlePageChange = (page: number) => {
+    const currentPageIndex = pageIndex;
+    if (page > currentPageIndex && next) {
+        setOffset(o => o + pageSize);
+    } else if (page < currentPageIndex && prev) {
+        setOffset(o => Math.max(0, o - pageSize));
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setOffset(0);
+  };
 
   useEffect(() => {
     if(regularEnvironments.length > 0){
@@ -73,7 +96,16 @@ function Environments() {
             <LazyLoading fullScreen={false} className='w-40 h-40' />
           </div>
         )}
-        <EnvironmentList environments={regularEnvironments} />
+        <EnvironmentList 
+          environments={regularEnvironments}
+          pageCount={Math.ceil((total || 0) / pageSize)}
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          hasNextPage={next}
+          hasPreviousPage={prev}
+        />
       </div>
     </div>
   );

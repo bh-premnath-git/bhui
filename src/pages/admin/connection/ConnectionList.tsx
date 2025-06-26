@@ -10,12 +10,34 @@ import { useConnectionManagementService } from '@/features/admin/connection/serv
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
 import { Cable } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function ConnectionList() {
-  const { connections, isLoading, isError, isFetching } = useConnections();
+  const [offset, setOffset] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const { connections, total, isFetching, isLoading, isError, next, prev } = useConnections({
+    shouldFetch: true,
+    limit: pageSize,
+    offset: offset,
+  });
   const connMgtSrv = useConnectionManagementService();
   const { handleNavigation } = useNavigation()
+
+  const pageIndex = Math.floor(offset / pageSize);
+
+  const handlePageChange = (page: number) => {
+    const currentPageIndex = pageIndex;
+    if (page > currentPageIndex && next) {
+        setOffset(o => o + pageSize);
+    } else if (page < currentPageIndex && prev) {
+        setOffset(o => Math.max(0, o - pageSize));
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setOffset(0);
+  };
 
   useEffect(() => {
     if (Array.isArray(connections) && connections.length > 0) {
@@ -70,7 +92,16 @@ function ConnectionList() {
             <LoadingState className="w-40 h-40" />
           </div>
         )}
-        <ListConnection connections={connections} />
+        <ListConnection 
+          connections={connections}
+          pageCount={Math.ceil((total || 0) / pageSize)}
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          hasNextPage={next}
+          hasPreviousPage={prev}
+        />
       </div>
     </div>
   );

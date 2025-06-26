@@ -9,15 +9,22 @@ import { useConnectionManagementService } from './services/connMgtSrv';
 import { DeleteConnectionDialog } from './components/DeleteConnectionDialog';
 import { useConnections } from './hooks/useConnection';
 
-export function ListConnection({ connections }: { connections: Connection[] }) {
+interface ListConnectionProps {
+  connections: Connection[];
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+}
+
+export function ListConnection({ connections, pageCount, pageIndex, pageSize, onPageChange, onPageSizeChange, hasNextPage, hasPreviousPage }: ListConnectionProps) {
   const { handleNavigation } = useNavigation()
   const connMgtSrv = useConnectionManagementService();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const connectionResponse = useConnections();
-  const { refetch: refetchConnections } = connectionResponse;
-  
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const { refetch: refetchConnections } = useConnections();
 
   const onRowClickHandler = useCallback((row: Row<Connection>) => {
     connMgtSrv.selectatedConnection(row.original);
@@ -35,29 +42,23 @@ export function ListConnection({ connections }: { connections: Connection[] }) {
     return() => {
       window.removeEventListener("openConnectionDeleteDialog", handleOpenDelete);
     }
-  }, []);
-
-  // Calculate paginated data
-  const paginatedData = connections?.slice(
-    pageIndex * pageSize,
-    (pageIndex + 1) * pageSize
-  ) || [];
+  }, [connMgtSrv]);
 
   return (
     <>
     <DataTable<Connection>
       columns={columns}
-      data={paginatedData}
-      fullData={connections}  // Pass full data for total count
+      data={connections || []}
       topVariant="simple"
-      pagination={true}
       onRowClick={onRowClickHandler}
       toolbarConfig={getToolbarConfig()}
+      pageCount={pageCount}
       pageIndex={pageIndex}
       pageSize={pageSize}
-      onPageChange={(page) => setPageIndex(page - 1)}
-      onPageSizeChange={setPageSize}
-      pageCount={Math.ceil((connections?.length || 0) / pageSize)}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
+      hasNextPage={hasNextPage}
+      hasPreviousPage={hasPreviousPage}
     />
     <DeleteConnectionDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onSuccess={refetchConnections}/>
     </>

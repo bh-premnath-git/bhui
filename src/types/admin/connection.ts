@@ -46,4 +46,12 @@ export interface ConnectionValue {
       source_type: string;
     };
   }
-  
+
+export interface ConnectionPaginatedResponse {
+  data: Connection[];
+  total: number;
+  offset: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
+}

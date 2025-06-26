@@ -44,3 +44,12 @@ export interface ComputeClusterMutationData {
     tagList: string;
   };
 }
+
+export interface ComputeClusterPaginatedResponse {
+  data: ComputeCluster[];
+  total: number;
+  offset: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
+}

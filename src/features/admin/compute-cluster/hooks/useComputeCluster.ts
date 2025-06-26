@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/api/api-service';
 import { ComputeClusterFormValues } from '../components/computeClusterFormSchema';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
-import { use } from 'marked';
 
 interface ComputeTypesResponse {
   compute_types: string[];
@@ -53,6 +52,7 @@ interface ComputeClusterListApiResponse {
   offset: number;
   limit: number;
   data: ComputeClusterApiResponse[];
+  
 }
 
 export interface Environment {
@@ -130,9 +130,10 @@ export function useComputeCluster() {
   };
 
   // Fetch compute cluster list
-  const useComputeClusterList = () => {
+  const useComputeClusterList = (options: { limit?: number; offset?: number; } = {}) => {
+    const { limit = 10, offset = 0 } = options;
     return useQuery({
-      queryKey: ['compute-cluster-list'],
+      queryKey: ['compute-cluster-list', limit, offset],
       queryFn: async () => {
         console.log('Fetching compute cluster list');
         const response = await apiService.get<ComputeClusterListApiResponse>({
@@ -140,8 +141,8 @@ export function useComputeCluster() {
           url: '/bh_compute/bh-compute-config/list/',
           usePrefix: true,
           params: { 
-            offset: 0, 
-            limit: 1000, 
+            offset,
+            limit,
             order_by: 'created_at', 
             order_desc: true 
           },

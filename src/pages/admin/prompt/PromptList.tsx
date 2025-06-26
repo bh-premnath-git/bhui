@@ -8,10 +8,34 @@ import { BookMarked } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
+import { useState } from 'react';
 
 const PromptList = () => {
-  const { prompt, isLoading, isError, isFetching } = usePrompts();
+  const [offset, setOffset] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const { prompts, total, isLoading, isError, isFetching, next, prev } = usePrompts({
+    shouldFetch: true,
+    limit: pageSize,
+    offset: offset,
+  });
   const { handleNavigation } = useNavigation()
+
+  const pageIndex = Math.floor(offset / pageSize);
+
+  const handlePageChange = (page: number) => {
+    const currentPageIndex = pageIndex;
+    if (page > currentPageIndex && next) {
+        setOffset(o => o + pageSize);
+    } else if (page < currentPageIndex && prev) {
+        setOffset(o => Math.max(0, o - pageSize));
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setOffset(0);
+  };
+
   if (isError) {
     return (
       <div className="p-6">
@@ -23,7 +47,7 @@ const PromptList = () => {
     );
   }
 
-  if (!Array.isArray(prompt) || prompt.length === 0) {
+  if (!Array.isArray(prompts) || prompts.length === 0) {
     return (
       <div className="p-6">
         <EmptyState
@@ -51,11 +75,19 @@ const PromptList = () => {
             <LoadingState className="w-40 h-40" />
           </div>
         )}
-        <ListPrompt prompts={prompt} />
+        <ListPrompt 
+          prompts={prompts} 
+          pageCount={Math.ceil(total / pageSize)}
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          hasNextPage={next}
+          hasPreviousPage={prev}
+        />
       </div>
     </div>
   );
 }
-
 
 export default withPageErrorBoundary(PromptList, 'PromptList');

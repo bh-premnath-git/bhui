@@ -52,19 +52,21 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
         },
         params: { limit: 1000 }
     }) as {
-        data: Connection[];
+        data: { data: Connection[] };
         isLoading: boolean;
         isFetching: boolean;
         isError: boolean;
         refetch: () => void;
     };
 
-    const {
-        data: connnectionResponses,
-        isLoading: isConnectionLoading,
-        isFetching: isConnectionFetching,
-        isError: isConnectionError
-    } = options.connectionId ? getConnection({
+    const connections = useMemo(() => {
+        if (connectionResponse) {
+            return connectionResponse.data;
+        }
+        return [];
+    }, [connectionResponse]);
+
+    const { data: connnectionResponses, isLoading: isConnectionLoading, isFetching: isConnectionFetching, isError: isConnectionError } = options.connectionId ? getConnection({
         url: `/connection_registry/connection_config/${options.connectionId}`,
         queryOptions: {
             enabled: !!options.connectionId,
@@ -120,7 +122,7 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
     }, [deleteConnectionMutation]);
 
     return {
-        connections: connectionResponse || [],
+        connections,
         isLoading,
         isFetching,
         isError,

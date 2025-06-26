@@ -37,7 +37,7 @@ interface ComputeClusterFormStepperProps {
   computeClusterId?: string;
   onBack: () => void;
   isEdit?: boolean;
-  formData?: ComputeClusterFormValues;
+  formData?: any;
   mode?: 'edit' | 'new';
 }
 
@@ -283,7 +283,7 @@ export function ComputeClusterFormStepper({
   };
 
   const steps = [
-    { title: 'Basic Configuration', description: 'Configure basic cluster settings' },
+    { title: 'Basic Configuration', description: 'Configure basic compute settings' },
     { title: 'Compute Configuration', description: 'Configure detailed compute settings' },
     { title: 'Review & Test', description: 'Review and test your configuration' }
   ];
@@ -344,12 +344,12 @@ export function ComputeClusterFormStepper({
               {getComputeTypeIcon(form.watch('compute_type'))}
               <div>
                 <h1 className="text-2xl font-bold">
-                  {isEdit ? 'Edit Compute Cluster' : 'Create Compute Cluster'}
+                  {isEdit ? 'Edit Compute Configure' : 'Create Compute Configure'}
                 </h1>
                 <p className="text-gray-600">
                   {isEdit 
-                    ? 'Update your compute cluster configuration'
-                    : 'Configure a new compute cluster for your data processing workloads'
+                    ? 'Update your compute config'
+                    : 'Configure a new compute  for your data processing workloads'
                   }
                 </p>
               </div>
@@ -459,7 +459,7 @@ export function ComputeClusterFormStepper({
                             ) : (
                               <CheckCircle2 className="h-4 w-4" />
                             )}
-                            <span>{isEdit ? 'Update' : 'Create'} Cluster</span>
+                            <span>{isEdit ? 'Update' : 'Create'} Config</span>
                           </Button>
                         )}
                       </div>

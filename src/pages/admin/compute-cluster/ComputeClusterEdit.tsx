@@ -19,7 +19,7 @@ export default function ComputeClusterEditPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading compute cluster...</p>
+          <p className="mt-2 text-gray-600">Loading compute config...</p>
         </div>
       </div>
     );
@@ -29,7 +29,7 @@ export default function ComputeClusterEditPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600">Failed to load compute cluster details.</p>
+          <p className="text-red-600">Failed to load compute config details.</p>
         </div>
       </div>
     );

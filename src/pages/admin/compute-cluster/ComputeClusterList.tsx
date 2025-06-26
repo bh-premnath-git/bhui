@@ -1,12 +1,16 @@
 import { ComputeClusterList } from '@/features/admin/compute-cluster/ComputeCluster';
 import { useComputeCluster } from '@/features/admin/compute-cluster/hooks/useComputeCluster';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { AlertCircle, RefreshCw, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigation } from '@/hooks/useNavigation';
+import { ROUTES } from '@/config/routes';
 
 export default function ComputeClusterListPage() {
   const { useComputeClusterList } = useComputeCluster();
   const { data: clusters, isLoading, isError, error, refetch } = useComputeClusterList();
+  const { handleNavigation } = useNavigation();
+
 
   if (isLoading) {
     return (
@@ -14,7 +18,7 @@ export default function ComputeClusterListPage() {
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading compute clusters...</p>
+            <p className="text-sm text-muted-foreground">Loading compute configs...</p>
           </div>
         </div>
       </div>
@@ -28,7 +32,7 @@ export default function ComputeClusterListPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>
-              Failed to load compute clusters: {error?.message || 'Unknown error'}
+              Failed to load compute configs: {error?.message || 'Unknown error'}
             </span>
             <Button
               variant="outline"
@@ -52,17 +56,21 @@ export default function ComputeClusterListPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Compute Clusters Found</h3>
+              <h3 className="text-lg font-semibold mb-2">No Compute Configs Found</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                No compute clusters have been configured yet.
+                No compute configs have been configured yet.
               </p>
               <Button
-                variant="outline"
-                onClick={() => refetch()}
+                variant="default"
+                onClick={() => {
+                  // TODO: Navigate to create config page or open create config modal
+                  console.log('Create config clicked');
+                  handleNavigation(ROUTES.ADMIN.COMPUTE_CLUSTER.ADD);
+                }}
                 className="mr-2"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+                <Plus className="h-4 w-4 mr-2" />
+                Create Config
               </Button>
             </div>
           </div>

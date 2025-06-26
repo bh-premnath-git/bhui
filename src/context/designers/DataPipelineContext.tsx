@@ -161,6 +161,8 @@ interface bnPipelineContextProps {
     setPipelineJson: (json: any) => void;
     pipelineName: any;
     pipelineJson: any;
+    setProjectName: (name: string) => void;
+    projectName: string;
     isNodeFormOpen: boolean;
     setIsNodeFormOpen: React.Dispatch<React.SetStateAction<boolean>>;
     selectedNodeId: string | null;
@@ -169,6 +171,10 @@ interface bnPipelineContextProps {
     updateSetNode: (node: any, edges: any) => void
     updateAllNodeDependencies: () => void
     selectedMode: 'engine' | 'debug' | 'interactive'
+    attachedCluster: any
+    setAttachedCluster: React.Dispatch<React.SetStateAction<any>>
+    attachCluster: (cluster: any) => void
+    detachCluster: () => void
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -222,6 +228,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [saveError, setSaveErrorState] = useState<string | null>(null);
     const [pipelineName, setPipeLineName] = useState<any>(null);
+    const [projectName, setProjectName] = useState<string>('');
+    const [attachedCluster, setAttachedCluster] = useState<any>(null);
     
     // Pipeline validation states
     const [isPipelineValid, setIsPipelineValid] = useState(true);
@@ -1155,6 +1163,33 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
     }, []);
 
+    // Attach/Detach cluster functions
+    const attachCluster = useCallback((cluster: any) => {
+        setAttachedCluster(cluster);
+        localStorage.setItem('attachedCluster', JSON.stringify(cluster));
+        console.log('Cluster attached:', cluster);
+    }, []);
+
+    const detachCluster = useCallback(() => {
+        setAttachedCluster(null);
+        localStorage.removeItem('attachedCluster');
+        console.log('Cluster detached');
+    }, []);
+
+    // Load attached cluster from localStorage on mount
+    useEffect(() => {
+        const savedCluster = localStorage.getItem('attachedCluster');
+        if (savedCluster) {
+            try {
+                const cluster = JSON.parse(savedCluster);
+                setAttachedCluster(cluster);
+            } catch (error) {
+                console.error('Error parsing saved cluster:', error);
+                localStorage.removeItem('attachedCluster');
+            }
+        }
+    }, []);
+
     const handleRun = useCallback(async () => {
         try {
             setIsCanvasLoading(true);
@@ -1195,6 +1230,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 pipeline_json: JSON.stringify(pipeline_json),
                 mode: modeAction
             });
+            
+            // Add host parameter if cluster is attached
+            if (attachedCluster?.master_ip) {
+                params.append('host', attachedCluster.master_ip);
+                console.log('Using attached cluster host:', attachedCluster.master_ip);
+            }
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title);
             });
@@ -1299,7 +1340,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         try {
             console.log(pipelineName)
             console.log(pipelineDtl)
-            let response = await dispatch(stopPipeLine({ params:pipelineDtl?.name  || pipelineDtl?.pipeline_name || pipelineName })).unwrap();
+            const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
+            const host = attachedCluster?.master_ip;
+            
+            let response = await dispatch(stopPipeLine({ 
+                params: pipelineName_val,
+                host: host
+            })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -1308,15 +1355,24 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (error) {
             console.error('Error stopping pipeline:', error);
         }
-    }, [pipelineDtl?.pipeline_name]);
+    }, [pipelineDtl?.pipeline_name, attachedCluster?.master_ip, dispatch]);
 
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineDtl?.name  || pipelineDtl?.pipeline_name || pipelineName })).unwrap();
+            const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
+            const host = attachedCluster?.master_ip;
+            
+            let result: any = await dispatch(runNextCheckpoint({ 
+                pipeline_name: pipelineName_val,
+                host: host
+            })).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-                let countsResponse = await dispatch(getTransformationCount({ params: pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName  })).unwrap();
+                let countsResponse = await dispatch(getTransformationCount({ 
+                    params: pipelineName_val,
+                    host: host
+                })).unwrap();
                 console.log(countsResponse, "countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);
@@ -1331,7 +1387,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             console.error('Error in handleNext:', error);
             // Handle error appropriately (e.g., show error message to user)
         }
-    }, [pipelineDtl?.pipeline_name]);
+    }, [pipelineDtl?.pipeline_name, attachedCluster?.master_ip, dispatch]);
 
     const handleRefreshNode = useCallback(async (nodeId: string) => {
         try {
@@ -1366,6 +1422,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 mode: modeAction,
                 target_node: nodeId // Add target node info for backend
             });
+            
+            // Add host parameter if cluster is attached
+            if (attachedCluster?.master_ip) {
+                params.append('host', attachedCluster.master_ip);
+            }
 
             console.log(`🚀 Executing partial pipeline up to node: ${nodeId}`);
 
@@ -1391,8 +1452,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Optionally update transformation counts for the refreshed portion
             try {
+                const host = attachedCluster?.master_ip;
                 const countsResponse = await dispatch(getTransformationCount({
-                    params: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`
+                    params: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
+                    host: host
                 })).unwrap();
 
                 if (countsResponse.transformationOutputCounts) {
@@ -2183,6 +2246,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPipelineJson,
         pipelineName,
         pipelineJson,
+        setProjectName,
+        projectName,
         isNodeFormOpen,
         setIsNodeFormOpen,
         selectedNodeId,
@@ -2194,7 +2259,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         pipelineValidationErrors,
         pipelineValidationWarnings,
         selectedMode,
-        handleRefreshNode
+        handleRefreshNode,
+        attachedCluster,
+        setAttachedCluster,
+        attachCluster,
+        detachCluster
     }), [
         nodes,
         setSanitizedNodes,
@@ -2296,17 +2365,24 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPipelineJson,
         pipelineName,
         pipelineJson,
+        setProjectName,
+        projectName,
         isNodeFormOpen,
         setIsNodeFormOpen,
         selectedNodeId,
         setSelectedNodeId,
         updatedSelectedNodeId,
         updateSetNode,
+        updateAllNodeDependencies,
         isPipelineValid,
         pipelineValidationErrors,
         pipelineValidationWarnings,
         selectedMode,
-        handleRefreshNode
+        handleRefreshNode,
+        attachedCluster,
+        setAttachedCluster,
+        attachCluster,
+        detachCluster
     ]);
 
     return (

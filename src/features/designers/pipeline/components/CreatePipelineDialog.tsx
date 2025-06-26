@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 import { EngineSelector } from '@/components/headers/playground-header/EngineSelector';
+import { ROUTES } from '@/config/routes';
 
 interface CreatePipelineDialogProps {
     handleClose: () => void;
@@ -23,6 +24,7 @@ interface CreatePipelineDialogProps {
 interface FormValues {
     bh_project_id: string;
     pipeline_name: string;
+    pipeline_type: string;
     notes: string;
 }
 
@@ -32,16 +34,24 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { setPipeline_id, setPipeLineName } = usePipelineContext()
+    const context = usePipelineContext();
+    const { setPipeline_id, setPipeLineName, setProjectName } = context;
+    
+    console.log('=== CREATE PIPELINE DIALOG DEBUG ===');
+    console.log('Context keys:', Object.keys(context));
+    console.log('setProjectName function:', setProjectName);
+    console.log('Current projectName in context:', context.projectName);
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
         defaultValues: {
             bh_project_id: '',
             pipeline_name: '',
+            pipeline_type: '',
             notes: '',
         }
     });
 
     const selectedProjectId = watch('bh_project_id');
+    const selectedPipelineType = watch('pipeline_type');
     const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
         bh_project_id: project.bh_project_id,
         bh_project_name: project.bh_project_name
@@ -54,7 +64,27 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
 
             const body = { ...values, tags: {} };
             const response = await dispatch(insertPipeline(body)).unwrap();
-            setPipeLineName(values.pipeline_name);
+            
+            // Set pipeline name and project name in context
+            if (setPipeLineName) {
+                setPipeLineName(values.pipeline_name);
+            }
+            
+            // Find the selected project name
+            const selectedProject = gitProjectList.find(project => project.bh_project_id === values.bh_project_id);
+            console.log('OnSubmit - Selected project:', selectedProject);
+            console.log('OnSubmit - setProjectName function:', setProjectName);
+            if (selectedProject && setProjectName) {
+                console.log('OnSubmit - Setting project name:', selectedProject.bh_project_name);
+                setProjectName(selectedProject.bh_project_name);
+                
+                // Debug: Check if it was set
+                setTimeout(() => {
+                    console.log('OnSubmit - After setting - projectName in context:', context.projectName);
+                }, 100);
+            } else {
+                console.error('OnSubmit - Cannot set project name - missing selectedProject or setProjectName function');
+            }
             console.log(response)
             if (response?.error) {
                 // Handle error - you might want to show a toast notification here
@@ -64,7 +94,13 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
 
                 setPipeline_id(response?.pipeline_id)
                 localStorage.setItem("pipeline_id", response?.pipeline_id.toString())
-                navigate(`/designers/build-playground/${response?.pipeline_id}`);
+                
+                // Navigate based on pipeline type
+                if (values.pipeline_type === 'requirement') {
+                    navigate(ROUTES.DESIGNERS.REQUIREMENTS.NEW);
+                } else {
+                    navigate(`/designers/build-playground/${response?.pipeline_id}`);
+                }
                 // window.location.reload();
             }
         } finally {
@@ -72,47 +108,6 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
         }
     };
 
-    const renderDeduplicatorFields = (control: any) => {
-        const { fields: deduplicatorByFields, append: appendDeduplicatorBy, remove: removeDeduplicatorBy } = useFieldArray({
-            control,
-            name: 'dedup_by'
-        });
-
-        return (
-            <div>
-                {deduplicatorByFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2 mb-2">
-                        <FormField
-                            control={control}
-                            name={`dedup_by.${index}`}
-                            render={({ field }) => (
-                                <div className="w-full">
-                                    <Input
-                                        {...field}
-                                        placeholder="Enter dedup field"
-                                    />
-                                </div>
-                            )}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => removeDeduplicatorBy(index)}
-                            className="text-gray-500 hover:text-gray-700"
-                        >
-                            <span className="text-xl">×</span>
-                        </button>
-                    </div>
-                ))}
-                <Button
-                    type="button"
-                    onClick={() => appendDeduplicatorBy('')}
-                    className="text-green-600 font-bold"
-                >
-                    Add Deduplicator By
-                </Button>
-            </div>
-        );
-    };
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -133,7 +128,23 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
                             <label className="text-sm font-medium">Project</label>
                             <select
                                 value={selectedProjectId}
-                                onChange={(e) => setValue('bh_project_id', e.target.value, { shouldValidate: true })}
+                                onChange={(e) => { 
+                                    setValue('bh_project_id', e.target.value, { shouldValidate: true })
+                                    const selectedProject = gitProjectList.find(project => project.bh_project_id.toString() === e.target.value);
+                                    console.log('Selected project:', selectedProject);
+                                    console.log('setProjectName function:', setProjectName);
+                                    if (selectedProject && setProjectName) {
+                                        console.log('Setting project name:', selectedProject.bh_project_name);
+                                        setProjectName(selectedProject.bh_project_name);
+                                        
+                                        // Debug: Check if it was set
+                                        setTimeout(() => {
+                                            console.log('After setting - projectName in context:', context.projectName);
+                                        }, 100);
+                                    } else {
+                                        console.error('Cannot set project name - missing selectedProject or setProjectName function');
+                                    }
+                                }}
                                 className="w-full border bg-white border-gray-200 rounded-md p-2"
                             >
                                 <option value="" disabled>Select Project</option>
@@ -158,6 +169,83 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({ open, handl
                                 <p className="text-red-500 text-sm">Name is required</p>
                             )}
                         </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium">Pipeline Type</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <label className="relative cursor-pointer group">
+                                <input
+                                    type="radio"
+                                    value="design"
+                                    {...register('pipeline_type', { required: true })}
+                                    className="absolute opacity-0"
+                                />
+                                <div className={`flex items-center p-4 border-2 rounded-lg hover:shadow-sm transition-all duration-200 ${
+                                    selectedPipelineType === 'design' 
+                                        ? 'border-blue-500 bg-blue-50' 
+                                        : 'border-gray-200 hover:border-blue-300'
+                                } group-focus-within:ring-2 group-focus-within:ring-blue-500 group-focus-within:ring-opacity-20`}>
+                                    <div className="flex items-center space-x-3 w-full">
+                                        <div className="flex-shrink-0">
+                                            <div className={`w-4 h-4 border-2 rounded-full transition-all duration-200 relative ${
+                                                selectedPipelineType === 'design' 
+                                                    ? 'border-blue-500 bg-blue-500' 
+                                                    : 'border-gray-300'
+                                            }`}>
+                                                <div className={`absolute inset-1 w-2 h-2 rounded-full bg-white transition-all duration-200 ${
+                                                    selectedPipelineType === 'design' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+                                                }`}></div>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                                <span className="text-sm font-medium text-gray-900">Design Pipeline</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">Build data transformation pipelines</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                            <label className="relative cursor-pointer group">
+                                <input
+                                    type="radio"
+                                    value="requirement"
+                                    {...register('pipeline_type', { required: true })}
+                                    className="absolute opacity-0"
+                                />
+                                <div className={`flex items-center p-4 border-2 rounded-lg hover:shadow-sm transition-all duration-200 ${
+                                    selectedPipelineType === 'requirement' 
+                                        ? 'border-green-500 bg-green-50' 
+                                        : 'border-gray-200 hover:border-green-300'
+                                } group-focus-within:ring-2 group-focus-within:ring-green-500 group-focus-within:ring-opacity-20`}>
+                                    <div className="flex items-center space-x-3 w-full">
+                                        <div className="flex-shrink-0">
+                                            <div className={`w-4 h-4 border-2 rounded-full transition-all duration-200 relative ${
+                                                selectedPipelineType === 'requirement' 
+                                                    ? 'border-green-500 bg-green-500' 
+                                                    : 'border-gray-300'
+                                            }`}>
+                                                <div className={`absolute inset-1 w-2 h-2 rounded-full bg-white transition-all duration-200 ${
+                                                    selectedPipelineType === 'requirement' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+                                                }`}></div>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                <span className="text-sm font-medium text-gray-900">Requirement Pipeline</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">Define pipeline requirements</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        {errors.pipeline_type && (
+                            <p className="text-red-500 text-sm">Pipeline type is required</p>
+                        )}
                     </div>
               <EngineSelector />
 

@@ -9,7 +9,7 @@ import { PlusIcon, Server } from 'lucide-react';
 export const columns: ColumnDef<ComputeCluster>[] = [
   {
     accessorKey: "name",
-    header: "Cluster Name",
+    header: "Compute Name",
     cell: ({ row }) => (
       <div className="font-medium">{row.getValue("name")}</div>
     ),
@@ -110,7 +110,7 @@ export const getToolbarConfig = (): TToolbarConfig => {
         label: (
           <>
             <PlusIcon className="mr-2 h-4 w-4" />
-            Add Cluster Config
+            Add Compute Config
           </>
         ),
         variant: "default",

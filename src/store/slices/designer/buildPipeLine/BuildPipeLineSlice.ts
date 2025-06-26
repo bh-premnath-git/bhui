@@ -241,7 +241,7 @@ export const getTransformationCount: any = createAsyncThunk(
         method: 'GET',
         params: {
           pipeline_name: params.params,
-          host: 'host.docker.internal',
+          host: params.host || 'host.docker.internal',
           port: 15003
         }
       });
@@ -316,9 +316,10 @@ export const stopPipeLine: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       console.log(params)
+      const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=host.docker.internal&port=15003`,
+        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003`,
         usePrefix: true,
         method: 'POST',
       });
@@ -418,11 +419,12 @@ export const updatePipeline = createAsyncThunk(
 
 export const runNextCheckpoint = createAsyncThunk(
   'build-pipline/runNextCheckpoint',
-  async (params: { pipeline_name: string }, thunkAPI) => {
+  async (params: { pipeline_name: string, host?: string }, thunkAPI) => {
     try {
+      const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=host.docker.internal&port=15003`,
+        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003`,
         usePrefix: true,
         method: 'POST'
       });

@@ -78,8 +78,10 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
 
   // Flatten and filter data sources
   const dataSources = data?.pages.flat() || [];
-  const filteredSources = dataSources.filter((source:any) =>
-    source.data_src_name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSources = dataSources.filter((source: any) =>
+  source && source.data_src_name && typeof source.data_src_name === 'string'
+    ? source.data_src_name.toLowerCase().includes(searchTerm.toLowerCase())
+    : false
   );
 
   const handleScroll = useCallback(

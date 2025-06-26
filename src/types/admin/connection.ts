@@ -12,13 +12,17 @@ export interface Connection {
 };
 
 
-export interface ConnectionType {
+export interface ConnectionTypes {
     id: number;
     connection_name: string;
     connection_display_name: string;
     connection_description: string;
     connection_type: string;
 };
+
+export interface ConnectionType {
+    data: ConnectionTypes[];
+}
 
 export interface ConnectionValue {
     id?: string;

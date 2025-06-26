@@ -291,20 +291,8 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
 
   return (
     <Dialog open={isAiChatOpen} onOpenChange={setIsAiChatOpen}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Chat Messages */}
-          {messages.filter(message => message.sender === 'user').map((message) => (
-            <div key={message.id} className="flex justify-end">
-              <div className="max-w-[80%] rounded-lg px-4 py-3 bg-gray-100">
-                <div className="whitespace-pre-wrap break-words">{message.text}</div>
-                <div className="text-xs mt-2 text-gray-500">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            </div>
-          ))}
-
           <div ref={messagesEndRef} />
         </div>
 
@@ -378,22 +366,22 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
               </div>
 
               {/* Voice Recognition Button */}
-              {isSupported && (
-                <button
-                  onClick={toggleVoiceRecognition}
-                  className={`p-3 rounded-lg transition-all duration-200 bg-gray-800 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ${isListening
-                      ? 'text-gray-700'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
-                    }`}
-                  title={isListening ? 'Stop listening' : 'Start voice input'}
-                >
-                  {isListening ? (
-                    <MicOff className="w-5 h-5 " strokeWidth={2} />
-                  ) : (
-                    <Mic className="w-5 h-5" strokeWidth={2} />
-                  )}
-                </button>
-              )}
+               {isSupported && (
+                  <button
+                    onClick={toggleVoiceRecognition}
+                    className={`p-3 rounded-lg ${isListening
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                    title={isListening ? 'Stop listening' : 'Start voice input'}
+                  >
+                    {isListening ? (
+                      <MicOff className="w-5 h-5" strokeWidth={2.5} />
+                    ) : (
+                      <Mic className="w-5 h-5" strokeWidth={2.5} />
+                    )}
+                  </button>
+                )}
 
               {/* Send Button */}
               <button

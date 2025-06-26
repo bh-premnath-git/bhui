@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useConnectionType, useConnectionSearch } from './hooks/useConnection';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ConnectionForm } from './components/ConnectionForm';
-import { ConnectionType } from '@/types/admin/connection';
+import { ConnectionType, ConnectionTypes } from '@/types/admin/connection';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -19,7 +19,7 @@ export function AddConnection() {
     error,
     debounceSearchConnection
   } = useConnectionSearch();
-  const [selectedType, setSelectedType] = useState<ConnectionType | null>(null);
+  const [selectedType, setSelectedType] = useState<ConnectionTypes | null>(null);
   const [activeTab, setActiveTab] = useState<string>("source");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [connectionConfigName, setConnectionConfigName] = useState<string>("");
@@ -84,7 +84,7 @@ export function AddConnection() {
     (type.connection_display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   ) ?? [];
 
-  const handleCardClick = (type: ConnectionType) => {
+  const handleCardClick = (type: ConnectionTypes) => {
     if (!connectionConfigName.trim()) {
       setShowNameError(true);
       return;

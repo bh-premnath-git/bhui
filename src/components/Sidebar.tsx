@@ -174,9 +174,11 @@ export function Sidebar() {
       <div className="h-12 flex items-center">
         {isExpanded ? (
           <div className="flex items-center justify-between w-full">
-            <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap ml-2">
-              Bighammer.ai
-            </h1>
+            <div className="cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
+              <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap ml-2">
+                Bighammer.ai
+              </h1>
+            </div>
             <Button
               variant="ghost"
               size="icon"

@@ -158,7 +158,7 @@ export function ComputeConfigurationStep({
                 <h4 className="font-semibold text-gray-900 text-sm">Performance Tips</h4>
                 <ul className="mt-1 text-xs text-gray-700 space-y-1">
                   <li>• Adjust instance sizes based on your data volume and processing requirements</li>
-                  <li>• You can set the cluster timeout in seconds to save resources</li>
+                  <li>• You can set the compute timeout in seconds to save resources</li>
                 </ul>
               </div>
             </div>

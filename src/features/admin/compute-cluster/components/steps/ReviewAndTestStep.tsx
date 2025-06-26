@@ -52,7 +52,7 @@ export function ReviewAndTestStep({
           <div>
             <CardTitle>Review & Test Configuration</CardTitle>
             <CardDescription>
-              Review your configuration and test the connection before creating the cluster
+              Review your configuration and test the connection before creating the compute config
             </CardDescription>
           </div>
         </div>
@@ -70,11 +70,11 @@ export function ReviewAndTestStep({
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-300 mb-6">
             <div className="flex items-center space-x-2 mb-4">
               <Database className="h-5 w-5 text-gray-700" />
-              <h4 className="font-semibold text-base text-gray-900">Cluster Configuration</h4>
+              <h4 className="font-semibold text-base text-gray-900">Compute Configuration</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide block mb-2">Cluster Name</label>
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide block mb-2">Compute Name</label>
                 <p className="text-lg text-gray-900 font-semibold break-words">{formValues.compute_config_name}</p>
               </div>
               <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">

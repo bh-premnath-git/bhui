@@ -46,12 +46,13 @@ interface ComputeClusterApiResponse {
 }
 
 interface ComputeClusterListApiResponse {
-  data: ComputeClusterApiResponse[];
   total: number;
+  next: boolean;
+  prev: boolean;
   offset: number;
   limit: number;
-  prev: boolean;
-  next: boolean;
+  data: ComputeClusterApiResponse[];
+  
 }
 
 export interface Environment {
@@ -106,8 +107,8 @@ export function useComputeCluster() {
   };
 
   // Transform API response to match ComputeCluster interface
-  const transformApiResponseToComputeCluster = (apiData: ComputeClusterListApiResponse) => {
-    return apiData.data.map(item => ({
+  const transformApiResponseToComputeCluster = (apiData: ComputeClusterApiResponse[]) => {
+    return apiData.map(item => ({
       id: item.compute_config_id.toString(),
       name: item.compute_config_name,
       environment: item.bh_env_name,
@@ -148,32 +149,8 @@ export function useComputeCluster() {
           method: 'GET'
         });
         console.log('Compute cluster list response:', response);
-        return {
-          data: response.data.map(item => ({
-            id: item.compute_config_id.toString(),
-            name: item.compute_config_name,
-            environment: item.bh_env_name,
-            platform: item.compute_type,
-            region: item.compute_config.region,
-            instanceType: item.compute_config.instance_type,
-            minNodes: 1, // API doesn't provide this, using default
-            maxNodes: item.compute_config.worker_count + 1, // Approximate based on worker count
-            currentNodes: item.compute_config.worker_count,
-            status: 'active' as const, // API doesn't provide status, using default
-            createdAt: new Date().toISOString(), // API doesn't provide this, using current time
-            updatedAt: new Date().toISOString(), // API doesn't provide this, using current time
-            createdBy: item.tenant_key, // Using tenant key as created by
-            tags: item.compute_config.bh_tags.map(tag => ({
-              key: 'tag',
-              value: tag
-            }))
-          })),
-          total: response.total,
-          offset: response.offset,
-          limit: response.limit,
-          prev: response.prev,
-          next: response.next,
-        };
+        // Extract the data array from the response object
+        return transformApiResponseToComputeCluster(response.data);
       },
       staleTime: 30 * 1000, // 30 seconds
       retry: 2
@@ -390,14 +367,15 @@ export function useComputeCluster() {
       queryKey: ['environments', 'list'],
       queryFn: async () => {
         console.log('Fetching environments list');
-        const response = await apiService.get<Environment[]>({
-          baseUrl: 'http://localhost:8011',
-          url: '/api/v1/environment/environment/list/',
+        const response:any = await apiService.get<Environment[]>({
+          baseUrl: CATALOG_REMOTE_API_URL,
+          url: '/environment/environment/list/',
+          usePrefix: true,
           method: 'GET',
           params: { limit: 1000 }
         });
         console.log('Environments list response:', response);
-        return response;
+        return response.data;
       },
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 2

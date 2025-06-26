@@ -69,7 +69,7 @@ export function ComputeClusterForm({
 
   // Fetch environments list
   const { data: environmentsData, isLoading: isLoadingEnvironments, error: environmentsError } = useEnvironmentsList();
-
+console.log(environmentsData)
   // Show error toast if compute types fail to load
   useEffect(() => {
     if (computeTypesError) {
@@ -257,12 +257,12 @@ export function ComputeClusterForm({
           {getComputeTypeIcon(form.watch('compute_type'))}
           <div>
             <CardTitle className="text-xl">
-              {isEdit ? 'Edit Compute Cluster' : 'Add Compute Cluster'}
+              {isEdit ? 'Edit Compute Config' : 'Add Compute Config'}
             </CardTitle>
             <CardDescription>
               {isEdit 
-                ? 'Update your compute cluster configuration'
-                : 'Configure a new compute cluster for your data processing workloads'
+                ? 'Update your compute config configuration'
+                : 'Configure a new compute config for your data processing workloads'
               }
             </CardDescription>
           </div>
@@ -512,7 +512,7 @@ export function ComputeClusterForm({
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  <span>{isEdit ? 'Update' : 'Create'} Cluster</span>
+                  <span>{isEdit ? 'Update' : 'Create'} Config</span>
                 </Button>
               </div>
             </div>

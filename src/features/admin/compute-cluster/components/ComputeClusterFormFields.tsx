@@ -390,6 +390,9 @@ export function ComputeClusterFormFields({
                   <FormLabel>
                     {field.title || key}
                     {isRequired && <span className="text-destructive ml-1">*</span>}
+                    {mode === 'edit' && parentKey === '' && (key === 'compute_type' || key === 'bh_env_id' || key === 'compute_config_name') && (
+                      <span className="text-xs text-muted-foreground ml-2">(Read-only)</span>
+                    )}
                   </FormLabel>
                   {field.description && (
                     <button
@@ -413,10 +416,17 @@ export function ComputeClusterFormFields({
                       onComputeTypeChange(value);
                     }
                   }}
-                  disabled={isLoading && (key === 'compute_type' || key === 'bh_env_id')}
+                  disabled={
+                    (isLoading && (key === 'compute_type' || key === 'bh_env_id')) ||
+                    (mode === 'edit' && parentKey === '' && (key === 'compute_type' || key === 'bh_env_id' || key === 'compute_config_name'))
+                  }
                 >
                   <FormControl>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className={`h-9 ${
+                      mode === 'edit' && parentKey === '' && (key === 'compute_type' || key === 'bh_env_id' || key === 'compute_config_name')
+                        ? 'bg-muted cursor-not-allowed opacity-70'
+                        : ''
+                    }`}>
                       <SelectValue placeholder={`Select ${field.title || key}`} />
                     </SelectTrigger>
                   </FormControl>
@@ -473,6 +483,9 @@ export function ComputeClusterFormFields({
                 <FormLabel>
                   {field.title || key}
                   {isRequired && <span className="text-destructive ml-1">*</span>}
+                  {mode === 'edit' && parentKey === '' && (key === 'compute_config_name' || key === 'tenant_key') && (
+                    <span className="text-xs text-muted-foreground ml-2">(Read-only)</span>
+                  )}
                 </FormLabel>
                 {field.description && (
                   <button
@@ -493,7 +506,13 @@ export function ComputeClusterFormFields({
                   type={field.type === 'number' ? 'number' : 'text'}
                   placeholder={field.examples?.[0] || field.default || ''}
                   value={formField.value || ''}
-                  className="h-9"
+                  className={`h-9 ${
+                    mode === 'edit' && parentKey === '' && (key === 'compute_config_name' || key === 'tenant_key')
+                      ? 'bg-muted cursor-not-allowed opacity-70'
+                      : ''
+                  }`}
+                  disabled={mode === 'edit' && parentKey === '' && (key === 'compute_config_name' || key === 'tenant_key')}
+                  readOnly={mode === 'edit' && parentKey === '' && (key === 'compute_config_name' || key === 'tenant_key')}
                   onChange={(e) => {
                     const value = field.type === 'number' 
                       ? (e.target.value === '' ? '' : Number(e.target.value))

@@ -90,7 +90,7 @@ export function ComputeClusterSummary({
                   Configuration Overview
                 </CardTitle>
                 <p className="text-xs text-gray-600 mt-1">
-                  Live preview of your cluster setup
+                  Live preview of your compute setup
                 </p>
               </div>
             </div>
@@ -116,7 +116,7 @@ export function ComputeClusterSummary({
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Basic Configuration</h4>
-                  <p className="text-xs text-gray-500">Core cluster settings</p>
+                  <p className="text-xs text-gray-500">Core compute settings</p>
                 </div>
               </div>
               <motion.div
@@ -142,7 +142,7 @@ export function ComputeClusterSummary({
                     <div className="flex items-center space-x-3">
                       <Server className="h-4 w-4 text-gray-700" />
                       <div>
-                        <span className="text-sm font-medium text-gray-700">Cluster Name</span>
+                        <span className="text-sm font-medium text-gray-700">Compute Config </span>
                         <p className="text-xs text-gray-500">Unique identifier</p>
                       </div>
                     </div>

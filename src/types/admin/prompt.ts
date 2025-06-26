@@ -12,3 +12,12 @@ export interface PromptModule{
     module_display_name: string;
     module_desc: string;
 }
+
+export interface PromptPaginatedResponse {
+    data: Prompt[];
+    total: number;
+    offset: number;
+    limit: number;
+    prev: boolean;
+    next: boolean;
+}

@@ -74,7 +74,8 @@ export const useConversation = (options: UseConversationOptions = { shouldFetch:
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('kc_token')}`
                 },
                 body: JSON.stringify({
                     user_request: userRequest,

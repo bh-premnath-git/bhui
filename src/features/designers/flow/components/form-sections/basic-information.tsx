@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import type { UseFormReturn } from "react-hook-form"
 import type { FlowFormValues } from "../schema"
 import { useAppSelector } from "@/hooks/useRedux"
-import { getProjectOptions, getEnvironmentOptions } from "../schema"
+import { getEnvironmentOptions } from "../schema"
 import { Loader2, X, Check } from "lucide-react"
 import type { Flow } from '@/types/designer/flow'
 
@@ -14,6 +14,8 @@ interface BasicInformationProps {
   searchLoading?: boolean
   flowNotFound?: boolean
   onFlowNameChange?: (name: string) => void
+  projectOptions: { label: string; value: string }[];
+  projectsLoading?: boolean;
 }
 
 export function BasicInformation({ 
@@ -21,14 +23,12 @@ export function BasicInformation({
   searchedFlow,
   searchLoading,
   flowNotFound,
-  onFlowNameChange
+  onFlowNameChange,
+  projectOptions,
+  projectsLoading
 }: BasicInformationProps) {
-  const { projects, environments } = useAppSelector((state) => state.flow);
-  const projectOptions = getProjectOptions(projects);
+  const { environments } = useAppSelector((state) => state.flow);
   const environmentOptions = getEnvironmentOptions(environments);
-
-  console.log("projectOptions", projectOptions);
-  console.log("environmentOptions", environmentOptions);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -38,10 +38,10 @@ export function BasicInformation({
         render={({ field }) => (
           <FormItem>
             <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">Project</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={projectsLoading}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Project" />
+                  {projectsLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <SelectValue placeholder="Select Project" />}
                 </SelectTrigger>
               </FormControl>
               <SelectContent className="z-[110] bg-white" portal={false}>

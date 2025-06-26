@@ -13,7 +13,9 @@ import { type FlowFormValues, flowFormSchema, getProjectOptions } from "./schema
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from "@/config/routes";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
-import { setSelectedProject, setSelectedEnv, setSelectedFlow, setCurrentFlow } from '@/store/slices/designer/flowSlice';
+import { setSelectedProject, setSelectedEnv, setSelectedFlow, setCurrentFlow, setProjects } from '@/store/slices/designer/flowSlice';
+import { useProjects } from "@/features/admin/projects/hooks/useProjects";
+import { useEffect } from "react";
 
 type CreateFlowDialogProps = {
     open: boolean;
@@ -26,9 +28,16 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
     const { handleNavigation } = useNavigation();
     const { searchedFlow, searchLoading, flowNotFound, debounceSearchFlow } = useFlowSearch();
     const dispatch = useAppDispatch();
-      const { projects, environments } = useAppSelector((state) => state.flow);
-    
-  const projectOptions = getProjectOptions(projects);
+    const { projects, environments } = useAppSelector((state) => state.flow);
+    const { projects: fetchedProjects, isLoading: projectsLoading } = useProjects();
+
+    useEffect(() => {
+        if (fetchedProjects.length > 0) {
+            dispatch(setProjects(fetchedProjects));
+        }
+    }, [fetchedProjects, dispatch]);
+
+    const projectOptions = getProjectOptions(projects);
 
     const form = useForm<FlowFormValues>({
         resolver: zodResolver(flowFormSchema),
@@ -107,6 +116,8 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                     searchLoading={searchLoading}
                     flowNotFound={flowNotFound}
                     onFlowNameChange={debounceSearchFlow}
+                    projectOptions={projectOptions}
+                    projectsLoading={projectsLoading}
                 />
             </DialogContent>
         </Dialog>

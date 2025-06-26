@@ -47,24 +47,28 @@ const initialState: FlowState = {
 
 export const fetchProjects = createAsyncThunk(
     "flows/fetchProjects",
-    async () => {
-        const response = await apiService.get<Project[]>({
-            baseUrl:CATALOG_REMOTE_API_URL,
-            url: '/bh_project/list/',
-            usePrefix: true,
-            method: 'GET',
-            metadata: {
-                errorMessage: 'Failed to fetch projects'
-            }
-        });
-        return response;
+    async (options: { offset: number; limit: number } = { offset: 0, limit: 1000 }, { rejectWithValue }) => {
+        try {
+            const response = await apiService.get<{data:Project[]}>({
+                baseUrl: CATALOG_REMOTE_API_URL,
+                url: `/bh_project/list/?offset=${options.offset}&limit=${options.limit}`,
+                usePrefix: true,
+                method: 'GET',
+                metadata: {
+                    errorMessage: 'Failed to fetch projects'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
     }
 );
 
 export const fetchEnvironments = createAsyncThunk(
     "flows/fetchEnvironments",
     async (options:any) => {
-        const response = await apiService.get<any>({
+        const response = await apiService.get<{data:Environment[]}>({
             baseUrl:CATALOG_REMOTE_API_URL,
             url: `/environment/environment/list/?offset=${options.offset}&limit=${options.limit}&order_by=created_at&order_desc=true`,
             usePrefix: true,
@@ -250,11 +254,11 @@ const flowSlice = createSlice({
             state.currentFlow = action.payload;
         },
         setSelectedProject: (state, action: PayloadAction<number>) => {
-            state.selectedProject = state.projects.find(p => p.bh_project_id === action.payload) || null;
+            state.selectedProject = state.projects?.find(p => p.bh_project_id === action.payload) || null;
         },
         setSelectedEnv: (state, action: PayloadAction<number>) => {
-            state.selectedEnvironment = state.environments.find(e => e.bh_env_id === action.payload) || null;
-            state.environment = state.environments.find(e => e.bh_env_id === action.payload) || null;
+            state.selectedEnvironment = state.environments?.find(e => e.bh_env_id === action.payload) || null;
+            state.environment = state.environments?.find(e => e.bh_env_id === action.payload) || null;
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
@@ -289,6 +293,9 @@ const flowSlice = createSlice({
         setTaskDependencies: (state, action: PayloadAction<Record<string, string[]>>) => {
             state.dependencies = action.payload;
         },
+        setProjects: (state, action: PayloadAction<Project[]>) => {
+            state.projects = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -296,7 +303,7 @@ const flowSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchProjects.fulfilled, (state, action) => {
+            .addCase(fetchProjects.fulfilled, (state, action: PayloadAction<Project[]>) => {
                 state.loading = false;
                 state.projects = action.payload;
             })
@@ -308,7 +315,7 @@ const flowSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchEnvironments.fulfilled, (state, action) => {
+            .addCase(fetchEnvironments.fulfilled, (state, action: PayloadAction<Environment[]>) => {
                 state.loading = false;
                 state.environments = action.payload;
                 
@@ -525,6 +532,7 @@ export const {
     updateFormValues,
     clearFormStates,
     setTaskDependencies,
-    setCurrentFlow
+    setCurrentFlow,
+    setProjects
 } = flowSlice.actions;
 export default flowSlice.reducer;

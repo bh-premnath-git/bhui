@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/api/api-service';
 import { ComputeClusterFormValues } from '../components/computeClusterFormSchema';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
-import { use } from 'marked';
 
 interface ComputeTypesResponse {
   compute_types: string[];
@@ -48,6 +47,11 @@ interface ComputeClusterApiResponse {
 
 interface ComputeClusterListApiResponse {
   data: ComputeClusterApiResponse[];
+  total: number;
+  offset: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
 }
 
 export interface Environment {
@@ -125,9 +129,10 @@ export function useComputeCluster() {
   };
 
   // Fetch compute cluster list
-  const useComputeClusterList = () => {
+  const useComputeClusterList = (options: { limit?: number; offset?: number; } = {}) => {
+    const { limit = 10, offset = 0 } = options;
     return useQuery({
-      queryKey: ['compute-cluster-list'],
+      queryKey: ['compute-cluster-list', limit, offset],
       queryFn: async () => {
         console.log('Fetching compute cluster list');
         const response = await apiService.get<ComputeClusterListApiResponse>({
@@ -135,15 +140,40 @@ export function useComputeCluster() {
           url: '/bh_compute/bh-compute-config/list/',
           usePrefix: true,
           params: { 
-            offset: 0, 
-            limit: 1000, 
+            offset,
+            limit,
             order_by: 'created_at', 
             order_desc: true 
           },
           method: 'GET'
         });
         console.log('Compute cluster list response:', response);
-        return transformApiResponseToComputeCluster(response);
+        return {
+          data: response.data.map(item => ({
+            id: item.compute_config_id.toString(),
+            name: item.compute_config_name,
+            environment: item.bh_env_name,
+            platform: item.compute_type,
+            region: item.compute_config.region,
+            instanceType: item.compute_config.instance_type,
+            minNodes: 1, // API doesn't provide this, using default
+            maxNodes: item.compute_config.worker_count + 1, // Approximate based on worker count
+            currentNodes: item.compute_config.worker_count,
+            status: 'active' as const, // API doesn't provide status, using default
+            createdAt: new Date().toISOString(), // API doesn't provide this, using current time
+            updatedAt: new Date().toISOString(), // API doesn't provide this, using current time
+            createdBy: item.tenant_key, // Using tenant key as created by
+            tags: item.compute_config.bh_tags.map(tag => ({
+              key: 'tag',
+              value: tag
+            }))
+          })),
+          total: response.total,
+          offset: response.offset,
+          limit: response.limit,
+          prev: response.prev,
+          next: response.next,
+        };
       },
       staleTime: 30 * 1000, // 30 seconds
       retry: 2

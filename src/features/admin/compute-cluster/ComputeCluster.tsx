@@ -5,7 +5,18 @@ import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
 
-export function ComputeClusterList({ clusters }: { clusters: ComputeCluster[] }) {
+interface ComputeClusterListProps {
+  clusters: ComputeCluster[];
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+}
+
+export function ComputeClusterList({ clusters, pageCount, pageIndex, pageSize, onPageChange, onPageSizeChange, hasNextPage, hasPreviousPage }: ComputeClusterListProps) {
   const { handleNavigation } = useNavigation();
 
   const onRowClickHandler = (row: Row<ComputeCluster>) => {
@@ -17,9 +28,15 @@ export function ComputeClusterList({ clusters }: { clusters: ComputeCluster[] })
       columns={columns}
       data={clusters || []}
       topVariant='simple'
-      pagination={true}
       onRowClick={onRowClickHandler}
       toolbarConfig={getToolbarConfig()}
+      pageCount={pageCount}
+      pageIndex={pageIndex}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
+      hasNextPage={hasNextPage}
+      hasPreviousPage={hasPreviousPage}
     />
   );
 }

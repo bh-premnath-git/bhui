@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ChevronRight, ChevronLeft, ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2 } from "lucide-react";
+import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,92 +165,97 @@ export function Sidebar() {
     <div
       className={cn(
         "h-screen fixed left-0 top-0 z-[100] flex flex-col",
-        "bg-gray-90 dark:bg-gray-950 backdrop-blur supports-[backdrop-filter]:bg-gray-100/95 dark:supports-[backdrop-filter]:bg-gray-950/95 border-r border-gray-200 dark:border-gray-800",
+        "bg-gray-50 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
-        "shadow-sm",
         isExpanded ? "w-64" : "w-16"
       )}
     >
-      <div className="h-16 flex items-center px-4 border-gray-200 dark:border-gray-800">
-        <div className="flex items-center cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
-          <div className="overflow-hidden">
-            <h1
+      {/* Header */}
+      <div className="h-12 flex items-center">
+        {isExpanded ? (
+          <div className="flex items-center justify-between w-full">
+            <div className="cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
+              <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap ml-2">
+                Bighammer.ai
+              </h1>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
               className={cn(
-                "text-lg font-semibold font-sans ml-2",
-                "transition-all duration-300 ease-in-out",
-                "whitespace-nowrap transform",
-                "text-gray-900 dark:text-white",
-                isExpanded
-                  ? "opacity-100 translate-x-0"
-                  : "opacity-0 -translate-x-4 pointer-events-none"
+                "transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
               )}
+              style={{ boxShadow: "none", border: "none", background: "transparent" }}
             >
-              BigHammer.ai
-            </h1>
+              <PanelLeft className="h-5 w-5" />
+            </Button>
           </div>
-        </div>
-      </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleSidebar}
-        className={cn(
-          "absolute -right-4 top-9 text-muted-foreground hover:bg-accent",
-          "h-10 w-4 rounded-none rounded-r-md border border-l-0 border-gray-200 dark:border-gray-800",
-          "bg-background/90 transition-transform duration-300",
-          !isExpanded && "hover:scale-125",
-          isExpanded ? "justify-between" : "justify-center"
+        ) : (
+          <div className="flex items-center justify-center w-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className={cn(
+                "transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
+              )}
+              style={{ boxShadow: "none", border: "none", background: "transparent" }}
+            >
+              <PanelRight className="h-5 w-5" />
+            </Button>
+          </div>
         )}
-      >
-        {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-      </Button>
+      </div>
 
+      {/* Custom Scrollbar Styles */}
       {isExpanded && (
         <style dangerouslySetInnerHTML={{
           __html: `
             .sidebar-nav-scrollable::-webkit-scrollbar {
-              width: 5px !important;
+              width: 4px !important;
               display: block !important;
             }
             .sidebar-nav-scrollable::-webkit-scrollbar-track {
               background: transparent !important;
             }
             .sidebar-nav-scrollable::-webkit-scrollbar-thumb {
-              background: rgba(156, 163, 175, 0.5) !important;
+              background: rgba(156, 163, 175, 0.3) !important;
               border-radius: 20px !important;
             }
             .sidebar-nav-scrollable::-webkit-scrollbar-thumb:hover {
-              background: rgba(156, 163, 175, 0.8) !important;
+              background: rgba(156, 163, 175, 0.6) !important;
             }
-            .sidebar-nav-scrollable , .sidebar-subitems-scrollable{
+            .sidebar-nav-scrollable, .sidebar-subitems-scrollable {
               scrollbar-width: thin !important;
-              scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important;
+              scrollbar-color: rgba(156, 163, 175, 0.3) transparent !important;
             }
-               .sidebar-subitems-scrollable::-webkit-scrollbar {
-              width: 5px !important;
+            .sidebar-subitems-scrollable::-webkit-scrollbar {
+              width: 4px !important;
               display: block !important;
             }
             .sidebar-subitems-scrollable::-webkit-scrollbar-track {
               background: transparent !important;
             }
             .sidebar-subitems-scrollable::-webkit-scrollbar-thumb {
-              background: rgba(156, 163, 175, 0.5) !important;
+              background: rgba(156, 163, 175, 0.3) !important;
               border-radius: 20px !important;
             }
             .sidebar-subitems-scrollable::-webkit-scrollbar-thumb:hover {
-              background: rgba(156, 163, 175, 0.8) !important;
+              background: rgba(156, 163, 175, 0.6) !important;
             }
           `
         }} />
       )}
 
+      {/* Navigation */}
       <nav className={cn(
-        "flex-1 overflow-y-auto py-4",
+        "flex-1 overflow-y-auto",
         isExpanded && "sidebar-nav-scrollable"
       )}>
         <ul className={cn(
-          "space-y-2",
-          isExpanded ? "px-2 space-y-1" : "flex flex-col items-center w-full"
+          "space-y-1",
+          isExpanded ? "px-3" : "flex flex-col items-center px-2"
         )}>
           {navItems.map((item) => {
             const shouldShow = isExpanded || (!isExpanded && item.showIcon);
@@ -260,6 +265,7 @@ export function Sidebar() {
             }
 
             const needsTooltip = !isExpanded && item.showIcon;
+            const isActive = location.pathname === item.path;
 
             const navElement = (
               <a
@@ -269,39 +275,42 @@ export function Sidebar() {
                   navigation.handleNavigation(item.path);
                 }}
                 className={cn(
-                  "flex items-center py-2 rounded-md",
-                  "transition-all duration-200 ease-in-out",
-                  "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
-                  location.pathname === item.path
-                    ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
-                    : "text-gray-800 dark:text-gray-200",
-                  "flex-1",
-                  !isExpanded && item.showIcon && "justify-center px-3",
-                  isExpanded && "px-3",
+                  "flex items-center rounded-lg transition-all duration-200",
+                  "group relative",
+                  isActive
+                    ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white",
+                  !isExpanded && item.showIcon ? "p-2 justify-center" : "px-3 py-2",
                   isExpanded && item.title === "Data Xplorer" && "justify-between",
-                  isExpanded && item.isSubItem && "pl-6 text-sm"
+                  isExpanded && item.isSubItem && "pl-9 text-sm py-1.5"
                 )}
               >
+
                 {item.showIcon && item.icon && (
-                  <item.icon className={cn(
-                    "shrink-0 transition-transform duration-200",
-                    item.isSubItem ? "h-4 w-4" : "h-4 w-4"
-                  )} />
+                  <item.icon
+                    className={cn(
+                      "shrink-0 transition-colors duration-200",
+                      item.isSubItem ? "h-4 w-4" : "h4- w-4",
+                      isActive ? "text-gray-600 dark:text-gray-400" : "text-gray-700 dark:text-gray-300"
+                    )}
+                  />
                 )}
+
                 {isExpanded && (
                   <span className={cn(
-                    "flex-1 transition-opacity duration-200",
+                    "flex-1 transition-opacity duration-200 font-medium",
                     item.showIcon && "ml-3",
-                    item.isSubItem && "text-sm",
-                    !item.showIcon && item.isParent && "text-sm font-medium"
+                    item.isSubItem && "text-sm font-normal",
+                    !item.showIcon && item.isParent && "text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
                   )}>
                     {item.title}
                   </span>
                 )}
+
                 {isExpanded && item.title === "Data Xplorer" && (
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 shrink-0 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 transition-transform duration-200 text-gray-400",
                       isXplorerOpen ? "rotate-0" : "-rotate-90"
                     )}
                     onClick={(e) => {
@@ -316,14 +325,14 @@ export function Sidebar() {
 
             return (
               <li key={item.path}>
-                <div className="flex">
+                <div className="flex items-center">
                   {needsTooltip ? (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           {navElement}
                         </TooltipTrigger>
-                        <TooltipContent side="right">
+                        <TooltipContent side="right" className="text-gray-900">
                           <p>{item.title}</p>
                         </TooltipContent>
                       </Tooltip>
@@ -333,7 +342,7 @@ export function Sidebar() {
                   )}
 
                   {isExpanded && item.actions && !item.isSubItem && item.title !== "Data Xplorer" && (
-                    <div className="flex items-center">
+                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                       {item.actions.map((action, index) => (
                         action.icon === 'ellipsis' ? (
                           <DropdownMenu key={index}>
@@ -341,18 +350,18 @@ export function Sidebar() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 ml-1"
+                                className="h-6 w-6 ml-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                               align="end"
-                              className="z-[110] w-auto min-w-[8rem]"
+                              className="z-[110] w-auto min-w-[8rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                             >
                               {item.title !== "Data Xplorer" && (
                                 <DropdownMenuItem
-                                  className="cursor-pointer flex items-center gap-2"
+                                  className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300"
                                   onClick={() => setSearchOpen(true)}
                                 >
                                   <Search className="h-4 w-4" />
@@ -360,7 +369,7 @@ export function Sidebar() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
-                                className="cursor-pointer flex items-center gap-2"
+                                className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300"
                                 onClick={handleCreateNewReport}
                                 disabled={creatingReport}
                               >
@@ -378,7 +387,7 @@ export function Sidebar() {
                             key={index}
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 ml-1"
+                            className="h-6 w-6 ml-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                             onClick={() => navigation.handleAction(action.action, item.path)}
                           >
                             {action.icon === 'ellipsis' && <MoreHorizontal className="h-4 w-4" />}
@@ -388,141 +397,142 @@ export function Sidebar() {
                     </div>
                   )}
                 </div>
-                {/* Handle Data Xplorer subitems here when it's the Data Xplorer parent item */}
+
+                {/* Data Xplorer subitems */}
                 {isExpanded && item.title === "Data Xplorer" && isXplorerOpen && (
-                  <ul className="mt-1 space-y-1 max-h-[128px] overflow-y-auto pl-2 border-l border-gray-300 dark:border-gray-700 sidebar-subitems-scrollable">
-                    <li className="sticky top-0 z-10 px-3 py-1 bg-gray-50 dark:bg-gray-900 flex items-center gap-2">
+                  <div className="mt-2 ml-3 border-l border-gray-200 dark:border-gray-700 pl-3">
+                    <div className="mb-2 flex items-center gap-2 px-2">
                       <Input
-                        placeholder="Search reports…"
+                        placeholder="Search reports..."
                         value={xplorerSearchTerm}
                         onChange={(e) => setXplorerSearchTerm(e.target.value)}
-                        className="h-7 text-sm flex-1"
+                        className="h-7 text-xs bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                       />
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-7 w-7 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                         onClick={handleCreateNewReport}
                         disabled={creatingReport}
                       >
-                        {creatingReport ? <Spinner className="h-4 w-4" /> : <PlusCircle className="h-4 w-4" />}
+                        {creatingReport ? <Spinner className="h-3 w-3" /> : <PlusCircle className="h-3 w-3" />}
                       </Button>
-                    </li>
-                    {filteredDataXplorerSubItems.length > 0 ? (
-                      filteredDataXplorerSubItems.map(subItem => (
-                        <li key={subItem.path}>
-                          <div className="flex items-center">
-                            {editingReportId === subItem.id ? (
-                              <div className="flex-1 flex items-center gap-1 px-3 py-1">
-                                <Input
-                                  value={editingReportName}
-                                  onChange={(e) => setEditingReportName(e.target.value)}
-                                  className="h-7 text-sm"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      handleSaveReportName();
-                                    } else if (e.key === 'Escape') {
-                                      e.preventDefault();
-                                      handleCancelRename();
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={handleSaveReportName}
-                                  disabled={updatingDashboard || !editingReportName.trim()}
-                                >
-                                  {updatingDashboard ? <Spinner className="h-3 w-3" /> : <Check className="h-3 w-3 text-green-500" />}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={handleCancelRename}
-                                >
-                                  <X className="h-3 w-3 text-red-500" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-center flex-1 group">
-                                  <a
-                                    href={subItem.path}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
-                                    }}
-                                    className={cn(
-                                      "flex items-center px-3 py-2 rounded-md",
-                                      "transition-all duration-200 ease-in-out",
-                                      "hover:bg-gray-200/80 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white",
-                                      location.pathname === subItem.path
-                                        ? "bg-primary/15 text-primary font-medium dark:bg-primary/30 dark:text-primary-foreground"
-                                        : "text-gray-700 dark:text-gray-300",
-                                      "text-sm pl-7 flex-1"
-                                    )}
-                                  >
-                                    {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
-                                    <span className="ml-3 flex-1">{subItem.title}</span>
-                                  </a>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
-                                      >
-                                        <MoreHorizontal className="h-3 w-3" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      align="end"
-                                      className="z-[110] w-auto min-w-[8rem]"
+                    </div>
+
+                    <ul className="space-y-1 max-h-32 overflow-y-auto sidebar-subitems-scrollable">
+                      {filteredDataXplorerSubItems.length > 0 ? (
+                        filteredDataXplorerSubItems.map(subItem => {
+                          const isSubActive = location.pathname === subItem.path;
+                          return (
+                            <li key={subItem.path}>
+                              <div className="flex items-center group">
+                                {editingReportId === subItem.id ? (
+                                  <div className="flex-1 flex items-center gap-1 px-2 py-1">
+                                    <Input
+                                      value={editingReportName}
+                                      onChange={(e) => setEditingReportName(e.target.value)}
+                                      className="h-6 text-xs bg-white dark:bg-gray-800"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          handleSaveReportName();
+                                        } else if (e.key === 'Escape') {
+                                          e.preventDefault();
+                                          handleCancelRename();
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5"
+                                      onClick={handleSaveReportName}
+                                      disabled={updatingDashboard || !editingReportName.trim()}
                                     >
-                                      <DropdownMenuItem
-                                        className="cursor-pointer flex items-center gap-2 text-xs"
-                                        onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
+                                      {updatingDashboard ? <Spinner className="h-3 w-3" /> : <Check className="h-3 w-3 text-green-600" />}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5"
+                                      onClick={handleCancelRename}
+                                    >
+                                      <X className="h-3 w-3 text-red-500" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <a
+                                      href={subItem.path}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        navigation.handleNavigation(subItem.path, { reportName: subItem.title }, false);
+                                      }}
+                                      className={cn(
+                                        "flex items-center px-2 py-1.5 rounded-md flex-1 text-sm transition-colors",
+                                        isSubActive
+                                          ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300 font-medium"
+                                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white"
+                                      )}
+                                    >
+                                      <span className="truncate">{subItem.title}</span>
+                                    </a>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-5 w-5 ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                        >
+                                          <MoreHorizontal className="h-3 w-3" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="end"
+                                        className="z-[110] w-auto min-w-[8rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                                       >
-                                        <Edit className="h-3 w-3" />
-                                        <span>Rename</span>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        className="cursor-pointer flex items-center gap-2 text-xs text-red-500 focus:text-red-500"
-                                        onClick={() => handleDeleteReport(subItem.id)}
-                                        disabled={deletingDashboard}
-                                      >
-                                        {deletingDashboard ? (
-                                          <Spinner className="h-3 w-3 mr-2" />
-                                        ) : (
-                                          <Trash2 className="h-3 w-3" />
-                                        )}
-                                        <span>Delete</span>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        className="cursor-pointer flex items-center gap-2 text-xs"
-                                        onClick={() => setSearchOpen(true)}
-                                      >
-                                        <Search className="h-3 w-3" />
-                                        <span>Search</span>
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </>
-                            )}
-                          </div>
+                                        <DropdownMenuItem
+                                          className="cursor-pointer flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300"
+                                          onClick={() => handleStartRenameReport(subItem.id, subItem.title)}
+                                        >
+                                          <Edit className="h-3 w-3" />
+                                          <span>Rename</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          className="cursor-pointer flex items-center gap-2 text-xs text-red-600 dark:text-red-400"
+                                          onClick={() => handleDeleteReport(subItem.id)}
+                                          disabled={deletingDashboard}
+                                        >
+                                          {deletingDashboard ? (
+                                            <Spinner className="h-3 w-3" />
+                                          ) : (
+                                            <Trash2 className="h-3 w-3" />
+                                          )}
+                                          <span>Delete</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          className="cursor-pointer flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300"
+                                          onClick={() => setSearchOpen(true)}
+                                        >
+                                          <Search className="h-3 w-3" />
+                                          <span>Search</span>
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })
+                      ) : (
+                        <li className="px-3 py-2 text-xs text-center text-gray-500 dark:text-gray-400">
+                          {xplorerSearchTerm ? 'No reports found.' : 'Click + to add a report.'}
                         </li>
-                      ))
-                    ) : (
-                      <li className="px-4 py-2 text-xs text-center text-gray-500 dark:text-gray-400">
-                        {xplorerSearchTerm ? 'No reports found.' : 'Click + to add a report.'}
-                      </li>
-                    )}
-                  </ul>
+                      )}
+                    </ul>
+                  </div>
                 )}
               </li>
             );
@@ -532,18 +542,19 @@ export function Sidebar() {
 
       {/* Search Modal */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Search Reports</DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-white">Search Reports</DialogTitle>
           </DialogHeader>
-          <Input autoFocus placeholder="Search..." />
+          <Input autoFocus placeholder="Search..." className="bg-gray-50 dark:bg-gray-800" />
           <DialogFooter>
-            <Button onClick={() => setSearchOpen(false)}>Search</Button>
+            <Button onClick={() => setSearchOpen(false)} className="bg-gray-600 hover:bg-gray-700 text-white">Search</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="h-auto border-t border-gray-200 dark:border-gray-800">
+      {/* Footer */}
+      <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className={cn(
           "p-3 flex items-center",
           isExpanded ? "justify-between" : "justify-center"
@@ -556,65 +567,55 @@ export function Sidebar() {
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
-                        <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
+                        <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-600">
                           <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-medium dark:bg-primary/20 dark:text-primary-foreground">{userName.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium text-sm">{userName.charAt(0)}</AvatarFallback>
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="right">
+                  <TooltipContent side="right" className="bg-gray-900 text-gray-100">
                     <p>{userName}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               <DropdownMenuContent
                 align="end"
-                className="z-[110] w-auto min-w-[8rem]"
+                className="z-[110] w-auto min-w-[8rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
               >
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <LogOut className="h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
-                  <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
-                    <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-medium dark:bg-primary/20 dark:text-primary-foreground">{userName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              {isExpanded && (
-                <div
-                  className={cn(
-                    "flex-1 ml-3 overflow-hidden",
-                    "transition-all duration-300 ease-in-out",
-                    isExpanded
-                      ? "opacity-100 max-w-[140px]"
-                      : "opacity-0 max-w-0 pointer-events-none"
-                  )}
+            <div className="flex items-center flex-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
+                    <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-600">
+                      <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
+                      <AvatarFallback className="bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium text-sm">{userName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="z-[110] min-w-[14rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                 >
-                  <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{userName}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{userInfo?.email || ""}</p>
-                </div>
-              )}
-              <DropdownMenuContent
-                align="end"
-                className={cn(
-                  "z-[110] transition-all duration-200 ease-in-out",
-                  isExpanded ? "min-w-[14rem]" : "w-auto min-w-[8rem]"
-                )}
-              >
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <LogOut className="h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="flex-1 ml-3 overflow-hidden">
+                <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{userName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{userInfo?.email || ""}</p>
+              </div>
+            </div>
           )}
         </div>
         <div className={cn(
@@ -630,7 +631,7 @@ export function Sidebar() {
                     <Switch
                       checked={theme === 'dark'}
                       onCheckedChange={toggleTheme}
-                      className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-90"
+                      className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-75 h-4 w-8"
                     />
 
                     {/* Custom thumb with icon */}
@@ -662,7 +663,7 @@ export function Sidebar() {
                   {isExpanded && (
                     <span className={cn(
                       "text-sm ml-1 font-medium",
-                      theme === 'dark' ? "text-blue-100" : "text-amber-600"
+                      theme === 'dark' ? "text-gray-100" : "text-amber-600"
                     )}>
                       {theme === 'dark' ? 'Dark' : 'Light'}
                     </span>

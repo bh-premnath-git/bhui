@@ -1,12 +1,18 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import type { UseFormReturn } from "react-hook-form"
 import type { FlowFormValues } from "../schema"
-import { useAppSelector } from "@/hooks/useRedux"
-import { getProjectOptions, getEnvironmentOptions } from "../schema"
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux"
+import { getEnvironmentOptions } from "../schema"
 import { Loader2, X, Check } from "lucide-react"
 import type { Flow } from '@/types/designer/flow'
+import { Combobox } from "@/components/ui/combobox"
+import { useDebounce } from "@/hooks/useDebounce"
+import { useEffect, useState } from "react"
+import { fetchEnvironments, setEnvironmentSearchQuery } from "@/store/slices/designer/flowSlice"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const LIMIT = 20;
 
 interface BasicInformationProps {
   form: UseFormReturn<FlowFormValues>
@@ -14,6 +20,7 @@ interface BasicInformationProps {
   searchLoading?: boolean
   flowNotFound?: boolean
   onFlowNameChange?: (name: string) => void
+  projectOptions: { label: string; value: string }[];
 }
 
 export function BasicInformation({ 
@@ -21,14 +28,34 @@ export function BasicInformation({
   searchedFlow,
   searchLoading,
   flowNotFound,
-  onFlowNameChange
+  onFlowNameChange,
+  projectOptions = [],
 }: BasicInformationProps) {
-  const { projects, environments } = useAppSelector((state) => state.flow);
-  const projectOptions = getProjectOptions(projects);
+  const dispatch = useAppDispatch();
+  const {
+    environments,
+    loading,
+    environmentSearchQuery,
+    environmentsOffset,
+    hasMoreEnvironments,
+  } = useAppSelector((state) => state.flow);
+
+  const [environmentInput, setEnvironmentInput] = useState('');
+
+  const debouncedEnvironmentSearch = useDebounce(environmentInput, 500);
+
+  useEffect(() => {
+    dispatch(setEnvironmentSearchQuery(debouncedEnvironmentSearch));
+    dispatch(fetchEnvironments({ offset: 0, limit: LIMIT, search: debouncedEnvironmentSearch }));
+  }, [debouncedEnvironmentSearch, dispatch]);
+
   const environmentOptions = getEnvironmentOptions(environments);
 
-  console.log("projectOptions", projectOptions);
-  console.log("environmentOptions", environmentOptions);
+  const loadMoreEnvironments = () => {
+    if (hasMoreEnvironments && !loading) {
+      dispatch(fetchEnvironments({ offset: environmentsOffset, limit: LIMIT, search: environmentSearchQuery }));
+    }
+  };
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -38,20 +65,20 @@ export function BasicInformation({
         render={({ field }) => (
           <FormItem>
             <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">Project</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
+            <FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Project" />
+                  <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
-              </FormControl>
-              <SelectContent className="z-[110] bg-white" portal={false}>
-                {projectOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value} className="text-slate-900 hover:bg-gray-100">
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectContent>
+                  {projectOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -63,20 +90,17 @@ export function BasicInformation({
         render={({ field }) => (
           <FormItem>
             <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">Environment</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Environment" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent className="z-[110] bg-white" portal={false}>
-                {environmentOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value} className="text-slate-900 hover:bg-gray-100">
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={environmentOptions}
+              value={field.value}
+              onChange={field.onChange}
+              onSearch={setEnvironmentInput}
+              onLoadMore={loadMoreEnvironments}
+              isLoading={loading}
+              placeholder="Select Environment"
+              searchPlaceholder="Search environments..."
+              emptyText="No environments found."
+            />
             <FormMessage />
           </FormItem>
         )}

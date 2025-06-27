@@ -5,24 +5,32 @@ import { Project } from '@/types/admin/project';
 import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
+const LIMIT = 20; // Number of items to fetch per page
+
 interface FlowState {
     flows: Flow[];
     selectedFlow: Flow | null;
-    currentFlow:any;
+    currentFlow: any;
     environment: Environment | null;
     dagEunID: Record<string, any> | null;
     dagParserTime: string | null;
     projects: Project[];
-    environments: any;
+    environments: Environment[];
     selectedProject: Project | null;
     selectedEnvironment: Environment | null;
     loading: boolean;
     error: string | null;
-    dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string;airflow_env_name?:string } | null;
+    dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string; airflow_env_name?: string } | null;
     flowAgentConversation: FlowAgentConversationResponse | null;
     formDefinition: Record<string, string[]> | null;
     formValues: Record<string, Record<string, string>>;
     dependencies: Record<string, string[]>; // Task dependencies tracking
+    projectSearchQuery: string;
+    environmentSearchQuery: string;
+    projectsOffset: number;
+    environmentsOffset: number;
+    hasMoreProjects: boolean;
+    hasMoreEnvironments: boolean;
 }
 
 const initialState: FlowState = {
@@ -42,38 +50,60 @@ const initialState: FlowState = {
     formDefinition: null,
     formValues: {},
     dependencies: {}, // Initialize empty dependencies
-    currentFlow: null // Added currentFlow to track the flow being edited
+    currentFlow: null, // Added currentFlow to track the flow being edited
+    projectSearchQuery: '',
+    environmentSearchQuery: '',
+    projectsOffset: 0,
+    environmentsOffset: 0,
+    hasMoreProjects: true,
+    hasMoreEnvironments: true,
 };
 
 export const fetchProjects = createAsyncThunk(
     "flows/fetchProjects",
-    async () => {
-        const response = await apiService.get<Project[]>({
-            baseUrl:CATALOG_REMOTE_API_URL,
-            url: '/bh_project/list/',
-            usePrefix: true,
-            method: 'GET',
-            metadata: {
-                errorMessage: 'Failed to fetch projects'
+    async ({ offset, limit, search }: { offset: number; limit: number; search: string }, { rejectWithValue }) => {
+        try {
+            let url = `/bh_project/list/?offset=${offset}&limit=${limit}`;
+            if (search) {
+                url += `&search=${search}`;
             }
-        });
-        return response;
+            const response = await apiService.get<{ data: Project[] }>({
+                baseUrl: CATALOG_REMOTE_API_URL,
+                url,
+                usePrefix: true,
+                method: 'GET',
+                metadata: {
+                    errorMessage: 'Failed to fetch projects'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
     }
 );
 
 export const fetchEnvironments = createAsyncThunk(
     "flows/fetchEnvironments",
-    async (options:any) => {
-        const response = await apiService.get<any>({
-            baseUrl:CATALOG_REMOTE_API_URL,
-            url: `/environment/environment/list/?offset=${options.offset}&limit=${options.limit}&order_by=created_at&order_desc=true`,
-            usePrefix: true,
-            method: 'GET',
-            metadata: {
-                errorMessage: 'Failed to fetch environments'
+    async ({ offset, limit, search }: { offset: number; limit: number; search: string }, { rejectWithValue }) => {
+        try {
+            let url = `/environment/environment/list/?offset=${offset}&limit=${limit}&order_by=created_at&order_desc=true`;
+            if (search) {
+                url += `&search=${search}`;
             }
-        });
-        return response.data;
+            const response = await apiService.get<{ data: Environment[] }>({
+                baseUrl: CATALOG_REMOTE_API_URL,
+                url,
+                usePrefix: true,
+                method: 'GET',
+                metadata: {
+                    errorMessage: 'Failed to fetch environments'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
     }
 );
 
@@ -81,7 +111,7 @@ export const patchFlowOperation = createAsyncThunk(
     "flows/patchFlowOperation",
     async (data: { flowId: number, data: Partial<Flow> }) => {
         const response = await apiService.patch<Flow>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: `/flow/${data.flowId}`,
             data: data.data,
             usePrefix: true,
@@ -98,7 +128,7 @@ export const updateFlowConfiguration = createAsyncThunk(
     "flows/updateFlowConfiguration",
     async (data: { flow_config_id: number, flow_config: string }) => {
         const response = await apiService.put<Flow>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: `/flow/flow-config/${data.flow_config_id}`,
             data: data.flow_config,
             usePrefix: true,
@@ -118,7 +148,7 @@ export const patchCronDeployment = createAsyncThunk(
     "flows/patchCronDeployment",
     async (data: { flow_deployment_id: number, cron_expression: { cron_expression: { cron: string } } }) => {
         const response = await apiService.patch<Flow>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: `/flow/flow-deployment/${data.flow_deployment_id}`,
             data: data.cron_expression,
             usePrefix: true,
@@ -135,7 +165,7 @@ export const fetchDagParserTime = createAsyncThunk(
     "flows/fetchDagParserTime",
     async (query: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.get<string>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: '/bh_airflow/dag_parse_time',
             params: query,
             usePrefix: true,
@@ -152,7 +182,7 @@ export const commitFlowVersion = createAsyncThunk(
     "flows/commitFlowVersion",
     async (data: { flow_deployment_id: number; comment: string }) => {
         const response = await apiService.post<Flow>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: '/flow/flow-version',
             data,
             usePrefix: true,
@@ -167,12 +197,9 @@ export const commitFlowVersion = createAsyncThunk(
 
 export const updateFlowDefinition = createAsyncThunk(
     "flows/updateFlowDefinition",
-    async (data: { 
-        flow_id: string; 
-        flow_json: Record<string, any>
-    }) => {
+    async (data: { flow_id: string; flow_json: Record<string, any> }) => {
         const response = await apiService.patch<Flow>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: `/flow/flow-definition/update-by-flow-id/${data.flow_id}`,
             data: data.flow_json,
             usePrefix: true,
@@ -189,7 +216,7 @@ export const triggerDagDeployment = createAsyncThunk(
     "flows/triggerDagDeployment",
     async (data: { dag_id: string; airflow_env_name: string; bh_env_name: string }) => {
         const response = await apiService.post<{ dag_run_id: string }>({
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: '/bh_airflow/trigger_dag',
             query: `dag_id=${data.dag_id}&airflow_env_name=${data.airflow_env_name}&bh_env_name=${data.bh_env_name}`,
             usePrefix: true,
@@ -206,7 +233,7 @@ export const createFlowAgentConversationEntry = createAsyncThunk(
     "flows/createFlowAgentConversationEntry",
     async (data: { flow_id: string; request: string; thread_id: string }) => {
         const response = await apiService.post<FlowAgentConversationResponse>({
-            baseUrl:AGENT_REMOTE_URL,
+            baseUrl: AGENT_REMOTE_URL,
             url: '/flow_agent/create_flow',
             data,
             usePrefix: true,
@@ -223,7 +250,7 @@ export const deployDag = createAsyncThunk(
     "flows/deployDag",
     async (data: { flow_definition_id: number; flow_deployment_id: number }) => {
         const response = await apiService.post<any>({ // Assuming 'any' response type for now
-            baseUrl:CATALOG_REMOTE_API_URL,
+            baseUrl: CATALOG_REMOTE_API_URL,
             url: '/flow/flow-definition/deploy-dag',
             params: data, // Sending data as query parameters
             usePrefix: true,
@@ -250,11 +277,11 @@ const flowSlice = createSlice({
             state.currentFlow = action.payload;
         },
         setSelectedProject: (state, action: PayloadAction<number>) => {
-            state.selectedProject = state.projects.find(p => p.bh_project_id === action.payload) || null;
+            state.selectedProject = state.projects?.find(p => p.bh_project_id === action.payload) || null;
         },
         setSelectedEnv: (state, action: PayloadAction<number>) => {
-            state.selectedEnvironment = state.environments.find(e => e.bh_env_id === action.payload) || null;
-            state.environment = state.environments.find(e => e.bh_env_id === action.payload) || null;
+            state.selectedEnvironment = state.environments?.find(e => e.bh_env_id === action.payload) || null;
+            state.environment = state.environments?.find(e => e.bh_env_id === action.payload) || null;
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
@@ -289,6 +316,21 @@ const flowSlice = createSlice({
         setTaskDependencies: (state, action: PayloadAction<Record<string, string[]>>) => {
             state.dependencies = action.payload;
         },
+        setProjects: (state, action: PayloadAction<Project[]>) => {
+            state.projects = action.payload;
+        },
+        setProjectSearchQuery: (state, action: PayloadAction<string>) => {
+            state.projectSearchQuery = action.payload;
+            state.projects = [];
+            state.projectsOffset = 0;
+            state.hasMoreProjects = true;
+        },
+        setEnvironmentSearchQuery: (state, action: PayloadAction<string>) => {
+            state.environmentSearchQuery = action.payload;
+            state.environments = [];
+            state.environmentsOffset = 0;
+            state.hasMoreEnvironments = true;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -296,9 +338,11 @@ const flowSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchProjects.fulfilled, (state, action) => {
+            .addCase(fetchProjects.fulfilled, (state, action: PayloadAction<Project[]>) => {
                 state.loading = false;
-                state.projects = action.payload;
+                state.projects = state.projectsOffset === 0 ? action.payload : [...state.projects, ...action.payload];
+                state.projectsOffset += action.payload.length;
+                state.hasMoreProjects = action.payload.length === LIMIT;
             })
             .addCase(fetchProjects.rejected, (state, action) => {
                 state.loading = false;
@@ -308,10 +352,11 @@ const flowSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchEnvironments.fulfilled, (state, action) => {
+            .addCase(fetchEnvironments.fulfilled, (state, action: PayloadAction<Environment[]>) => {
                 state.loading = false;
-                state.environments = action.payload;
-                
+                state.environments = state.environmentsOffset === 0 ? action.payload : [...state.environments, ...action.payload];
+                state.environmentsOffset += action.payload.length;
+                state.hasMoreEnvironments = action.payload.length === LIMIT;
             })
             .addCase(fetchEnvironments.rejected, (state, action) => {
                 state.loading = false;
@@ -323,7 +368,7 @@ const flowSlice = createSlice({
             })
             .addCase(patchFlowOperation.fulfilled, (state, action) => {
                 state.loading = false;
-                state.selectedFlow = {...state.selectedFlow, ...action.payload};
+                state.selectedFlow = { ...state.selectedFlow, ...action.payload };
             })
             .addCase(patchFlowOperation.rejected, (state, action) => {
                 state.loading = false;
@@ -335,7 +380,7 @@ const flowSlice = createSlice({
             })
             .addCase(patchCronDeployment.fulfilled, (state, action) => {
                 state.loading = false;
-                state.selectedFlow = {...state.selectedFlow, ...action.payload};
+                state.selectedFlow = { ...state.selectedFlow, ...action.payload };
             })
             .addCase(patchCronDeployment.rejected, (state, action) => {
                 state.loading = false;
@@ -359,7 +404,7 @@ const flowSlice = createSlice({
             })
             .addCase(commitFlowVersion.fulfilled, (state, action) => {
                 state.loading = false;
-                state.selectedFlow = {...state.selectedFlow, ...action.payload};
+                state.selectedFlow = { ...state.selectedFlow, ...action.payload };
             })
             .addCase(commitFlowVersion.rejected, (state, action) => {
                 state.loading = false;
@@ -371,7 +416,7 @@ const flowSlice = createSlice({
             })
             .addCase(updateFlowDefinition.fulfilled, (state, action) => {
                 state.loading = false;
-                state.selectedFlow = {...state.selectedFlow, ...action.payload};
+                state.selectedFlow = { ...state.selectedFlow, ...action.payload };
             })
             .addCase(updateFlowDefinition.rejected, (state, action) => {
                 state.loading = false;
@@ -385,29 +430,26 @@ const flowSlice = createSlice({
                 state.loading = false;
                 console.log('Update Flow Configuration - Action:', action);
                 console.log('Update Flow Configuration - Current selectedFlow:', state.selectedFlow);
-                
+
                 if (state.selectedFlow && state.selectedFlow.flow_config) {
                     try {
                         // Parse the string back into an object
                         const parsedConfig = JSON.parse(action.meta.arg.flow_config);
                         console.log('Parsed config:', parsedConfig);
-                        
+
                         // Update the flow_config in the selectedFlow
                         state.selectedFlow = {
                             ...state.selectedFlow,
-                            flow_config: state.selectedFlow.flow_config.map(config => 
-                                config.flow_config_id === action.meta.arg.flow_config_id 
-                                    ? { 
-                                        ...config, 
-                                        flow_config: parsedConfig  // Store directly as received with double nesting
-                                      }
+                            flow_config: state.selectedFlow.flow_config.map(config =>
+                                config.flow_config_id === action.meta.arg.flow_config_id
+                                    ? { ...config, flow_config: parsedConfig } // Store directly as received with double nesting
                                     : config
                             )
                         };
                         console.log('Updated selectedFlow:', state.selectedFlow);
                     } catch (err) {
                         console.error('Error parsing flow configuration:', err);
-                    }                    
+                    }
                 }
             })
             .addCase(updateFlowConfiguration.rejected, (state, action) => {
@@ -443,13 +485,13 @@ const flowSlice = createSlice({
             .addCase(createFlowAgentConversationEntry.fulfilled, (state, action) => {
                 state.loading = false;
                 state.flowAgentConversation = action.payload;
-                
+
                 // Automatically update form definition when conversation is fulfilled
-                if (action.payload.status === 'missing' && action.payload.flow_definition && 
+                if (action.payload.status === 'missing' && action.payload.flow_definition &&
                     typeof action.payload.flow_definition === 'object') {
                     state.formDefinition = action.payload.flow_definition as Record<string, string[]>;
-                } else if (action.payload.status === 'success' && 
-                           typeof action.payload.flow_definition === 'string') {
+                } else if (action.payload.status === 'success' &&
+                    typeof action.payload.flow_definition === 'string') {
                     try {
                         // Clean the JSON string by removing markdown code block markers
                         const cleanJsonString = action.payload.flow_definition.replace(/```json\n|\n```/g, '');
@@ -502,7 +544,7 @@ const flowSlice = createSlice({
             })
             .addCase(deployDag.fulfilled, (state, action) => {
                 state.loading = false;
-                console.log('DAG deployed successfully:', action.payload); 
+                console.log('DAG deployed successfully:', action.payload);
             })
             .addCase(deployDag.rejected, (state, action) => {
                 state.loading = false;
@@ -511,20 +553,23 @@ const flowSlice = createSlice({
     },
 });
 
-export const { 
-    setFlows, 
-    setSelectedFlow, 
-    setSelectedProject, 
-    setSelectedEnv, 
-    setLoading, 
-    setError, 
-    setDagRunId, 
+export const {
+    setFlows,
+    setSelectedFlow,
+    setSelectedProject,
+    setSelectedEnv,
+    setLoading,
+    setError,
+    setDagRunId,
     clearFlowAgentConversation,
     setFormDefinition,
     setFormValues,
     updateFormValues,
     clearFormStates,
     setTaskDependencies,
-    setCurrentFlow
+    setCurrentFlow,
+    setProjects,
+    setProjectSearchQuery,
+    setEnvironmentSearchQuery
 } = flowSlice.actions;
 export default flowSlice.reducer;

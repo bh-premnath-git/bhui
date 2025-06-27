@@ -168,7 +168,7 @@ export function Sidebar() {
         "bg-gray-90 dark:bg-gray-950 backdrop-blur supports-[backdrop-filter]:bg-gray-100/95 dark:supports-[backdrop-filter]:bg-gray-950/95 border-r border-gray-200 dark:border-gray-800",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
         "shadow-sm",
-        isExpanded ? "w-64" : "w-20"
+        isExpanded ? "w-64" : "w-16"
       )}
     >
       <div className="h-16 flex items-center px-4 border-gray-200 dark:border-gray-800">

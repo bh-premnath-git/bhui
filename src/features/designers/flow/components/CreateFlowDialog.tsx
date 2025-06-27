@@ -13,8 +13,7 @@ import { type FlowFormValues, flowFormSchema, getProjectOptions } from "./schema
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from "@/config/routes";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
-import { setSelectedProject, setSelectedEnv, setSelectedFlow, setCurrentFlow, setProjects } from '@/store/slices/designer/flowSlice';
-import { useProjects } from "@/features/admin/projects/hooks/useProjects";
+import { setSelectedProject, setSelectedEnv, setSelectedFlow, setCurrentFlow, fetchProjects, fetchEnvironments } from '@/store/slices/designer/flowSlice';
 import { useEffect } from "react";
 
 type CreateFlowDialogProps = {
@@ -29,13 +28,13 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
     const { searchedFlow, searchLoading, flowNotFound, debounceSearchFlow } = useFlowSearch();
     const dispatch = useAppDispatch();
     const { projects, environments } = useAppSelector((state) => state.flow);
-    const { projects: fetchedProjects, isLoading: projectsLoading } = useProjects();
 
     useEffect(() => {
-        if (fetchedProjects.length > 0) {
-            dispatch(setProjects(fetchedProjects));
+        if (open) {
+            dispatch(fetchProjects({ offset: 0, limit: 20, search: '' }));
+            dispatch(fetchEnvironments({ offset: 0, limit: 20, search: '' }));
         }
-    }, [fetchedProjects, dispatch]);
+    }, [open, dispatch]);
 
     const projectOptions = getProjectOptions(projects);
 
@@ -117,7 +116,6 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                     flowNotFound={flowNotFound}
                     onFlowNameChange={debounceSearchFlow}
                     projectOptions={projectOptions}
-                    projectsLoading={projectsLoading}
                 />
             </DialogContent>
         </Dialog>

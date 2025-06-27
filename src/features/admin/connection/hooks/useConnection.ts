@@ -188,16 +188,30 @@ export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFe
         CATALOG_REMOTE_API_URL,
         true
     );
-    const { data: connectionTypes, isLoading, isFetching, isError } = getAllConnectionType({
+    
+    const { 
+        data: connectionTypesResponse, 
+        isLoading, 
+        isFetching, 
+        isError,
+        refetch 
+    } = getAllConnectionType({
         url: '/connection_registry/list/',
         queryOptions: {
             enabled: options.shouldFetch,
             retry: 2
         },
-        params: { limit: 1000, order_by: 'id' }
-    });
+        params: { limit: 1000 }
+    }) as {
+        data: ConnectionType;
+        isLoading: boolean;
+        isFetching: boolean;
+        isError: boolean;
+        refetch: () => void;
+    };
+
     const {
-        data: ConnectionType,
+        data: singleConnectionTypeResponse,
         isLoading: isEnvironmentLoading,
         isFetching: isEnvironmentFetching,
         isError: isEnvironmentError
@@ -208,20 +222,21 @@ export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFe
             retry: 2
         }
     }) : {
-            data: undefined,
-            isLoading: false,
-            isFetching: false,
-            isError: false
-        };
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        isError: false
+    };
 
     return {
-        connectionTypes: Array.isArray(connectionTypes) ? connectionTypes :
-            ConnectionType ? [ConnectionType] : [],
+        connectionTypes: connectionTypesResponse?.data || [],
+        singleConnectionType: singleConnectionTypeResponse?.data || null,
         isLoading,
         isFetching,
         isError,
         isEnvironmentLoading,
         isEnvironmentFetching,
-        isEnvironmentError
+        isEnvironmentError,
+        refetch
     };
 }

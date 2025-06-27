@@ -9,7 +9,7 @@ import { useFlow as useFlowCtx } from '@/context/designers/FlowContext'
 import { FlowForm } from "./flow-form"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type FlowFormValues, flowFormSchema, getProjectOptions } from "./schema"
+import { type FlowFormValues, flowFormSchema } from "./schema"
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from "@/config/routes";
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
@@ -35,8 +35,6 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
             dispatch(fetchEnvironments({ offset: 0, limit: 20, search: '' }));
         }
     }, [open, dispatch]);
-
-    const projectOptions = getProjectOptions(projects);
 
     const form = useForm<FlowFormValues>({
         resolver: zodResolver(flowFormSchema),
@@ -80,12 +78,6 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 flow_json: {},
                 bh_env_id: Number(data.basicInformation.environment)
             }).then((result: any) => {
-                console.log(result,"resulrt")
-                result.bh_project_name= projectOptions.find(
-                    (project) => project.value === data.basicInformation.project
-                )?.label || '';
-                console.log(result,"resulrt")
-
                 dispatch(setSelectedProject(Number(data.basicInformation.project)));
                 dispatch(setSelectedEnv(Number(data.basicInformation.environment)));
                 dispatch(setSelectedFlow(result));
@@ -115,7 +107,6 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                     searchLoading={searchLoading}
                     flowNotFound={flowNotFound}
                     onFlowNameChange={debounceSearchFlow}
-                    projectOptions={projectOptions}
                 />
             </DialogContent>
         </Dialog>

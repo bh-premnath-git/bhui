@@ -3,14 +3,13 @@ import { Input } from "@/components/ui/input"
 import type { UseFormReturn } from "react-hook-form"
 import type { FlowFormValues } from "../schema"
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux"
-import { getEnvironmentOptions } from "../schema"
+import { getEnvironmentOptions, getProjectOptions } from "../schema"
 import { Loader2, X, Check } from "lucide-react"
 import type { Flow } from '@/types/designer/flow'
 import { Combobox } from "@/components/ui/combobox"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useEffect, useState } from "react"
-import { fetchEnvironments, setEnvironmentSearchQuery } from "@/store/slices/designer/flowSlice"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { fetchEnvironments, fetchProjects, setEnvironmentSearchQuery, setProjectSearchQuery } from "@/store/slices/designer/flowSlice"
 
 const LIMIT = 20;
 
@@ -20,7 +19,6 @@ interface BasicInformationProps {
   searchLoading?: boolean
   flowNotFound?: boolean
   onFlowNameChange?: (name: string) => void
-  projectOptions: { label: string; value: string }[];
 }
 
 export function BasicInformation({ 
@@ -29,16 +27,36 @@ export function BasicInformation({
   searchLoading,
   flowNotFound,
   onFlowNameChange,
-  projectOptions = [],
 }: BasicInformationProps) {
   const dispatch = useAppDispatch();
   const {
+    projects,
+    projectsLoading,
+    projectSearchQuery,
+    projectsOffset,
+    hasMoreProjects,
     environments,
-    loading,
+    environmentsLoading,
     environmentSearchQuery,
     environmentsOffset,
     hasMoreEnvironments,
   } = useAppSelector((state) => state.flow);
+
+  const [projectInput, setProjectInput] = useState('');
+  const debouncedProjectSearch = useDebounce(projectInput, 500);
+
+  useEffect(() => {
+    dispatch(setProjectSearchQuery(debouncedProjectSearch));
+    dispatch(fetchProjects({ offset: 0, limit: LIMIT, search: debouncedProjectSearch }));
+  }, [debouncedProjectSearch, dispatch]);
+
+  const projectOptions = getProjectOptions(projects);
+
+  const loadMoreProjects = () => {
+    if (hasMoreProjects && !projectsLoading) {
+      dispatch(fetchProjects({ offset: projectsOffset, limit: LIMIT, search: projectSearchQuery }));
+    }
+  };
 
   const [environmentInput, setEnvironmentInput] = useState('');
 
@@ -52,7 +70,7 @@ export function BasicInformation({
   const environmentOptions = getEnvironmentOptions(environments);
 
   const loadMoreEnvironments = () => {
-    if (hasMoreEnvironments && !loading) {
+    if (hasMoreEnvironments && !environmentsLoading) {
       dispatch(fetchEnvironments({ offset: environmentsOffset, limit: LIMIT, search: environmentSearchQuery }));
     }
   };
@@ -65,20 +83,17 @@ export function BasicInformation({
         render={({ field }) => (
           <FormItem>
             <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">Project</FormLabel>
-            <FormControl>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormControl>
+            <Combobox
+              options={projectOptions}
+              value={field.value}
+              onChange={field.onChange}
+              onSearch={setProjectInput}
+              onLoadMore={loadMoreProjects}
+              isLoading={projectsLoading}
+              placeholder="Select Project"
+              searchPlaceholder="Search projects..."
+              emptyText="No projects found."
+            />
             <FormMessage />
           </FormItem>
         )}
@@ -96,7 +111,7 @@ export function BasicInformation({
               onChange={field.onChange}
               onSearch={setEnvironmentInput}
               onLoadMore={loadMoreEnvironments}
-              isLoading={loading}
+              isLoading={environmentsLoading}
               placeholder="Select Environment"
               searchPlaceholder="Search environments..."
               emptyText="No environments found."

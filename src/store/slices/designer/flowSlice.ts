@@ -5,6 +5,16 @@ import { Project } from '@/types/admin/project';
 import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
+// Define the paginated response structure
+interface PaginatedResponse<T> {
+  total: number;
+  next: boolean;
+  prev: boolean;
+  offset: number;
+  limit: number;
+  data: T[];
+}
+
 const LIMIT = 20; // Number of items to fetch per page
 
 interface FlowState {
@@ -19,6 +29,8 @@ interface FlowState {
     selectedProject: Project | null;
     selectedEnvironment: Environment | null;
     loading: boolean;
+    projectsLoading: boolean;
+    environmentsLoading: boolean;
     error: string | null;
     dagRunId: { dag_run_id: string; dag_id: string; bh_env_name: string; airflow_env_name?: string } | null;
     flowAgentConversation: FlowAgentConversationResponse | null;
@@ -44,6 +56,8 @@ const initialState: FlowState = {
     selectedProject: null,
     selectedEnvironment: null,
     loading: false,
+    projectsLoading: false,
+    environmentsLoading: false,
     error: null,
     dagRunId: null,
     flowAgentConversation: null,
@@ -67,7 +81,7 @@ export const fetchProjects = createAsyncThunk(
             if (search) {
                 url += `&search=${search}`;
             }
-            const response = await apiService.get<{ data: Project[] }>({
+            const response = await apiService.get<PaginatedResponse<Project>>({
                 baseUrl: CATALOG_REMOTE_API_URL,
                 url,
                 usePrefix: true,
@@ -76,7 +90,7 @@ export const fetchProjects = createAsyncThunk(
                     errorMessage: 'Failed to fetch projects'
                 }
             });
-            return response.data;
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -91,7 +105,7 @@ export const fetchEnvironments = createAsyncThunk(
             if (search) {
                 url += `&search=${search}`;
             }
-            const response = await apiService.get<{ data: Environment[] }>({
+            const response = await apiService.get<PaginatedResponse<Environment>>({
                 baseUrl: CATALOG_REMOTE_API_URL,
                 url,
                 usePrefix: true,
@@ -100,7 +114,7 @@ export const fetchEnvironments = createAsyncThunk(
                     errorMessage: 'Failed to fetch environments'
                 }
             });
-            return response.data;
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -286,6 +300,12 @@ const flowSlice = createSlice({
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
         },
+        setProjectsLoading: (state, action: PayloadAction<boolean>) => {
+            state.projectsLoading = action.payload;
+        },
+        setEnvironmentsLoading: (state, action: PayloadAction<boolean>) => {
+            state.environmentsLoading = action.payload;
+        },
         setError: (state, action: PayloadAction<string | null>) => {
             state.error = action.payload;
         },
@@ -335,31 +355,41 @@ const flowSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchProjects.pending, (state) => {
-                state.loading = true;
+                state.projectsLoading = true;
                 state.error = null;
             })
-            .addCase(fetchProjects.fulfilled, (state, action: PayloadAction<Project[]>) => {
-                state.loading = false;
-                state.projects = state.projectsOffset === 0 ? action.payload : [...state.projects, ...action.payload];
-                state.projectsOffset += action.payload.length;
-                state.hasMoreProjects = action.payload.length === LIMIT;
+            .addCase(fetchProjects.fulfilled, (state, action) => {
+                state.projectsLoading = false;
+                const { data, next } = action.payload;
+                if (action.meta.arg.offset === 0) {
+                    state.projects = data; // Replace data on new search
+                } else {
+                    state.projects = [...state.projects, ...data]; // Append data on load more
+                }
+                state.projectsOffset = state.projects.length;
+                state.hasMoreProjects = next;
             })
             .addCase(fetchProjects.rejected, (state, action) => {
-                state.loading = false;
+                state.projectsLoading = false;
                 state.error = action.error.message || 'Failed to fetch projects';
             })
             .addCase(fetchEnvironments.pending, (state) => {
-                state.loading = true;
+                state.environmentsLoading = true;
                 state.error = null;
             })
-            .addCase(fetchEnvironments.fulfilled, (state, action: PayloadAction<Environment[]>) => {
-                state.loading = false;
-                state.environments = state.environmentsOffset === 0 ? action.payload : [...state.environments, ...action.payload];
-                state.environmentsOffset += action.payload.length;
-                state.hasMoreEnvironments = action.payload.length === LIMIT;
+            .addCase(fetchEnvironments.fulfilled, (state, action) => {
+                state.environmentsLoading = false;
+                const { data, next } = action.payload;
+                if (action.meta.arg.offset === 0) {
+                    state.environments = data; // Replace data on new search
+                } else {
+                    state.environments = [...state.environments, ...data]; // Append data on load more
+                }
+                state.environmentsOffset = state.environments.length;
+                state.hasMoreEnvironments = next;
             })
             .addCase(fetchEnvironments.rejected, (state, action) => {
-                state.loading = false;
+                state.environmentsLoading = false;
                 state.error = action.error.message || 'Failed to fetch environments';
             })
             .addCase(patchFlowOperation.pending, (state) => {
@@ -559,6 +589,8 @@ export const {
     setSelectedProject,
     setSelectedEnv,
     setLoading,
+    setProjectsLoading,
+    setEnvironmentsLoading,
     setError,
     setDagRunId,
     clearFlowAgentConversation,

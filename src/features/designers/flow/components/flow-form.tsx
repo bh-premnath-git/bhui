@@ -17,7 +17,6 @@ interface FlowFormProps {
     searchLoading?: boolean
     flowNotFound?: boolean
     onFlowNameChange?: (name: string) => void
-    projectOptions: { label: string; value: string }[];
 }
 
 export function FlowForm({ 
@@ -27,7 +26,6 @@ export function FlowForm({
     searchLoading,
     flowNotFound,
     onFlowNameChange, 
-    projectOptions,
 }: FlowFormProps) {
     const [activeSection, setActiveSection] = React.useState("basic")
     const {
@@ -55,7 +53,6 @@ export function FlowForm({
                                 searchLoading={searchLoading}
                                 flowNotFound={flowNotFound}
                                 onFlowNameChange={onFlowNameChange}
-                                projectOptions={projectOptions}
                             />
                         </AccordionContent>
                     </AccordionItem>

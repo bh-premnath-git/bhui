@@ -1,12 +1,14 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useResource } from "@/hooks/api/useResource";
-import { DataOpsHub } from "@/types/dataops/dataOpsHub";
+import { DataOpsHub, DataOpsHubListResponse } from "@/types/dataops/dataOpsHub";
 import { toast } from "sonner";
 import { AUDIT_REMOTE_URL } from "@/config/platformenv";
 
 interface UseDataOpsHubOptions {
   shouldFetch?: boolean;
   jobId?: string;
+  limit?: number;
+  offset?: number;
 }
 
 interface ApiErrorOptions {
@@ -44,16 +46,26 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
     true
   );
 
-  // List jobs with pagination
-  const fetchJobList = (enabled = true) =>
-    getAllJobs({
-      url: '/job_details/list/',
-      queryOptions: {
-        enabled,
-        retry: 2
-      },
-      params: { limit: 1000 }
-    });
+  const queryParams = useMemo(() => ({
+    limit: options.limit ?? 10,
+    offset: options.offset ?? 0,
+    order_by: 'created_at',
+    order_desc: true
+  }), [options.limit, options.offset]);
+
+  const { 
+    data: jobListResponse,
+    isLoading,
+    isFetching,
+    isError,
+  } = getAllJobs<DataOpsHubListResponse, any>({
+    url: '/job_details/list/',
+    queryOptions: {
+      enabled: options.shouldFetch,
+      retry: 2,
+    },
+    params: queryParams
+  });
 
   // Fetch single job by ID
   const fetchJobById = (jobId: string, enabled = true) =>
@@ -110,8 +122,12 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
     });
   }, [deleteJobMutation]);
 
-  // Get current job list if shouldFetch is true
-  const { data: jobs, isLoading, isFetching, isError } = fetchJobList(options.shouldFetch);
+  const jobs = jobListResponse?.data || [];
+  const total = jobListResponse?.total || 0;
+  const offset = jobListResponse?.offset || 0;
+  const limit = jobListResponse?.limit || 0;
+  const prev = jobListResponse?.prev || false;
+  const next = jobListResponse?.next || false;
 
   // Get single job if ID is provided
   const { 
@@ -123,7 +139,7 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
 
   return {
     // Query results
-    jobs: jobs || [],
+    jobs,
     job: job || null,
     isLoading,
     isFetching,
@@ -131,9 +147,12 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
     isJobLoading,
     isJobFetching,
     isJobError,
-
+    total,
+    offset,
+    limit,
+    prev,
+    next,
     // Query functions
-    fetchJobList,
     fetchJobById,
 
     // Mutation handlers

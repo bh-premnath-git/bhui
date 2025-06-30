@@ -22,7 +22,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import axios from 'axios';
-import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
+import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson, convertUIToPipelineJsonUpToNode } from '@/lib/convertUIToPipelineJson';
+import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
+import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
+import { ValidationIssue } from '@/components/headers/build-playground-header/components/PipelineControls';
 import {
     getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
 } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
@@ -109,11 +112,15 @@ interface bnPipelineContextProps {
     handleRun: () => void;
     handleStop: () => void;
     handleNext: () => void;
+    handleRefreshNode: (nodeId: string) => Promise<void>;
     fetchSourceColumns: (nodes: any) => void;
     handleLeavePage: () => void;
     getTransformationName: (moduleName: string) => string;
     addNodeToHistory: () => void;
     handleCopy: () => void;
+    isPipelineValid: boolean;
+    pipelineValidationErrors: ValidationIssue[];
+    pipelineValidationWarnings: ValidationIssue[];
     handlePaste: () => void;
     handleCut: () => void;
     handleUndo: () => void;
@@ -128,6 +135,7 @@ interface bnPipelineContextProps {
     setIsCanvasLoading: React.Dispatch<React.SetStateAction<boolean>>;
     handleAlignHorizontal: () => void;
     handleAlignVertical: () => void;
+    handleAlignTopLeft: () => void;
     runDialogOpen: boolean;
     setRunDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
     selectedFormState: any;
@@ -153,6 +161,8 @@ interface bnPipelineContextProps {
     setPipelineJson: (json: any) => void;
     pipelineName: any;
     pipelineJson: any;
+    setProjectName: (name: string) => void;
+    projectName: string;
     isNodeFormOpen: boolean;
     setIsNodeFormOpen: React.Dispatch<React.SetStateAction<boolean>>;
     selectedNodeId: string | null;
@@ -160,6 +170,11 @@ interface bnPipelineContextProps {
     updatedSelectedNodeId: any
     updateSetNode: (node: any, edges: any) => void
     updateAllNodeDependencies: () => void
+    selectedMode: 'engine' | 'debug' | 'interactive'
+    attachedCluster: any
+    setAttachedCluster: React.Dispatch<React.SetStateAction<any>>
+    attachCluster: (cluster: any) => void
+    detachCluster: () => void
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -193,7 +208,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const { pipelineDtl, isFlow } = useSelector((state: RootState) => state.buildPipeline)
+    const { pipelineDtl, isFlow,selectedMode } = useSelector((state: RootState) => state.buildPipeline)
     const [isNodeFormOpen, setIsNodeFormOpen] = useState(false);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedSchema, setSelectedSchema] = useState<any | null>(null);
@@ -213,6 +228,132 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [saveError, setSaveErrorState] = useState<string | null>(null);
     const [pipelineName, setPipeLineName] = useState<any>(null);
+    const [projectName, setProjectName] = useState<string>('');
+    const [attachedCluster, setAttachedCluster] = useState<any>(null);
+    
+    // Pipeline validation states
+    const [isPipelineValid, setIsPipelineValid] = useState(true);
+    const [pipelineValidationErrors, setPipelineValidationErrors] = useState<ValidationIssue[]>([]);
+    const [pipelineValidationWarnings, setPipelineValidationWarnings] = useState<ValidationIssue[]>([]);
+    // const { selectedMode } = useAppSelector((state: RootState) => state.buildPipeline);
+
+    // Pipeline validation effect - runs when nodes, edges, or form states change
+    useEffect(() => {
+        const validatePipeline = () => {
+            let allErrors: ValidationIssue[] = [];
+            let allWarnings: ValidationIssue[] = [];
+
+            // Validate pipeline structure (connections)
+            if (nodes.length > 0) {
+                // Filter nodes to ensure they have the required 'type' property for UINode
+                const validNodes = nodes.filter(node => node.type && node.data);
+                const connectionValidation = validatePipelineConnections(validNodes as any, edges);
+                if (!connectionValidation.isValid) {
+                    // Convert connection validation errors to ValidationIssue objects
+                    const connectionErrors = connectionValidation.errors.map(error => {
+                        // Extract node name from error message
+                        const nodeMatch = error.match(/(?:node|Node)\s*["']([^"']+)["']|["']([^"']+)["']\s*(?:node|Node)/i);
+                        const nodeName = nodeMatch ? (nodeMatch[1] || nodeMatch[2]) : undefined;
+                        
+                        // Determine error type and suggestion
+                        let type = 'CONNECTION';
+                        let suggestion = undefined;
+                        
+                        if (error.toLowerCase().includes('no input')) {
+                            suggestion = "Connect an input source or transformation to this node";
+                        } else if (error.toLowerCase().includes('no output')) {
+                            suggestion = "Connect this node to a target or another transformation";
+                        } else if (error.toLowerCase().includes('reader')) {
+                            type = 'MISSING_READER';
+                            suggestion = "Add a Reader node to start your data pipeline";
+                        } else if (error.toLowerCase().includes('target')) {
+                            type = 'MISSING_TARGET';
+                            suggestion = "Add a Target node to complete your data pipeline";
+                        }
+
+                        return {
+                            message: error,
+                            nodeName,
+                            type,
+                            severity: 'error' as const,
+                            suggestion
+                        };
+                    });
+                    allErrors.push(...connectionErrors);
+                }
+            }
+
+            // Validate individual node forms
+            nodes.forEach(node => {
+                const nodeId = node.id;
+                const formData = formStates[nodeId];
+                
+                // Safety check for schemaData and schema
+                if (!schemaData || !schemaData.schema || !Array.isArray(schemaData.schema)) {
+                    return;
+                }
+                
+                const nodeSchema = schemaData.schema.find(s => 
+                    s.title === node.data?.module_name
+                );
+
+                if (nodeSchema && !node.id.startsWith('Reader_')) {
+                    try {
+                        const validation = validateFormData(
+                            formData,
+                            nodeSchema,
+                            node.id.startsWith('Source_'),
+                            node.data?.sourceData,
+                            Boolean(formData)
+                        );
+
+                        const nodeName = node.data?.title || node.data?.label;
+                        const nodeType = node.data?.module_name || 'UNKNOWN';
+
+                        if (!validation.isValid) {
+                            const formErrors = validation.warnings.map(warning => ({
+                                message: warning,
+                                nodeId: node.id,
+                                nodeName,
+                                type: 'FORM_VALIDATION',
+                                severity: 'error' as const,
+                                suggestion: "Check the node configuration and fill in required fields"
+                            }));
+                            allErrors.push(...formErrors);
+                        } else if (validation.status === 'warning') {
+                            const formWarnings = validation.warnings.map(warning => ({
+                                message: warning,
+                                nodeId: node.id,
+                                nodeName,
+                                type: 'FORM_WARNING',
+                                severity: 'warning' as const,
+                                suggestion: "Review the node configuration for optimal performance"
+                            }));
+                            allWarnings.push(...formWarnings);
+                        }
+                    } catch (error) {
+                        console.error('Validation error for node:', nodeId, error);
+                        allErrors.push({
+                            message: 'Validation failed due to an internal error',
+                            nodeId: node.id,
+                            nodeName: node.data?.title || node.data?.label,
+                            type: 'SYSTEM_ERROR',
+                            severity: 'error' as const,
+                            suggestion: "Try refreshing the page or contact support if the issue persists"
+                        });
+                    }
+                }
+            });
+
+            // Update validation state
+            const isValid = allErrors.length === 0;
+            setIsPipelineValid(isValid);
+            setPipelineValidationErrors(allErrors);
+            setPipelineValidationWarnings(allWarnings);
+        };
+
+        validatePipeline();
+    }, [nodes, edges, formStates]);
     const [pipelineJson, setPipelineJson] = useState<any>(null);
     const [headerUpdateTrigger, setHeaderUpdateTrigger] = useState(0);
     // Add this at the component level, outside any callbacks
@@ -1022,6 +1163,33 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
     }, []);
 
+    // Attach/Detach cluster functions
+    const attachCluster = useCallback((cluster: any) => {
+        setAttachedCluster(cluster);
+        localStorage.setItem('attachedCluster', JSON.stringify(cluster));
+        console.log('Cluster attached:', cluster);
+    }, []);
+
+    const detachCluster = useCallback(() => {
+        setAttachedCluster(null);
+        localStorage.removeItem('attachedCluster');
+        console.log('Cluster detached');
+    }, []);
+
+    // Load attached cluster from localStorage on mount
+    useEffect(() => {
+        const savedCluster = localStorage.getItem('attachedCluster');
+        if (savedCluster) {
+            try {
+                const cluster = JSON.parse(savedCluster);
+                setAttachedCluster(cluster);
+            } catch (error) {
+                console.error('Error parsing saved cluster:', error);
+                localStorage.removeItem('attachedCluster');
+            }
+        }
+    }, []);
+
     const handleRun = useCallback(async () => {
         try {
             setIsCanvasLoading(true);
@@ -1049,11 +1217,25 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             });
             console.log(debuggedNodesList)
             console.log(pipelineDtl)
+            
+            // Convert selectedMode to API parameter format
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
+                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
+            
+            console.log('Selected Mode:', selectedMode) 
+            console.log('Mode Action for API:', modeAction) 
+
             const params = new URLSearchParams({
                 pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                 pipeline_json: JSON.stringify(pipeline_json),
-                mode: 'DEBUG',
+                mode: modeAction
             });
+            
+            // Add host parameter if cluster is attached
+            if (attachedCluster?.master_ip) {
+                params.append('host', attachedCluster.master_ip);
+                console.log('Using attached cluster host:', attachedCluster.master_ip);
+            }
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title);
             });
@@ -1099,7 +1281,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (error) {
             console.error('Error starting pipeline:', error);
 
-            // Add error log
             setTerminalLogs(prevLogs => [...prevLogs, {
                 timestamp: new Date().toISOString(),
                 message: `Error: ${error.message}`,
@@ -1111,17 +1292,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 setValidationErrors(errorMessages);
             }
 
-            // Check if the error is related to pipeline already existing
-            // This will still call getTransformationCount even if there's an error from the server
-            // about the pipeline already existing
-            
-            // Extract the detailed error message from the Axios response if available
             const errorDetail = error.response?.data?.detail || '';
             const errorMessage = error.message || '';
             
             console.log('Error detail:', errorDetail);
             
-            // Check both the error message and the nested detail for "already exist" or "already running"
             if (
                 errorMessage.includes('already exist') || 
                 errorMessage.includes('already running') ||
@@ -1139,11 +1314,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     
                     if (countsResponse.transformationOutputCounts) {
                         setTransformationCounts(countsResponse.transformationOutputCounts);
-                        
-                        // Since the pipeline is already running, update the state
                         setIsPipelineRunning(true);
                         
-                        // Add info log
                         setTerminalLogs(prevLogs => [...prevLogs, {
                             timestamp: new Date().toISOString(),
                             message: 'Pipeline is already running. Fetched current transformation counts.',
@@ -1153,8 +1325,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 } catch (countError) {
                     console.error('Error getting transformation counts after pipeline error:', countError);
                 }
-                // If we successfully got transformation counts, we don't want to set isPipelineRunning to false
-                return; // Exit early to avoid setting isPipelineRunning to false
+                return;
             }
 
             setSaveError(error.message);
@@ -1162,14 +1333,20 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } finally {
             setIsCanvasLoading(false);
         }
-    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl, pipelineName, dispatch]);
+    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl, pipelineName, dispatch, selectedMode]);
 
 
     const handleStop = useCallback(async () => {
         try {
             console.log(pipelineName)
             console.log(pipelineDtl)
-            let response = await dispatch(stopPipeLine({ params:pipelineDtl?.name  || pipelineDtl?.pipeline_name || pipelineName })).unwrap();
+            const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
+            const host = attachedCluster?.master_ip;
+            
+            let response = await dispatch(stopPipeLine({ 
+                params: pipelineName_val,
+                host: host
+            })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -1178,15 +1355,24 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (error) {
             console.error('Error stopping pipeline:', error);
         }
-    }, [pipelineDtl?.pipeline_name]);
+    }, [pipelineDtl?.pipeline_name, attachedCluster?.master_ip, dispatch]);
 
     const handleNext = useCallback(async () => {
         try {
             console.log('Next pipeline clicked');
-            let result: any = await dispatch(runNextCheckpoint({ pipeline_name: pipelineDtl?.name  || pipelineDtl?.pipeline_name || pipelineName })).unwrap();
+            const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
+            const host = attachedCluster?.master_ip;
+            
+            let result: any = await dispatch(runNextCheckpoint({ 
+                pipeline_name: pipelineName_val,
+                host: host
+            })).unwrap();
             // Only proceed if first API call was successful
             if (result && !result.error) {
-                let countsResponse = await dispatch(getTransformationCount({ params: pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName  })).unwrap();
+                let countsResponse = await dispatch(getTransformationCount({ 
+                    params: pipelineName_val,
+                    host: host
+                })).unwrap();
                 console.log(countsResponse, "countsResponse")
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);
@@ -1201,7 +1387,109 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             console.error('Error in handleNext:', error);
             // Handle error appropriately (e.g., show error message to user)
         }
-    }, [pipelineDtl?.pipeline_name]);
+    }, [pipelineDtl?.pipeline_name, attachedCluster?.master_ip, dispatch]);
+
+    const handleRefreshNode = useCallback(async (nodeId: string) => {
+        try {
+            console.log(`🔄 Refreshing node: ${nodeId}`);
+            setIsCanvasLoading(true);
+
+            // Add log for refresh start
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `Starting refresh for node: ${nodeId}`,
+                level: 'info'
+            }]);
+
+            const partialPipelineJson:any = await convertUIToPipelineJsonUpToNode(
+                nodes, 
+                edges, 
+                pipelineDtl, 
+                nodeId,
+                pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
+            );
+
+            console.log(`📋 Partial pipeline JSON for node ${nodeId}:`, partialPipelineJson);
+
+            // Convert selectedMode to API parameter format
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
+                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
+
+            // Create API parameters for partial pipeline execution
+            const params = new URLSearchParams({
+                pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
+                pipeline_json: JSON.stringify(partialPipelineJson?.pipeline_json || partialPipelineJson),
+                mode: modeAction,
+                target_node: nodeId // Add target node info for backend
+            });
+            
+            // Add host parameter if cluster is attached
+            if (attachedCluster?.master_ip) {
+                params.append('host', attachedCluster.master_ip);
+            }
+
+            console.log(`🚀 Executing partial pipeline up to node: ${nodeId}`);
+
+            // Execute the partial pipeline
+            const response:any = await apiService.post({
+                baseUrl: CATALOG_REMOTE_API_URL,
+                url: `/pipeline/debug/reload_and_rerun_pipeline?${params.toString()}`,
+                usePrefix: true,
+                method: 'POST',
+                data: params
+            });
+
+            if (response.error) {
+                throw new Error(response.error);
+            }
+
+            // Add success log
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `✅ Node ${nodeId} refreshed successfully`,
+                level: 'info'
+            }]);
+
+            // Optionally update transformation counts for the refreshed portion
+            try {
+                const host = attachedCluster?.master_ip;
+                const countsResponse = await dispatch(getTransformationCount({
+                    params: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
+                    host: host
+                })).unwrap();
+
+                if (countsResponse.transformationOutputCounts) {
+                    // Update only the counts for nodes up to the target node
+                    setTransformationCounts(prevCounts => {
+                        const newCounts = [...prevCounts];
+                        countsResponse.transformationOutputCounts.forEach(newCount => {
+                            const existingIndex = newCounts.findIndex(c => c.transformationName === newCount.transformationName);
+                            if (existingIndex >= 0) {
+                                newCounts[existingIndex] = newCount;
+                            } else {
+                                newCounts.push(newCount);
+                            }
+                        });
+                        return newCounts;
+                    });
+                }
+            } catch (countError) {
+                console.warn('Could not update transformation counts after refresh:', countError);
+            }
+
+        } catch (error) {
+            console.error(`❌ Error refreshing node ${nodeId}:`, error);
+            
+            // Add error log
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `❌ Error refreshing node ${nodeId}: ${error.message}`,
+                level: 'error'
+            }]);
+        } finally {
+            setIsCanvasLoading(false);
+        }
+    }, [nodes, edges, pipelineDtl, pipelineName, selectedMode, dispatch]);
 
     const getTransformationName = (moduleName: string): string => {
         return moduleName.toLowerCase();
@@ -1820,6 +2108,39 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUnsavedChanges();
     }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
 
+    const handleAlignTopLeft = useCallback(() => {
+        if (nodes.length === 0) return;
+
+        // Simple top-left alignment - place all nodes in a grid starting from top-left
+        const gridSpacing = 200; // Spacing between nodes
+        const startX = 50;
+        const startY = 50;
+        
+        const newNodes = nodes.map((node, index) => {
+            const row = Math.floor(index / 4); // 4 nodes per row
+            const col = index % 4;
+            
+            return {
+                ...node,
+                position: {
+                    x: startX + (col * gridSpacing),
+                    y: startY + (row * gridSpacing)
+                }
+            };
+        });
+
+        setSanitizedNodes(newNodes);
+
+        // Center the view to show the aligned nodes
+        setTimeout(() => {
+            if (reactFlowInstance && reactFlowInstance.fitView) {
+                reactFlowInstance.fitView({ padding: 0.1, duration: 800 });
+            }
+        }, 50);
+
+        setUnsavedChanges();
+    }, [nodes, setSanitizedNodes, dispatch, reactFlowInstance]);
+
     const value = useMemo(() => ({
         nodes,
         setNodes: setSanitizedNodes,
@@ -1899,6 +2220,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsCanvasLoading,
         handleAlignHorizontal,
         handleAlignVertical,
+        handleAlignTopLeft,
         runDialogOpen,
         setRunDialogOpen,
         selectedFormState,
@@ -1924,13 +2246,24 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPipelineJson,
         pipelineName,
         pipelineJson,
+        setProjectName,
+        projectName,
         isNodeFormOpen,
         setIsNodeFormOpen,
         selectedNodeId,
         setSelectedNodeId,
         updatedSelectedNodeId,
         updateSetNode,
-        updateAllNodeDependencies
+        updateAllNodeDependencies,
+        isPipelineValid,
+        pipelineValidationErrors,
+        pipelineValidationWarnings,
+        selectedMode,
+        handleRefreshNode,
+        attachedCluster,
+        setAttachedCluster,
+        attachCluster,
+        detachCluster
     }), [
         nodes,
         setSanitizedNodes,
@@ -2009,6 +2342,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isCanvasLoading,
         handleAlignHorizontal,
         handleAlignVertical,
+        handleAlignTopLeft,
         runDialogOpen,
         selectedFormState,
         showLeavePrompt,
@@ -2031,12 +2365,24 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPipelineJson,
         pipelineName,
         pipelineJson,
+        setProjectName,
+        projectName,
         isNodeFormOpen,
         setIsNodeFormOpen,
         selectedNodeId,
         setSelectedNodeId,
         updatedSelectedNodeId,
-        updateSetNode
+        updateSetNode,
+        updateAllNodeDependencies,
+        isPipelineValid,
+        pipelineValidationErrors,
+        pipelineValidationWarnings,
+        selectedMode,
+        handleRefreshNode,
+        attachedCluster,
+        setAttachedCluster,
+        attachCluster,
+        detachCluster
     ]);
 
     return (

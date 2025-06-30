@@ -177,12 +177,13 @@ const BuildPlayGround: React.FC = () => {
                     id={props.id}
                     type={type}
                     onImageClick={handleOpenNodeForm}
+                    transformationCounts={transformationCounts}
                 />
             )
         }
     }), [setNodes, setSelectedSchema, setFormStates, setIsFormOpen, formStates,
         setRunDialogOpen, setSelectedFormState, handleDebugToggle, debuggedNodesSet,
-        handleSourceUpdate, pipelineDtl, handleOpenNodeForm, setNodeFormDataLocal]);
+        handleSourceUpdate, pipelineDtl, handleOpenNodeForm, setNodeFormDataLocal, transformationCounts]);
 
     // Key state to force re-render
     const [forceRender, setForceRender] = useState(0);

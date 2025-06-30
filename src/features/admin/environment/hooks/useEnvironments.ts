@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
-import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments } from '@/types/admin/environment';
+import { Environment, EnvironmentMutationData, AWSValidationData, MWAAEnvironments, EnvironmentListResponse } from '@/types/admin/environment';
 import { toast } from 'sonner';
-import {     CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+
 interface UseEnvironmentsOptions {
   shouldFetch?: boolean;
   environmentId?: string;
+  limit?: number;
+  offset?: number;
   mwaaQueryParams?: {
     bh_env_name?: string;
     location?: string;
@@ -44,17 +47,20 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     true
   );
 
+  const queryParams = useMemo(() => ({
+    limit: options.limit ?? 10,
+    offset: options.offset ?? 0,
+  }), [options.limit, options.offset]);
+
   // List environments
-  const { data: environments, isLoading, isFetching, isError } = getAllEnvironments({
+  const { data: environments, isLoading, isFetching, isError } = getAllEnvironments<EnvironmentListResponse>({
     url: '/environment/environment/list/',
     queryOptions: {
       enabled: options.shouldFetch,
       retry: 2
     },
-    params: { limit: 1000 }
+    params: queryParams
   });
-
-
 
   // Get single environment
   const {
@@ -136,8 +142,15 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     });
   }, [AWSValidationMutation]);
 
+  const environmentData = environments?.data || [];
+  const total = environments?.total || 0;
+  const offset = environments?.offset || 0;
+  const limit = environments?.limit || 0;
+  const prev = environments?.prev || false;
+  const next = environments?.next || false;
+
   return {
-    environments: environments || [],
+    environments: environmentData,
     environment,
     isLoading,
     isEnvironmentLoading,
@@ -145,6 +158,11 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     isEnvironmentFetching,
     isError,
     isEnvironmentError,
+    total,
+    offset,
+    limit,
+    prev,
+    next,
     handleCreateEnvironment,
     handleAWSValidation,
     handleUpdateEnvironment,

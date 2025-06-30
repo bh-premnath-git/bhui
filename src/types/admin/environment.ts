@@ -52,6 +52,7 @@ export interface EnvironmentMutationData {
   bh_env_name: string;
   bh_env_provider: number;
   cloud_provider_cd: number;
+  location: string;
   cloud_region_cd: number;
   project_id: string;
   access_key: string;
@@ -73,5 +74,14 @@ export interface AWSValidationData {
   location: string,
   pvt_key?: string
 };
+
+export interface EnvironmentListResponse {
+  data: (Environment | MWAAEnvironments)[];
+  total: number;
+  offset: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
+}
 
 export type MWAAEnvironments = string[];

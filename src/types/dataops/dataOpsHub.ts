@@ -20,10 +20,20 @@ export interface DataOpsHub {
     updated_by: string;
   }
   
+  export interface DataOpsHubListResponse {
+    data: DataOpsHub[];
+    limit: number;
+    next: boolean;
+    offset: number;
+    prev: boolean;
+    total: number;
+  }
+  
   export interface TaskMetadata {
     priority: number;
     task_type: string;
     retry_count: number;
+    task_log_url: string;
   }
   
   export interface TaskStatistics {
@@ -54,4 +64,13 @@ export interface DataOpsHub {
     created_by: string;
     updated_at: string; 
     updated_by: string;
+  }
+
+  export interface TaskDetailsListResponse {
+    data: TaskDetails[];
+    limit: number;
+    next: boolean;
+    offset: number;
+    prev: boolean;
+    total: number;
   }

@@ -27,7 +27,11 @@ export interface Project {
 export interface ProjectPaginatedResponse {
   data: Project[];
   total: number;
+  offset: number;
   page: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
 }
 
 export interface ProjectMutationData {

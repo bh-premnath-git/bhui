@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, differenceInMinutes } from 'date-fns';
 
 export function formatDate(
     dateInput: Date | number | string,
@@ -25,4 +25,22 @@ export function formatDate(
     // Return the formatted date string
     return format(date, dateFormat);
   }
+
+export function formatDuration(
+    startTime: Date | number | string,
+    endTime: Date | number | string
+  ): string {
+    if (!startTime || !endTime) {
+      return '0 min';
+    }
   
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+    const diffMinutes = differenceInMinutes(endDate, startDate);
+  
+    if (isNaN(diffMinutes) || diffMinutes < 0) {
+      return '0 min';
+    }
+  
+    return `${diffMinutes} min`;
+  }

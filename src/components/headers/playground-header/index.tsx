@@ -21,6 +21,8 @@ import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
 import { useModules } from '@/hooks/useModules';
 import { useSidebar } from '@/context/SidebarContext';
+import { EngineSelector } from './EngineSelector';
+import { ModeSelector } from './ModeSelector';
 
 export interface PlayGroundHeaderProps {
   playGroundHeader?: "flow" | "pipeline";
@@ -68,7 +70,8 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   });
   const {
     handleNodeClick, addNodeToHistory,
-    isPipelineRunning, handleNext, handleStop, handleRun
+    isPipelineRunning, handleNext, handleStop, handleRun,
+    isPipelineValid, pipelineValidationErrors, pipelineValidationWarnings
   } = usePipelineContext();
   const { isRightAsideOpen } = useSidebar();
 
@@ -120,6 +123,10 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
 
           {!isFlow && (
             <div className="flex items-center space-x-2">
+              <ModeSelector />
+              
+              <div className="h-6 w-px bg-gray-300 mx-2" />
+              
               <Popover open={showClusterDropdown} onOpenChange={setShowClusterDropdown}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -177,6 +184,9 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               handleStop={handleStop}
               handleNext={handleNext}
               isPipelineRunning={isPipelineRunning}
+              isValid={isPipelineValid}
+              validationErrors={pipelineValidationErrors}
+              validationWarnings={pipelineValidationWarnings}
             />
           )}
 

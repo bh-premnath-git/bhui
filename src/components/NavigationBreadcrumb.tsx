@@ -13,6 +13,7 @@ import {
 import { Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/context/SidebarContext"; // <-- add this import
 
 interface BreadcrumbItem {
   title: string;
@@ -22,6 +23,7 @@ interface BreadcrumbItem {
 export function NavigationBreadcrumb() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { isExpanded } = useSidebar(); 
   const selectedProject = useAppSelector((state: RootState) => state.projects.selectedProject);
   const selectedConnection = useAppSelector((state: RootState) => state.connections.selectedconnection);
   const selectedEnvironment = useAppSelector((state: RootState) => state.environments.selectedEnvironment);
@@ -168,7 +170,7 @@ export function NavigationBreadcrumb() {
   const breadcrumbItems = getBreadcrumbItems();
 
   return (
-    <Breadcrumb className={cn("flex items-center h-full mt-2 ml-5")}>
+    <Breadcrumb className={cn("flex items-center h-full mt-2", isExpanded && "ml-5")}>
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
           <React.Fragment key={`${item.path}-${index}`}>

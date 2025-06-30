@@ -1,10 +1,4 @@
-/**
- * TargetPopUp Component
- * 
- * This component can be used in two modes:
- * 1. Dialog mode: When isOpen is true, it renders as a modal dialog
- * 2. Inline mode: When isOpen is false, it renders directly in the parent component (used in chat panel)
- */
+
 import React, { useState, useEffect } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -124,7 +118,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const [formData, setFormData] = useState<FormData>({});
     const [currentSchema, setCurrentSchema] = useState<FormSchema>(writerSchema);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const { connectionConfigList } = useAppSelector((state) => state.datasource);
+    const { connectionConfigList = [] } = useAppSelector((state) => state.datasource);
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const dispatch = useAppDispatch();
     const { pipelineJson } = usePipelineContext();
@@ -137,7 +131,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         // we're in inline mode (used in the chat panel)
         const inlineMode = isOpen === false;
         setIsInlineMode(inlineMode);
-        console.log('TargetPopUp mode:', inlineMode ? 'inline (chat panel)' : 'modal (canvas)');
+        // console.log('TargetPopUp mode:', inlineMode ? 'inline (chat panel)' : 'modal (canvas)');
     }, [isOpen]);
     useEffect(() => {
         dispatch(getConnectionConfigList({ offset: 0, limit: 1000 }));
@@ -151,19 +145,14 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
      * 2. With initialData (when used in chat panel mode)
      */
     useEffect(() => {
-        console.log('TargetPopUp initializing with:', {
-            source,
-            initialData,
-            isInlineMode,
-            nodeId
-        });
+       
 
         if (source) {
-            console.log('Using source data for initialization');
+            // console.log('Using source data for initialization');
             let connection = source.source?.connection ? { ...source.source.connection } : {};
             connection.connection_config_id = source?.source?.connection?.connection_config_id || 
-                connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id;
-            console.log('Connection data:', connection);
+                (Array.isArray(connectionConfigList) ? connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id : undefined);
+            // console.log('Connection data:', connection);
             
             let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
             
@@ -195,18 +184,18 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 initialFormData.file_type = source.source?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV';
             }
 
-            console.log('Setting form data from source:', initialFormData);
+            // console.log('Setting form data from source:', initialFormData);
             setFormData(initialFormData);
 
             // Set selected connection if connection_config_id exists
-            if (source.source?.connection?.connection_config_id) {
+            if (source.source?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
                 const selectedConn = connectionConfigList.find(
                     conn => conn.id === source.source.connection.connection_config_id
                 );
                 setSelectedConnection(selectedConn || null);
             }
         } else if (initialData) {
-            console.log('Using initialData for initialization:', initialData);
+            // console.log('Using initialData for initialization:', initialData);
             
             // Make sure we have a valid initialData object with all required fields
             const targetType = initialData.target?.target_type || 'File';
@@ -236,22 +225,22 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 safeInitialData.file_type = initialData.file_type || 'CSV';
             }
             
-            console.log('Safe initialData:', safeInitialData);
+            // console.log('Safe initialData:', safeInitialData);
             setFormData(safeInitialData);
             
-            if (initialData.target?.connection?.connection_config_id) {
+            if (initialData.target?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
                 const selectedConn = connectionConfigList.find(
                     conn => conn.id === initialData.target.connection.connection_config_id
                 );
-                console.log('Selected connection:', selectedConn);
+                // console.log('Selected connection:', selectedConn);
                 setSelectedConnection(selectedConn || null);
             }
         } else {
-            console.log('No source or initialData provided');
+            // console.log('No source or initialData provided');
         }
         
-        console.log('Selected connection:', selectedConnection);
-        console.log('Current form data:', formData);
+        // console.log('Selected connection:', selectedConnection);
+        // console.log('Current form data:', formData);
     }, [source, initialData, connectionConfigList, isInlineMode, nodeId]);
 
     useEffect(() => {
@@ -287,7 +276,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             const newData = JSON.parse(JSON.stringify(prev));
 
             if (name === 'connection_config_id') {
-                const selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
+                const selectedConn = Array.isArray(connectionConfigList) ? connectionConfigList.find(conn => conn.id === parseInt(value)) : null;
                 setSelectedConnection(selectedConn);
 
                 if (selectedConn) {
@@ -359,15 +348,15 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 
                 // Auto-sync name field with target_name
                 newData.name = value;
-                console.log('Auto-synced name with target_name:', value);
+                // console.log('Auto-synced name with target_name:', value);
                 
                 // Auto-sync table_name or file_name based on target_type
                 if (newData.target.target_type === 'Relational') {
                     newData.target.table_name = value;
-                    console.log('Auto-synced table_name with target_name:', value);
+                    // console.log('Auto-synced table_name with target_name:', value);
                 } else if (newData.target.target_type === 'File') {
                     newData.target.file_name = value;
-                    console.log('Auto-synced file_name with target_name:', value);
+                    // console.log('Auto-synced file_name with target_name:', value);
                 }
             } else if (name === 'table_name') {
                 if (!newData.target) newData.target = {};
@@ -376,7 +365,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 // Auto-sync target_name and name with table_name
                 newData.target.target_name = value;
                 newData.name = value;
-                console.log('Auto-synced target_name and name with table_name:', value);
+                // console.log('Auto-synced target_name and name with table_name:', value);
             } else if (name === 'load_mode') {
                 if (!newData.target) newData.target = {};
                 newData.target.load_mode = value;
@@ -387,27 +376,27 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 // Auto-sync target_name and name with file_name
                 newData.target.target_name = value;
                 newData.name = value;
-                console.log('Auto-synced target_name and name with file_name:', value);
+                // console.log('Auto-synced target_name and name with file_name:', value);
             } else if (name === 'file_type' && newData.target?.target_type === 'File') {
                 newData.file_type = value;
             } else if (name === 'name') {
                 // Handle the main name field - auto-sync with target_name and file_name/table_name
-                console.log('Name field changed to:', value);
+                // console.log('Name field changed to:', value);
                 newData.name = value;
                 
                 if (!newData.target) newData.target = {};
                 
                 // Auto-sync target_name with name
                 newData.target.target_name = value;
-                console.log('Auto-synced target_name with name:', value);
+                // console.log('Auto-synced target_name with name:', value);
                 
                 // Auto-sync file_name or table_name based on target_type
                 if (newData.target.target_type === 'File') {
                     newData.target.file_name = value;
-                    console.log('Auto-synced file_name with name:', value);
+                    // console.log('Auto-synced file_name with name:', value);
                 } else if (newData.target.target_type === 'Relational') {
                     newData.target.table_name = value;
-                    console.log('Auto-synced table_name with name:', value);
+                    // console.log('Auto-synced table_name with name:', value);
                 }
             } else {
                 // Handle nested fields using the path parameter
@@ -628,9 +617,9 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
      */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Form submitted with data:', formData);
-        console.log('Is inline mode:', isInlineMode);
-        console.log('Node ID:', nodeId);
+        // console.log('Form submitted with data:', formData);
+        // console.log('Is inline mode:', isInlineMode);
+        // console.log('Node ID:', nodeId);
         
         const errors: Record<string, string> = {};
 
@@ -652,9 +641,9 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
         }
 
         try {
-            console.log('Finding connection data for ID:', formData.target?.connection?.connection_config_id);
-            const connectionData = connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id);
-            console.log('Found connection data:', connectionData);
+            // console.log('Finding connection data for ID:', formData.target?.connection?.connection_config_id);
+            const connectionData = Array.isArray(connectionConfigList) ? connectionConfigList.find(conn => conn.id === formData.target?.connection?.connection_config_id) : null;
+            // console.log('Found connection data:', connectionData);
             
             // Create a safe connection object with fallbacks
             let connection = { 
@@ -665,7 +654,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             
             // Make sure we have the connection_config_id
             connection.connection_config_id = formData.target?.connection?.connection_config_id;
-            console.log('Prepared connection data:', connection);
+            // console.log('Prepared connection data:', connection);
 
             // Create a properly structured source data object
             // Make sure we have all the required fields with fallbacks
@@ -702,19 +691,19 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 sourceData.sourceData.data.source.file_type = formData.file_type || 'CSV';
             }
             
-            console.log('Sending source data to parent component:', JSON.stringify(sourceData, null, 2));
-            console.log('onSourceUpdate function exists:', !!onSourceUpdate);
-            console.log('Current mode:', isInlineMode ? 'inline (chat panel)' : 'modal (canvas)');
+            // console.log('Sending source data to parent component:', JSON.stringify(sourceData, null, 2));
+            // console.log('onSourceUpdate function exists:', !!onSourceUpdate);
+            // console.log('Current mode:', isInlineMode ? 'inline (chat panel)' : 'modal (canvas)');
 
             try {
                 if (onSourceUpdate) {
-                    console.log('Calling onSourceUpdate with data');
+                    // console.log('Calling onSourceUpdate with data');
                     onSourceUpdate(sourceData);
-                    console.log('onSourceUpdate called successfully');
+                    // console.log('onSourceUpdate called successfully');
                     
                     // For debugging - log what happens after the update
                     setTimeout(() => {
-                        console.log('Form state after update (delayed check)');
+                        // console.log('Form state after update (delayed check)');
                     }, 500);
                 } else {
                     console.error('onSourceUpdate function is not defined');
@@ -738,7 +727,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const getFilteredConnections = () => {
         if (!formData.target?.target_type) return [];
 
-        return connectionConfigList.filter(conn => {
+        return Array.isArray(connectionConfigList) ? connectionConfigList.filter(conn => {
             if (formData.target?.target_type === 'File') {
                 // For File type, show only S3 and Local connections
                 return ['S3', 'Local'].includes(conn.connection_name);
@@ -747,7 +736,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 return !['S3', 'Local'].includes(conn.connection_name);
             }
             return false;
-        });
+        }) : [];
     };
 
     /**

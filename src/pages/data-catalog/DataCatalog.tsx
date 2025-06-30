@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { withPageErrorBoundary } from '@/components/withPageErrorBoundary';
 import { DataCatalog } from '@/features/data-catalog/DataCatalog';
 import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
@@ -10,11 +10,23 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { Database } from 'lucide-react';
 
 function DataCatalogPage() {
-  const { datasources, isLoading, isFetching, isError, refetch } = useDataCatalog({
-    shouldFetch: true
+  const [offset, setOffset] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  const {
+    datasources,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    total,
+    next,
+    prev
+  } = useDataCatalog({
+    shouldFetch: true,
+    limit: pageSize,
+    offset: offset
   });
-  console.log(datasources, "datasources")
-  console.log(isLoading, isFetching, "isLoading")
   const dataCatalogSrv = useDataCatalogManagementService();
 
   useEffect(() => {
@@ -24,6 +36,22 @@ function DataCatalogPage() {
   }, [datasources, dataCatalogSrv]);
 
   if (isError) return <ErrorState message="Something went wrong" />;
+
+  const pageIndex = Math.floor(offset / pageSize);
+
+  const handlePageChange = (page: number) => {
+    const currentPageIndex = pageIndex;
+    if (page > currentPageIndex && next) {
+      setOffset(o => o + pageSize);
+    } else if (page < currentPageIndex && prev) {
+      setOffset(o => Math.max(0, o - pageSize));
+    }
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setOffset(0);
+  };
 
   if (isLoading || !datasources) {
     return (
@@ -54,6 +82,13 @@ function DataCatalogPage() {
         <DataCatalog
           datasources={datasources}
           onRefetch={refetch}
+          pageCount={Math.ceil((total || 0) / pageSize)}
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          hasNextPage={next}
+          hasPreviousPage={prev}
         />
       </div>
     </div>

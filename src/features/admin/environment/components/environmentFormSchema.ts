@@ -6,7 +6,7 @@ export const environmentFormSchema = z.object({
   environment: z.string().min(1, "Please select an environment."),
   platform: z.object({
     type: z.string().min(1, "Please select a platform."),
-    region: z.string().optional(),
+    region: z.string(),
     zone: z.string().optional(),
   }),
   credentials: z.object({
@@ -30,6 +30,59 @@ export const environmentFormSchema = z.object({
     )
     .default([]),
   status: z.enum(["active", "inactive"]).default("active"),
+}).superRefine((data, ctx) => {
+  // If AWS is selected (platform type "101"), validate required fields
+  if (data.platform.type === "101") {
+    if (!data.platform.region) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select a region.",
+        path: ["platform", "region"]
+      });
+    }
+    if (!data.credentials.publicId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Project ID is required.",
+        path: ["credentials", "publicId"]
+      });
+    }
+    if (!data.credentials.accessKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Access Key is required.",
+        path: ["credentials", "accessKey"]
+      });
+    }
+    if (!data.credentials.secretKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Secret Key is required.",
+        path: ["credentials", "secretKey"]
+      });
+    }
+    if (!data.advancedSettings.airflowName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "MWAA Environment is required.",
+        path: ["advancedSettings", "airflowName"]
+      });
+    }
+    if (!data.advancedSettings.airflowBucketName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Airflow Bucket Name is required.",
+        path: ["advancedSettings", "airflowBucketName"]
+      });
+    }
+    if (!data.advancedSettings.airflowBucketUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Airflow URL is required.",
+        path: ["advancedSettings", "airflowBucketUrl"]
+      });
+    }
+  }
 });
 
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>
@@ -52,11 +105,13 @@ export const regions = [
 ] as const
 
 export const transforFormToAPiData = (formData: EnvironmentFormValues ): FormData => {
+  const regionLabel = regions.find(r => r.value === formData.platform.region)?.label ?? ''
   const apiData: EnvironmentMutationData = {
     bh_env_name: formData.environmentName,
     bh_env_provider: Number(formData.environment),
     cloud_provider_cd: Number(formData.platform.type),
     cloud_region_cd: Number(formData.platform.region),
+    location: regionLabel,
     access_key: formData.credentials.accessKey,
     secret_access_key: formData.credentials.secretKey,
     project_id: formData.credentials.publicId,

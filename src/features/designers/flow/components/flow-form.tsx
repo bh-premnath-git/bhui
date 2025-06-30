@@ -25,7 +25,7 @@ export function FlowForm({
     searchedFlow,
     searchLoading,
     flowNotFound,
-    onFlowNameChange 
+    onFlowNameChange, 
 }: FlowFormProps) {
     const [activeSection, setActiveSection] = React.useState("basic")
     const {

@@ -51,7 +51,7 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
     },
     query: queryString
   }) as {
-    data: Dashboards;
+    data: { data: Dashboards };
     isLoading: boolean;
     isFetching: boolean;
     isError: boolean;
@@ -79,7 +79,7 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
   };
 
   return {
-    dashboards: dashboards || [],
+    dashboards: dashboards?.data || [],
     dashboardDetail,
     isLoading,
     isFetching,
@@ -131,7 +131,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
     true
   );
   const {
-    data: widgets = [],
+    data: widgetsResponse,
     isLoading: isWidgetsLoading,
     isFetching: isWidgetsFetching,
     isError: isWidgetsError,
@@ -145,7 +145,7 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
 
     query: widgetIds.map((id) => `ids=${id}`).join('&'),
   }) as {
-    data: Widget[];
+    data:  Widget[];
     isLoading: boolean;
     isFetching: boolean;
     isError: boolean;
@@ -174,6 +174,8 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
       url: `/widgets/${widgetId}/`
     });
   };
+
+  const widgets = widgetsResponse || [];
 
   return {
     widgets,

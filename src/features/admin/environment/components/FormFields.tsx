@@ -19,8 +19,8 @@ const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
 )
 
 export const EnvironmentDetailsFields = ({ control }: { control: Control<EnvironmentFormValues> }) => (
-  <div className="space-y-6">
-    <div className="grid gap-6 md:grid-cols-2">
+  <div className="space-y-3">
+    <div className="grid gap-4 md:grid-cols-2">
       <FormField
         control={control}
         name="environmentName"
@@ -69,7 +69,7 @@ export const EnvironmentDetailsFields = ({ control }: { control: Control<Environ
 )
 
 export const PlatformFields = ({ control }: { control: Control<EnvironmentFormValues> }) => (
-  <div className="space-y-2">
+  <div className="space-y-1">
     <FormField
       control={control}
       name="platform.type"
@@ -85,18 +85,18 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
                     field.onChange(platform.value);
                   }
                 }}
-                className={`border rounded-lg p-4 flex flex-col items-center justify-center ${field.value === platform.value
+                className={`border rounded-lg p-3 flex flex-col items-center justify-center ${field.value === platform.value
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
-                  } transition-colors w-32 h-24 ${platform.value === "102" ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } transition-colors w-28 h-20 ${platform.value === "102" ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={platform.value === "102"}
               >
                 <img
                   src={platform.image || "/placeholder.svg"}
                   alt={platform.label}
-                  className="h-8 w-8 object-contain mb-2"
+                  className="h-6 w-6 object-contain mb-1"
                 />
-                <span className="text-sm font-medium">{platform.label}</span>
+                <span className="text-xs font-medium">{platform.label}</span>
               </button>
             ))}
           </div>
@@ -134,14 +134,14 @@ export function CredentialsFields({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
+    <div className="space-y-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <FormField
           control={control}
           name="credentials.publicId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Project Id</FormLabel>
+              <RequiredFormLabel>Project Id</RequiredFormLabel>
               <FormControl>
                 <Input placeholder="e.g. Aws Project Id" {...field} />
               </FormControl>
@@ -154,7 +154,7 @@ export function CredentialsFields({
           name="platform.region"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Region</FormLabel>
+              <RequiredFormLabel>Region</RequiredFormLabel>
               <Select
                 value={field.value?.toString() || ""}
                 onValueChange={field.onChange}
@@ -181,7 +181,7 @@ export function CredentialsFields({
           name="credentials.accessKey"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Access Key</FormLabel>
+              <RequiredFormLabel>Access Key</RequiredFormLabel>
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
@@ -194,11 +194,11 @@ export function CredentialsFields({
           name="credentials.secretKey"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Secret Key</FormLabel>
+              <RequiredFormLabel>Secret Key</RequiredFormLabel>
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
-              <div className="flex justify-end mt-2">
+              <div className="flex justify-end mt-1">
                 <ValidationButton
                   onValidate={handleValidation}
                   isValidating={isValidating}
@@ -270,14 +270,14 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
   }, [airflowData, setValue]);
   
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
+    <div className="space-y-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <FormField
           control={control}
           name="advancedSettings.airflowName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>MWAA Environment</FormLabel>
+              <RequiredFormLabel>MWAA Environment</RequiredFormLabel>
               <Select
                 value={field.value?.toString() || ""}
                 onValueChange={field.onChange}
@@ -300,13 +300,13 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
           )}
         />
       </div>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <FormField
           control={control}
           name="advancedSettings.airflowBucketUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Airflow URL</FormLabel>
+              <RequiredFormLabel>Airflow URL</RequiredFormLabel>
               <FormControl>
                 <Input {...field} disabled />
               </FormControl>
@@ -319,7 +319,7 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
           name="advancedSettings.airflowBucketName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Airflow Bucket Name</FormLabel>
+              <RequiredFormLabel>Airflow Bucket Name</RequiredFormLabel>
               <FormControl>
                 <Input {...field} disabled />
               </FormControl>
@@ -345,7 +345,7 @@ export const TagsField = ({ control }: { control: Control<EnvironmentFormValues>
       render={({ field }) => (
         <FormItem>
           <FormLabel>Tags</FormLabel>
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
               {field.value?.map((tag, index) => (
                 <div

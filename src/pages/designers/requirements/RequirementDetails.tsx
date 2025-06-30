@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { mockRequirements, RequirementStatus, MappingChatMessage } from '@/utils/mockData';
 import ReactFlow, { Background, Controls, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Share2 } from 'lucide-react';
+import { Share2, MessageCircle, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 const RequirementDetails: React.FC = () => {
@@ -72,75 +75,142 @@ const RequirementDetails: React.FC = () => {
     : [];
 
   return (
-    <div className="relative max-w-7xl mx-auto py-10 px-2 md:px-6">
-      <h1 className="text-2xl font-bold mb-6">{requirement.name} - Mapping Requirements</h1>
-      <div className="mb-4 flex items-center gap-4">
-        <span className="text-sm text-muted-foreground">Status: <span className={`font-semibold ${status === RequirementStatus.COMPLETED ? 'text-green-600' : status === RequirementStatus.PENDING ? 'text-blue-600' : 'text-yellow-600'}`}>{status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span></span>
-        <span className="text-sm text-muted-foreground">Total Mappings: <span className="font-semibold">{mappings.length}</span></span>
-      </div>
-      <div className="overflow-x-auto mb-8 rounded-lg shadow border bg-white">
-        <table className="min-w-full text-xs md:text-sm">
-          <thead className="bg-gray-100 sticky top-0 z-10">
-            <tr>
-              <th className="border px-3 py-2">S.No</th>
-              <th className="border px-3 py-2">Target Table</th>
-              <th className="border px-3 py-2">Target Column</th>
-              <th className="border px-3 py-2">Target Data Type</th>
-              <th className="border px-3 py-2">Source Connection</th>
-              <th className="border px-3 py-2">Source Table(s)</th>
-              <th className="border px-3 py-2">Source Column(s)</th>
-              <th className="border px-3 py-2">Transformation / Rule</th>
-              <th className="border px-3 py-2">Join/Lookup Details</th>
-              <th className="border px-3 py-2">Status</th>
-              <th className="border px-3 py-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mappings.map((m, idx) => (
-              <tr key={idx} className={
-                `${m.needsInput ? 'bg-blue-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} transition-colors`}
-              >
-                <td className="border px-3 py-2 text-center">{idx + 1}</td>
-                <td className="border px-3 py-2">{m.targetTable}</td>
-                <td className="border px-3 py-2">{m.targetColumn}</td>
-                <td className="border px-3 py-2">{m.targetDataType}</td>
-                <td className="border px-3 py-2">{m.sourceConnection}</td>
-                <td className="border px-3 py-2">{m.sourceTable}</td>
-                <td className="border px-3 py-2">{Array.isArray(m.sourceColumns) ? m.sourceColumns.join(', ') : m.sourceColumns}</td>
-                <td className="border px-3 py-2">{m.transformationRule || <span className="italic text-gray-400">{m.needsInput ? 'Pending Input' : '-'}</span>}</td>
-                <td className="border px-3 py-2">{m.joinDetails}</td>
-                <td className="border px-3 py-2">
-                  {m.needsInput ? <span className="text-blue-600 font-semibold">Pending Input</span> : <span className="text-green-600 font-semibold">Complete</span>}
-                </td>
-                <td className="border px-3 py-2">
-                  {m.needsInput && (
-                    <Button size="sm" variant="outline" onClick={() => { setChatOpenIdx(idx); setInputValue(''); }}>
-                      Provide Input
-                    </Button>
-                  )}
-                  {m.userInput && !m.needsInput && (
-                    <span className="text-xs text-gray-500">Input Provided</span>
-                  )}
-                  {/* Show chat history icon/button if chatMessages exist */}
-                  {m.chatMessages && m.chatMessages.length > 0 && !m.needsInput && (
-                    <Button size="sm" variant="ghost" onClick={() => setChatOpenIdx(idx)} title="View Conversation">
-                      💬
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={() => window.history.back()}>Back</Button>
-      </div>
-      {status === RequirementStatus.COMPLETED && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded text-green-700 font-semibold text-center shadow">
-          All required input has been provided. This requirement is now marked as <span className="underline">Completed</span>.
+    <div className="p-6">
+      <div className="space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col space-y-4">
+          <h1 className="text-3xl font-bold tracking-tight">{requirement.name}</h1>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Status:</span>
+              <Badge variant={status === RequirementStatus.COMPLETED ? 'default' : status === RequirementStatus.PENDING ? 'secondary' : 'outline'}>
+                {status === RequirementStatus.COMPLETED && <CheckCircle className="h-3 w-3 mr-1" />}
+                {status === RequirementStatus.PENDING && <Clock className="h-3 w-3 mr-1" />}
+                {status === RequirementStatus.IN_PROGRESS && <AlertCircle className="h-3 w-3 mr-1" />}
+                {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Total Mappings:</span>
+              <Badge variant="outline">{mappings.length}</Badge>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Mappings Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Mapping Requirements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">S.No</TableHead>
+                    <TableHead>Target Table</TableHead>
+                    <TableHead>Target Column</TableHead>
+                    <TableHead>Source Table</TableHead>
+                    <TableHead>Source Columns</TableHead>
+                    <TableHead>Transformation</TableHead>
+                    <TableHead>Join/Lookup Details</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mappings.map((m, idx) => (
+                    <TableRow key={idx} className={m.needsInput ? 'bg-blue-50/50' : ''}>
+                      <TableCell className="text-center font-medium">{idx + 1}</TableCell>
+                      <TableCell>{m.targetTable}</TableCell>
+                      <TableCell>{m.targetColumn}</TableCell>
+                      <TableCell>{m.sourceTable}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {Array.isArray(m.sourceColumns) ? (
+                            m.sourceColumns.slice(0, 2).map((col, colIdx) => (
+                              <Badge key={colIdx} variant="secondary" className="text-xs">
+                                {col}
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              {m.sourceColumns}
+                            </Badge>
+                          )}
+                          {Array.isArray(m.sourceColumns) && m.sourceColumns.length > 2 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{m.sourceColumns.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate" title={m.transformationRule}>
+                        {m.transformationRule || (
+                          <span className="italic text-muted-foreground">
+                            {m.needsInput ? 'Pending Input' : '-'}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate" title={m.joinDetails}>
+                        {m.joinDetails || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {m.needsInput ? (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending Input
+                          </Badge>
+                        ) : (
+                          <Badge variant="default" className="bg-green-100 text-green-800">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Complete
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {m.needsInput && (
+                            <Button size="sm" variant="outline" onClick={() => { setChatOpenIdx(idx); setInputValue(''); }}>
+                              Provide Input
+                            </Button>
+                          )}
+                          {m.userInput && !m.needsInput && (
+                            <Badge variant="outline" className="text-xs">
+                              Input Provided
+                            </Badge>
+                          )}
+                          {m.chatMessages && m.chatMessages.length > 0 && !m.needsInput && (
+                            <Button size="sm" variant="ghost" onClick={() => setChatOpenIdx(idx)} title="View Conversation">
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Back Button */}
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => window.history.back()}>Back</Button>
+        </div>
+
+        {/* Completion Message */}
+        {status === RequirementStatus.COMPLETED && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-green-700 font-semibold text-center">
+                <CheckCircle className="h-5 w-5" />
+                All required input has been provided. This requirement is now marked as <span className="underline">Completed</span>.
+              </div>
+            </CardContent>
+          </Card>
+        )}
       {/* Sliding Chat Drawer */}
       <div
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl border-l z-50 transform transition-transform duration-300 ease-in-out ${chatOpenIdx !== null ? 'translate-x-0' : 'translate-x-full'}`}
@@ -184,27 +254,34 @@ const RequirementDetails: React.FC = () => {
           </div>
         )}
       </div>
-      {/* Pipeline View below table */}
-      <div className="flex items-center gap-2 mb-2">
-        <Switch checked={showPipeline} onCheckedChange={setShowPipeline} id="toggle-pipeline-view" />
-        <label htmlFor="toggle-pipeline-view" className="text-sm text-muted-foreground select-none cursor-pointer">
-          Show Pipeline View
-        </label>
+        {/* Pipeline View */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="w-5 h-5" />
+                Pipeline View
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Switch checked={showPipeline} onCheckedChange={setShowPipeline} id="toggle-pipeline-view" />
+                <label htmlFor="toggle-pipeline-view" className="text-sm text-muted-foreground select-none cursor-pointer">
+                  Show Pipeline
+                </label>
+              </div>
+            </div>
+          </CardHeader>
+          {showPipeline && (
+            <CardContent>
+              <div className="border rounded-md" style={{ width: '100%', height: 400 }}>
+                <ReactFlow nodes={pipelineNodes} edges={pipelineEdges} fitView>
+                  <Background />
+                  <Controls />
+                </ReactFlow>
+              </div>
+            </CardContent>
+          )}
+        </Card>
       </div>
-      {showPipeline && (
-        <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow border p-6 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Share2 className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold">Pipeline View</h2>
-          </div>
-          <div style={{ width: '100%', height: 400 }}>
-            <ReactFlow nodes={pipelineNodes} edges={pipelineEdges} fitView>
-              <Background />
-              <Controls />
-            </ReactFlow>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { useMemo } from 'react';
 import { ROUTES } from '@/config/routes';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ProtectedLayout from '@/components/ProtectedLayout';
@@ -13,6 +14,16 @@ import { AdminRoutes } from './adminRoutes';
 import { RequirementRoutes } from './requirementRoutes'
 
 export const AppRoutes = () => {
+  const protectedRoutes = useMemo(() => (
+    <>
+      {DataCatalogRoutes}
+      {DesignerRoutes}
+      {DataOpsRoutes}
+      {AdminRoutes}
+      {RequirementRoutes}
+    </>
+  ), []);
+
   return (
     <Routes>
       <Route
@@ -36,20 +47,7 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        {/* Data Catalog Routes */}
-        {DataCatalogRoutes}
-
-        {/* Designer Routes */}
-        {DesignerRoutes}
-
-        {/* DataOps Routes */}
-        {DataOpsRoutes}
-
-        {/* Admin Routes */}
-        {AdminRoutes}
-
-        {/* Requirement Routes */}
-        {RequirementRoutes}
+        {protectedRoutes}
 
       </Route>
       

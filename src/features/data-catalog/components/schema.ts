@@ -1,6 +1,5 @@
 import { Connection } from "@/types/admin/connection";
 import { Project } from "@/types/admin/project";
-import * as z from "zod"
 
 export const getProjectOptions = (projects: Project[]) => {
   return projects.map(project => ({

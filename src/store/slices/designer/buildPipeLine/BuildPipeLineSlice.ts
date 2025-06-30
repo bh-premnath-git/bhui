@@ -53,6 +53,8 @@ export interface BuildPipelineState {
   lastSaved: string | null;
   isFlow: boolean;
   isRightPanelOpen: boolean;
+  selectedEngineType: 'pyspark' | 'flink';
+  selectedMode: 'engine' | 'debug' | 'interactive';
 }
 
 const initialState: BuildPipelineState = {
@@ -81,7 +83,9 @@ const initialState: BuildPipelineState = {
   hasUnsavedChanges: false,
   lastSaved: null,
   isFlow:false,
-  isRightPanelOpen:false
+  isRightPanelOpen:false,
+  selectedEngineType: 'pyspark',
+  selectedMode: 'engine'
 };
 
 interface ApiResponse {
@@ -237,7 +241,7 @@ export const getTransformationCount: any = createAsyncThunk(
         method: 'GET',
         params: {
           pipeline_name: params.params,
-          host: 'host.docker.internal',
+          host: params.host || 'host.docker.internal',
           port: 15003
         }
       });
@@ -312,9 +316,10 @@ export const stopPipeLine: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       console.log(params)
+      const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=host.docker.internal&port=15003`,
+        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003`,
         usePrefix: true,
         method: 'POST',
       });
@@ -414,11 +419,12 @@ export const updatePipeline = createAsyncThunk(
 
 export const runNextCheckpoint = createAsyncThunk(
   'build-pipline/runNextCheckpoint',
-  async (params: { pipeline_name: string }, thunkAPI) => {
+  async (params: { pipeline_name: string, host?: string }, thunkAPI) => {
     try {
+      const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=host.docker.internal&port=15003`,
+        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003`,
         usePrefix: true,
         method: 'POST'
       });
@@ -562,8 +568,13 @@ const buildPipeLineSlice = createSlice({
     state.hasUnsavedChanges = true;
     state.isSaving = false;
     state.lastSaved = null;
-
-}
+  },
+  setSelectedEngineType: (state, action: PayloadAction<'pyspark' | 'flink'>) => {
+    state.selectedEngineType = action.payload;
+  },
+  setSelectedMode: (state, action: PayloadAction<'engine' | 'debug' | 'interactive'>) => {
+    state.selectedMode = action.payload;
+  }
   },
   extraReducers: (builder) => {
     builder
@@ -884,5 +895,7 @@ export const {
   setIsRun,
   setSavedSlice,
   setUnsavedChangesSlice,
-  setIsRightPanelOpen
+  setIsRightPanelOpen,
+  setSelectedEngineType,
+  setSelectedMode
 } = buildPipeLineSlice.actions;

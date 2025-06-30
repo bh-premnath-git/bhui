@@ -131,14 +131,19 @@ class ApiService {
   /**
    * React Query GET helper
    */
-  useApiQuery<T>(
+  useApiQuery<TQueryFnData, TError, TData = TQueryFnData>(
     queryKey: string | string[],
     config: ApiConfig,
-    options?: Omit<UseQueryOptions<T, Error>, 'queryKey' | 'queryFn'>
+    options?: Omit<UseQueryOptions<TQueryFnData, TError, TData>, 'queryKey' | 'queryFn'>
   ) {
-    return useQuery<T, Error>({
+    const queryFn = async () => {
+      const { data } = await this.request<TQueryFnData>(config);
+      return data;
+    };
+
+    return useQuery<TQueryFnData, TError, TData>({
       queryKey: typeof queryKey === 'string' ? [queryKey] : queryKey,
-      queryFn: () => this.request<T>(config).then((res) => res.data),
+      queryFn,
       ...options,
       retry: (failureCount, error) => {
         if (axios.isCancel(error)) {
@@ -240,6 +245,64 @@ class ApiService {
     };
 
     return this.request<string>(config).then((res) => res.data);
+  }
+
+  /**
+   * Save chat history for a specific pipeline
+   * @param pipelineId The pipeline ID
+   * @param chatHistoryData The chat history data to save
+   * @returns Promise with the response
+   */
+  async savePipelineChatHistory(
+    pipelineId: string,
+    chatHistoryData: {
+      pipeline_id: string;
+      messages: Array<{
+        id?: string; // Optional since FastAPI auto-generates primary key
+        role: string;
+        content: string;
+        timestamp: string;
+        suggestions?: any[];
+        formData?: {
+          schema?: any;
+          sourceColumns?: any[];
+          currentNodeId?: string;
+          initialValues?: any;
+          isTarget?: boolean;
+        };
+      }>;
+      append?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    }
+  ): Promise<any> {
+    const config: ApiConfig = {
+      baseUrl: CATALOG_REMOTE_API_URL,
+      url: `/api/v1/pipeline/${pipelineId}/chat-history`,
+      method: 'POST',
+      data: chatHistoryData,
+      metadata: {
+        successMessage: 'Chat history saved successfully',
+        errorMessage: 'Failed to save chat history'
+      }
+    };
+
+    return this.request<any>(config).then((res) => res.data);
+  }
+
+  /**
+   * Get chat history for a specific pipeline
+   * @param pipelineId The pipeline ID
+   * @returns Promise with the chat history
+   */
+  async getPipelineChatHistory(pipelineId: string): Promise<any> {
+    const config: ApiConfig = {
+      baseUrl: CATALOG_REMOTE_API_URL,
+      url: `/api/v1/pipeline/${pipelineId}/chat-history`,
+      method: 'GET'
+    };
+
+    return this.request<any>(config).then((res) => res.data);
   }
 }
 

@@ -13,7 +13,7 @@ interface DataSourceState {
   project: Project[];
   selectedProject: Project | null;
   selectedConnection: Connection | null;
-  connectionConfigList: any[];
+  connectionConfigList: any;
 
 }
 
@@ -33,7 +33,7 @@ const initialState: DataSourceState = {
 export const fetchProjects = createAsyncThunk(
   "connection/fetchProjects",
   async () => {
-    const response = await apiService.get<Project[]>({
+    const response = await apiService.get<{data:Project[]}>({
       baseUrl: CATALOG_REMOTE_API_URL,
       url: '/bh_project/list/',
       usePrefix: true,
@@ -43,14 +43,14 @@ export const fetchProjects = createAsyncThunk(
       },
       params: { limit: 1000 }
     });
-    return response;
+    return response.data;
   }
 );
 
 export const fetchConnections = createAsyncThunk(
   "connection/fetchConnections",
   async () => {
-    const response = await apiService.get<Connection[]>({
+    const response = await apiService.get<{data:Connection[]}>({
       baseUrl: CATALOG_REMOTE_API_URL,
       url: '/connection_registry/connection_config/list/',
       usePrefix: true,
@@ -60,7 +60,7 @@ export const fetchConnections = createAsyncThunk(
       },
       params: { limit: 1000 }
     });
-    return response;
+    return response.data;
   }
 );
 
@@ -68,7 +68,7 @@ export const fetchConnections = createAsyncThunk(
 export const getConnectionConfigList = createAsyncThunk(
   "catalog/connection",
   async (params: any) => {
-    const response = await apiService.get<any[]>({
+    const response:any = await apiService.get<any[]>({
       baseUrl: CATALOG_REMOTE_API_URL,
       url: '/connection_registry/connection_config/list/',
       usePrefix: true,
@@ -78,7 +78,7 @@ export const getConnectionConfigList = createAsyncThunk(
       },
       params: params
     });
-    return response;
+    return response.data;
   }
 );
 

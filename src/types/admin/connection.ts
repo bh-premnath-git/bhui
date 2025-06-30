@@ -12,13 +12,17 @@ export interface Connection {
 };
 
 
-export interface ConnectionType {
+export interface ConnectionTypes {
     id: number;
     connection_name: string;
     connection_display_name: string;
     connection_description: string;
     connection_type: string;
 };
+
+export interface ConnectionType {
+    data: ConnectionTypes[];
+}
 
 export interface ConnectionValue {
     id?: string;
@@ -46,4 +50,12 @@ export interface ConnectionValue {
       source_type: string;
     };
   }
-  
+
+export interface ConnectionPaginatedResponse {
+  data: Connection[];
+  total: number;
+  offset: number;
+  limit: number;
+  prev: boolean;
+  next: boolean;
+}

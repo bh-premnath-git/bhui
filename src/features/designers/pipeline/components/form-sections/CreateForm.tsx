@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { FormField } from './FormField';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Node, Edge } from 'reactflow';
 import { useDispatch, useSelector } from 'react-redux';
 // import { generatePipelineAgent } from '@/store/slices/buildPipeLine/BuildPipeLineSlice';
@@ -1149,25 +1147,11 @@ const renderArrayFields = (
         {arraySchema.minItems && arraySchema.minItems > 0 && <span className="text-red-500">*</span>}
       </label> */}
       
-      {/* Headers */}
-      <div className="flex justify-between gap-2">
-        {itemPropertiesEntries.map(([fieldKey, fieldSchema]: [string, any]) => (
-          <div key={fieldKey}>
-            <div className="font-medium text-sm text-gray-700">
-              {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' ')}
-              {requiredFields.includes(fieldKey) && 
-                <span className="text-red-500 ml-1">*</span>}
-            </div>
-          </div>
-        ))}
-        <div /> {/* Spacer for remove button */}
-      </div>
+      {/* Headers are now handled by individual FormField components */}
 
       {/* Form Fields */}
       {fields.map((field, index) => (
-        <div key={field.id} className="flex justify-between gap-2">
+        <div key={field.id} className={`grid gap-2 mb-4 items-start`} style={{gridTemplateColumns: `repeat(${itemPropertiesEntries.length}, 1fr) auto`}}>
           {itemPropertiesEntries.map(([itemKey, itemSchema]: [string, any]) => {
             const isExpression = itemSchema.type === 'expression' || 
                                itemSchema['ui-hint'] === 'expression';
@@ -1176,6 +1160,12 @@ const renderArrayFields = (
             if (itemSchema.type === 'autocomplete') {
               return (
                 <div key={`${section}.${index}.${itemKey}`} className="w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {itemKey.replace(/_/g, ' ').split(' ').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                    {requiredFields.includes(itemKey) && <span className="text-red-500 ml-1">*</span>}
+                  </label>
                   <Controller
                     name={`${section}.${index}.${itemKey}`}
                     control={control}
@@ -1236,14 +1226,17 @@ const renderArrayFields = (
               </div>
             );
           })}
-          <button
-            type="button"
-            onClick={() => remove(index)}
-            disabled={fields.length <= (arraySchema.minItems || 1)}
-            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100"
-          >
-            <span className="text-gray-500 text-xl">×</span>
-          </button>
+          <div className="flex flex-col">
+            <div className="h-6 mb-1"></div> {/* Spacer to match label height */}
+            <button
+              type="button"
+              onClick={() => remove(index)}
+              disabled={fields.length <= (arraySchema.minItems || 1)}
+              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 text-red-500 hover:text-red-700"
+            >
+              <span className="text-xl">×</span>
+            </button>
+          </div>
         </div>
       ))}
 
@@ -1301,7 +1294,7 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select keep value" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{zIndex:9999}}>
                 {['any', 'first', 'last', 'distinct', 'unique_only'].map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -1384,7 +1377,7 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
                     <SelectTrigger className="w-1/2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent  style={{zIndex:9999}}>
                       <SelectItem value="asc">Ascending</SelectItem>
                       <SelectItem value="desc">Descending</SelectItem>
                     </SelectContent>
@@ -1747,6 +1740,12 @@ const FormContent: React.FC<{
                   options={sourceColumns.map(col => col.name)}
                   placeholder={`Enter column name`}
                   className="flex-1"
+                  renderInput={(params) => (
+                    <Input
+                      {...params}
+                      placeholder="Enter column name"
+                    />
+                  )}
                 />
               )}
             />
@@ -1820,6 +1819,7 @@ const FormContent: React.FC<{
         return acc;
       }, {} as Record<string, string>);
       
+      setValue(fieldKey, newObject);
     };
 
     return (
@@ -1844,6 +1844,12 @@ const FormContent: React.FC<{
                 options={sourceColumns.map(col => col.name)}
                 placeholder="Old column name"
                 className="flex-1"
+                renderInput={(params) => (
+                  <Input
+                    {...params}
+                    placeholder="Old column name"
+                  />
+                )}
               />
               <Input
                 value={entry.value}
@@ -2071,7 +2077,7 @@ const FormContent: React.FC<{
                             <SelectTrigger>
                               <SelectValue placeholder={`Select ${itemKey}`} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent  style={{zIndex:9999}}>
                               {itemSchema.enum.map((option: string) => (
                                 <SelectItem key={option} value={option}>
                                   {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -2263,7 +2269,7 @@ const FormContent: React.FC<{
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select repartition type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent  style={{zIndex:9999}}>
                             {schema.properties.repartition_type.enum.map((option: string) => (
                               <SelectItem key={option} value={option}>
                                 {option.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
@@ -2391,7 +2397,7 @@ const FormContent: React.FC<{
                                 <SelectTrigger className="w-32">
                                   <SelectValue placeholder="Order" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent  style={{zIndex:9999}}>
                                   <SelectItem value="asc">Ascending</SelectItem>
                                   <SelectItem value="desc">Descending</SelectItem>
                                 </SelectContent>

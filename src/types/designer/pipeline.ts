@@ -1,5 +1,5 @@
 export interface Pipeline {
-    pipeline_id: number;
+    pipeline_id: any;
     pipeline_name: string;
     pipeline_key: string;
     notes: string;

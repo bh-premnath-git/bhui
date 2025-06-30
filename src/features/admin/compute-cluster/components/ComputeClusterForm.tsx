@@ -287,7 +287,7 @@ console.log(environmentsData)
         </div>
 
         <div className="absolute top-4 right-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="text-gray-600 hover:bg-gray-100">
+          <Button variant="ghost" size="icon" onClick={onBack} className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
@@ -298,9 +298,9 @@ console.log(environmentsData)
           <CardContent className="flex-1 overflow-hidden">
             <div className="h-full flex flex-col space-y-3">
               {/* Basic Configuration Section */}
-              <div className="bg-white border rounded-lg">
-                <div className="px-4 py-2 border-b bg-gray-50">
-                  <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+              <div className="bg-card border border-border rounded-lg">
+                <div className="px-4 py-2 border-b border-border bg-muted/50">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center">
                     <Settings className="h-4 w-4 mr-2" />
                     Basic Configuration
                   </h3>
@@ -334,14 +334,14 @@ console.log(environmentsData)
               </div>
 
               {/* Compute Configuration Section */}
-              <div className="bg-white border rounded-lg flex-1 flex flex-col min-h-0">
-                <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+              <div className="bg-card border border-border rounded-lg flex-1 flex flex-col min-h-0">
+                <div className="px-4 py-2 border-b border-border bg-muted/50 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center">
                     <Cloud className="h-4 w-4 mr-2" />
                     Compute Configuration
                   </h3>
                   {isLoadingConfigSchema && (
-                    <span className="text-xs text-gray-500">(Loading...)</span>
+                    <span className="text-xs text-muted-foreground">(Loading...)</span>
                   )}
                 </div>
                 <div className="p-3 flex-1 overflow-y-auto">
@@ -352,41 +352,41 @@ console.log(environmentsData)
                       <Skeleton className="h-6 w-full" />
                     </div>
                   ) : configSchemaError ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-lg border border-border">
                       <div className="relative mb-6">
-                        <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                          <Settings className="h-8 w-8 text-blue-600" />
+                        <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                          <Settings className="h-8 w-8 text-primary" />
                         </div>
                         <div className="absolute -top-1 -right-1 h-6 w-6 bg-yellow-400 rounded-full flex items-center justify-center">
                           <span className="text-xs font-bold text-yellow-800">⚡</span>
                         </div>
                       </div>
                       
-                      <h4 className="text-xl font-semibold text-gray-900 mb-3">
+                      <h4 className="text-xl font-semibold text-foreground mb-3">
                         {selectedComputeType} Configuration Coming Soon!
                       </h4>
                       
                       <div className="max-w-md space-y-3 mb-6">
-                        <p className="text-sm text-gray-700">
-                          We're actively working on <strong className="text-blue-700">{selectedComputeType}</strong> compute type configuration.
+                        <p className="text-sm text-muted-foreground">
+                          We're actively working on <strong className="text-primary">{selectedComputeType}</strong> compute type configuration.
                         </p>
                         
-                        <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                        <div className="bg-card/60 rounded-lg p-4 border border-border">
                           <div className="flex items-center space-x-2 mb-2">
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="font-medium text-green-800">Currently Available:</span>
+                            <span className="font-medium text-green-700 dark:text-green-400">Currently Available:</span>
                           </div>
-                          <p className="text-sm text-green-700 pl-7">
+                          <p className="text-sm text-green-600 dark:text-green-300 pl-7">
                             EMR compute type is fully supported and ready to use
                           </p>
                         </div>
                         
-                        <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                        <div className="bg-card/60 rounded-lg p-4 border border-border">
                           <div className="flex items-center space-x-2 mb-2">
-                            <Clock className="h-5 w-5 text-blue-600" />
-                            <span className="font-medium text-blue-800">In Development:</span>
+                            <Clock className="h-5 w-5 text-primary" />
+                            <span className="font-medium text-primary">In Development:</span>
                           </div>
-                          <p className="text-sm text-blue-700 pl-7">
+                          <p className="text-sm text-primary/80 pl-7">
                             {selectedComputeType} configuration interface is being built
                           </p>
                         </div>
@@ -402,7 +402,7 @@ console.log(environmentsData)
                             form.setValue('compute_type', 'EMR');
                             setTestResult(null);
                           }}
-                          className="flex items-center space-x-2 border-green-300 text-green-700 hover:bg-green-50"
+                          className="flex items-center space-x-2 border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20"
                         >
                           <ArrowLeft className="h-4 w-4" />
                           Switch to EMR
@@ -420,7 +420,7 @@ console.log(environmentsData)
                         </Button>
                       </div>
                       
-                      <p className="text-xs text-gray-500 mt-4">
+                      <p className="text-xs text-muted-foreground mt-4">
                         💡 Tip: Use EMR for now, we'll notify you when {selectedComputeType} is ready!
                       </p>
                     </div>
@@ -433,8 +433,8 @@ console.log(environmentsData)
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <Cloud className="h-12 w-12 text-gray-400 mb-4" />
-                      <p className="text-sm text-gray-600">
+                      <Cloud className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-sm text-muted-foreground">
                         Select a compute type to view configuration options
                       </p>
                     </div>
@@ -450,8 +450,8 @@ console.log(environmentsData)
                   className={cn(
                     "p-2 rounded-lg border",
                     testResult.success 
-                      ? "bg-green-50 border-green-200 text-green-800" 
-                      : "bg-red-50 border-red-200 text-red-800"
+                      ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300" 
+                      : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300"
                   )}
                 >
                   <div className="flex items-center space-x-2">
@@ -470,7 +470,7 @@ console.log(environmentsData)
             </div>
           </CardContent>
 
-          <CardFooter className="border-t bg-gray-50 mt-auto py-3">
+          <CardFooter className="border-t border-border bg-muted/50 mt-auto py-3">
             <div className="flex items-center justify-between w-full">
               <Button
                 type="button"
@@ -478,7 +478,7 @@ console.log(environmentsData)
                 size="sm"
                 onClick={onBack}
                 disabled={isSubmitting || isTesting}
-                className="flex items-center space-x-2 text-gray-600 border-gray-300 hover:bg-gray-100"
+                className="flex items-center space-x-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back</span>

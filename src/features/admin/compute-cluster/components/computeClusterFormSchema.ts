@@ -15,7 +15,16 @@ const emrConfigSchema = z.object({
     }
     return val;
   }).refine((val) => val >= 1, "Worker count must be at least 1"),
-  idle_timeout_seconds: z.number().min(0, "Idle timeout must be non-negative"),
+  idle_timeout_seconds: z.union([z.string(), z.number()]).transform((val) => {
+    if (typeof val === 'string') {
+      const parsed = parseInt(val, 10);
+      if (isNaN(parsed)) {
+        throw new Error("Idle timeout must be a valid number");
+      }
+      return parsed;
+    }
+    return val;
+  }).refine((val) => val >= 0, "Idle timeout must be non-negative"),
   aws_logs_uri: z.string().min(1, "AWS logs URI is required"),
   ec2_subnet_id: z.string().min(1, "EC2 subnet ID is required"),
   emr_master_security_group: z.string().min(1, "EMR master security group is required"),
@@ -25,7 +34,7 @@ const emrConfigSchema = z.object({
   service_role: z.string().min(1, "Service role is required"),
   ec2_key_name: z.string().min(1, "EC2 key name is required"),
   applications: z.array(z.string()).min(1, "At least one application is required"),
-  aws_cloud_connection: z.string().min(1, "AWS cloud connection is required"),
+  aws_cloud_connection: z.string().nullable().optional(),
   region: z.string().min(1, "Region is required"),
   bh_tags: z.array(z.string()).optional().default([]),
 });
@@ -196,7 +205,7 @@ export const computeClusterSchema = {
         "aws_logs_uri", "ec2_subnet_id", "emr_master_security_group",
         "emr_slave_security_group", "service_access_security_group",
         "job_flow_role", "service_role", "ec2_key_name", "applications",
-        "aws_cloud_connection", "region"
+        "region"
       ]
     }
   },

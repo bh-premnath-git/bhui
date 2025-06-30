@@ -6,6 +6,7 @@ import SuggestionButton from './SuggestionButton'; // Import the SuggestionButto
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -78,6 +79,7 @@ const PipeLineChatPanel = () => {
   const [showReaderForm, setShowReaderForm] = useState(false);
   const [showReaderOptionsForm, setShowReaderOptionsForm] = useState(false);
   const [selectedSourceType, setSelectedSourceType] = useState<"File" | "Relational" | null>(null);
+  const [showTransformationDropdown, setShowTransformationDropdown] = useState(false);
   const [readerNode, setReaderNode] = useState<any>(null);
   const [selectedDataSource, setSelectedDataSource] = useState<any>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -153,93 +155,83 @@ const PipeLineChatPanel = () => {
   // Track the last added transformation node
   const [lastAddedTransformation, setLastAddedTransformation] = useState<any>(null);
  const handleShowTransformations = () => {
-    setMessages(prevMessages => [
-      ...prevMessages,
-      {
-        role: 'user',
-        content: `Show transformation options`
-      },
-    ]);
+  
 
+    // Show transformation dropdown
+    setTimeout(() => {
+     
+      setShowTransformationDropdown(true);
+    }, 300);
+  };
+
+  // Handle transformation selection from dropdown
+  const handleTransformationSelection = (transformationName: string) => {
     // Get all transformation nodes from nodeDisplayData (excluding Reader)
     const transformationNodes = nodeDisplayData.nodes.filter(
       node => node.ui_properties.module_name !== "Reader"
     );
 
-    // Show transformation options as suggestion buttons
+    const selectedNode = transformationNodes.find(
+      node => node.ui_properties.module_name === transformationName
+    );
+
+    if (!selectedNode) {
+      toast.error("Transformation not found. Please try again.");
+      return;
+    }
+
+    // Hide the dropdown
+    setShowTransformationDropdown(false);
+
+    // Add a message to show the selection
+    setMessages(prevMessages => [
+      ...prevMessages,
+      {
+        role: 'user',
+        content: `Add ${selectedNode.ui_properties.module_name} transformation`
+      },
+    ]);
+
+    // Mark unsaved changes
+    setUnsavedChanges();
+
+    // Add node to history for undo functionality
+    addNodeToHistory();
+
+    // Store the transformation info for later use
+    const transformationInfo = {
+      type: selectedNode.ui_properties.module_name,
+      maxInputs: selectedNode.ui_properties.ports.maxInputs,
+      node: selectedNode
+    };
+
+    // Set the last added transformation to track in useEffect
+    setLastAddedTransformation(transformationInfo);
+
+    // Add the transformation node to the pipeline
+    console.log(selectedNode, "selectedTransformationNode");
+    handleNodeClick(selectedNode, null);
+
+    // Explicitly call handleAlignHorizontal to ensure proper node positioning
     setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: "Here are the available transformations you can add to your pipeline:",
-          suggestions: transformationNodes.map(node => ({
-            text: node.ui_properties.module_name,
-            onClick: () => {
-              // Add a message to show the selection
-              setMessages(prevMessages => [
-                ...prevMessages,
-                {
-                  role: 'user',
-                  content: `Add ${node.ui_properties.module_name} transformation`
-                },
-              ]);
+      if (pipelineContext.handleAlignHorizontal) {
+        console.log('Calling handleAlignHorizontal from chat panel');
+        pipelineContext.handleAlignHorizontal();
 
-              // Mark unsaved changes
-              setUnsavedChanges();
+        // Force a re-render of the ReactFlow component
+        window.dispatchEvent(new Event('resize'));
 
-              // Add node to history for undo functionality
-              addNodeToHistory();
+        // Call it again after a short delay to ensure proper alignment
+        setTimeout(() => {
+          pipelineContext.handleAlignHorizontal();
+          window.dispatchEvent(new Event('resize'));
+        }, 200);
+      }
+    }, 500);
 
-              // Store the transformation info for later use
-              const transformationInfo = {
-                type: node.ui_properties.module_name,
-                maxInputs: node.ui_properties.ports.maxInputs,
-                node: node
-              };
+   
 
-              // Set the last added transformation to track in useEffect
-              setLastAddedTransformation(transformationInfo);
-
-              // Add the transformation node to the pipeline
-              console.log(node, "readerNode")
-
-              handleNodeClick(node, null);
-
-              // Explicitly call handleAlignHorizontal to ensure proper node positioning
-              // Use a longer delay to ensure the node is fully added to the state
-              setTimeout(() => {
-                if (pipelineContext.handleAlignHorizontal) {
-                  console.log('Calling handleAlignHorizontal from chat panel');
-                  pipelineContext.handleAlignHorizontal();
-
-                  // Force a re-render of the ReactFlow component
-                  window.dispatchEvent(new Event('resize'));
-
-                  // Call it again after a short delay to ensure proper alignment
-                  setTimeout(() => {
-                    pipelineContext.handleAlignHorizontal();
-                    window.dispatchEvent(new Event('resize'));
-                  }, 200);
-                }
-              }, 500);
-
-              setTimeout(() => {
-                setMessages(prevMessages => [
-                  ...prevMessages,
-                  {
-                    role: 'assistant',
-                    content: `Adding a ${node.ui_properties.module_name} transformation to your pipeline...`
-                  },
-                ]);
-              }, 300);
-
-              // The nodes will be updated in the context, and our useEffect will handle asking for dependencies
-            }
-          }))
-        },
-      ]);
-    }, 300);
+    // The nodes will be updated in the context, and our useEffect will handle asking for dependencies
   };
   // Track node changes to handle dependency selection
   useEffect(() => {
@@ -586,10 +578,10 @@ const PipeLineChatPanel = () => {
     addMessageWithFormData({ role: 'user', content: 'Create a data pipeline' });
     // Simulate assistant response
     setTimeout(() => {
-      addMessageWithFormData({
-        role: 'assistant',
-        content: "Let's start creating your data pipeline. First, I need some information about the data source:"
-      });
+      // addMessageWithFormData({
+      //   role: 'assistant',
+      //   content: "Let's start creating your data pipeline. First, I need some information about the data source:"
+      // });
       setShowReaderForm(true);
     }, 500);
   };
@@ -721,17 +713,8 @@ const PipeLineChatPanel = () => {
     const messageId = formDataMessage.id;
     const originalMsgOwner = formDataMessage.msg_owner;
     
-    // Generate welcome message for the first form data message
     if (index === 0) {
-      messages.push({
-        id: `welcome_${messageId}`,
-        role: 'assistant',
-        content: "Welcome! I'll help you create your data pipeline. Let's start by setting up your data sources and transformations.",
-        msg_owner: originalMsgOwner,
-        suggestions: [
-          { text: "Create Pipeline", onClick: handleCreatePipeline }
-        ]
-      });
+    
       
       messages.push({
         id: `create_pipeline_${messageId}`,
@@ -757,30 +740,7 @@ const PipeLineChatPanel = () => {
         // Extract data source info from form data
         const initialValues = formData.initialValues || {};
         const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
-        
-        // User search message
-        messages.push({
-          id: `search_${messageId}`,
-          role: 'user',
-          content: `Searching for reader: ${dataSourceName}`,
-          msg_owner: originalMsgOwner
-        });
-        
-        // Assistant response with data source selection
-        messages.push({
-          id: `found_source_${messageId}`,
-          role: 'assistant',
-          content: `Great! I found the data source "${dataSourceName}". Selected data source: ${dataSourceName}`,
-          msg_owner: originalMsgOwner
-        });
-        
-        // Configuration request message
-        messages.push({
-          id: `config_request_${messageId}`,
-          role: 'assistant',
-          content: `Now let's configure the reader for "${dataSourceName}". Please review and adjust the settings below:`,
-          msg_owner: originalMsgOwner
-        });
+       
         
         // The actual form data message (from database)
         messages.push({
@@ -788,17 +748,7 @@ const PipeLineChatPanel = () => {
           suggestions: [] // Will be regenerated
         });
         
-        // Success message after form submission
-        messages.push({
-          id: `success_${messageId}`,
-          role: 'assistant',
-          content: `Perfect! I've successfully configured the "${dataSourceName}" reader. The data source is now ready to use in your pipeline.`,
-          msg_owner: originalMsgOwner,
-          suggestions: [
-            { text: "Add another source", onClick: handleAddAnotherSource },
-            { text: "Add another transformation", onClick: handleShowTransformations }
-          ]
-        });
+      
         
       } else if (formData.schema && formData.schema.module_name) {
         // Handle other transformation types
@@ -932,7 +882,6 @@ const PipeLineChatPanel = () => {
               suggestions: [
                 { text: "Add another source", onClick: handleAddAnotherSource },
                 { text: "Add another transformation", onClick: handleShowTransformations },
-                { text: "Review pipeline", onClick: () => console.log('Review pipeline') }
               ]
             });
           }
@@ -1089,10 +1038,10 @@ const PipeLineChatPanel = () => {
     setShowReaderForm(false);
 
     // Show loading message
-    addMessageWithFormData({
-      role: 'assistant',
-      content: `Searching for data sources matching "${data.reader_name}"...`
-    });
+    // addMessageWithFormData({
+    //   role: 'assistant',
+    //   content: `Searching for data sources matching "${data.reader_name}"...`
+    // });
 
     try {
       // Call the API to get data sources
@@ -1110,19 +1059,19 @@ const PipeLineChatPanel = () => {
       });
 
       // Check if we got results
-      if (response && response.length > 0) {
+      if (response?.data && response?.data.length > 0) {
         // Show success message
-        addMessageWithFormData({
-          role: 'assistant',
-          content: `I found ${response.length} data source(s) matching "${data.reader_name}".`
-        });
+        // addMessageWithFormData({
+        //   role: 'assistant',
+        //   content: `I found ${response?.data.length} data source(s) matching "${data.reader_name}".`
+        // });
 
         // Show data sources as suggestion buttons
         setTimeout(() => {
           addMessageWithFormData({
             role: 'assistant',
             content: "Please select a data source to add to your pipeline:",
-            suggestions: response.map(item => ({
+            suggestions: response?.data?.map(item => ({
                 text: item.data_src_name,
                 onClick: () => {
                   if (readerNode) {
@@ -1130,38 +1079,8 @@ const PipeLineChatPanel = () => {
 
                     addNodeToHistory();
 
-                    // Create initial data for the ReaderOptionsForm
-                    const initialData = {
-                      reader_name: item?.data_src_name || '',
-                      name: item?.data_src_name || '',
-                      file_type: item?.connection_config?.custom_metadata?.file_type || item?.file_type || 'CSV',
-                      query: item?.query || '',
-                      read_options: item?.read_options || {},
-                      source: {
-                        type:
-                          item?.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 'local' ||
-                            item?.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 's3'
-                            ? 'File'
-                            : 'Relational',
-                        source_name: item?.data_src_name || '',
-                        file_name: item?.file_name || '',
-                        table_name:
-                          item?.connection_config?.custom_metadata?.table_name ||
-                          item?.data_src_name ||
-                          item?.name ||
-                          '',
-                        bh_project_id: item?.bh_project_id || '',
-                        data_src_id: item?.data_src_id || '',
-                        file_type: item?.connection_config?.custom_metadata?.file_type || item?.file_type || 'CSV',
-                        connection: {
-                          connection_config_id: item?.connection_config_id || 0,
-                          name: item?.connection_config?.connection_config_name || '',
-                          ...(item?.connection_config?.custom_metadata || {})
-                        },
-                        connection_config_id: item?.connection_config_id || 0
-                      }
-                    };
                     console.log(readerNode, "readerNode");
+                    console.log("Auto-configuring source with API data:", item);
                     
                     // Create a copy of the reader node with a unique ID to ensure we create a new node
                     const newReaderNode = {
@@ -1170,9 +1089,15 @@ const PipeLineChatPanel = () => {
                     };
                     
                     // When adding another source, we always want to create a new Reader node
-                    handleNodeClick(newReaderNode, initialData);
-
-
+                    // We'll pass the basic data here, and the full configuration will be handled by handleReaderOptionsSubmit
+                    // handleNodeClick(newReaderNode, {
+                    //   reader_name: item.data_src_name,
+                    //   name: item.data_src_name,
+                    //   source: {
+                    //     source_name: item.data_src_name,
+                    //     data_src_id: item.data_src_id
+                    //   }
+                    // });
 
                     // Add a message to show that the data source was selected
                     addMessageWithFormData({
@@ -1180,20 +1105,55 @@ const PipeLineChatPanel = () => {
                       content: `Selected data source: ${item.data_src_name}`
                     });
 
-                    // Data source selected - batch will be saved after form submission
-
-                    // Add a message asking to configure the reader
+                    // Auto-configure the source without showing the form
                     setTimeout(() => {
-                      addMessageWithFormData({
-                        role: 'assistant',
-                        content: `Great! Now let's configure the reader for "${item.data_src_name}". Please review and adjust the settings below:`
-                      });
-
-                      // Set the selected data source and show the ReaderOptionsForm
-                      console.log('Setting selectedDataSource:', initialData);
-                      setSelectedDataSource(initialData);
-                      setShowReaderOptionsForm(true);
-                    }, 300);
+                      // Find the most recently added Reader node to get the nodeId
+                      const readerNodes = nodes.filter(node => 
+                        node.data.label === "Reader" || node.data.label.startsWith("Reader ")
+                      );
+                      const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : newReaderNode.id;
+                      
+                      // Structure the data in the format expected by handleReaderOptionsSubmit
+                      const formattedSourceData = {
+                        nodeId: latestReaderNodeId,
+                        sourceData: {
+                          data: {
+                            label: item.data_src_name,
+                            source: {
+                              data_src_id: item.data_src_id,
+                              data_src_name: item.data_src_name,
+                              source_name: item.data_src_name,
+                              data_src_desc: item.data_src_desc || item.data_src_name,
+                              connection_type: item.connection_config?.custom_metadata?.connection_type || 
+                                              (item.connection_config?.connection_name?.toLowerCase() === 's3' ? 'S3' : 'Local'),
+                              connection_config_id: item.connection_config_id,
+                              file_name: item.file_name,
+                              file_path_prefix: item.file_path_prefix || item.connection_config?.custom_metadata?.file_path_prefix,
+                              file_type: item.connection_config?.custom_metadata?.file_type || 'CSV',
+                              table_name: item.connection_config?.custom_metadata?.table_name || item.data_src_name,
+                              type: item.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 'local' ||
+                                    item.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 's3'
+                                    ? 'File' : 'Relational',
+                              // Add additional fields from API response
+                              total_records: item.total_records,
+                              data_src_quality: item.data_src_quality,
+                              data_source_layout: item.data_source_layout,
+                              bh_project_id: item.bh_project_id,
+                              connection_config: {
+                                custom_metadata: item.connection_config?.custom_metadata || {},
+                                connection_config_name: item.connection_config?.connection_config_name || ''
+                              },
+                              name: item.data_src_name
+                            }
+                          }
+                        }
+                      };
+                      
+                      console.log("Formatted source data for handleReaderOptionsSubmit:", formattedSourceData);
+                      
+                      // Directly configure the source using the properly formatted API data
+                      handleReaderOptionsSubmit(formattedSourceData);
+                    }, 500);
                   } else {
                     toast.error("Reader node not found. Please try again.");
                   }
@@ -1411,14 +1371,10 @@ const PipeLineChatPanel = () => {
 
     // Add messages to show the configuration was saved
     const readerMessages = [
-      {
-        role: 'user' as const,
-        content: `Configured reader: ${sourceData.sourceData.data.label}`,
-        id: generateMessageId()
-      },
+     
       {
         role: 'assistant' as const,
-        content: `Great! I've configured the reader "${sourceData.sourceData.data.label}". What would you like to do next?`,
+        content: `Great! What would you like to do next?`,
         suggestions: [
           { text: "Add another source", onClick: handleAddAnotherSource },
           { text: "Add another transformation", onClick: handleShowTransformations }
@@ -1564,7 +1520,7 @@ const PipeLineChatPanel = () => {
 
     // Create a message asking for dependencies
     const dependencyMessage = maxInputs === 1 ?
-      `The ${node.ui_properties.module_name} transformation needs a dependency. Select a node to connect it to:` :
+      `Select a node to connect it to:` :
       `The ${node.ui_properties.module_name} transformation can have up to ${maxInputs === "unlimited" ? "multiple" : maxInputs} dependencies. Select nodes to connect it to:`;
 
     // Show message asking for dependencies
@@ -2154,32 +2110,6 @@ const PipeLineChatPanel = () => {
                     </div>
                   )}
 
-                  {/* Render confirmation summary for saved configurations */}
-                  {message.role === 'assistant' && message.formData && message.formData.isConfirmation && (
-                    <div className="pl-8 mt-2 bg-green-50 rounded-lg shadow-sm border border-green-200 p-3">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-green-800">✅ Configuration Saved</h4>
-                        <div className="text-xs text-green-700">
-                          {message.formData.schema?.type === 'reader_configuration' ? (
-                            <div className="space-y-1">
-                              <p><strong>Reader:</strong> {message.formData.initialValues?.reader_name || 'N/A'}</p>
-                              <p><strong>Type:</strong> {message.formData.initialValues?.source_type || 'N/A'}</p>
-                            </div>
-                          ) : message.formData.isTarget ? (
-                            <div className="space-y-1">
-                              <p><strong>Target:</strong> {message.formData.initialValues?.name || 'N/A'}</p>
-                              <p><strong>Type:</strong> {message.formData.initialValues?.target_type || 'N/A'}</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <p><strong>Transformation:</strong> {message.formData.schema?.title || 'N/A'}</p>
-                              <p><strong>Name:</strong> {message.formData.initialValues?.name || 'N/A'}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Render form if formData exists and it's not a confirmation message */}
                   {message.role === 'assistant' && message.formData && message.formData.schema && !message.formData.isConfirmation && (
@@ -2668,6 +2598,56 @@ const PipeLineChatPanel = () => {
                           return readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : `reader-${Date.now()}`;
                         })()}
                       />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Transformation Selection Dropdown */}
+              {showTransformationDropdown && (
+                <div className="mt-2 mb-3">
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 mt-1 rounded-full bg-blue-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="rounded-lg bg-gray-50 p-4 border border-gray-200 shadow-sm">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Select Transformation
+                            </label>
+                            <Select onValueChange={handleTransformationSelection}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose a transformation..." />
+                              </SelectTrigger>
+                              <SelectContent style={{zIndex:9999}}>
+                                {nodeDisplayData.nodes
+                                  .filter(node => node.ui_properties.module_name !== "Reader")
+                                  .map(node => (
+                                    <SelectItem 
+                                      key={node.ui_properties.module_name} 
+                                      value={node.ui_properties.module_name}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{node.ui_properties.module_name}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))
+                                }
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setShowTransformationDropdown(false)}
+                              className="h-8 text-sm px-3"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

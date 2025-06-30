@@ -11,18 +11,17 @@ import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/Sho
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
-import PipelineSidebar from './components/PipelineSidebar';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
-  const { isRightAsideOpen, isBottomDrawerOpen, isExpanded, rightAsideWidth } = useSidebar();
+  const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
   const { id } = useParams();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
 
-  // Calculate sidebar width based on expanded state
-  const sidebarWidth = isExpanded ? 0 : 0; // Adjust these values based on your actual sidebar widths
+  // No sidebar width needed since we removed the sidebar
+  const sidebarWidth = 0;
 
   const {
     pipelineDtl,
@@ -47,6 +46,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     handleCenter,
     handleAlignHorizontal,
     handleAlignVertical,
+    handleAlignTopLeft,
     handleRun,
     handleStop,
     handleNext,
@@ -71,7 +71,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     fetchPipelineDetails
   } = usePipelineContext();
 
-  // Add resize event handler to force canvas resizing when right aside, sidebar, or bottom drawer opens/closes
+  // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
   useEffect(() => {
     const handleResize = () => {
       // Force a resize event to make ReactFlow recalculate dimensions
@@ -90,7 +90,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         try {
           handleCenter();
           // Make sure nodes are visible when layout changes
-          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen || isExpanded)) {
+          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
             console.log('Centering nodes after layout change');
             handleCenter();
           }
@@ -122,7 +122,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
       clearTimeout(secondTimer);
       clearTimeout(thirdTimer);
     };
-  }, [isRightAsideOpen, isBottomDrawerOpen, isExpanded, handleCenter, nodes.length]);
+  }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
   // Listen for RightAside panel resize events
   useEffect(() => {
@@ -218,29 +218,22 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
 
  
   const getMainContentStyle = () => {
-    const bottomHeight = isBottomDrawerOpen ? 0 : 0;
-
-    // Calculate the available width
-    let availableWidth = `calc(100% - ${sidebarWidth}px`;
+    // Calculate the available width without sidebar
+    let availableWidth = '100%';
     if (isRightAsideOpen) {
       // Extract percentage value from rightAsideWidth (e.g., 'w-[25%]' -> '25%')
       const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
-      availableWidth += ` - ${rightAsidePercentage}%`;
+      availableWidth = `calc(100% - ${rightAsidePercentage}%)`;
     }
-    availableWidth += ')';
 
     return {
       height: '100%',
       width: availableWidth,
-      marginLeft: `${sidebarWidth}px`,
       transition: 'all 0.3s ease-in-out'
     };
   };
   return (
-    <div className={`flex h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
-      {/* Pipeline Sidebar */}
-      <PipelineSidebar className="h-full" />
-
+    <div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
       <div
         className={`flex-1 relative p-1 transition-all duration-300`}
         style={getMainContentStyle()}>
@@ -270,6 +263,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                   onCenter={handleCenter}
                   onAlignHorizontal={handleAlignHorizontal}
                   onAlignVertical={handleAlignVertical}
+                  onAlignTopLeft={handleAlignTopLeft}
                   handleRunClick={handleRun}
                   onStop={handleStop}
                   onNext={handleNext}

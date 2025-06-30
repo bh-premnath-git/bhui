@@ -5,12 +5,16 @@ import { patchPipelineOperation } from '@/store/slices/designer/pipelineSlice';
 import { Flow } from "@/types/designer/flow";
 import { Pipeline } from "@/types/designer/pipeline";
 import { NameEditor } from "./HeaderInput";
+import { PipelineSelector } from "./PipelineSelector";
+import { FlowSelector } from "./FlowSelector";
 import { AutoSaveStatus } from "./AutoSave";
 import { Button } from "@/components/ui/button";
-import { CloudCog, Settings } from "lucide-react";
+import { CloudCog, Settings, PlusCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ClusterConfigDialog } from '../build-playground-header/ClusterConfigDialog';
 import { useMemo, useState } from 'react';
+import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
+import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';
 import { CommitPart, DeployingPart, EnvironmentSelect, PlaybackButton, SchedulePicker, SettingsModal } from '../flow-playground-header';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ParameterModal } from '../build-playground-header/ParameterModal';
@@ -40,6 +44,8 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
+  const [createPipelineDialogOpen, setCreatePipelineDialogOpen] = useState(false);
+  const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);
   const filteredNodes = useMemo(() => nodeData.nodes, []);
   const [moduleTypes] = useModules();
   let flowNodes = moduleTypes.map((type) => {
@@ -113,11 +119,55 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             onToggle={toggleAutoSave}
           />
 
-          <NameEditor
-            initialName={itemName || ''}
-            onSave={handleSave}
-            placeholder={isFlow ? 'Flow name...' : 'Pipeline name...'}
-          />
+          {isFlow ? (
+            <div className="flex items-center gap-2">
+              <FlowSelector
+                initialName={itemName || ''}
+                onSave={handleSave}
+                placeholder="Select flow..."
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCreateFlowDialogOpen(true)}
+                    className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                    aria-label="Create new flow"
+                  >
+                    <PlusCircle size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create new flow</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <PipelineSelector
+                initialName={itemName || ''}
+                onSave={handleSave}
+                placeholder="Select pipeline..."
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCreatePipelineDialogOpen(true)}
+                    className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                    aria-label="Create new pipeline"
+                  >
+                    <PlusCircle size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create new pipeline</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
 
           {isFlow && <SettingsModal />}
 
@@ -219,6 +269,22 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           />
           
         </>
+      )}
+
+      {/* Create Pipeline Dialog for pipeline mode */}
+      {!isFlow && (
+        <CreatePipelineDialog
+          open={createPipelineDialogOpen}
+          handleClose={() => setCreatePipelineDialogOpen(false)}
+        />
+      )}
+
+      {/* Create Flow Dialog for flow mode */}
+      {isFlow && (
+        <CreateFlowDialog
+          open={createFlowDialogOpen}
+          onOpenChange={setCreateFlowDialogOpen}
+        />
       )}
     </div>
   );

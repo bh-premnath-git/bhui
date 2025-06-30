@@ -167,17 +167,17 @@ export function Sidebar() {
         "h-screen fixed left-0 top-0 z-[100] flex flex-col",
         "bg-gray-50 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
         "transition-[width] duration-300 ease-in-out will-change-[width]",
-        isExpanded ? "w-64" : "w-16"
+        isExpanded ? "w-64" : "w-14"
       )}
     >
       {/* Header */}
-      <div className="h-12 flex items-center">
+      <div className="h-16 flex items-center px-4 border-b border-gray-100 dark:border-gray-800">
         {isExpanded ? (
           <div className="flex items-center justify-between w-full">
             <div className="cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
-              <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap ml-2">
-                Bighammer.ai
-              </h1>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap">
+                BigHammer.ai
+              </h2>
             </div>
             <Button
               variant="ghost"

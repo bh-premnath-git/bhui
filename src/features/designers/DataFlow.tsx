@@ -24,7 +24,7 @@ import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSli
 import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { convertFlowJsonToReactFlow } from '@/lib/pipelineJsonConverter';
 import { useModules } from '@/hooks/useModules';
-import FlowSidebar from './components/FlowSidebar';
+
 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
@@ -46,6 +46,7 @@ const BuildPlayGround: React.FC = () => {
         setRunDialogOpen,
         setSelectedFormState,
         handleRunClick,
+        handleAlignTopLeft,
         handleCut,
         handleUndo,
         handleRedo,
@@ -92,7 +93,7 @@ const BuildPlayGround: React.FC = () => {
     const dispatch = useAppDispatch();
     const { id } = useParams();
     const { useFetchFlowById, fetchFlowsList } = useFlowApi();
-    const { data: flowList, isLoading: isFlowListLoading } = fetchFlowsList(1, 1000, true);
+    const { data: flowList, isLoading: isFlowListLoading }:any = fetchFlowsList(1, 1000, true);
     const { data: flow, isLoading: isFlowLoading, isError, refetch } = useFetchFlowById(id || '');
     
     const isLoading = isFlowLoading || isFlowListLoading;
@@ -386,31 +387,22 @@ const BuildPlayGround: React.FC = () => {
     }, [hasUnsavedChanges, location.pathname]);
 
     // Calculate sidebar width based on expanded state
-    const sidebarWidth = 240; // Default expanded width
-    
     const getMainContentStyle = () => {
-        const bottomHeight = isBottomDrawerOpen ? 0 : 0;
-
-        // Calculate the available width
-        let availableWidth = `calc(100% - ${sidebarWidth}px`;
+        // Calculate the available width without sidebar
+        let availableWidth = '100%';
         if (isRightAsideOpen) {
-            availableWidth += ` - 25%`; // Assuming right panel is 25%
+            availableWidth = 'calc(100% - 25%)'; // Assuming right panel is 25%
         }
-        availableWidth += ')';
 
         return {
             height: '100%',
             width: availableWidth,
-            marginLeft: `${sidebarWidth}px`,
             transition: 'all 0.3s ease-in-out'
         };
     };
 
     return (
-        <div className={`flex h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
-            {/* Flow Sidebar */}
-            <FlowSidebar className="h-full" />
-
+        <div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
             <div
                 className={`flex-1 relative p-1 transition-all duration-300`}
                 style={getMainContentStyle()}>
@@ -496,6 +488,7 @@ const BuildPlayGround: React.FC = () => {
                             isPipelineRunning={isPipelineRunning}
                             isLoading={isCanvasLoading}
                             pipelineConfig={handleRunClick}
+                            onAlignTopLeft={handleAlignTopLeft}
                             terminalLogs={terminalLogs}
                             proplesLogs={conversionLogs}
                         />
@@ -551,7 +544,11 @@ const BuildPlayGround: React.FC = () => {
                             </Button>
                         </div>
                         <div className="h-[calc(300px-40px)] overflow-auto p-2">
-                            <Terminal logs={terminalLogs} />
+                            <Terminal 
+                                isOpen={showLogs}
+                                onClose={() => setShowLogs(false)}
+                                terminalLogs={terminalLogs}
+                            />
                         </div>
                     </div>
                 )}

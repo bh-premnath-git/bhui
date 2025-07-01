@@ -293,12 +293,16 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         ...baseConfig,
                         sort_columns: node.data.transformationData?.sort_columns
                     };
-                case 'DQ Check':
+                case 'DQCheck':
                     return {
-                        ...baseConfig,
-                        transformation: node.data.transformationData?.transformation || "",
-                        name: node.data.transformationData?.name || "",
-                        limit: node.data.transformationData?.limit,
+                        name: node.data.transformationData?.name || node.data.title,
+                        dependent_on: edges
+                            .filter(edge => edge.target === node.id)
+                            .map(edge => {
+                                const sourceNode = uiNodes.find(n => n.id === edge.source);
+                                return sourceNode?.data?.title || '';
+                            }),
+                        transformation: "DQCheck",
                         dq_rules: node.data.transformationData?.dq_rules || []
                     };
                 case 'Deduplicator':

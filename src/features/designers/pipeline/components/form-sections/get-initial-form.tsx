@@ -249,6 +249,28 @@ console.log(initialValues,"initialValues")
         order_by: initialValues.order_by || []
       };
 
+    case 'DQCheck':
+      return {
+        ...baseValues,
+        dq_rules: Array.isArray(initialValues?.dq_rules) && initialValues.dq_rules.length > 0
+          ? initialValues.dq_rules.map(rule => ({
+              rule_name: rule.rule_name || '',
+              column: rule.column || '',
+              rule_type: rule.rule_type || '',
+              value: rule.value || '',
+              value2: rule.value2 || '',
+              action: rule.action || 'warning'
+            }))
+          : [{
+              rule_name: '',
+              column: '',
+              rule_type: '',
+              value: '',
+              value2: '',
+              action: 'warning'
+            }]
+      };
+
     default:
       return baseValues;
   }

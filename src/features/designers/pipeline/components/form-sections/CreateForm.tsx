@@ -231,6 +231,22 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       };
     }
     
+    // Add specific initialization for DQCheck form
+    if (schema?.title === 'DQCheck') {
+      return {
+        dq_rules: initialValues?.dq_rules || [{
+          rule_name: '',
+          column: '',
+          rule_type: '',
+          value: '',
+          value2: '',
+          action: 'warning'
+        }],
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
     return values;
   }, [schema, initialValues]);
 console.log(initialFormValues,"initialFormValues")
@@ -1429,8 +1445,8 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent  style={{zIndex:9999}}>
-                      <SelectItem value="asc">Ascending</SelectItem>
-                      <SelectItem value="desc">Descending</SelectItem>
+                      <SelectItem value="asc">Asc</SelectItem>
+                      <SelectItem value="desc">Desc</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -2513,8 +2529,8 @@ const FormContent: React.FC<{
                                   <SelectValue placeholder="Order" />
                                 </SelectTrigger>
                                 <SelectContent  style={{zIndex:9999}}>
-                                  <SelectItem value="asc">Ascending</SelectItem>
-                                  <SelectItem value="desc">Descending</SelectItem>
+                                  <SelectItem value="asc">Asc</SelectItem>
+                                  <SelectItem value="desc">Desc</SelectItem>
                                 </SelectContent>
                               </Select>
                             )}

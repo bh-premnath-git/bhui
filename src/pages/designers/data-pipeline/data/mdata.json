@@ -395,8 +395,8 @@
               }
             },
             "required": [
-              "order_column",
-              "sort"
+              "column",
+              "order"
             ]
           }
         }

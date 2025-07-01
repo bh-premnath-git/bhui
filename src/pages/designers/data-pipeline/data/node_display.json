@@ -134,18 +134,7 @@
         }
       }
     },
-    {
-      "ui_properties": {
-        "module_name": "Select",
-        "color": "#5a9fee",
-        "icon": "/assets/buildPipeline/squre/11.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
+    
     {
       "ui_properties": {
         "module_name": "SequenceGenerator",
@@ -158,18 +147,7 @@
         }
       }
     },
-    {
-      "ui_properties": {
-        "module_name": "Drop",
-        "color": "#905aee",
-        "icon": "/assets/buildPipeline/squre/13.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
+    
     {
       "ui_properties": {
         "module_name": "Lookup",

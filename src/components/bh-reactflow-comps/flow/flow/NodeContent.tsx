@@ -92,36 +92,48 @@ export const NodeContent = ({ id, label, type, moduleInfo, isHovered }: NodeCont
               onKeyDown={handleKeyDown}
               data-node-id={id}
             >
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="relative inline-flex items-center">
-                      <div
-                        className={`absolute left-[-10px] bottom-[-4px]
-                                    transform -translate-y-1/2 w-2 h-2 rounded-full 
-                                    ${isValid ? 'bg-green-500' : 'bg-red-500'}`}
-                      />
-                      <span>{type ?? "SelectType"}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="top"
-                    align="center"
-                    className="bg-red-100 text-red-700 border border-red-200 
-                               rounded-md shadow-lg p-1 text-[8px]"
-                  >
-                    <ul className="leading-tight">
-                      {Array.isArray(status) && status.length > 0 ? (
-                        status.map((item: string, index: number) => (
-                          <li key={index}>{item}</li>
-                        ))
-                      ) : (
-                        <li>No Status Available</li>
-                      )}
-                    </ul>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {!isValid && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative inline-flex items-center">
+                        <div
+                          className={`absolute left-[-10px] bottom-[-4px]
+                                      transform -translate-y-1/2 w-2 h-2 rounded-full 
+                                      ${isValid ? 'bg-green-500' : 'bg-red-500'}`}
+                        />
+                        <span>{type ?? "SelectType"}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      align="center"
+                      className="bg-red-50 text-red-800 border border-red-200 
+                                 rounded-md shadow-lg p-2 text-xs max-w-xs"
+                    >
+                      <ul className="leading-tight space-y-1">
+                        {Array.isArray(status) && status.length > 0 ? (
+                          status.map((item: string, index: number) => (
+                            <li key={index}>• {item}</li>
+                          ))
+                        ) : (
+                          <li>No Status Available</li>
+                        )}
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {isValid && (
+                <div className="relative inline-flex items-center">
+                  <div
+                    className={`absolute left-[-10px] bottom-[-4px]
+                                transform -translate-y-1/2 w-2 h-2 rounded-full 
+                                ${isValid ? 'bg-green-500' : 'bg-red-500'}`}
+                  />
+                  <span>{type ?? "SelectType"}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

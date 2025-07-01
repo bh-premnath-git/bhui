@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
 import { apiService } from '../api/api-service';
 
 // Query keys for transformation output
@@ -40,6 +40,7 @@ export const useTransformationOutputQuery = ({
                     transformation_name: transformationName,
                     page,
                     page_size: pageSize,
+                    use_secure:USE_SECURE
                 },
                 method: 'GET'
             });

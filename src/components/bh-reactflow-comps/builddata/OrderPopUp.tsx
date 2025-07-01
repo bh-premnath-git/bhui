@@ -148,7 +148,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
         <DialogHeader className="py-2 px-2 shrink-0">
           <DialogTitle className="flex items-center">
             <div className="mr-2 font-semibold text-base">
-              {source?.data_src_name}
+              {source?.data_src_name || source?.name }
             </div>
             {source?.data_src_desc && (
               <TooltipProvider>

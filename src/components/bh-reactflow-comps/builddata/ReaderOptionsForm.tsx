@@ -369,7 +369,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                                         ))}
                                                 </div>
                                                 <Collapsible className="mt-2">
-                                                    <CollapsibleTrigger className="flex items-center gap-1 text-blue-600 text-xs font-medium cursor-pointer">
+                                                    <CollapsibleTrigger onClick={()=>setIsAdvanvce(!isAdvance)} className="flex items-center gap-1 text-blue-600 text-xs font-medium cursor-pointer">
                                                         Advanced Options
                                                         <span>{isAdvance ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</span>
                                                     </CollapsibleTrigger>

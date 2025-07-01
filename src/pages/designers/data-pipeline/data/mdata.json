@@ -383,7 +383,7 @@
             "type": "object",
             "properties": {
               "column": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               },
               "order": {
@@ -992,7 +992,7 @@
             "required": [],
             "properties": {
               "column": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               },
               "order": {

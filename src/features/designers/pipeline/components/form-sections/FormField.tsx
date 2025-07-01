@@ -264,7 +264,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 disabled={disabled}
               >
                 <SelectTrigger 
-                  className={`w-full ${error ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full ${error ? 'border-red-500' : ''}`}
                 >
                   <SelectValue placeholder={`Select ${fieldKey}`} />
                 </SelectTrigger>
@@ -311,10 +311,9 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
           }}
         >
           <div className={`
-            border rounded-md bg-white transition-colors duration-200
+            border rounded-md bg-white
             ${error ? 'border-red-500' : 'border-gray-300'}
-            ${disabled ? 'bg-gray-50' : 'hover:border-gray-400'}
-            focus-within:border-gray-300
+            ${disabled ? 'bg-gray-50' : ''}
           `}>
             <MonacoEditor
               height={`${editorHeight}px`}
@@ -433,7 +432,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 field.onChange(pressed);
                 onChange?.(pressed);
               }}
-              className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+              variant="outline"
+              className={`${errors[name] || error ? 'border-red-500' : ''}`}
               aria-label={fieldKey}
               disabled={disabled}
             >
@@ -474,7 +474,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
             placeholder={`Enter ${fieldKey}`}
             required={required}
             disabled={disabled}
-            className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+            className={`${errors[name] || error ? 'border-red-500' : ''}`}
             aria-label={fieldKey}
             onBlur={onBlur}
             onKeyDown={onKeyDown}

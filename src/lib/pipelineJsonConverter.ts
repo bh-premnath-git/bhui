@@ -158,6 +158,12 @@ const normalizeTransformationData = (transform: any, type: string): any => {
                 rename_columns: transform.rename_columns || {}
             };
         
+        case 'DQCheck':
+            return {
+                ...normalizedData,
+                dq_rules: Array.isArray(transform.dq_rules) ? transform.dq_rules : []
+            };
+        
         default:
             return normalizedData;
     }

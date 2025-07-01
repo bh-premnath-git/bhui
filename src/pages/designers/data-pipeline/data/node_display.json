@@ -171,6 +171,18 @@
           "maxInputs": "unlimited"
         }
       }
+    },
+    {
+      "ui_properties": {
+        "module_name": "DQCheck",
+        "color": "#ff6b6b",
+        "icon": "/assets/buildPipeline/squre/10.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
     }
   ]
 }

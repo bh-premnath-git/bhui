@@ -102,7 +102,7 @@ export const getInitialFormState = (
                 keep: transformation.keep || 'First'
             };
 
-        case 'Dedup':
+        case 'Deduplicator':
             return {
                 ...baseState,
                 keep: transformation.keep || "any",
@@ -171,8 +171,7 @@ export const getNodeIcon = (type: string): string => {
         SchemaTransformation: '/assets/buildPipeline/28.svg',
         Sorter: '/assets/buildPipeline/squre/1.svg',
         Aggregator: '/assets/buildPipeline/squre/2.svg',
-        'DQ Check': '/assets/buildPipeline/squre/9.svg',
-        Dedup: '/assets/buildPipeline/squre/5.svg',
+        Deduplicator: '/assets/buildPipeline/squre/5.svg',
         Repartition: '/assets/buildPipeline/squre/6.svg',
         'SQL Transformation': '/assets/buildPipeline/squre/7.svg',
         'Set Combiner': '/assets/buildPipeline/squre/8.svg',
@@ -181,7 +180,8 @@ export const getNodeIcon = (type: string): string => {
         Drop: '/assets/buildPipeline/squre/13.svg',
         Lookup: '/assets/buildPipeline/squre/3.svg',
         CustomPySpark: '/assets/buildPipeline/squre/4.svg',
-        SetCombiner:'/assets/buildPipeline/squre/8.svg'
+        SetCombiner:'/assets/buildPipeline/squre/8.svg',
+        DQCheck: '/assets/buildPipeline/squre/10.svg',
     };
     return iconMap[type] || '/assets/buildPipeline/default.svg';
 };
@@ -197,10 +197,11 @@ export const getNodePorts = (type: string) => {
         Sorter: { inputs: 1, outputs: 1, maxInputs: 1 },
         Aggregator: { inputs: 1, outputs: 1, maxInputs: 1 },
         'DQ Check': { inputs: 1, outputs: 1, maxInputs: 1 },
-        Dedup: { inputs: 1, outputs: 1, maxInputs: 1 },
+        Deduplicator: { inputs: 1, outputs: 1, maxInputs: 1 },
         Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
         'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
         'SetCombiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        DqCheck: { inputs: 1, outputs: 1, maxInputs: 1 },
         Lookup: { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
         CustomPySpark: { inputs: 1, outputs: 1, maxInputs: 1 }
     };

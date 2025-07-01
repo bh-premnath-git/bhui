@@ -263,7 +263,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                             : { hints: [] }
                     };
                 case 'SchemaTransformation':
-                    //console.log('SchemaTransformation transformationData:', node.data.transformationData);
+                    console.log('SchemaTransformation transformationData:', node.data.transformationData);
                     const schemaTransformConfig: any = {
                         ...baseConfig,
                         derived_fields: node.data.transformationData?.derived_fields || []
@@ -279,9 +279,14 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     }
                     
                     if (node.data.transformationData?.rename_columns !== undefined) {
+                        console.log('Adding rename_columns to config:', node.data.transformationData.rename_columns);
                         schemaTransformConfig.rename_columns = node.data.transformationData.rename_columns;
+                    } else {
+                        console.log('rename_columns is undefined in transformationData');
+                        schemaTransformConfig.rename_columns = {};
                     }
                     
+                    console.log('Final schemaTransformConfig:', schemaTransformConfig);
                     return schemaTransformConfig;
                 case 'Sorter':
                     return {

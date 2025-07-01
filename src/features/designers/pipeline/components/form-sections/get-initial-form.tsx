@@ -204,10 +204,11 @@ console.log(initialValues,"initialValues")
     case 'SequenceGenerator':
       return {
         ...baseValues,
+        transformation: 'sequence_generator',
         for_column_name: initialValues.for_column_name || '',
-        order_by: initialValues.order_by || [],
+        order_by: initialValues.order_by || [{ column: '', order: 'asc' }],
         start_with: initialValues.start_with || 1,
-        step: initialValues.step || ''
+        step: initialValues.step || 1
       };
 
     case 'Drop':

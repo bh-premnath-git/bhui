@@ -176,7 +176,7 @@ export const usePipelineActions = ({
                 pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                 pipeline_json: JSON.stringify(pipeline_json),
                 mode: modeAction,
-                // use_secure: USE_SECURE
+                use_secure: USE_SECURE
             });
             
             // Add host parameter if cluster is attached

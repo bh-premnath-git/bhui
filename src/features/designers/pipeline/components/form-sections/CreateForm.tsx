@@ -109,6 +109,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         ...values
       };
       
+      // Ensure rename_columns is properly initialized
+      if (!schemaFormValues.rename_columns) {
+        schemaFormValues.rename_columns = {};
+      }
+      
       console.log("Final SchemaTransformation form values:", schemaFormValues);
       return schemaFormValues;
     }
@@ -210,6 +215,18 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       return {
         user_code: initialValues?.user_code || '',
         dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
+    // Add specific initialization for SequenceGenerator form
+    if (schema?.title === 'SequenceGenerator') {
+      return {
+        transformation: 'sequence_generator', // Required field
+        for_column_name: initialValues?.for_column_name || '',
+        order_by: initialValues?.order_by || [{ column: '', order: 'asc' }],
+        start_with: initialValues?.start_with || 1,
+        step: initialValues?.step || 1,
         ...values
       };
     }
@@ -658,13 +675,21 @@ console.log(initialFormValues,"initialFormValues")
       
       // Special handling for SchemaTransformation rename_columns
       if (key === 'rename_columns' && value !== null && typeof value === 'object' && schema.title === 'SchemaTransformation') {
-        // Keep the object even if empty, but clean out empty values
+        console.log('Processing rename_columns:', value);
+        
+        // Keep the object even if empty, but clean out empty key-value pairs
         const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
-          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
-            objAcc[objKey] = objValue;
+          // Only include entries where both key and value are non-empty strings
+          if (objKey && objKey.trim() !== '' && 
+              objValue && String(objValue).trim() !== '') {
+            objAcc[objKey.trim()] = String(objValue).trim();
           }
           return objAcc;
         }, {} as Record<string, any>);
+        
+        console.log('Cleaned rename_columns:', cleanObj);
+        
+        // Always include the rename_columns field, even if empty
         acc[key] = cleanObj;
         return acc;
       }
@@ -765,6 +790,31 @@ console.log(initialFormValues,"initialFormValues")
           acc[key] = cleanedExpressions;
         }
         return acc;
+      }
+      
+      // Special handling for SequenceGenerator numeric fields
+      if (schema.title === 'SequenceGenerator') {
+        if (key === 'start_with' || key === 'step') {
+          // Convert string to number for numeric fields
+          const numValue = parseFloat(value as string);
+          if (!isNaN(numValue)) {
+            acc[key] = numValue;
+          }
+          return acc;
+        }
+        
+        // Special handling for order_by in SequenceGenerator
+        if (key === 'order_by' && Array.isArray(value)) {
+          // Filter out items where column is empty
+          const cleanedOrderBy = value.filter(item => 
+            item.column?.trim()
+          );
+          
+          if (cleanedOrderBy.length > 0) {
+            acc[key] = cleanedOrderBy;
+          }
+          return acc;
+        }
       }
       
       // Handle other array fields
@@ -954,6 +1004,7 @@ console.log(initialFormValues,"initialFormValues")
         nodes={nodes}
         edges={edges}
         watch={watch}
+        initialFormValues={initialFormValues}
       />
       
       <div className="mt-4">
@@ -1418,7 +1469,8 @@ const FormContent: React.FC<{
   nodes: Node[];
   edges: Edge[];
   watch: any; // Add watch function as a prop
-}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch }) => {
+  initialFormValues: any; // Add initialFormValues as a prop
+}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch, initialFormValues }) => {
 
   
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -1771,17 +1823,39 @@ const FormContent: React.FC<{
     );
   };
 
-  // Render object field (like rename_columns)
-  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any) => {
+  // ObjectField component to handle rename_columns
+  const ObjectField: React.FC<{
+    fieldKey: string;
+    fieldSchema: any;
+    control: any;
+    formInitialValues: any;
+  }> = ({ fieldKey, fieldSchema, control, formInitialValues }) => {
     const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
     const watchedValue = watch(fieldKey) || {};
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+        }
+      };
+    }, []);
 
     useEffect(() => {
+      console.log(`renderObjectField - ${fieldKey}:`, watchedValue);
       const entries = Object.entries(watchedValue).map(([key, value], index) => ({
         id: `${key}-${index}`,
         key,
         value: value as string
       }));
+      
+      // If no entries exist, add one empty entry for user to fill
+      if (entries.length === 0) {
+        entries.push({ id: `empty-${Date.now()}`, key: '', value: '' });
+      }
+      
       setObjectEntries(entries);
     }, [watchedValue]);
 
@@ -1796,13 +1870,17 @@ const FormContent: React.FC<{
       
       // Update form value
       const newObject = updatedEntries.reduce((acc, entry) => {
-        if (entry.key && entry.value) {
-          acc[entry.key] = entry.value;
+        if (entry.key.trim() && entry.value.trim()) {
+          acc[entry.key.trim()] = entry.value.trim();
         }
         return acc;
       }, {} as Record<string, string>);
       
-      setValue(fieldKey, newObject);
+      setValue(fieldKey, newObject, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
     };
 
     const updateEntry = (id: string, field: 'key' | 'value', newValue: string) => {
@@ -1811,77 +1889,115 @@ const FormContent: React.FC<{
       );
       setObjectEntries(updatedEntries);
       
-      // Update form value
-      const newObject = updatedEntries.reduce((acc, entry) => {
-        if (entry.key && entry.value) {
-          acc[entry.key] = entry.value;
-        }
-        return acc;
-      }, {} as Record<string, string>);
+      // Use debouncing to improve performance - only update form after a delay
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
       
-      setValue(fieldKey, newObject);
+      updateTimeoutRef.current = setTimeout(() => {
+        // Only save entries that have BOTH key and value filled
+        const newObject = updatedEntries.reduce((acc, entry) => {
+          if (entry.key.trim() && entry.value.trim()) {
+            acc[entry.key.trim()] = entry.value.trim();
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        setValue(fieldKey, newObject, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true
+        });
+      }, 300); // 300ms debounce
     };
 
+    // Get the current form default value for this field
+    const currentDefaultValue = formInitialValues[fieldKey] || {};
+    
     return (
-      <div className="space-y-4">
-        <div className="font-medium text-sm">
-          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ')}
-        </div>
-        
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 text-sm font-medium text-gray-600">
-            <div>Old Column Name</div>
-            <div>New Column Name</div>
-          </div>
-          
-          {objectEntries.map((entry) => (
-            <div key={entry.id} className="flex gap-2 items-center">
-              <Autocomplete
-                value={entry.key}
-                onChange={(value) => updateEntry(entry.id, 'key', value)}
-                options={sourceColumns.map(col => col.name)}
-                placeholder="Old column name"
-                className="flex-1"
-                renderInput={(params) => (
-                  <Input
-                    {...params}
-                    placeholder="Old column name"
-                  />
-                )}
-              />
-              <Input
-                value={entry.value}
-                onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
-                placeholder="New column name"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                onClick={() => removeEntry(entry.id)}
-                className="text-red-500 hover:text-red-700 p-1"
-              >
-                ×
-              </button>
+      <Controller
+        control={control}
+        name={fieldKey}
+        defaultValue={currentDefaultValue}
+        render={({ field: { onChange, value, ...field } }) => {
+          return (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">
+              {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
             </div>
-          ))}
-        </div>
-        
-        <Button
-          type="button"
-          onClick={addEntry}
-          variant="outline"
-          size="sm"
-        >
-          Add Rename Rule
-        </Button>
-      </div>
+            
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
+                <div>Old Column Name</div>
+                <div>New Column Name</div>
+                <div className="w-10"></div> {/* Space for delete button */}
+              </div>
+              
+              {objectEntries.map((entry) => (
+                <div key={entry.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <Autocomplete 
+                    value={entry.key}
+                    onChange={(value) => updateEntry(entry.id, 'key', value)}
+                    options={sourceColumns.map(col => col.name)}
+                    placeholder="Old column name"
+                    className="w-full"
+                    renderInput={(params) => (
+                      <Input
+                        {...params}
+                        placeholder="Old column name"
+                        className="w-full"
+                      />
+                    )}
+                  />
+                  <Input
+                    value={entry.value}
+                    onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
+                    placeholder="New column name"
+                    className="w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeEntry(entry.id)}
+                    className="text-red-500 hover:text-red-700 p-2 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-red-50"
+                    title="Remove rename rule"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <Button
+              type="button"
+              onClick={addEntry}
+              variant="outline"
+              size="sm"
+            >
+              Add Rename Rule
+            </Button>
+          </div>
+          );
+        }}
+      />
+    );
+  };
+
+  // Helper function to render ObjectField component
+  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}) => {
+    return (
+      <ObjectField
+        fieldKey={fieldKey}
+        fieldSchema={fieldSchema}
+        control={control}
+        formInitialValues={formInitialValues}
+      />
     );
   };
 
   // Update renderTabContent to pass control
-  const renderTabContent = (key: string, value: any, control: any) => {
+  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}) => {
     if (!value || typeof value !== 'object') {
       console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
       return <div>Invalid field configuration for {key}</div>;
@@ -1897,7 +2013,7 @@ const FormContent: React.FC<{
     } else if (value.type === 'object') {
       // Check if it's a rename_columns type object
       if (key === 'rename_columns') {
-        return renderObjectField(key, value, control);
+        return renderObjectField(key, value, control, formInitialValues);
       }
       // Ensure properties exist before passing to renderFieldsInRows
       if (!value.properties || typeof value.properties !== 'object') {
@@ -2073,6 +2189,10 @@ const FormContent: React.FC<{
                     render={({ field }) => (
                       itemSchema.enum ? (
                         <div className="w-32">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {itemKey.charAt(0).toUpperCase() + itemKey.slice(1)}
+                            {schema && schema.required && schema.required.includes(fieldKey) && <span className="text-red-500"> *</span>}
+                          </label>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger>
                               <SelectValue placeholder={`Select ${itemKey}`} />
@@ -2090,7 +2210,7 @@ const FormContent: React.FC<{
                         <FormField
                           fieldSchema={{
                             type: itemSchema.type,
-                            title: itemKey,
+                            title: itemKey.charAt(0).toUpperCase() + itemKey.slice(1),
                             properties: {}
                           }}
                           name={field.name}
@@ -2189,11 +2309,6 @@ const FormContent: React.FC<{
 
   return (
     <div className="w-full">
-      <div className="flex justify-between">
-        <h2 className="text-lg font-semibold">
-          {schema.title}
-        </h2>
-      </div>
 
       {schema.title === 'Dedup' || schema.title === 'Deduplicator' ? (
         renderDeduplicatorFields(control, schema)
@@ -2215,7 +2330,7 @@ const FormContent: React.FC<{
 
           {Object.entries(schema.properties || {}).map(([key, value]: [string, any], index) => (
             <TabsContent key={key} value={index.toString()}>
-              {renderTabContent(key, value, control)}
+              {renderTabContent(key, value, control, initialFormValues)}
             </TabsContent>
           ))}
         </Tabs>

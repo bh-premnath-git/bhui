@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { AlertCircle, CheckCircle, Cloud, Power, Server, Trash2, Link } from 'lucide-react';
+import { AlertCircle, CheckCircle, Cloud, Power, Server, Trash2, Link, AlertTriangle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store';
 import { 
@@ -64,6 +64,8 @@ export const ClusterConfigDialog: React.FC<any> = () => {
   const [isLoadingClusters, setIsLoadingClusters] = useState(false);
   const [isLoadingClusterConfigs, setIsLoadingClusterConfigs] = useState(false);
   const [terminatingClusters, setTerminatingClusters] = useState<Set<string>>(new Set());
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [clusterToDelete, setClusterToDelete] = useState<{id: string, name: string} | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   const { clusters, loading, error } = useSelector((state:RootState) => state.cluster);
   const { attachCluster, attachedCluster, detachCluster } = usePipelineContext();
@@ -188,16 +190,37 @@ export const ClusterConfigDialog: React.FC<any> = () => {
     }
   };
 
-  const handleDetachCluster = async (clusterId: string) => {
-   let result= dispatch(terminateCluster({
-      clusterId,
-      bh_env_id: selectedEnvId,
-      region: "us-east-1"
-    })).unwrap();
-    if (result) {
-      toast.success("Cluster termination initiated successfully!");
-      dispatch(fetchClusters({ bh_env_id: selectedEnvId, region: "us-east-1" }));
+  const handleDetachCluster = (clusterId: string, clusterName: string) => {
+    setClusterToDelete({ id: clusterId, name: clusterName });
+    setShowConfirmDialog(true);
+  };
+
+  const confirmClusterDeletion = async () => {
+    if (!clusterToDelete) return;
+
+    try {
+      let result = await dispatch(terminateCluster({
+        clusterId: clusterToDelete.id,
+        bh_env_id: selectedEnvId,
+        region: "us-east-1"
+      })).unwrap();
+      
+      if (result) {
+        toast.success("Cluster termination initiated successfully!");
+        dispatch(fetchClusters({ bh_env_id: selectedEnvId, region: "us-east-1" }));
+      }
+    } catch (error) {
+      toast.error("Failed to terminate cluster. Please try again.");
+      console.error("Error terminating cluster:", error);
+    } finally {
+      setShowConfirmDialog(false);
+      setClusterToDelete(null);
     }
+  };
+
+  const cancelClusterDeletion = () => {
+    setShowConfirmDialog(false);
+    setClusterToDelete(null);
   };
 
   const handleAttachCluster = (cluster: any) => {
@@ -260,7 +283,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
               <SelectValue placeholder="Select Environment" />
             )}
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent style={{zIndex: 9999}}>
             {environments.data?.map((env:any) => (
               <SelectItem key={env.bh_env_id} value={env.bh_env_id.toString()}>
                 <div className="flex items-center gap-2">
@@ -333,7 +356,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
                         <Button
                           variant="link"
                           size="sm"
-                          onClick={() => handleDetachCluster(cluster.id)}
+                          onClick={() => handleDetachCluster(cluster.id, cluster.name)}
                           disabled={terminatingClusters.has(cluster.id)}
                           className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
@@ -368,10 +391,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
         </div>
       ) : (
         <div className="space-y-6 rounded-xl bg-white ">
-          <div className="border-b pb-2">
-            <h3 className="text-xl font-semibold text-gray-900">Create New Cluster</h3>
-            <p className="text-gray-500 text-sm mt-1">Configure your new cluster settings</p>
-          </div>
+          
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium text-gray-700 block mb-1">Cluster Name</Label>
@@ -448,6 +468,50 @@ export const ClusterConfigDialog: React.FC<any> = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Cluster Termination
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> This action cannot be undone!
+              </p>
+            </div>
+            <p className="text-gray-700 mb-2">
+              Are you sure you want to terminate the cluster:
+            </p>
+            <p className="font-semibold text-gray-900 mb-3">
+              "{clusterToDelete?.name}"
+            </p>
+            <p className="text-sm text-gray-600">
+              This will permanently delete the cluster and all its data. All running jobs will be terminated.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={cancelClusterDeletion}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmClusterDeletion}
+              className="flex-1"
+            >
+              Yes, Terminate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }; 

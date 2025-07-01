@@ -36,15 +36,15 @@ export function BasicConfigurationStep({
     
 
       {/* Configuration Form */}
-      <Card className="border border-gray-300 shadow-lg bg-white">
-        <CardHeader className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+      <Card className="border border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800">
+        <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-gray-100 to-gray-200 border border-gray-300">
-              <Sparkles className="h-5 w-5 text-gray-700" />
+            <div className="rounded-lg bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border border-gray-300 dark:border-gray-600">
+              <Sparkles className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             </div>
             <div>
-              <CardTitle className="text-lg text-gray-900">Compute Details</CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Compute Details</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Configure your compute's identity and environment settings
               </CardDescription>
             </div>
@@ -87,15 +87,15 @@ export function BasicConfigurationStep({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card className="border border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
+        <Card className="border border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
-              <div className="p-1 rounded-full bg-gray-200 border border-gray-300">
-                <Zap className="h-4 w-4 text-gray-700" />
+              <div className="p-1 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 text-sm">Pro Tips</h4>
-                <ul className="mt-1 text-xs text-gray-700 space-y-1">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Pro Tips</h4>
+                <ul className="mt-1 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                   <li>• Choose a descriptive name for easy identification like "small", "medium", "large" compute config</li>
                   <li>• Select the compute type that matches your workload requirements</li>
                 </ul>

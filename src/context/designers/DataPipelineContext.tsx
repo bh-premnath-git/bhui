@@ -9,7 +9,7 @@ import React, {
     useContext
 } from 'react';
 import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
-import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
 import {
     useNodesState,
     useEdgesState,
@@ -1205,7 +1205,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             const { pipeline_json }: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
             console.log(pipeline_json)
-
+            pipeline_json.engine_type="pyspark"
             pipeline_json.transformations = pipeline_json.transformations.map(transform => {
                 if (transform.transformation.toLowerCase() === "target") {
                     return {
@@ -1225,10 +1225,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             console.log('Selected Mode:', selectedMode) 
             console.log('Mode Action for API:', modeAction) 
 
-            const params = new URLSearchParams({
+            const params:any = new URLSearchParams({
                 pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                 pipeline_json: JSON.stringify(pipeline_json),
-                mode: modeAction
+                mode: modeAction,
+                use_secure: USE_SECURE
             });
             
             // Add host parameter if cluster is attached
@@ -1263,14 +1264,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 url: `/pipeline/debug/start_pipeline?${params.toString()}`,
                 usePrefix: true,
                 method: 'POST',
-                data: params
+                data: params,
+                
             });
             if (response.error) {
                 throw new Error(response.error);
             }
 
             let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
+                params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
+                host: attachedCluster?.master_ip,
+                use_secure:USE_SECURE
             })).unwrap();
             console.log(countsResponse, "countsResponse")
 
@@ -1345,7 +1349,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             
             let response = await dispatch(stopPipeLine({ 
                 params: pipelineName_val,
-                host: host
+                host: host,
+                use_secure: USE_SECURE
             })).unwrap();
             if (response.message) {
                 setIsPipelineRunning(false);
@@ -1371,7 +1376,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (result && !result.error) {
                 let countsResponse = await dispatch(getTransformationCount({ 
                     params: pipelineName_val,
-                    host: host
+                    host: host,
+                    use_secure: USE_SECURE
                 })).unwrap();
                 console.log(countsResponse, "countsResponse")
                 if (countsResponse.error) {

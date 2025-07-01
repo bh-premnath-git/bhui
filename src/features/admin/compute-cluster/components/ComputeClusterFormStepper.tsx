@@ -31,7 +31,6 @@ import { motion } from 'framer-motion';
 import { BasicConfigurationStep } from './steps/BasicConfigurationStep';
 import { ComputeConfigurationStep } from './steps/ComputeConfigurationStep';
 import { ReviewAndTestStep } from './steps/ReviewAndTestStep';
-import { ComputeClusterSummary } from './steps/ComputeClusterSummary';
 
 interface ComputeClusterFormStepperProps {
   computeClusterId?: string;
@@ -283,9 +282,9 @@ export function ComputeClusterFormStepper({
   };
 
   const steps = [
-    { title: 'Basic Configuration', description: 'Configure basic compute settings' },
-    { title: 'Compute Configuration', description: 'Configure detailed compute settings' },
-    { title: 'Review & Test', description: 'Review and test your configuration' }
+    { title: 'Basic Configuration', description: '' },
+    { title: 'Compute Configuration', description: '' },
+    { title: 'Review & Test', description: '' }
   ];
 
   const renderStepContent = () => {
@@ -332,30 +331,13 @@ export function ComputeClusterFormStepper({
   return (
     <div className="min-h-screen bg-background w-[100%]">
       <div className="w-full mx-auto px-4 py-8 relative">
-        <div className="bg-card rounded-lg shadow-lg p-8 relative">
+        <div className="bg-card dark:bg-gray-800 rounded-lg shadow-lg p-8 relative border border-gray-200 dark:border-gray-700">
           <X
-            className="absolute top-4 right-4 w-6 h-6 text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+            className="absolute top-4 right-4 w-6 h-6 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             onClick={onBack}
           />
           
           <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center space-x-3 mb-6">
-              {getComputeTypeIcon(form.watch('compute_type'))}
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {isEdit ? 'Edit Compute Configure' : 'Create Compute Configure'}
-                </h1>
-                <p className="text-gray-600">
-                  {isEdit 
-                    ? 'Update your compute config'
-                    : 'Configure a new compute  for your data processing workloads'
-                  }
-                </p>
-              </div>
-            </div>
-
-           
 
             {/* Step Indicator */}
             <div className="flex items-center justify-between mb-8">
@@ -366,30 +348,28 @@ export function ComputeClusterFormStepper({
                       className={`
                         w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2
                         ${index <= currentStep 
-                          ? 'bg-gray-900 text-white border-gray-900' 
-                          : 'bg-white text-gray-600 border-gray-300'
+                          ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100' 
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600'
                         }
                       `}
                     >
                       {index + 1}
                     </div>
                     <div className="ml-3 flex-1">
-                      <div className={`text-sm font-medium ${index <= currentStep ? 'text-gray-900' : 'text-gray-500'}`}>
+                      <div className={`text-sm font-medium ${index <= currentStep ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
                         {step.title}
                       </div>
-                      <div className="text-xs text-gray-500">{step.description}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{step.description}</div>
                     </div>
                     {index < steps.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-4 ${index < currentStep ? 'bg-gray-900' : 'bg-gray-300'}`} />
+                      <div className={`flex-1 h-0.5 mx-4 ${index < currentStep ? 'bg-gray-900 dark:bg-gray-100' : 'bg-gray-300 dark:bg-gray-600'}`} />
                     )}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-8">
               {/* Main Content */}
-              <div className="col-span-2">
                 <Form {...form}>
                   <form onSubmit={(e) => {
                     console.log('Form submit event triggered');
@@ -466,17 +446,15 @@ export function ComputeClusterFormStepper({
                     </div>
                   </form>
                 </Form>
-              </div>
 
               {/* Summary Sidebar */}
-              <div className="col-span-1">
+              {/* <div className="col-span-1">
                 <ComputeClusterSummary
                   form={form}
                   environmentsData={environmentsData}
                   testResult={testResult}
                 />
-              </div>
-            </div>
+              </div> */}
           </div>
         </div>
       </div>

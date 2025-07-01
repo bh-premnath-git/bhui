@@ -56,7 +56,7 @@ export const Terminal: React.FC<TerminalProps> = ({
   minHeight = "40px",
   pipelineName: propPipelineName,
   activeTabOnOpen = "preview",
-}) => {
+}:any) => {
   const [isMinimized, setIsMinimized] = React.useState(false)
   const [isMaximized, setIsMaximized] = React.useState(false)
   const { isFlow } = useAppSelector((state: RootState) => state.buildPipeline);

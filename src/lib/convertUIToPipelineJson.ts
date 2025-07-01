@@ -131,7 +131,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             console.log(connectionConfig, "connectionConfig")
             
             // Base reader configuration
-            const readerConfig = {
+            const readerConfig :any = {
                 name: node.data.title,
                 dependent_on: [],
                 transformation: "Reader",

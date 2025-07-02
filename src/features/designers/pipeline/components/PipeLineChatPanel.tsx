@@ -78,42 +78,26 @@ const SingleDependencySelectForm: React.FC<{
   targetNodeId: string;
   maxInputs: number | string;
 }> = ({ dependencies, onSubmit, onClose, targetNodeType, targetNodeId, maxInputs }) => {
-  const [selectedDependency, setSelectedDependency] = useState<any>(null);
-
-  const handleSubmit = () => {
-    if (selectedDependency) {
-      onSubmit(selectedDependency);
-    } else {
-      toast.error("Please select a dependency");
-    }
-  };
-
   return (
-    <div className="">
-        <Select onValueChange={(value) => {
-          const selected = dependencies.find(dep => dep.id === value);
-          setSelectedDependency(selected);
-        }}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Choose a node to connect" />
-          </SelectTrigger>
-          <SelectContent style={{ zIndex: 9999 }}>
-            {dependencies.map((dep) => (
-              <SelectItem key={dep.id} value={dep.id}>
-                {dep.data.title || dep.data.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      <div className="flex justify-end space-x-2 mt-4">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={handleSubmit} disabled={!selectedDependency}>
-          Connect
-        </Button>
-      </div>
-    </div>
+      <Select onValueChange={(value) => {
+        const selected = dependencies.find(dep => dep.id === value);
+        if (selected) {
+          // Automatically submit when an option is selected
+          onSubmit(selected);
+        }
+      }}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Choose a node to connect" />
+        </SelectTrigger>
+        <SelectContent style={{ zIndex: 9999 }}>
+          {dependencies.map((dep) => (
+            <SelectItem key={dep.id} value={dep.id}>
+              {dep.data.title || dep.data.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+     
   );
 };
 
@@ -373,7 +357,14 @@ const PipeLineChatPanel = () => {
     // Hide the dropdown
     setShowTransformationDropdown(false);
 
-   
+    // Add user message showing the selected transformation
+    setMessages(prevMessages => [
+      ...prevMessages,
+      {
+        role: 'user',
+        content: `Add ${transformationName} transformation`
+      },
+    ]);
 
     // Mark unsaved changes
     setUnsavedChanges();
@@ -410,8 +401,6 @@ const PipeLineChatPanel = () => {
       }
     }, 500);
 
-
-
     // The nodes will be updated in the context, and our useEffect will handle asking for dependencies
   };
   // Track node changes to handle dependency selection
@@ -439,7 +428,7 @@ const PipeLineChatPanel = () => {
           setTimeout(() => {
             addMessageWithFormData({
               role: 'assistant',
-              content: `Great! I've added a ${lastAddedTransformation.type} transformation to your pipeline. Let's add another transformation.`
+              content: `Perfect! I've successfully added the ${lastAddedTransformation.type} transformation to your pipeline. Let's add another transformation.`
             });
             handleShowTransformations();
           }, 300);
@@ -956,7 +945,19 @@ const PipeLineChatPanel = () => {
 
 
   // Function to add a single data source directly
-  const addSingleDataSource = (item: any) => {
+  const addSingleDataSource = (item: any, skipUserMessage = false) => {
+    // Add user message showing which specific source is being added (only if not part of multi-selection)
+    if (!skipUserMessage) {
+      const sourceType = item.connection_config?.custom_metadata?.connection_type || 
+                        (item.connection_config?.connection_name?.toLowerCase() === 's3' ? 'S3' : 'Local');
+      const sourceDetails = item.data_src_desc ? ` (${item.data_src_desc})` : '';
+      
+      addMessageWithFormData({
+        role: 'user',
+        content: `Add "${item.data_src_name}" ${sourceType} data source${sourceDetails} to pipeline`
+      });
+    }
+
     if (readerNode) {
       setUnsavedChanges();
       addNodeToHistory();
@@ -1020,12 +1021,24 @@ const PipeLineChatPanel = () => {
 
   // Function to handle single dependency selection
   const handleSingleDependencySubmit = (selectedDependency: any, targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
+    // Add user message showing the selection
+    addMessageWithFormData({
+      role: 'user',
+      content: `Connect "${selectedDependency.data.title || selectedDependency.data.label}" to ${targetNodeType.ui_properties.module_name}`
+    });
 
     handleDependencySelection(selectedDependency, targetNodeType, targetNodeId, maxInputs, 1);
   };
 
   // Function to handle multiple dependency selection
   const handleMultiDependencySubmit = (selectedDependencies: any[], targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
+    // Add user message showing the selection
+    const dependencyNames = selectedDependencies.map(dep => dep.data.title || dep.data.label).join(', ');
+    addMessageWithFormData({
+      role: 'user',
+      content: `Connect ${selectedDependencies.length} nodes (${dependencyNames}) to ${targetNodeType.ui_properties.module_name}`
+    });
+
     // Handle each connection
     selectedDependencies.forEach((dependency, index) => {
       setTimeout(() => {
@@ -1036,16 +1049,22 @@ const PipeLineChatPanel = () => {
 
   // Function to handle multiple source selection
   const handleMultiSourceSubmit = (selectedSources: any[]) => {
-    // Add user message showing the selection
+    // Add user message showing the selection with details
+    const sourceNames = selectedSources.map(s => {
+      const sourceType = s.connection_config?.custom_metadata?.connection_type || 
+                        (s.connection_config?.connection_name?.toLowerCase() === 's3' ? 'S3' : 'Local');
+      return `"${s.data_src_name}" (${sourceType})`;
+    }).join(', ');
+    
     addMessageWithFormData({
       role: 'user',
-      content: `Selected ${selectedSources.length} data sources: ${selectedSources.map(s => s.data_src_name).join(', ')}`
+      content: `Selected ${selectedSources.length} data sources: ${sourceNames}`
     });
 
-    // Add each selected source
+    // Add each selected source (skip individual user messages since we already showed the selection)
     selectedSources.forEach((source, index) => {
       setTimeout(() => {
-        addSingleDataSource(source);
+        addSingleDataSource(source, true);
       }, index * 200); // Stagger the additions slightly
     });
 
@@ -1053,7 +1072,7 @@ const PipeLineChatPanel = () => {
     setTimeout(() => {
       addMessageWithFormData({
         role: 'assistant',
-        content: `Great! I've added ${selectedSources.length} data sources to your pipeline. Now let's add a transformation.`
+        content: `Perfect! I've successfully added ${selectedSources.length} data source${selectedSources.length > 1 ? 's' : ''} to your pipeline. Now let's add a transformation.`
       });
       handleShowTransformations();
     }, selectedSources.length * 200 + 500);
@@ -1212,7 +1231,7 @@ const PipeLineChatPanel = () => {
                       ...prevMessages,
                       {
                         role: 'assistant',
-                        content: `Great! I've added a Reader node with the new "${readerName}" data source to your pipeline. Now let's add a transformation.`
+                        content: `Perfect! I've successfully added a Reader node with the "${readerName}" data source to your pipeline. Now let's add a transformation.`
                       },
                     ]);
                     handleShowTransformations();
@@ -1307,12 +1326,12 @@ const PipeLineChatPanel = () => {
     );
     const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : `reader-${Date.now()}`;
 
-    // Add messages to show the configuration was saved
+    // Add assistant message to show the configuration was saved
+    const sourceName = sourceData.sourceData?.data?.source?.source_name || sourceData.sourceData?.data?.label || 'data source';
     const readerMessages = [
-
       {
         role: 'assistant' as const,
-        content: `Great! Data source configured successfully. Now let's add a transformation.`,
+        content: `Perfect! I've successfully configured and added the "${sourceName}" data source to your pipeline. Now let's add a transformation.`,
         id: generateMessageId(),
         // Include form data to save reader configuration in chat history
         formData: {
@@ -1423,7 +1442,7 @@ const PipeLineChatPanel = () => {
           ...prevMessages,
           {
             role: 'assistant',
-            content: `I've added a ${node.ui_properties.module_name} transformation to your pipeline, but there are no existing nodes to connect it to. Let's add another transformation.`
+            content: `Perfect! I've successfully added the ${node.ui_properties.module_name} transformation to your pipeline, but there are no existing nodes to connect it to. Let's add another transformation.`
           },
         ]);
         handleShowTransformations();
@@ -1971,7 +1990,7 @@ const PipeLineChatPanel = () => {
 
 
                   {message.role === 'assistant' && message.formData && message.formData.schema && !message.formData.isConfirmation && (
-                    <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm">
                       <div className="space-y-3">
 
                         {message.formData.schema?.type === 'reader_configuration' ? (

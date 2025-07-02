@@ -142,8 +142,15 @@ export function ConnectionForm({
 
     if (schema?.properties) {
       Object.keys(schema.properties).forEach(key => {
-        // Always initialize with empty string for new connections
-        initialValues[key] = mode === 'edit' ? (formData?.[key] || '') : '';
+        const property = schema.properties[key];
+        
+        if (mode === 'edit') {
+          // For edit mode, use existing form data or default value or empty string
+          initialValues[key] = formData?.[key] || property?.default || '';
+        } else {
+          // For new connections, use default value from schema or empty string
+          initialValues[key] = property?.default || '';
+        }
       });
     }
 
@@ -408,15 +415,29 @@ export function ConnectionForm({
       // Get raw form data
       const rawFormData = form.getValues();
 
+      let formData;
+      
       // Special handling for BigQuery
-      const formData = connectionName.toLowerCase() === 'bigquery'
-        ? {
+      if (connectionName.toLowerCase() === 'bigquery') {
+        formData = {
           project_id: rawFormData.project_id,
           dataset_id: rawFormData.dataset_id,
           credentials_json: rawFormData.credentials_json,
           temp_gcs_bucket: rawFormData.temp_gcs_bucket,
-        }
-        : { ...data };
+        };
+      } 
+      // Special handling for S3
+      else if (connectionName.toLowerCase() === 's3') {
+        formData = {
+          ...data,
+          // Ensure these fields are properly captured even if they have random names
+          access_key: rawFormData.access_key || '',
+          secret_key: rawFormData.secret_key || '',
+        };
+      }
+      else {
+        formData = { ...data };
+      }
       
       
       const configUnion: any = await getConfigUnionForType(connectionName, formData, connectionType);
@@ -633,7 +654,11 @@ export function ConnectionForm({
         <CardContent className="px-6 pt-0">
           {/* Remove ScrollArea component and let the content be natively scrollable */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form 
+              onSubmit={form.handleSubmit(onSubmit)} 
+              className="space-y-6" 
+              autoComplete="off"
+              noValidate>
               {/* Connection Name Field */}
 
               <Accordion type="multiple" defaultValue={["connection-details"]} className="w-full">

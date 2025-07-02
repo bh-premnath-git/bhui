@@ -62,6 +62,28 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
     
     return keyContainsSensitive || isPasswordField;
   };
+  
+  // Helper function to determine if a field should prevent autocomplete
+  const shouldPreventAutocomplete = (key: string): boolean => {
+    // List of fields that should prevent autocomplete
+    const preventAutocompleteFields = [
+      'access_key', 'secret_key', 'password', 'token', 'secret', 'credentials',
+      'api_key', 'auth_token', 'private_key'
+    ];
+    
+    // Exact match fields that should definitely prevent autocomplete
+    const exactMatchFields = ['access_key', 'secret_key'];
+    
+    // Check for exact match first
+    if (exactMatchFields.includes(key.toLowerCase())) {
+      return true;
+    }
+    
+    // Then check for partial matches
+    return preventAutocompleteFields.some(field => 
+      key.toLowerCase().includes(field)
+    );
+  };
 
   // Function to generate masked value
   const getMaskedValue = (value: string | undefined, isMasked: boolean): string => {
@@ -143,11 +165,41 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
         )}
         <div className="relative">
           <FormControl>
-            <Input
-              {...formField}
-              type={showPassword ? "text" : "password"}
-              className="pr-10"
-            />
+            <div className="relative">
+              {/* Hidden fake input to trick browsers */}
+              <input 
+                type="text" 
+                style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  height: 0, 
+                  width: 0, 
+                  padding: 0, 
+                  border: 'none', 
+                  opacity: 0 
+                }} 
+                tabIndex={-1} 
+                aria-hidden="true"
+                autoComplete="off"
+              />
+              <Input
+                {...formField}
+                type={showPassword ? "text" : "password"}
+                className="pr-10"
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+                data-form-type="password"
+                // Add a random name attribute to prevent browser from recognizing the field
+                name={`pwd_${Math.random().toString(36).substring(2, 10)}`}
+                // Override the onChange to ensure the random name doesn't break functionality
+                onChange={(e) => {
+                  formField.onChange(e.target.value);
+                }}
+              />
+            </div>
           </FormControl>
           <button
             type="button"
@@ -378,12 +430,52 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                 <FormDescription>{field.description}</FormDescription>
               )}
               <FormControl>
-                <Input
-                  {...formField}
-                  type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
-                  placeholder={field.examples?.[0] || field.default || ''}
-                  value={isSensitiveField(key, field) ? getMaskedValue(formField.value, true) : formField.value}
-                />
+                {shouldPreventAutocomplete(key) ? (
+                  <div className="relative">
+                    {/* Hidden fake input to trick browsers */}
+                    <input 
+                      type="text" 
+                      style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        height: 0, 
+                        width: 0, 
+                        padding: 0, 
+                        border: 'none', 
+                        opacity: 0 
+                      }} 
+                      tabIndex={-1} 
+                      aria-hidden="true"
+                      autoComplete="off"
+                    />
+                    <Input
+                      {...formField}
+                      type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
+                      placeholder={field.examples?.[0] || field.default || ''}
+                      value={isSensitiveField(key, field) ? getMaskedValue(formField.value, true) : formField.value}
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      data-form-type="other"
+                      // Add a random name attribute to prevent browser from recognizing the field
+                      name={`field_${Math.random().toString(36).substring(2, 10)}`}
+                      // Override the onChange to ensure the random name doesn't break functionality
+                      onChange={(e) => {
+                        formField.onChange(e.target.value);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <Input
+                    {...formField}
+                    type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
+                    placeholder={field.examples?.[0] || field.default || ''}
+                    value={isSensitiveField(key, field) ? getMaskedValue(formField.value, true) : formField.value}
+                    autoComplete="off"
+                  />
+                )}
               </FormControl>
               <FormMessage />
             </FormItem>

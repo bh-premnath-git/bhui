@@ -64,17 +64,13 @@ export function ModeSelector({ className }: ModeSelectorProps) {
               variant="outline"
               size="sm"
               className={cn(
-                "flex items-center gap-2 h-9 px-3 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200",
+                "flex items-center justify-center h-9 w-9 p-0 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200",
                 "shadow-sm hover:shadow-md",
                 className
               )}
               aria-label="Select Execution Mode"
             >
               <SelectedIcon className={cn("h-4 w-4", selectedModeOption?.color)} />
-              <span className="text-sm font-medium text-gray-700">
-                {selectedModeOption?.label}
-              </span>
-              <ChevronDown className="h-3 w-3 text-gray-500" />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>

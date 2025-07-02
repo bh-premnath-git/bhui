@@ -343,7 +343,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
                             ) : (
                               <>
                               {
-                               cluster.status.State === 'WAITING'|| cluster.status.State === 'RUNNING'&& (<Button
+                               (cluster.status.State === 'WAITING'|| cluster.status.State === 'RUNNING') && (<Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleAttachCluster(cluster)}

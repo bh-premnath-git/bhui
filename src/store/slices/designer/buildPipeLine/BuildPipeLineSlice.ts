@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
 
 const token: any = sessionStorage?.getItem("token");
@@ -243,7 +243,7 @@ export const getTransformationCount: any = createAsyncThunk(
           pipeline_name: params.params,
           host: params.host || 'host.docker.internal',
           port: 15003,
-          use_secure: params.use_secure || 'false'
+          use_secure: USE_SECURE || 'false'
         }
       });
       return response;
@@ -320,7 +320,7 @@ export const stopPipeLine: any = createAsyncThunk(
       const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${params.use_secure || 'false'}`,
+        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
         usePrefix: true,
         method: 'POST',
       });
@@ -425,7 +425,7 @@ export const runNextCheckpoint = createAsyncThunk(
       const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003`,
+        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
         usePrefix: true,
         method: 'POST'
       });

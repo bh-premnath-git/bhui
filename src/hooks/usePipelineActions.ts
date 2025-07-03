@@ -196,9 +196,9 @@ export const usePipelineActions = ({
 
             // Pass the request data directly
             let response: any = await apiService.post({
-                baseUrl:ENVIRONMENT=="local"? CATALOG_REMOTE_API_URL:CATALOG_LIVE_API_URL,
-                url: `/pipeline/debug/start_pipeline?${params.toString()}`,
-                usePrefix: true,
+                baseUrl:CATALOG_REMOTE_API_URL,
+                url: `/api/v1/pipeline/debug/start_pipeline?${params.toString()}`,
+                // usePrefix: true,
                 method: 'POST',
                 data: params,
             });
@@ -394,8 +394,8 @@ export const usePipelineActions = ({
             // Execute the partial pipeline
             const response: any = await apiService.post({
                 baseUrl: CATALOG_REMOTE_API_URL,
-                url: `/pipeline/debug/reload_and_rerun_pipeline?${params.toString()}`,
-                usePrefix: true,
+                url: `/api/v1/pipeline/debug/reload_and_rerun_pipeline?${params.toString()}`,
+                // usePrefix: true,
                 method: 'POST',
                 data: params
             });

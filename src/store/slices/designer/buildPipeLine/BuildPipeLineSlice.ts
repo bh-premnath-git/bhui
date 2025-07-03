@@ -235,7 +235,7 @@ export const getTransformationCount: any = createAsyncThunk(
     console.log(params)
     try {
       const response = await apiService.get({
-        baseUrl: ENVIRONMENT=="local"? CATALOG_REMOTE_API_URL:CATALOG_LIVE_API_URL,
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/get_transformation_count`,
         usePrefix: true,
         method: 'GET',
@@ -259,7 +259,7 @@ export const getTransformationOutput: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await apiService.get({
-        baseUrl: ENVIRONMENT=="local"? CATALOG_REMOTE_API_URL:CATALOG_LIVE_API_URL,
+        baseUrl:CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/get_transformation_output`,
         usePrefix: true,
         method: 'GET',
@@ -299,8 +299,8 @@ export const startPipeLine = createAsyncThunk(
       console.log(Object.fromEntries(params),"Object.fromEntries(params)")
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/debug/start_pipeline`,
-        usePrefix: true,
+        url: `/api/v1/pipeline/debug/start_pipeline`,
+        // usePrefix: true,
         method: 'POST',
         params: Object.fromEntries(params)
       });
@@ -319,9 +319,9 @@ export const stopPipeLine: any = createAsyncThunk(
       console.log(params)
       const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
-        baseUrl: ENVIRONMENT=="local"? CATALOG_REMOTE_API_URL:CATALOG_LIVE_API_URL,
-        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
-        usePrefix: true,
+        baseUrl: CATALOG_REMOTE_API_URL,
+        url: `/api/v1/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
+        // usePrefix: true,
         method: 'POST',
       });
       return response;
@@ -361,13 +361,13 @@ export const fetchTransformationOutput = createAsyncThunk<
   async ({ pipelineName, transformationName, isFlow = false,host }) => {
     // Determine the correct endpoint based on whether we're in flow or pipeline context
     const url = isFlow 
-      ? `/flow/debug/get_transformation_output` 
-      : `/pipeline/debug/get_transformation_output`;
+      ? `/api/v1/flow/debug/get_transformation_output` 
+      : `/api/v1/pipeline/debug/get_transformation_output`;
       
     const response = await apiService.get<TransformationMetrics>({
-      baseUrl: ENVIRONMENT=="local"? CATALOG_REMOTE_API_URL:CATALOG_LIVE_API_URL,
+      baseUrl:CATALOG_REMOTE_API_URL,
       url,
-      usePrefix: true,
+      // usePrefix: true,
       method: 'GET',
       params: {
         [isFlow ? 'flow_name' : 'pipeline_name']: pipelineName,

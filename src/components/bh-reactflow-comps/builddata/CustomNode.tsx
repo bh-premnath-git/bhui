@@ -71,7 +71,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         setIsNodeFormOpen,
         setSelectedNodeId, 
         nodes,
-        handleRefreshNode,transformationCounts, pipelineDtl, updateSetNode } = usePipelineContext();
+        handleRefreshNode,transformationCounts, pipelineDtl, updateSetNode,attachedCluster } = usePipelineContext();
     const { isFlow } = useAppSelector((state) => state.buildPipeline);
     const dispatch = useAppDispatch();
     const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
@@ -452,6 +452,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineDtl?.name || pipelineDtl?.pipeline_name,
                     transformationName: titleValue,
+                    host:attachedCluster.master_ip||"host.docker.internal",
                     isFlow
                 })).unwrap();
                 

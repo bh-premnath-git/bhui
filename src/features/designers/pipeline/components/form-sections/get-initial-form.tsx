@@ -156,28 +156,8 @@ console.log(initialValues,"initialValues")
             header: true
           }
         },
-        lookup_data: initialValues?.lookup_data || [
-          { id: 1, department: 'Engineering' },
-          { id: 2, department: 'Medical' },
-          { id: 3, department: 'Arts' },
-          { id: 4, department: 'Commerce' },
-          { id: 5, department: 'Science' },
-          { id: 6, department: 'Mathematics' },
-          { id: 7, department: 'Physics' },
-          { id: 8, department: 'Chemistry' },
-          { id: 9, department: 'Biology' },
-          { id: 10, department: 'Geography' }
-        ],
-        lookup_columns: initialValues?.lookup_columns || [
-          { column: 'id', out_column_name: 'id' },
-          { column: 'name', out_column_name: 'name' },
-          { column: 'department', out_column_name: 'department' },
-          { column: 'city', out_column_name: 'city' },
-          { column: 'state', out_column_name: 'state' },
-          { column: 'zip', out_column_name: 'zip' },
-          { column: 'address', out_column_name: 'address' },
-          { column: 'age', out_column_name: 'age' }
-        ],
+        lookup_data: initialValues?.lookup_data || [],
+        lookup_columns: initialValues?.lookup_columns ,
         lookup_conditions: initialValues?.lookup_conditions || {
           column_name: 'id',
           lookup_with: 'id'

@@ -10,6 +10,9 @@ import { generateInitialValues } from './get-initial-form';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Schema } from '../../types/formTypes';
+import { LookupDataTable } from './LookupDataTable';
+import { LookupColumnsTable } from './LookupColumnsTable';
+import { SourceSelector } from './SourceSelector';
 
 import {
   Select,
@@ -179,31 +182,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
             header: true
           }
         },
-        lookup_data: initialValues?.lookup_data || [
-          { id: 1, department: 'Engineering' },
-          { id: 2, department: 'Medical' },
-          { id: 3, department: 'Arts' },
-          { id: 4, department: 'Commerce' },
-          { id: 5, department: 'Science' },
-          { id: 6, department: 'Mathematics' },
-          { id: 7, department: 'Physics' },
-          { id: 8, department: 'Chemistry' },
-          { id: 9, department: 'Biology' },
-          { id: 10, department: 'Geography' }
-        ],
-        lookup_columns: initialValues?.lookup_columns || [
-          { column: 'id', out_column_name: 'id' },
-          { column: 'name', out_column_name: 'name' },
-          { column: 'department', out_column_name: 'department' },
-          { column: 'city', out_column_name: 'city' },
-          { column: 'state', out_column_name: 'state' },
-          { column: 'zip', out_column_name: 'zip' },
-          { column: 'address', out_column_name: 'address' },
-          { column: 'age', out_column_name: 'age' }
-        ],
+        lookup_data: initialValues?.lookup_data || [],
+        lookup_columns: initialValues?.lookup_columns,
         lookup_conditions: initialValues?.lookup_conditions || {
-          column_name: 'id',
-          lookup_with: 'id'
+          column_name: '',
+          lookup_with: ''
         },
         keep: initialValues?.keep || 'First',
         ...values
@@ -1008,7 +991,7 @@ console.log(initialFormValues,"initialFormValues")
  
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 max-w-full overflow-hidden">
       {/* {schema.title === 'Deduplicator' && renderDeduplicatorFields(control)} */}
       <FormContent
         control={control}
@@ -2019,6 +2002,116 @@ const FormContent: React.FC<{
       return <div>Invalid field configuration for {key}</div>;
     }
     
+    // Special handling for lookup_data field
+    if (key === 'lookup_data' && value.type === 'array') {
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={key}
+            control={control}
+            render={({ field }) => (
+              <LookupDataTable
+                value={field.value || []}
+                onChange={field.onChange}
+                disabled={false}
+              />
+            )}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for lookup_columns field
+    if (key === 'lookup_columns' && value.type === 'array') {
+      // Get current form values
+      const currentLookupType = watch('lookup_type');
+      const lookupData = watch('lookup_data');
+      const lookupConfig = watch('lookup_config');
+      
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={key}
+            control={control}
+            render={({ field }) => (
+              <LookupColumnsTable
+                value={field.value || []}
+                onChange={field.onChange}
+                availableColumns={[]} // Will be fetched automatically
+                disabled={false}
+                selectedSource={lookupConfig?.source}
+                lookupType={currentLookupType}
+                lookupData={lookupData}
+              />
+            )}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for lookup_config field
+    if (key === 'lookup_config' && value.type === 'object') {
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={`${key}.source`}
+            control={control}
+            render={({ field }) => (
+              <SourceSelector
+                value={field.value || {}}
+                onChange={field.onChange}
+                disabled={false}
+              />
+            )}
+          />
+          
+          {/* Other lookup config fields */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Configuration Name
+              </label>
+              <Controller
+                name={`${key}.name`}
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter configuration name"
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Has Header
+              </label>
+              <Controller
+                name={`${key}.read_options.header`}
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="header-checkbox"
+                      checked={field.value || false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="header-checkbox" className="text-sm text-gray-700">
+                      First row contains headers
+                    </label>
+                  </div>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     if (value.type === 'array') {
       // Check if it's a string array
       if (value.items && value.items.type === 'string') {
@@ -2324,7 +2417,7 @@ const FormContent: React.FC<{
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-full overflow-hidden">
 
       {schema.title === 'Dedup' || schema.title === 'Deduplicator' ? (
         renderDeduplicatorFields(control, schema)
@@ -2333,23 +2426,41 @@ const FormContent: React.FC<{
       ) : schema.title === 'SequenceGenerator' ? (
         renderSequenceGeneratorFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (
-        <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
-          <TabsList>
-            {Object.keys(schema.properties || {}).map((key, index) => (
-              <TabsTrigger key={key} value={index.toString()}>
-                {key.replace(/_/g, ' ').split(' ').map(word =>
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        (() => {
+          // Filter tabs based on lookup_type for Lookup form
+          const filteredTabs = Object.entries(schema.properties || {}).filter(([key]) => {
+            if (schema.title === 'Lookup') {
+              const currentLookupType = watch('lookup_type');
+              if (key === 'lookup_data' && currentLookupType === 'Column Based') {
+                return false; // Don't show lookup_data tab for Column Based
+              }
+              if (key === 'lookup_config' && currentLookupType === 'Literal') {
+                return false; // Don't show lookup_config tab for Literal
+              }
+            }
+            return true;
+          });
 
-          {Object.entries(schema.properties || {}).map(([key, value]: [string, any], index) => (
-            <TabsContent key={key} value={index.toString()}>
-              {renderTabContent(key, value, control, initialFormValues)}
-            </TabsContent>
-          ))}
-        </Tabs>
+          return (
+            <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
+              <TabsList>
+                {filteredTabs.map(([key], index) => (
+                  <TabsTrigger key={key} value={index.toString()}>
+                    {key.replace(/_/g, ' ').split(' ').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {filteredTabs.map(([key, value]: [string, any], index) => (
+                <TabsContent key={key} value={index.toString()}>
+                  {renderTabContent(key, value, control, initialFormValues)}
+                </TabsContent>
+              ))}
+            </Tabs>
+          );
+        })()
       ) : schema.ui_type === 'array-container' ? (
         <div className="space-y-2">
           <div>

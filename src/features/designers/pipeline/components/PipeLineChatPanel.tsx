@@ -20,11 +20,12 @@ import { useAppDispatch } from '@/hooks/useRedux';
 import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
 import CreateFormFormik from './form-sections/CreateForm';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
-import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL, AGENT_REMOTE_URL } from '@/config/platformenv';
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { debugNodeData, validateNodeTransformationData, compareBeforeAfterSubmit } from '@/lib/debugPipeline';
 import { useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
 
 // Define the form schema based on Reader.json
 const readerFormSchema = z.object({
@@ -270,6 +271,7 @@ const PipeLineChatPanel = () => {
   const [isLoadingChatHistory, setIsLoadingChatHistory] = useState(false);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const hasLoadedChatHistoryRef = React.useRef<string | null>(null); // Track which pipeline ID we've loaded
+  const [isApiLoading, setIsApiLoading] = useState(false);
   const pipelineContext = usePipelineContext();
   const token: any = sessionStorage?.getItem("token");
   const decoded: any = token ? jwtDecode(token) : null;
@@ -286,7 +288,8 @@ const PipeLineChatPanel = () => {
     pipelineDtl,
     setFormStates,
     formStates,
-    handleSourceUpdate
+    handleSourceUpdate,
+    makePipeline
   } = pipelineContext;
 
   // Keep local form states in sync with context form states
@@ -961,15 +964,100 @@ const PipeLineChatPanel = () => {
     },
   });
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmedInput = input.trim();
-    if (!trimmedInput) return;
+    if (!trimmedInput || isApiLoading) return;
+    
+    // Add user message
     addMessageWithFormData({ role: 'user', content: trimmedInput });
     setInput('');
-    // Simulate assistant response
-    setTimeout(() => {
-      addMessageWithFormData({ role: 'assistant', content: 'Processing your request...' });
-    }, 500);
+    setIsApiLoading(true);
+
+    try {
+      // Get available columns for the current context
+      let availableColumns: Record<string, any> = {};
+      if (nodes && edges) {
+        try {
+          // For pipeline editing, we might not have a specific current node
+          // So we'll pass an empty object or try to get general column suggestions
+          const columnSuggestions = await getColumnSuggestions('', nodes, edges, pipelineDtl);
+          console.log('Column suggestions:', columnSuggestions);
+          // Convert array to object format if needed
+          if (Array.isArray(columnSuggestions)) {
+            availableColumns = { columns: columnSuggestions };
+          } else {
+            availableColumns = columnSuggestions || {};
+          }
+        } catch (columnError) {
+          console.warn('Failed to get column suggestions:', columnError);
+        }
+      }
+
+      // Call the pipeline schema edit API
+      const response: any = await apiService.post({
+        url: 'pipeline_schema/edit_pipeline',
+        baseUrl: AGENT_REMOTE_URL,
+        method: 'POST',
+        usePrefix: true,
+        data: {
+          pipeline_id: id, // Use the ID from params
+          user_request: trimmedInput,
+          available_columns: availableColumns
+        },
+        metadata: {
+          errorMessage: 'Failed to process your request'
+        }
+      });
+
+      // Process the pipeline_json if it exists in the response
+      if (response?.pipeline_json) {
+        try {
+          await makePipeline({ pipeline_definition: response.pipeline_json });
+          setUnsavedChanges();
+          console.log('Pipeline updated successfully with new schema');
+
+          // Add success response message
+          addMessageWithFormData({ 
+            role: 'assistant', 
+            content: 'Pipeline updated successfully! Your changes have been applied.' 
+          });
+
+          // Show success toast
+          toast.success('Pipeline updated successfully');
+
+        } catch (pipelineError) {
+          console.error('Error updating pipeline:', pipelineError);
+          addMessageWithFormData({ 
+            role: 'assistant', 
+            content: 'Failed to update the pipeline. Please try again.' 
+          });
+          toast.error('Failed to update pipeline');
+        }
+      } else {
+        // Add a generic response if no pipeline_json is returned
+        addMessageWithFormData({ 
+          role: 'assistant', 
+          content: response?.message || 'Request processed successfully.' 
+        });
+      }
+
+      console.log('Request processed successfully:', response?.messages);
+
+    } catch (error: any) {
+      console.error('API Error:', error);
+      
+      // Add error response message
+      addMessageWithFormData({ 
+        role: 'assistant', 
+        content: `Error: ${error?.response?.data?.message || 'Failed to process your request. Please try again.'}` 
+      });
+
+      // Show error toast
+      toast.error(error?.response?.data?.message || 'Failed to process your request');
+
+    } finally {
+      setIsApiLoading(false);
+    }
   };
 
 
@@ -2688,7 +2776,16 @@ const PipeLineChatPanel = () => {
       </ScrollArea>
       <div className="p-2 border-t border-slate-200 bg-white">
 
-        <AIChatInput variant='designer' input={input} onChange={setInput} onSend={handleSend} placeholder="Type a message..." />
+        <AIChatInput 
+          variant='designer' 
+          input={input} 
+          onChange={setInput} 
+          onSend={handleSend} 
+          placeholder="Type a message..." 
+          enableVoiceInput={true}
+          disabled={isApiLoading}
+          isLoading={isApiLoading}
+        />
       </div>
     </div>
   );

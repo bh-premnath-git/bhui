@@ -73,28 +73,8 @@ export const getInitialFormState = (
                         header: true
                     }
                 },
-                lookup_data: transformation.lookup_data || [
-                    { id: 1, department: 'Engineering' },
-                    { id: 2, department: 'Medical' },
-                    { id: 3, department: 'Arts' },
-                    { id: 4, department: 'Commerce' },
-                    { id: 5, department: 'Science' },
-                    { id: 6, department: 'Mathematics' },
-                    { id: 7, department: 'Physics' },
-                    { id: 8, department: 'Chemistry' },
-                    { id: 9, department: 'Biology' },
-                    { id: 10, department: 'Geography' }
-                ],
-                lookup_columns: transformation.lookup_columns || [
-                    { column: 'id', out_column_name: 'id' },
-                    { column: 'name', out_column_name: 'name' },
-                    { column: 'department', out_column_name: 'department' },
-                    { column: 'city', out_column_name: 'city' },
-                    { column: 'state', out_column_name: 'state' },
-                    { column: 'zip', out_column_name: 'zip' },
-                    { column: 'address', out_column_name: 'address' },
-                    { column: 'age', out_column_name: 'age' }
-                ],
+                lookup_data: transformation.lookup_data ,
+                lookup_columns: transformation.lookup_columns ,
                 lookup_conditions: transformation.lookup_conditions || {
                     column_name: 'id',
                     lookup_with: 'id'
@@ -202,7 +182,7 @@ export const getNodePorts = (type: string) => {
         'SQL Transformation': { inputs: 1, outputs: 1, maxInputs: 1 },
         'SetCombiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
         DqCheck: { inputs: 1, outputs: 1, maxInputs: 1 },
-        Lookup: { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        Lookup: { inputs: 1, outputs: 1, maxInputs: 1 },
         CustomPySpark: { inputs: 1, outputs: 1, maxInputs: 1 }
     };
     return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };

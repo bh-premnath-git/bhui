@@ -32,6 +32,21 @@ async function fetchLayoutFields(dataSrcId: string): Promise<LayoutField[]> {
   return layoutFields;
 }
 
+// New function to get columns for a specific data source
+export const getColumnsForDataSource = async (dataSrcId: string): Promise<string[]> => {
+  try {
+    if (!dataSrcId) {
+      return [];
+    }
+    
+    const layoutFields = await fetchLayoutFields(dataSrcId);
+    return layoutFields.map((field: LayoutField) => field.lyt_fld_name);
+  } catch (error) {
+    console.error('Error getting columns for data source:', error);
+    return [];
+  }
+};
+
 export const getColumnSuggestions = async ( 
   currentNodeId: string,
   nodes: Node[],

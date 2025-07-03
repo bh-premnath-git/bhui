@@ -256,6 +256,7 @@ const PipeLineChatPanel = () => {
   const [showReaderOptionsForm, setShowReaderOptionsForm] = useState(false);
   const [selectedSourceType, setSelectedSourceType] = useState<"File" | "Relational" | null>(null);
   const [showTransformationDropdown, setShowTransformationDropdown] = useState(false);
+  const [transformationSearchTerm, setTransformationSearchTerm] = useState('');
   const [readerNode, setReaderNode] = useState<any>(null);
   const [selectedDataSource, setSelectedDataSource] = useState<any>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -311,6 +312,7 @@ const PipeLineChatPanel = () => {
           content: "Let's add another data source to your pipeline. Please enter a reader name to search:"
         },
       ]);
+      form.reset({ reader_name: "", source_type: "File" });
       setShowReaderForm(true);
     }, 300);
   };
@@ -329,17 +331,46 @@ const PipeLineChatPanel = () => {
   // Track the last added transformation node
   const [lastAddedTransformation, setLastAddedTransformation] = useState<any>(null);
   const handleShowTransformations = () => {
-
+    // Reset search term when showing dropdown
+    setTransformationSearchTerm('');
 
     // Show transformation dropdown
     setTimeout(() => {
-
       setShowTransformationDropdown(true);
     }, 300);
   };
 
   // Handle transformation selection from dropdown
   const handleTransformationSelection = (transformationName: string) => {
+    // Hide the dropdown first
+    setShowTransformationDropdown(false);
+
+    // Check if Reader is selected - handle it like "Create Pipeline"
+    if (transformationName === "Reader") {
+      // Add user message showing the Reader selection
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          role: 'user',
+          content: `Add Reader (Data Source)`
+        },
+      ]);
+
+      // Show the reader form like in Create Pipeline flow
+      setTimeout(() => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant',
+            content: "Let's add a data source to your pipeline. Please enter a reader name to search:"
+          },
+        ]);
+        form.reset({ reader_name: "", source_type: "File" });
+        setShowReaderForm(true);
+      }, 300);
+      return;
+    }
+
     // Get all transformation nodes from nodeDisplayData (excluding Reader)
     const transformationNodes = nodeDisplayData.nodes.filter(
       node => node.ui_properties.module_name !== "Reader"
@@ -353,9 +384,6 @@ const PipeLineChatPanel = () => {
       toast.error("Transformation not found. Please try again.");
       return;
     }
-
-    // Hide the dropdown
-    setShowTransformationDropdown(false);
 
     // Add user message showing the selected transformation
     setMessages(prevMessages => [
@@ -680,6 +708,7 @@ const PipeLineChatPanel = () => {
       //   role: 'assistant',
       //   content: "Let's start creating your data pipeline. First, I need some information about the data source:"
       // });
+      form.reset({ reader_name: "", source_type: "File" });
       setShowReaderForm(true);
     }, 500);
   };
@@ -1039,12 +1068,130 @@ const PipeLineChatPanel = () => {
       content: `Connect ${selectedDependencies.length} nodes (${dependencyNames}) to ${targetNodeType.ui_properties.module_name}`
     });
 
-    // Handle each connection
+    // Clear lastAddedTransformation to prevent useEffect interference
+    setLastAddedTransformation(null);
+
+    // Handle each connection without asking for more dependencies
     selectedDependencies.forEach((dependency, index) => {
       setTimeout(() => {
-        handleDependencySelection(dependency, targetNodeType, targetNodeId, maxInputs, selectedDependencies.length);
+        // Create connections for all selected dependencies
+        handleDependencySelection(dependency, targetNodeType, targetNodeId, maxInputs, 1, true); // Pass true to skip form opening
       }, index * 100);
     });
+
+    // After all connections are made, directly open the form
+    setTimeout(() => {
+      const transformationType = targetNodeType.ui_properties.module_name;
+      
+      // Check if this is a Target transformation
+      const isTarget = transformationType === 'Target';
+
+      // Build the dependency data from selectedDependencies instead of relying on edges state
+      const dependentOnData = selectedDependencies.map((dep, index) => ({
+        source: dep.id,
+        targetHandle: `input-${dep.id}` // Use consistent handle naming
+      }));
+
+      if (isTarget) {
+        // Add a message to show that we're configuring the Target
+        setTimeout(() => {
+          setMessages(prevMessages => [
+            ...prevMessages,
+            {
+              role: 'assistant',
+              content: '',
+              formData: {
+                schema: { title: 'Target' },
+                sourceColumns: [], // Add empty sourceColumns array to satisfy the type requirement
+                currentNodeId: targetNodeId,
+                isTarget: true,
+                initialValues: {
+                  nodeId: targetNodeId,
+                  name: `Target_${targetNodeId}`,
+                  dependent_on: dependentOnData
+                }
+              }
+            },
+          ]);
+        }, 300);
+        return;
+      }
+
+      // Check if schemaData has a schema property (array) or is an array itself
+      const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
+      const schema = schemaArray.find(s => s.title === transformationType);
+
+      if (schema) {
+        // Set up the schema with the node ID for the form
+        const schemaWithNodeId = {
+          ...schema,
+          nodeId: targetNodeId
+        };
+
+        // Set the selected schema
+        setSelectedSchema(schemaWithNodeId);
+
+        // Get column suggestions for the form
+        import('@/lib/pipelineAutoSuggestion').then(module => {
+          module.getColumnSuggestions(targetNodeId, nodes, edges, pipelineContext.pipelineDtl)
+            .then(columns => {
+              // Add the form directly to the chat
+              setTimeout(() => {
+                const newMessage = {
+                  role: 'assistant',
+                  content: "",
+                  formData: {
+                    schema: schemaWithNodeId,
+                    sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
+                    currentNodeId: targetNodeId,
+                    isTarget: isTarget,
+                    initialValues: {
+                      ...formStates[targetNodeId],
+                      nodeId: targetNodeId,
+                      dependent_on: dependentOnData
+                    }
+                  }
+                };
+
+                setMessages((prevMessages: any) => {
+                  const newMessages = [...prevMessages, newMessage];
+                  return newMessages;
+                });
+              }, 300);
+            })
+            .catch(err => {
+              console.error('Error getting column suggestions:', err);
+              
+              // Fallback if we can't get column suggestions
+              setTimeout(() => {
+                const newMessage = {
+                  role: 'assistant',
+                  content: '',
+                  formData: {
+                    schema: schemaWithNodeId,
+                    sourceColumns: [],
+                    currentNodeId: targetNodeId,
+                    isTarget: isTarget,
+                    initialValues: {
+                      ...formStates[targetNodeId],
+                      nodeId: targetNodeId,
+                      dependent_on: dependentOnData
+                    }
+                  }
+                };
+
+                setMessages((prevMessages: any) => {
+                  const newMessages = [...prevMessages, newMessage];
+                  return newMessages;
+                });
+              }, 300);
+            });
+        });
+      } else {
+        // Fallback if schema not found
+        handleShowTransformations();
+      }
+    }, selectedDependencies.length * 100 + 500); // Wait for all connections to be made
   };
 
   // Function to handle multiple source selection
@@ -1270,6 +1417,7 @@ const PipeLineChatPanel = () => {
           content: "Please enter a different reader name to search:"
         },
       ]);
+      form.reset({ reader_name: "", source_type: "File" });
       setShowReaderForm(true);
     }, 500);
   };
@@ -1487,7 +1635,7 @@ const PipeLineChatPanel = () => {
   };
 
   // Function to handle dependency selection
-  const handleDependencySelection = (sourceNode, targetNodeType, targetNodeId, maxInputs, numDependenciesToAsk) => {
+  const handleDependencySelection = (sourceNode, targetNodeType, targetNodeId, maxInputs, numDependenciesToAsk, skipFormOpen = false) => {
 
     // Find existing connections to this target node to determine which handle to use
     const existingConnections = edges.filter(edge => edge.target === targetNodeId);
@@ -1606,7 +1754,8 @@ const PipeLineChatPanel = () => {
 
 
     // If this is a single-input transformation or we've reached the max inputs, show the form
-    if (maxInputs === 1 || numDependenciesToAsk === 1) {
+    // But skip if we're in multi-dependency selection mode
+    if ((maxInputs === 1 || numDependenciesToAsk === 1) && !skipFormOpen) {
       // Find the schema for this transformation type
       const transformationType = targetNodeType.ui_properties.module_name;
 
@@ -1756,7 +1905,9 @@ const PipeLineChatPanel = () => {
 
       if (availableDependencies.length === 0 || remainingDeps === 0) {
         // No more available dependencies or we've reached the limit
-        setTimeout(() => {
+        // But skip if we're in multi-dependency selection mode
+        if (!skipFormOpen) {
+          setTimeout(() => {
           // Find the target node in the nodes array
           const targetNode = nodes.find(node => node.id === targetNodeId);
 
@@ -1886,6 +2037,7 @@ const PipeLineChatPanel = () => {
             handleShowTransformations();
           }
         }, 300);
+        }
       } else {
         // Ask for more dependencies
         setTimeout(() => {
@@ -2456,27 +2608,76 @@ const PipeLineChatPanel = () => {
                 <div className="mt-2 mb-3">
                   <div className="flex items-start gap-2">
                     <div className="w-6 h-6 mt-1 rounded-full bg-blue-500 flex-shrink-0" />
-                    <div className="flex-1">
-                      <Select onValueChange={handleTransformationSelection}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Choose a transformation..." />
-                        </SelectTrigger>
-                        <SelectContent style={{ zIndex: 9999 }}>
-                          {nodeDisplayData.nodes
-                            .filter(node => node.ui_properties.module_name !== "Reader")
-                            .map(node => (
-                              <SelectItem
-                                key={node.ui_properties.module_name}
-                                value={node.ui_properties.module_name}
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{node.ui_properties.module_name}</span>
+                    <div className="flex-1 bg-white rounded-lg border shadow-sm">
+                      {/* Compact Search Header */}
+                      <div className="p-3 border-b">
+                        <div className="relative">
+                          <Input
+                            placeholder="Search transformations..."
+                            value={transformationSearchTerm}
+                            onChange={(e) => setTransformationSearchTerm(e.target.value)}
+                            className="h-8 pl-8 text-sm"
+                          />
+                          <svg className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {/* Compact Filtered Transformations List */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {nodeDisplayData.nodes
+                          .filter(node => 
+                            node.ui_properties.module_name
+                              .toLowerCase()
+                              .includes(transformationSearchTerm.toLowerCase())
+                          )
+                          .map((node, index) => (
+                            <div
+                              key={node.ui_properties.module_name}
+                              className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                              onClick={() => handleTransformationSelection(node.ui_properties.module_name)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-sm text-gray-900">{node.ui_properties.module_name}</span>
+                                <div className="text-xs text-gray-400">
+                                  {node.ui_properties.module_name === "Reader" ? "Data Source" : "Transform"}
                                 </div>
-                              </SelectItem>
-                            ))
-                          }
-                        </SelectContent>
-                      </Select>
+                              </div>
+                            </div>
+                          ))
+                        }
+                        {nodeDisplayData.nodes
+                          .filter(node => 
+                            node.ui_properties.module_name
+                              .toLowerCase()
+                              .includes(transformationSearchTerm.toLowerCase())
+                          ).length === 0 && (
+                          <div className="px-3 py-6 text-center text-gray-500 text-sm">
+                            <div className="text-gray-400 mb-1">No transformations found</div>
+                            <div className="text-xs text-gray-300">Try a different search term</div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Footer with count */}
+                      {nodeDisplayData.nodes.filter(node => 
+                        node.ui_properties.module_name
+                          .toLowerCase()
+                          .includes(transformationSearchTerm.toLowerCase())
+                      ).length > 0 && (
+                        <div className="px-3 py-2 bg-gray-50 border-t text-xs text-gray-500">
+                          {nodeDisplayData.nodes.filter(node => 
+                            node.ui_properties.module_name
+                              .toLowerCase()
+                              .includes(transformationSearchTerm.toLowerCase())
+                          ).length} transformation{nodeDisplayData.nodes.filter(node => 
+                            node.ui_properties.module_name
+                              .toLowerCase()
+                              .includes(transformationSearchTerm.toLowerCase())
+                          ).length !== 1 ? 's' : ''} available
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

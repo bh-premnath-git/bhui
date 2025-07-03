@@ -10,7 +10,7 @@ import {
 } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { convertOptimisedPipelineJsonToPipelineJson, convertUIToPipelineJsonUpToNode, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
 import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
-import { CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
+import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 
 interface UsePipelineActionsProps {
@@ -196,7 +196,7 @@ export const usePipelineActions = ({
 
             // Pass the request data directly
             let response: any = await apiService.post({
-                baseUrl: CATALOG_REMOTE_API_URL,
+                baseUrl:ENVIRONMENT=="local"? CATALOG_REMOTE_API_URL:CATALOG_LIVE_API_URL,
                 url: `/pipeline/debug/start_pipeline?${params.toString()}`,
                 usePrefix: true,
                 method: 'POST',
@@ -209,7 +209,7 @@ export const usePipelineActions = ({
 
             let countsResponse = await dispatch(getTransformationCount({
                 params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
-                host: attachedCluster?.master_ip,
+                host: attachedCluster?.master_ip || 'host.docker.internal',
                 use_secure: USE_SECURE
             })).unwrap();
 
@@ -242,7 +242,9 @@ export const usePipelineActions = ({
             ) {
                 try {
                     let countsResponse = await dispatch(getTransformationCount({
-                        params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
+                        params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
+                        host: attachedCluster?.master_ip || 'host.docker.internal',
+                        use_secure: USE_SECURE
                     })).unwrap();
                     
                     if (countsResponse.transformationOutputCounts) {
@@ -316,7 +318,7 @@ export const usePipelineActions = ({
     const handleNext = useCallback(async () => {
         try {
             const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
-            const host = attachedCluster?.master_ip;
+            const host = attachedCluster?.master_ip || 'host.docker.internal';
             
             let result: any = await dispatch(runNextCheckpoint({ 
                 pipeline_name: pipelineName_val,
@@ -411,7 +413,7 @@ export const usePipelineActions = ({
 
             // Optionally update transformation counts for the refreshed portion
             try {
-                const host = attachedCluster?.master_ip;
+                const host = attachedCluster?.master_ip || 'host.docker.internal';
                 const countsResponse = await dispatch(getTransformationCount({
                     params: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                     host: host

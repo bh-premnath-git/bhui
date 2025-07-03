@@ -321,21 +321,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                       {isLoading ? 'Loading pipelines...' : 'No pipelines found'}
                     </CommandEmpty>
 
-                    {/* Create new pipeline option */}
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          setCreateDialogOpen(true);
-                          setOpen(false);
-                        }}
-                        className="flex items-center gap-2 p-2 cursor-pointer"
-                      >
-                        <PlusCircle size={16} className="text-primary" />
-                        <span className="font-medium">Create new pipeline</span>
-                      </CommandItem>
-                    </CommandGroup>
-
-                    {filteredPipelines.length > 0 && <CommandSeparator />}
+                    
 
                     {/* Favorite pipelines */}
                     {favoritePipelines.length > 0 && (

@@ -122,7 +122,8 @@ export const CustomEdge = memo(({
         nodes, 
         edges, 
         updateSetNode, 
-        reactFlowInstance 
+        reactFlowInstance,
+        attachedCluster
       } = usePipelineContext()
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
@@ -258,6 +259,7 @@ export const CustomEdge = memo(({
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
                     transformationName: sourceNode?.data.title,
+                    host:attachedCluster.master_ip||"host.docker.internal",
                     isFlow
                 })).unwrap();
                 

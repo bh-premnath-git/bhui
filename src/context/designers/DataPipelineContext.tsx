@@ -27,9 +27,7 @@ import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson, co
 import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
 import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
 import { ValidationIssue } from '@/components/headers/build-playground-header/components/PipelineControls';
-import {
-    getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
-} from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import {updatePipeline} from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
 import { AppDispatch, RootState } from '@/store';
 import { apiService } from '@/lib/api/api-service';

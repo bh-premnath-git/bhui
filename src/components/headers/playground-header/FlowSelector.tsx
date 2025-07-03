@@ -353,21 +353,6 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
                       {isLoading || flowsLoading ? 'Loading flows...' : 'No flows found'}
                     </CommandEmpty>
 
-                    {/* Create new flow option */}
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          setCreateDialogOpen(true);
-                          setOpen(false);
-                        }}
-                        className="flex items-center gap-2 p-2 cursor-pointer"
-                      >
-                        <PlusCircle size={16} className="text-primary" />
-                        <span className="font-medium">Create new flow</span>
-                      </CommandItem>
-                    </CommandGroup>
-
-                    {filteredFlows.length > 0 && <CommandSeparator />}
 
                     {/* Favorite flows */}
                     {favoriteFlows.length > 0 && (

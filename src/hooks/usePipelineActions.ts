@@ -383,6 +383,7 @@ export const usePipelineActions = ({
                 pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                 pipeline_json: JSON.stringify(partialPipelineJson?.pipeline_json || partialPipelineJson),
                 mode: modeAction,
+                use_secure: USE_SECURE,
                 target_node: nodeId // Add target node info for backend
             });
             

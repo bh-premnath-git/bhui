@@ -305,31 +305,10 @@ const RequirementForm: React.FC = () => {
       <div className="space-y-4 mt-2">
         {/* Basic Details - Always Visible */}
         <div className="bg-card rounded-lg border p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Pipeline Name</label>
-              <Input 
-                value={pipelineName} 
-                onChange={e => setLocalPipelineName(e.target.value)} 
-                placeholder="Enter pipeline name"
-                className="h-9"
-              />
-              {formErrors.pipelineName && <div className="text-xs text-destructive mt-1">{formErrors.pipelineName}</div>}
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Project Name</label>
-              <Input 
-                value={projectName} 
-                onChange={e => setLocalProjectName(e.target.value)} 
-                placeholder="Enter project name"
-                className="h-9"
-              />
-              {formErrors.projectName && <div className="text-xs text-destructive mt-1">{formErrors.projectName}</div>}
-            </div>
-          </div>
+         
           
           {/* Mappings Header */}
-          <div className="flex justify-between items-center pt-2 border-t">
+          <div className="flex justify-between items-center ">
             <div>
               <h3 className="font-semibold text-sm">Data Mappings</h3>
               <p className="text-xs text-muted-foreground">Define how data flows from source to target</p>

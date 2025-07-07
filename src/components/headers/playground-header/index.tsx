@@ -48,6 +48,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);
   const filteredNodes = useMemo(() => nodeData.nodes, []);
   const [moduleTypes] = useModules();
+  console.log(pipelineDtl)
   let flowNodes = moduleTypes.map((type) => {
     return {
       "ui_properties": {
@@ -218,13 +219,13 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
         </div>
 
         {/* Middle section - Node controls */}
-        <div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
+       {pipelineDtl?.pipeline_type!="requirement"&&( <div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
           <NodeDropList
             filteredNodes={isFlow ? flowNodes : filteredNodes}
             handleNodeClick={handleNodeClick}
             addNodeToHistory={addNodeToHistory}
           />
-        </div>
+        </div>)}
 
         {/* Right section - Pipeline controls and AI button */}
         <div className="flex items-center justify-end space-x-4 w-full sm:w-auto">

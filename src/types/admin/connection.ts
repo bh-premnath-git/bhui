@@ -7,6 +7,7 @@ export interface Connection {
     connection_type: string;
     connection_status: string;
     data_residency: string;
+    bh_env_id: number;
     config: string;
     init_vector: string;
 };
@@ -32,6 +33,7 @@ export interface ConnectionValue {
     connection_name: string;
     connection_status: string;
     data_residency: string;
+    bh_env_id: number;
     custom_metadata: Record<string, any>;
     init_vector: string;
     config: string;

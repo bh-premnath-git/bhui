@@ -5,6 +5,7 @@ import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from "@
 import { useState, useRef, useEffect } from "react";
 import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
 
 interface Connection {
   id: number | string;
@@ -15,13 +16,18 @@ interface AIChatInputProps {
   variant: string;
   input: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (availableColumns?: Record<string, any>) => void;
   onVoiceInput?: () => void;
   placeholder?: string;
   disabled?: boolean;
   onConnectionChange?: (connectionId: string) => void;
   enableVoiceInput?: boolean;
   isLoading?: boolean;
+  // Pipeline context props for column suggestions
+  currentNodeId?: string;
+  nodes?: any[];
+  edges?: any[];
+  pipelineDtl?: any;
 }
 
 export function AIChatInput({
@@ -34,6 +40,10 @@ export function AIChatInput({
   variant,
   onConnectionChange,
   enableVoiceInput = false,
+  currentNodeId,
+  nodes,
+  edges,
+  pipelineDtl,
 }: AIChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState('');
@@ -106,6 +116,66 @@ export function AIChatInput({
   const handleConnectionChange = (connId: string) => {
     setSelectedConnection(connId);
     onConnectionChange?.(connId);
+  };
+
+  // Function to handle sending message with available columns
+  const handleSendWithColumns = async () => {
+    if (!input.trim()) return;
+
+    let availableColumns: Record<string, any> = {};
+    
+    // Get available columns for the current node if pipeline context is available
+    if (nodes && edges && pipelineDtl) {
+      try {
+        // Determine the node to use for column suggestions
+        let nodeIdToUse = currentNodeId;
+        
+        // If no currentNodeId provided, use the last node in the pipeline
+        if (!nodeIdToUse && nodes && nodes.length > 0) {
+          // Find the last node (node with no outgoing edges)
+          const nodeIds = nodes.map(node => node.id);
+          const nodesWithOutgoingEdges = new Set(edges?.map(edge => edge.source) || []);
+          
+          // Find nodes that have no outgoing edges (terminal nodes)
+          const terminalNodes = nodes.filter(node => !nodesWithOutgoingEdges.has(node.id));
+          
+          if (terminalNodes.length > 0) {
+            // Use the first terminal node found
+            nodeIdToUse = terminalNodes[0].id;
+            console.log('Using terminal node as current node:', nodeIdToUse);
+          } else {
+            // Fallback to the last node in the array
+            const lastNode = nodes[nodes.length - 1];
+            nodeIdToUse = lastNode?.id;
+            console.log('Using last node in array as current node:', nodeIdToUse);
+          }
+        }
+        
+        if (nodeIdToUse) {
+          const columnSuggestions = await getColumnSuggestions(nodeIdToUse, nodes, edges, pipelineDtl);
+          console.log('Column suggestions for node', nodeIdToUse, ':', columnSuggestions);
+          
+          // Convert array to object format if needed
+          if (Array.isArray(columnSuggestions)) {
+            availableColumns = { columns: columnSuggestions };
+          } else {
+            availableColumns = columnSuggestions || {};
+          }
+        } else {
+          console.warn('No valid node ID found for column suggestions');
+          availableColumns = { columns: [] };
+        }
+      } catch (columnError) {
+        console.warn('Failed to get column suggestions:', columnError);
+        availableColumns = { columns: [] };
+      }
+    } else {
+      console.warn('Pipeline context not available for column suggestions');
+      availableColumns = { columns: [] };
+    }
+
+    console.log('Available columns being passed:', availableColumns);
+    onSend(availableColumns);
   };
   
   const autoResize = (el: HTMLTextAreaElement) => {
@@ -244,7 +314,7 @@ export function AIChatInput({
           onKeyDown={e => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              onSend();
+              handleSendWithColumns();
             }
           }}
           onFocus={() => setIsFocused(true)}
@@ -276,7 +346,7 @@ export function AIChatInput({
 
       {/* Send button */}
       <Button
-        onClick={onSend}
+        onClick={handleSendWithColumns}
         variant="ghost"
         size="icon"
         disabled={disabled || !input.trim() || isLoading}

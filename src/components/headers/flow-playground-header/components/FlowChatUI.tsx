@@ -318,6 +318,7 @@ export const FlowChatUI: React.FC<FlowChatUIProps> = ({ imageSrc = ai }) => {
       {/* Input Area */}
       <div className="flex gap-2 mt-4 flex-shrink-0"> 
         <AIChatInput
+          variant="flow"
           input={input}
           onChange={setInput}
           onSend={handleSend}

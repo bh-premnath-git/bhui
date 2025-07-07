@@ -19,16 +19,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         // Return early if only validating
         return validation;
     }
-    console.log("🔄 Converting UI to Pipeline JSON...");
-    console.log("📋 Input nodes:", uiNodes);
     
-    // Debug each node's transformation data
-    uiNodes.forEach(node => {
-        if (!node.id.startsWith('Reader_') && !node.id.startsWith('Target_')) {
-            console.log(`🔧 Node ${node.id} (${node.data.label}) transformationData:`, node.data.transformationData);
-        }
-    });
-    // Get ordered nodes using topological sort
     const getOrderedNodes = () => {
         const orderedNodes: UINode[] = [];
         const visited = new Set<string>();
@@ -100,9 +91,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
 
 
 
-    console.log(
-        uiNodes, "uiNodes"
-    )
+    
     // Update the sources mapping with defensive checks
     const sources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
@@ -111,7 +100,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             const connectionConfig = source?.connection_config?.custom_metadata;
             const source_type = source.type || source.source_type;
             const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
-            console.log(source_type, "firstName")
+            //console.log(source_type, "firstName")
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
                 source_type: isFileSource ? "File" : "Relational",
@@ -128,10 +117,10 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .map(node => {
             const connectionConfig = node.data.source?.connection_config?.custom_metadata;
             const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
-            console.log(connectionConfig, "connectionConfig")
+            //console.log(connectionConfig, "connectionConfig")
             
             // Base reader configuration
-            const readerConfig :any = {
+            const readerConfig:any = {
                 name: node.data.title,
                 dependent_on: [],
                 transformation: "Reader",
@@ -171,12 +160,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     const regularTransformations = orderedUiNodes
         .filter(node => !node.id.startsWith('Reader_'))
         .map(node => {
-            console.log(`Processing node ${node.id} (${node.data.label}):`, {
-                title: node.data.title,
-                label: node.data.label,
-                transformationData: node.data.transformationData,
-                nodeData: node.data
-            });
+           
             
             const baseConfig = {
                 name: node.data.title, // Use the node's title as the transformation name
@@ -185,7 +169,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     .filter(edge => edge.target === node.id)
                     .map(edge => {
                         const sourceNode = uiNodes.find(n => n.id === edge.source);
-                        // console.log(sourceNode)
+                        // //console.log(sourceNode)
                         return sourceNode?.data?.title || '';
                     })
             };
@@ -223,19 +207,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                           }))
                         : [];
 
-                    console.log('Aggregator conversion debug:', {
-                        nodeId: node.id,
-                        nodeTitle: node.data.title,
-                        transformationData: node.data.transformationData,
-                        groupByData,
-                        formattedGroupBy,
-                        aggregations: node.data.transformationData?.aggregations,
-                        aggregate: node.data.transformationData?.aggregate,
-                        aggregationsData,
-                        formattedAggregations,
-                        pivot_by: node.data.transformationData?.pivot_by,
-                        pivot: node.data.transformationData?.pivot
-                    });
+                    
 
                     return {
                         ...baseConfig,
@@ -245,8 +217,8 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         pivot: node.data.transformationData?.pivot_by || node.data.transformationData?.pivot || []
                     };
                 case 'Filter':
-                    console.log('Filter node data:', node.data);
-                    console.log('Filter transformationData:', node.data.transformationData);
+                    //console.log('Filter node data:', node.data);
+                    //console.log('Filter transformationData:', node.data.transformationData);
                     
                     // Extract condition from transformationData
                     let condition = '';
@@ -258,7 +230,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         }
                     }
                     
-                    console.log('Extracted filter condition:', condition);
+                    //console.log('Extracted filter condition:', condition);
                     
                     return {
                         ...baseConfig,
@@ -271,7 +243,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     };
                 case 'Joiner':
                     // debugger
-                    console.log(node.data.transformationData)
+                    //console.log(node.data.transformationData)
                     return {
                         ...baseConfig,
                         conditions: node.data.transformationData?.conditions || [],
@@ -307,21 +279,30 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     }
                     
                     if (node.data.transformationData?.rename_columns !== undefined) {
+                        console.log('Adding rename_columns to config:', node.data.transformationData.rename_columns);
                         schemaTransformConfig.rename_columns = node.data.transformationData.rename_columns;
+                    } else {
+                        console.log('rename_columns is undefined in transformationData');
+                        schemaTransformConfig.rename_columns = {};
                     }
                     
+                    console.log('Final schemaTransformConfig:', schemaTransformConfig);
                     return schemaTransformConfig;
                 case 'Sorter':
                     return {
                         ...baseConfig,
                         sort_columns: node.data.transformationData?.sort_columns
                     };
-                case 'DQ Check':
+                case 'DQCheck':
                     return {
-                        ...baseConfig,
-                        transformation: node.data.transformationData?.transformation || "",
-                        name: node.data.transformationData?.name || "",
-                        limit: node.data.transformationData?.limit,
+                        name: node.data.transformationData?.name || node.data.title,
+                        dependent_on: edges
+                            .filter(edge => edge.target === node.id)
+                            .map(edge => {
+                                const sourceNode = uiNodes.find(n => n.id === edge.source);
+                                return sourceNode?.data?.title || '';
+                            }),
+                        transformation: "DQCheck",
                         dq_rules: node.data.transformationData?.dq_rules || []
                     };
                 case 'Deduplicator':
@@ -451,7 +432,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     
                     return lookupConfig;
                 case 'Target':
-                    console.log("Target node data:", node.data);
+                    //console.log("Target node data:", node.data);
                     // Determine the correct target_type
                     let targetType = node.data.source?.target_type;
                     // If connection type is Local or S3, ensure target_type is File
@@ -484,11 +465,6 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                             writeMethod: targetType === 'Relational' ? 'direct' : 'APPEND'
                         },
                     };
-                case 'Drop':
-                    return {
-                        ...baseConfig,
-                        columns: node.data.transformationData?.columns || []
-                    };
                 case 'CustomPySpark':
                     return {
                         ...baseConfig,
@@ -496,7 +472,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     };
                 default:
                     console.warn(`Unknown transformation type: ${node.data.label}. Using default handling.`);
-                    console.log('Default case - node.data.transformationData:', node.data.transformationData);
+                    //console.log('Default case - node.data.transformationData:', node.data.transformationData);
                     return {
                         ...baseConfig,
                         ...node.data.transformationData
@@ -504,9 +480,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             }
         });
 
-    // Create target configuration and writer transformation
-    console.log(uiNodes
-        .filter(node => node.id.startsWith('Target_')), "target befor transform")
+    
     const targets = uiNodes
         .filter(node => node.id.startsWith('Target_'))
         .map(node => {
@@ -532,28 +506,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 write_options: node.data.transformationData?.write_options
             };
         });
-    console.log(targets, "targets")
-    //    let optimized=convertToOptimizedPipelineJson({
-    //     $schema: "https://json-schema.org/draft-07/schema#",
-    //     name: pipelineDtl?.pipeline_name ,
-    //     description: pipelineDtl?.pipeline_description || " ",
-    //     version: "1.0",
-    //     mode: "DEBUG",
-    //     parameters: [],
-    //     sources,
-    //     targets,
-    //     transformations: [
-    //         ...readerTransformations,
-    //         ...regularTransformations.filter(Boolean),
-    //         // ...writerTransformations
-    //     ]
-    // })
-    // console.log(optimized,"optimized")
-    // let resolved=resolveRefs(optimized,optimized)
-    // console.log(resolved,"resolved")
-    // return optimized;
-    console.log(regularTransformations)
-    // debugger
+    
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",
@@ -595,7 +548,7 @@ export const convertUIToPipelineJsonUpToNode = async (
     targetNodeId: string,
     pipelineName?: string
 ) => {
-    console.log(`🔄 Converting UI to Pipeline JSON up to node: ${targetNodeId}`);
+    //console.log(`🔄 Converting UI to Pipeline JSON up to node: ${targetNodeId}`);
     
     // Find all nodes that lead to the target node (including the target node itself)
     const getNodesUpToTarget = (targetId: string): Set<string> => {
@@ -619,7 +572,6 @@ export const convertUIToPipelineJsonUpToNode = async (
     };
     
     const relevantNodeIds = getNodesUpToTarget(targetNodeId);
-    console.log(`📋 Nodes included in partial pipeline:`, Array.from(relevantNodeIds));
     
     // Filter nodes and edges to only include relevant ones
     const filteredNodes = nodes.filter(node => relevantNodeIds.has(node.id));
@@ -630,13 +582,11 @@ export const convertUIToPipelineJsonUpToNode = async (
     // Convert the filtered nodes to pipeline JSON
     const partialPipelineJson = await convertUIToPipelineJson(filteredNodes, filteredEdges, pipelineDtl, false);
     
-    console.log(`✅ Partial pipeline JSON created for node ${targetNodeId}:`, partialPipelineJson);
     return partialPipelineJson;
 };
 
 export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], edges: Edge[], pipelineDtl: any,pipelineName?:string, validateOnly: boolean = false) => {
     let pipelineJson: any = await convertUIToPipelineJson(nodes, edges, pipelineDtl, validateOnly);
-    console.log(pipelineJson, "pipelineJson");
     
     // Ensure all transformations are properly converted
     if (pipelineJson?.pipeline_json?.transformations && Array.isArray(pipelineJson.pipeline_json.transformations)) {
@@ -653,7 +603,6 @@ export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], 
     }
     
     let optimized = convertToOptimizedPipelineJson(pipelineJson?.pipeline_json,pipelineName);
-    console.log(optimized, "optimized");
     
     // Ensure all transformations in the optimized pipeline are properly converted
     if (optimized?.transformations && Array.isArray(optimized.transformations)) {
@@ -670,7 +619,6 @@ export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], 
     }
     
     let resolved = resolveRefs(optimized, optimized);
-    console.log(resolved, "resolved");
     return { pipeline_json: optimized };
 }
 

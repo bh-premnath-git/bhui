@@ -40,7 +40,7 @@ interface FlowControlsProps {
   proplesLogs?: Log[]
   onAlignHorizontal: () => void
   onAlignVertical: () => void
-  onAlignTopLeft: () => void
+  onAlignTopLeft?: () => void
 }
 
 export const FlowControls: React.FC<FlowControlsProps> = ({

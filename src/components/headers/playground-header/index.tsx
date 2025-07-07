@@ -9,7 +9,7 @@ import { PipelineSelector } from "./PipelineSelector";
 import { FlowSelector } from "./FlowSelector";
 import { AutoSaveStatus } from "./AutoSave";
 import { Button } from "@/components/ui/button";
-import { CloudCog, Settings, PlusCircle } from "lucide-react";
+import { CloudCog, Settings, PlusCircle, Server } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ClusterConfigDialog } from '../build-playground-header/ClusterConfigDialog';
 import { useMemo, useState } from 'react';
@@ -185,7 +185,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                         aria-label="Parameters"
                         className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
                       >
-                        <CloudCog className="h-5 w-5" />
+                        <Server className="h-5 w-5" />
                       </Button>
                     </PopoverTrigger>
                   </TooltipTrigger>

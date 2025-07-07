@@ -16,3 +16,4 @@ export const KEYCLOAK_API_REMOTE_URL = import.meta.env.VITE_KEYCLOAK_API_REMOTE_
 export const KEYCLOAK_REMOTE_URL = import.meta.env.VITE_KEYCLOAK_REMOTE_URL;
 export const CATALOG_LIVE_API_URL = import.meta.env.VITE_CATALOG_LIVE_API_URL;
 export const USE_SECURE = import.meta.env.VITE_USE_SECURE;
+export const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || 'production';

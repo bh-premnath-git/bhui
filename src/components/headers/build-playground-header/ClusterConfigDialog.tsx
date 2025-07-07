@@ -133,11 +133,6 @@ export const ClusterConfigDialog: React.FC<any> = () => {
   };
 
   const handleCreateCluster = async () => {
-    if (!clusterName.trim()) {
-      toast.error("Please enter a cluster name");
-      return;
-    }
-
     if (!selectedClusterConfig) {
       toast.error("Please select a cluster configuration");
       return;
@@ -235,8 +230,8 @@ export const ClusterConfigDialog: React.FC<any> = () => {
 
   return (
     <div className="space-y-6 p-2">
-      {/* Currently Attached Cluster Section */}
-      {attachedCluster && (
+      {/* Currently Attached Cluster Section - Only show if clusters exist */}
+      {attachedCluster && clusters.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -303,7 +298,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
         <div className="rounded-xl bg-white ">
           <div className="border-b border-gray-100">
             {/* <div className="flex justify-between items-center"> */}
-              <h3 className="text-lg font-semibold text-gray-900">Active Configs</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Active Computes</h3>
               
             {/* </div> */}
           </div>
@@ -312,7 +307,7 @@ export const ClusterConfigDialog: React.FC<any> = () => {
               {isLoadingClusters ? (
                 <div className="text-center py-12">
                   <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-gray-500">Loading Configs...</p>
+                  <p className="text-gray-500">Loading computes...</p>
                 </div>
               ) : (
                 <>
@@ -336,44 +331,53 @@ export const ClusterConfigDialog: React.FC<any> = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {/* Show attach button if not currently attached, or show attached indicator */}
-                        {attachedCluster?.id === cluster.id ? (
-                          <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                            <Link className="h-4 w-4" />
-                            <span>Attached</span>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAttachCluster(cluster)}
-                            className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                          >
-                            <Link className="h-4 w-4" />
-                          </Button>
+                        {/* Only show attach/detach functionality if clusters exist */}
+                        {clusters.length > 0 && (
+                          <>
+                            {/* Show attach button if not currently attached, or show attached indicator */}
+                            {attachedCluster?.id === cluster.id ? (
+                              <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                                <Link className="h-4 w-4" />
+                                <span>Attached</span>
+                              </div>
+                            ) : (
+                              <>
+                              {
+                               (cluster.status.State === 'WAITING'|| cluster.status.State === 'RUNNING') && (<Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAttachCluster(cluster)}
+                                className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                              >
+                                <Link className="h-4 w-4" />
+                              </Button>)
+                              }
+                              </>
+                            )}
+                            
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => handleDetachCluster(cluster.id, cluster.name)}
+                              disabled={terminatingClusters.has(cluster.id)}
+                              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                              {terminatingClusters.has(cluster.id) ? (
+                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </>
                         )}
-                        
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => handleDetachCluster(cluster.id, cluster.name)}
-                          disabled={terminatingClusters.has(cluster.id)}
-                          className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                        >
-                          {terminatingClusters.has(cluster.id) ? (
-                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
                       </div>
                     </div>
                   ))}
                   {clusters.length === 0 && (
                     <div className="text-center py-12">
                       <Server className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 text-lg">No configs found</p>
-                      <p className="text-gray-400 text-sm">Create a new config to get started</p>
+                      <p className="text-gray-500 text-lg">No compute found</p>
+                      <p className="text-gray-400 text-sm">Create a new compute to get started</p>
                     </div>
                   )}
                 </>

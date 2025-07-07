@@ -9,7 +9,8 @@ import {
   Star, 
   Clock, 
   Workflow,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +43,8 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
+import { useDeletePipeline } from '@/hooks/useDeletePipeline';
 
 interface Pipeline {
   pipeline_id: number;
@@ -73,11 +76,14 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pipelineToDelete, setPipelineToDelete] = useState<Pipeline | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
+  const deletePipelineMutation = useDeletePipeline();
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -134,6 +140,43 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
         return [...prev, pipelineId];
       }
     });
+  };
+
+  // Handle delete pipeline
+  const handleDeleteClick = (e: React.MouseEvent, pipeline: Pipeline) => {
+    e.stopPropagation();
+    setPipelineToDelete(pipeline);
+    setDeleteDialogOpen(true);
+    setOpen(false); // Close the popover
+  };
+
+  const handleDeleteConfirm = () => {
+    if (pipelineToDelete) {
+      deletePipelineMutation.mutate(pipelineToDelete.pipeline_id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setPipelineToDelete(null);
+          
+          // Check if we're deleting the currently selected pipeline
+          if (id === pipelineToDelete.pipeline_id.toString()) {
+            // Navigate to dashboard
+            navigate(ROUTES.DASHBOARD);
+          }
+          
+          // Refresh the pipelines list
+          fetchPipelineList();
+        },
+        onError: (error) => {
+          console.error('Delete failed:', error);
+          // Dialog stays open on error so user can try again
+        }
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setPipelineToDelete(null);
   };
 
   // Handle pipeline selection
@@ -278,21 +321,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                       {isLoading ? 'Loading pipelines...' : 'No pipelines found'}
                     </CommandEmpty>
 
-                    {/* Create new pipeline option */}
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          setCreateDialogOpen(true);
-                          setOpen(false);
-                        }}
-                        className="flex items-center gap-2 p-2 cursor-pointer"
-                      >
-                        <PlusCircle size={16} className="text-primary" />
-                        <span className="font-medium">Create new pipeline</span>
-                      </CommandItem>
-                    </CommandGroup>
-
-                    {filteredPipelines.length > 0 && <CommandSeparator />}
+                    
 
                     {/* Favorite pipelines */}
                     {favoritePipelines.length > 0 && (
@@ -335,6 +364,13 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                                   className="text-yellow-500" 
                                   fill="currentColor" 
                                 />
+                              </button>
+                              <button 
+                                onClick={(e) => handleDeleteClick(e, pipeline)}
+                                className="p-1 hover:bg-red-50 rounded text-red-600 hover:text-red-700"
+                                title="Delete pipeline"
+                              >
+                                <Trash2 size={12} />
                               </button>
                             </div>
                           </CommandItem>
@@ -389,6 +425,13 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                                   fill={favorites.includes(pipeline.pipeline_id) ? "currentColor" : "none"}
                                 />
                               </button>
+                              <button 
+                                onClick={(e) => handleDeleteClick(e, pipeline)}
+                                className="p-1 hover:bg-red-50 rounded text-red-600 hover:text-red-700"
+                                title="Delete pipeline"
+                              >
+                                <Trash2 size={12} />
+                              </button>
                             </div>
                           </CommandItem>
                         ))}
@@ -416,6 +459,17 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
       <CreatePipelineDialog
         open={createDialogOpen}
         handleClose={() => setCreateDialogOpen(false)}
+      />
+
+      {/* Delete Pipeline Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Pipeline"
+        description={`Are you sure you want to delete "${pipelineToDelete?.pipeline_name}"? This action cannot be undone and will permanently remove the pipeline and all associated data.`}
+        confirmText={pipelineToDelete?.pipeline_name || ''}
+        onConfirm={handleDeleteConfirm}
+        isLoading={deletePipelineMutation.isPending}
       />
     </>
   );

@@ -45,7 +45,7 @@ const BuildPlayGround: React.FC = () => {
     const filteredNodes = useMemo(() => nodeData.nodes, []);
     // Create a Set from the array for .has() functionality
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
-console.log(selectedSchema)
+// console.log(selectedSchema)
     // Update memoizedNodeTypes to include debug props
     const memoizedNodeTypes = useMemo(() => ({
         custom: (props: any) => (
@@ -95,7 +95,6 @@ console.log(selectedSchema)
                     handleCenter();
                     // Make sure nodes are visible when layout changes
                     if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
-                        console.log('Centering nodes after layout change');
                         handleCenter();
                     }
                 } catch (error) {
@@ -286,7 +285,6 @@ console.log(selectedSchema)
                             snapToGrid={true}
                             snapGrid={[15, 15]}
                             connectionLineStyle={{ strokeWidth: 2, stroke: '#1a192b', strokeDasharray: '5,3' }}
-                            connectionLineType="smoothstep"
                             deleteKeyCode={['Backspace', 'Delete']}
                             multiSelectionKeyCode={['Control', 'Meta']}
                             selectionKeyCode={['Shift']}

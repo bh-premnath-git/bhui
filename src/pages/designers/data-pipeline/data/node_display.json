@@ -134,18 +134,7 @@
         }
       }
     },
-    {
-      "ui_properties": {
-        "module_name": "Select",
-        "color": "#5a9fee",
-        "icon": "/assets/buildPipeline/squre/11.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
+    
     {
       "ui_properties": {
         "module_name": "SequenceGenerator",
@@ -158,27 +147,16 @@
         }
       }
     },
-    {
-      "ui_properties": {
-        "module_name": "Drop",
-        "color": "#905aee",
-        "icon": "/assets/buildPipeline/squre/13.svg",
-        "ports": {
-          "inputs": 1,
-          "outputs": 1,
-          "maxInputs": 1
-        }
-      }
-    },
+    
     {
       "ui_properties": {
         "module_name": "Lookup",
         "color": "#4a6bdf",
         "icon": "/assets/buildPipeline/squre/3.svg",
         "ports": {
-          "inputs": 2,
+          "inputs": 1,
           "outputs": 1,
-          "maxInputs": "unlimited"
+          "maxInputs": 1
         }
       }
     },
@@ -191,6 +169,18 @@
           "inputs": 1,
           "outputs": 1,
           "maxInputs": "unlimited"
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "DQCheck",
+        "color": "#ff6b6b",
+        "icon": "/assets/buildPipeline/squre/10.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
         }
       }
     }

@@ -1,9 +1,10 @@
-import { Mic, Send } from "lucide-react";
+import { Mic, MicOff, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from "@/components/ui/select";
 import { useState, useRef, useEffect } from "react";
 import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 
 interface Connection {
   id: number | string;
@@ -19,6 +20,8 @@ interface AIChatInputProps {
   placeholder?: string;
   disabled?: boolean;
   onConnectionChange?: (connectionId: string) => void;
+  enableVoiceInput?: boolean;
+  isLoading?: boolean;
 }
 
 export function AIChatInput({
@@ -30,12 +33,25 @@ export function AIChatInput({
   disabled,
   variant,
   onConnectionChange,
+  enableVoiceInput = false,
 }: AIChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const isExplorer = variant === 'explorer';
+  
+  // Speech recognition functionality
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    error,
+    isSupported,
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useSpeechRecognition();
   
   // Always call the hook to avoid conditional hook calls
   const { 
@@ -65,6 +81,27 @@ export function AIChatInput({
       onConnectionChange?.(connId);
     }
   }, [connections, selectedConnection, isExplorer, onConnectionChange, isLoading, isFetching]);
+
+  // Handle voice input transcript
+  useEffect(() => {
+    if (transcript) {
+      onChange(input + transcript);
+      resetTranscript();
+    }
+  }, [transcript, input, onChange, resetTranscript]);
+
+  // Handle voice input toggle
+  const handleVoiceInput = () => {
+    if (enableVoiceInput && isSupported) {
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    } else if (onVoiceInput) {
+      onVoiceInput();
+    }
+  };
 
   const handleConnectionChange = (connId: string) => {
     setSelectedConnection(connId);
@@ -117,27 +154,56 @@ export function AIChatInput({
   };
 
   return (
-    <div
-      className={`
-        flex items-center w-full bg-white rounded-md
-        px-2 py-1 space-x-1 shadow-sm
-        border transition-all duration-200 ease-in-out
-        relative
-        ${isFocused 
-          ? "border-green-400 ring-1 ring-green-400/30" 
-          : "border-gray-200 hover:border-gray-300"}
-      `}
-      data-connection-id={isExplorer ? selectedConnection : undefined}
-    >
+    <div className="space-y-2">
+      {/* Voice Status Indicator */}
+      {enableVoiceInput && isListening && (
+        <div className="flex items-center justify-center gap-2 p-2 bg-red-50 rounded-lg">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
+          <span className="text-sm font-medium text-red-700">Listening... Speak now</span>
+        </div>
+      )}
+      
+      {/* Voice Error Display */}
+      {enableVoiceInput && error && (
+        <div className="p-2 bg-red-100 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      
+      <div
+        className={`
+          flex items-center w-full bg-white rounded-md
+          px-2 py-1 space-x-1 shadow-sm
+          border transition-all duration-200 ease-in-out
+          relative
+          ${isFocused 
+            ? "border-green-400 ring-1 ring-green-400/30" 
+            : "border-gray-200 hover:border-gray-300"}
+        `}
+        data-connection-id={isExplorer ? selectedConnection : undefined}
+      >
       {/* Voice input */}
       <Button
-        onClick={onVoiceInput}
+        onClick={handleVoiceInput}
         variant="ghost"
         size="icon"
-        className="h-8 w-8 text-gray-400 hover:text-gray-600 transition-colors"
-        aria-label="Voice input"
+        className={`h-8 w-8 transition-colors ${
+          enableVoiceInput && isListening
+            ? "text-red-500 hover:text-red-600"
+            : "text-gray-400 hover:text-gray-600"
+        }`}
+        aria-label={enableVoiceInput && isListening ? "Stop listening" : "Voice input"}
+        disabled={enableVoiceInput && !isSupported}
       >
-        <Mic className="h-4 w-4" />
+        {enableVoiceInput && isListening ? (
+          <MicOff className="h-4 w-4" />
+        ) : (
+          <Mic className="h-4 w-4" />
+        )}
       </Button>
 
       {/* Connection dropdown - shown only for explorer variant */}
@@ -168,7 +234,7 @@ export function AIChatInput({
       <div className="flex-grow">
         <Textarea
           ref={textareaRef}
-          value={input}
+          value={input + interimTranscript}
           onChange={e => onChange(e.target.value)}
           placeholder={
             isExplorer && !selectedConnection
@@ -213,17 +279,22 @@ export function AIChatInput({
         onClick={onSend}
         variant="ghost"
         size="icon"
-        disabled={disabled || !input.trim()}
+        disabled={disabled || !input.trim() || isLoading}
         className={`
           h-7 w-7 transition-all duration-150 ease-in-out
-          ${disabled || !input.trim()
+          ${disabled || !input.trim() || isLoading
             ? "text-green-500 cursor-not-allowed opacity-50"
             : "text-green-700 hover:text-green-600 hover:bg-green-50"}
         `}
-        aria-label="Send message"
+        aria-label={isLoading ? "Processing..." : "Send message"}
       >
-        <Send className="h-4 w-4" />
+        {isLoading ? (
+          <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Send className="h-4 w-4" />
+        )}
       </Button>
+      </div>
     </div>
   );
 }

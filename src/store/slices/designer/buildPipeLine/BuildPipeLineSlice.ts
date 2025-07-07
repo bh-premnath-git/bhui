@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
 
 const token: any = sessionStorage?.getItem("token");
@@ -241,9 +241,9 @@ export const getTransformationCount: any = createAsyncThunk(
         method: 'GET',
         params: {
           pipeline_name: params.params,
-          host: params.host || 'host.docker.internal',
+          host: params.host,
           port: 15003,
-          use_secure: params.use_secure || 'false'
+          use_secure: USE_SECURE || 'false'
         }
       });
       return response;
@@ -259,7 +259,7 @@ export const getTransformationOutput: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       const response = await apiService.get({
-        baseUrl: CATALOG_REMOTE_API_URL,
+        baseUrl:CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/get_transformation_output`,
         usePrefix: true,
         method: 'GET',
@@ -299,8 +299,8 @@ export const startPipeLine = createAsyncThunk(
       console.log(Object.fromEntries(params),"Object.fromEntries(params)")
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/debug/start_pipeline`,
-        usePrefix: true,
+        url: `/api/v1/pipeline/debug/start_pipeline`,
+        // usePrefix: true,
         method: 'POST',
         params: Object.fromEntries(params)
       });
@@ -320,8 +320,8 @@ export const stopPipeLine: any = createAsyncThunk(
       const host = params.host || 'host.docker.internal';
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${params.use_secure || 'false'}`,
-        usePrefix: true,
+        url: `/api/v1/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
+        // usePrefix: true,
         method: 'POST',
       });
       return response;
@@ -355,23 +355,25 @@ export const getPipelineById: any = createAsyncThunk(
 
 export const fetchTransformationOutput = createAsyncThunk<
   TransformationMetrics,
-  { pipelineName: string; transformationName: string; isFlow?: boolean }
+  { pipelineName: string; transformationName: string; isFlow?: boolean,host?:string }
 >(
   'pipeline/fetchTransformationOutput',
-  async ({ pipelineName, transformationName, isFlow = false }) => {
+  async ({ pipelineName, transformationName, isFlow = false,host }) => {
     // Determine the correct endpoint based on whether we're in flow or pipeline context
     const url = isFlow 
-      ? `/flow/debug/get_transformation_output` 
-      : `/pipeline/debug/get_transformation_output`;
+      ? `/api/v1/flow/debug/get_transformation_output` 
+      : `/api/v1/pipeline/debug/get_transformation_output`;
       
     const response = await apiService.get<TransformationMetrics>({
-      baseUrl: CATALOG_REMOTE_API_URL,
+      baseUrl:CATALOG_REMOTE_API_URL,
       url,
-      usePrefix: true,
+      // usePrefix: true,
       method: 'GET',
       params: {
         [isFlow ? 'flow_name' : 'pipeline_name']: pipelineName,
         transformation_name: transformationName,
+        use_secure: USE_SECURE || 'false',
+        host:host||'host.docker.internal',
         page: 1,
         page_size: 50,
       }
@@ -422,10 +424,10 @@ export const runNextCheckpoint = createAsyncThunk(
   'build-pipline/runNextCheckpoint',
   async (params: { pipeline_name: string, host?: string }, thunkAPI) => {
     try {
-      const host = params.host || 'host.docker.internal';
+      const host = params.host ;
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003`,
+        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
         usePrefix: true,
         method: 'POST'
       });

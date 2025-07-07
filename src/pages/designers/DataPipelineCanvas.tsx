@@ -45,7 +45,7 @@ const DataPipelineCanvasPage = () => {
     if (!isLoading && !id) {
       if (Array.isArray(pipelines) && pipelines.length > 0) {
         // Redirect to the first pipeline
-        const firstPipeline = pipelines[0];
+        const firstPipeline:any = pipelines[0];
         setDebuggedNodesList([]);
         setDebuggedNodes([]);
         setPipeline_id(firstPipeline.pipeline_id);

@@ -9,7 +9,8 @@ import {
   Star, 
   Clock, 
   GitBranch,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -34,6 +35,8 @@ import { AppDispatch } from '@/store';
 import { useFlow } from '@/context/designers/FlowContext';
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
 import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
+import { useDeleteFlow } from '@/hooks/useDeleteFlow';
 
 interface Flow {
   flow_id: number;
@@ -67,6 +70,8 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
   const [favorites, setFavorites] = useState<number[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [flowToDelete, setFlowToDelete] = useState<Flow | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,6 +79,7 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
   const { id } = useParams<{ id: string }>();
   const { setSelectedFlowId } = useFlow();
   const { fetchFlowsList } = useFlowApi();
+  const deleteFlowMutation = useDeleteFlow();
 
   // Use the hook to get flows data
   const {
@@ -147,6 +153,43 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
         return [...prev, flowId];
       }
     });
+  };
+
+  // Handle delete flow
+  const handleDeleteClick = (e: React.MouseEvent, flow: Flow) => {
+    e.stopPropagation();
+    setFlowToDelete(flow);
+    setDeleteDialogOpen(true);
+    setOpen(false); // Close the popover
+  };
+
+  const handleDeleteConfirm = () => {
+    if (flowToDelete) {
+      deleteFlowMutation.mutate(flowToDelete.flow_id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setFlowToDelete(null);
+          
+          // Check if we're deleting the currently selected flow
+          if (id === flowToDelete.flow_id.toString()) {
+            // Navigate to dashboard
+            navigate(ROUTES.DASHBOARD);
+          }
+          
+          // Refresh the flows list
+          refetchFlows();
+        },
+        onError: (error) => {
+          console.error('Delete failed:', error);
+          // Dialog stays open on error so user can try again
+        }
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setFlowToDelete(null);
   };
 
   // Handle flow selection
@@ -310,21 +353,6 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
                       {isLoading || flowsLoading ? 'Loading flows...' : 'No flows found'}
                     </CommandEmpty>
 
-                    {/* Create new flow option */}
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          setCreateDialogOpen(true);
-                          setOpen(false);
-                        }}
-                        className="flex items-center gap-2 p-2 cursor-pointer"
-                      >
-                        <PlusCircle size={16} className="text-primary" />
-                        <span className="font-medium">Create new flow</span>
-                      </CommandItem>
-                    </CommandGroup>
-
-                    {filteredFlows.length > 0 && <CommandSeparator />}
 
                     {/* Favorite flows */}
                     {favoriteFlows.length > 0 && (
@@ -367,6 +395,13 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
                                   className="text-yellow-500" 
                                   fill="currentColor" 
                                 />
+                              </button>
+                              <button 
+                                onClick={(e) => handleDeleteClick(e, flow)}
+                                className="p-1 hover:bg-red-50 rounded text-red-600 hover:text-red-700"
+                                title="Delete flow"
+                              >
+                                <Trash2 size={12} />
                               </button>
                             </div>
                           </CommandItem>
@@ -421,6 +456,13 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
                                   fill={favorites.includes(flow.flow_id) ? "currentColor" : "none"}
                                 />
                               </button>
+                              <button 
+                                onClick={(e) => handleDeleteClick(e, flow)}
+                                className="p-1 hover:bg-red-50 rounded text-red-600 hover:text-red-700"
+                                title="Delete flow"
+                              >
+                                <Trash2 size={12} />
+                              </button>
                             </div>
                           </CommandItem>
                         ))}
@@ -448,6 +490,17 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
       <CreateFlowDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+
+      {/* Delete Flow Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Flow"
+        description={`Are you sure you want to delete "${flowToDelete?.flow_name}"? This action cannot be undone and will permanently remove the flow and all associated data.`}
+        confirmText={flowToDelete?.flow_name || ''}
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteFlowMutation.isPending}
       />
     </>
   );

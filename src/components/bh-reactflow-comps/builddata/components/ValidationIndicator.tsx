@@ -205,7 +205,7 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
             </div>
             
             {/* Second row: Label and type in horizontal layout */}
-            <div className="flex items-center justify-center gap-2 flex-wrap">
+            <div className="flex items-center justify-center flex-wrap">
                 {label && (
                     <span className="text-black text-[8px] text-center whitespace-nowrap" title={typeof label === 'string' ? label : ''}>
                         {label}

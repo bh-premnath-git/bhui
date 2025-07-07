@@ -42,6 +42,7 @@ interface ConnectionFormProps {
   connectionId: string;
   onBack: () => void;
   connectionConfigName: string;
+  selectedEnvironment: string;
   isEdit?: boolean;
   formData?: any;
   mode?: 'edit' | 'new';
@@ -59,6 +60,7 @@ export function ConnectionForm({
   connectionId,
   onBack,
   connectionConfigName,
+  selectedEnvironment,
   isEdit,
   formData,
   mode = 'new'
@@ -456,6 +458,7 @@ export function ConnectionForm({
         connection_type: connectionType,
         connection_status: 'active',
         data_residency: 'auto',
+        bh_env_id: parseInt(selectedEnvironment),
         custom_metadata: custom_metadata,
         init_vector: initVector,
         config: encryptedString,

@@ -92,7 +92,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
       handleClose();
 
       const response = await dispatch(
-        insertPipeline({ ...values, tags: {} }),
+        insertPipeline({ ...values, tags: {}, engine_type: selectedEngineType }),
       ).unwrap();
 
       if (!response?.error) {

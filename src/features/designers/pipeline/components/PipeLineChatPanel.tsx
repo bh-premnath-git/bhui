@@ -246,10 +246,45 @@ const PipeLineChatPanel = () => {
   const { id } = useParams<{ id: string }>();
 
 
-  // Helper function to get avatar initials from msg_owner
-  const getAvatarInitials = (msgOwner?: string): string => {
-    if (!msgOwner) return 'AI'; // Default for assistant messages
-    return msgOwner.substring(0, 2).toUpperCase();
+  // Helper function to get avatar initials
+  const getAvatarInitials = (role: 'user' | 'assistant', msgOwner?: string): string => {
+    if (role === 'assistant') {
+      return 'AI'; // Always show AI for assistant messages
+    } else {
+      // For user messages, try to get initials from JWT token
+      console.log('Getting avatar for user, JWT decoded object:', decoded); // Debug log
+      
+      // Try different JWT token properties
+      let userInitials = '';
+      
+      if (decoded?.name) {
+        const nameParts = decoded.name.split(' ');
+        if (nameParts.length >= 2) {
+          userInitials = (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+        } else {
+          userInitials = nameParts[0].substring(0, 2).toUpperCase();
+        }
+      } else if (decoded?.username || decoded?.userName) {
+        const username = decoded.username || decoded.userName;
+        userInitials = username.substring(0, 2).toUpperCase();
+      } else if (decoded?.email) {
+        userInitials = decoded.email.substring(0, 2).toUpperCase();
+      } else if (decoded?.first_name && decoded?.last_name) {
+        userInitials = (decoded.first_name.charAt(0) + decoded.last_name.charAt(0)).toUpperCase();
+      } else if (decoded?.first_name) {
+        userInitials = decoded.first_name.substring(0, 2).toUpperCase();
+      } else if (decoded?.sub) {
+        // JWT 'sub' field often contains user identifier
+        userInitials = decoded.sub.substring(0, 2).toUpperCase();
+      } else if (msgOwner) {
+        userInitials = msgOwner.substring(0, 2).toUpperCase();
+      } else {
+        userInitials = 'U'; // Default fallback for user
+      }
+      
+      console.log('User initials result:', userInitials); // Debug log
+      return userInitials;
+    }
   };
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -275,6 +310,10 @@ const PipeLineChatPanel = () => {
   const pipelineContext = usePipelineContext();
   const token: any = sessionStorage?.getItem("token");
   const decoded: any = token ? jwtDecode(token) : null;
+  
+  // Debug log to check JWT token
+  console.log('JWT token:', token ? 'exists' : 'not found');
+  console.log('JWT decoded:', decoded);
   const {
     handleNodeClick,
     addNodeToHistory,
@@ -457,10 +496,6 @@ const PipeLineChatPanel = () => {
           // No dependencies needed, show confirmation
           setLastAddedTransformation(null);
           setTimeout(() => {
-            addMessageWithFormData({
-              role: 'assistant',
-              content: `Perfect! I've successfully added the ${lastAddedTransformation.type} transformation to your pipeline. Let's add another transformation.`
-            });
             handleShowTransformations();
           }, 300);
         }
@@ -964,7 +999,7 @@ const PipeLineChatPanel = () => {
     },
   });
 
-  const handleSend = async () => {
+  const handleSend = async (availableColumns?: Record<string, any>) => {
     const trimmedInput = input.trim();
     if (!trimmedInput || isApiLoading) return;
     
@@ -974,24 +1009,9 @@ const PipeLineChatPanel = () => {
     setIsApiLoading(true);
 
     try {
-      // Get available columns for the current context
-      let availableColumns: Record<string, any> = {};
-      if (nodes && edges) {
-        try {
-          // For pipeline editing, we might not have a specific current node
-          // So we'll pass an empty object or try to get general column suggestions
-          const columnSuggestions = await getColumnSuggestions('', nodes, edges, pipelineDtl);
-          console.log('Column suggestions:', columnSuggestions);
-          // Convert array to object format if needed
-          if (Array.isArray(columnSuggestions)) {
-            availableColumns = { columns: columnSuggestions };
-          } else {
-            availableColumns = columnSuggestions || {};
-          }
-        } catch (columnError) {
-          console.warn('Failed to get column suggestions:', columnError);
-        }
-      }
+      // Use the availableColumns passed from AIChatInput
+      // If not provided, default to empty columns
+      const columnsToUse = availableColumns || { columns: [] };
 
       // Call the pipeline schema edit API
       const response: any = await apiService.post({
@@ -1002,7 +1022,7 @@ const PipeLineChatPanel = () => {
         data: {
           pipeline_id: id, // Use the ID from params
           user_request: trimmedInput,
-          available_columns: availableColumns
+          available_columns: columnsToUse
         },
         metadata: {
           errorMessage: 'Failed to process your request'
@@ -1307,7 +1327,7 @@ const PipeLineChatPanel = () => {
     setTimeout(() => {
       addMessageWithFormData({
         role: 'assistant',
-        content: `Perfect! I've successfully added ${selectedSources.length} data source${selectedSources.length > 1 ? 's' : ''} to your pipeline. Now let's add a transformation.`
+        content: `Now let's add a next transformation.`
       });
       handleShowTransformations();
     }, selectedSources.length * 200 + 500);
@@ -1348,7 +1368,7 @@ const PipeLineChatPanel = () => {
           setTimeout(() => {
             addMessageWithFormData({
               role: 'assistant',
-              content: `Found ${response?.data.length} data sources. Please select the ones you want to add to your pipeline:`,
+              content:"",
               formData: {
                 schema: { type: 'multiselect', sources: response?.data },
                 sourceColumns: [],
@@ -1674,13 +1694,6 @@ const PipeLineChatPanel = () => {
     if (availableDependencies.length === 0) {
       // No available dependencies, show message and directly show transformations
       setTimeout(() => {
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            role: 'assistant',
-            content: `Perfect! I've successfully added the ${node.ui_properties.module_name} transformation to your pipeline, but there are no existing nodes to connect it to. Let's add another transformation.`
-          },
-        ]);
         handleShowTransformations();
       }, 300);
       return;
@@ -2197,10 +2210,7 @@ const PipeLineChatPanel = () => {
                         className="w-6 h-6 mt-1 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
                         style={{ backgroundColor: message.role === 'assistant' ? '#009459' : '#000000' }}
                       >
-                        {message.role === 'assistant'
-                          ? getAvatarInitials(message.msg_owner)
-                          : getAvatarInitials(message.msg_owner)
-                        }
+                        {getAvatarInitials(message.role, message.msg_owner)}
                       </div>
                       <div
                         className={`flex-1 rounded-lg px-3 py-2 shadow-sm ${message.role === 'assistant'
@@ -2696,76 +2706,27 @@ const PipeLineChatPanel = () => {
                 <div className="mt-2 mb-3">
                   <div className="flex items-start gap-2">
                     <div className="w-6 h-6 mt-1 rounded-full bg-blue-500 flex-shrink-0" />
-                    <div className="flex-1 bg-white rounded-lg border shadow-sm">
-                      {/* Compact Search Header */}
-                      <div className="p-3 border-b">
-                        <div className="relative">
-                          <Input
-                            placeholder="Search transformations..."
-                            value={transformationSearchTerm}
-                            onChange={(e) => setTransformationSearchTerm(e.target.value)}
-                            className="h-8 pl-8 text-sm"
-                          />
-                          <svg className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                        </div>
-                      </div>
-                      
-                      {/* Compact Filtered Transformations List */}
-                      <div className="max-h-48 overflow-y-auto">
-                        {nodeDisplayData.nodes
-                          .filter(node => 
-                            node.ui_properties.module_name
-                              .toLowerCase()
-                              .includes(transformationSearchTerm.toLowerCase())
-                          )
-                          .map((node, index) => (
-                            <div
-                              key={node.ui_properties.module_name}
-                              className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                              onClick={() => handleTransformationSelection(node.ui_properties.module_name)}
+                    <div className="flex-1">
+                      <Select onValueChange={(value) => handleTransformationSelection(value)}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a transformation" />
+                        </SelectTrigger>
+                        <SelectContent style={{zIndex:9999}}>
+                          {nodeDisplayData.nodes.map((node) => (
+                            <SelectItem 
+                              key={node.ui_properties.module_name} 
+                              value={node.ui_properties.module_name}
                             >
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-sm text-gray-900">{node.ui_properties.module_name}</span>
-                                <div className="text-xs text-gray-400">
-                                  {node.ui_properties.module_name === "Reader" ? "Data Source" : "Transform"}
-                                </div>
+                              <div className="flex items-center justify-between w-full">
+                                <span>{node.ui_properties.module_name}</span>
+                                <span className="text-xs text-gray-500 ml-2">
+                                  {node.ui_properties.module_name === "Reader" ? "Source" : "Transform"}
+                                </span>
                               </div>
-                            </div>
-                          ))
-                        }
-                        {nodeDisplayData.nodes
-                          .filter(node => 
-                            node.ui_properties.module_name
-                              .toLowerCase()
-                              .includes(transformationSearchTerm.toLowerCase())
-                          ).length === 0 && (
-                          <div className="px-3 py-6 text-center text-gray-500 text-sm">
-                            <div className="text-gray-400 mb-1">No transformations found</div>
-                            <div className="text-xs text-gray-300">Try a different search term</div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Footer with count */}
-                      {nodeDisplayData.nodes.filter(node => 
-                        node.ui_properties.module_name
-                          .toLowerCase()
-                          .includes(transformationSearchTerm.toLowerCase())
-                      ).length > 0 && (
-                        <div className="px-3 py-2 bg-gray-50 border-t text-xs text-gray-500">
-                          {nodeDisplayData.nodes.filter(node => 
-                            node.ui_properties.module_name
-                              .toLowerCase()
-                              .includes(transformationSearchTerm.toLowerCase())
-                          ).length} transformation{nodeDisplayData.nodes.filter(node => 
-                            node.ui_properties.module_name
-                              .toLowerCase()
-                              .includes(transformationSearchTerm.toLowerCase())
-                          ).length !== 1 ? 's' : ''} available
-                        </div>
-                      )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -2785,6 +2746,9 @@ const PipeLineChatPanel = () => {
           enableVoiceInput={true}
           disabled={isApiLoading}
           isLoading={isApiLoading}
+          nodes={nodes}
+          edges={edges}
+          pipelineDtl={pipelineDtl}
         />
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import { Connection, ConnectionType, ConnectionValue, ConnectionPaginatedResponse } from '@/types/admin/connection';
+import { Environment, EnvironmentListResponse } from '@/types/admin/environment';
 import { toast } from 'sonner';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
@@ -237,6 +238,38 @@ export const useConnectionType = (options: UseConnectionTypeOptions = { shouldFe
         isEnvironmentLoading,
         isEnvironmentFetching,
         isEnvironmentError,
+        refetch
+    };
+}
+
+export const useEnvironments = (options: { shouldFetch?: boolean } = { shouldFetch: true }) => {
+    const { getAll: getAllEnvironments } = useResource<Environment>(
+        '/environment/environment',
+        CATALOG_REMOTE_API_URL,
+        true
+    );
+    
+    const { 
+        data: environmentsResponse, 
+        isLoading, 
+        isFetching, 
+        isError,
+        refetch 
+    } = getAllEnvironments<EnvironmentListResponse>({
+        url: '/environment/environment/list/',
+        queryOptions: {
+            enabled: options.shouldFetch,
+            retry: 2
+        },
+        params: { limit: 10, offset: 0 }
+    });
+
+    return {
+        environments: environmentsResponse?.data || [],
+        total: environmentsResponse?.total || 0,
+        isLoading,
+        isFetching,
+        isError,
         refetch
     };
 }

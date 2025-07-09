@@ -7,7 +7,9 @@ import { useDataCatalog } from '@/features/data-catalog/hooks/usedataCatalog';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Database } from 'lucide-react';
+import { Database, ImportIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 function DataCatalogPage() {
   const [offset, setOffset] = useState(0);
@@ -68,6 +70,25 @@ function DataCatalogPage() {
           title="Welcome to Your Data Catalog!"
           description="Ready to manage your data."
           Icon={Database}
+          action={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Add Dataset</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onClick={() => window.dispatchEvent(new Event("openImportSourceDialog"))}
+                >
+                  <Database className="mr-2 h-4 w-4" /> Tables
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => window.dispatchEvent(new Event("openLocalImport"))}
+                >
+                  <ImportIcon className="mr-2 h-4 w-4" /> Flat File
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
         />
       </div>
     );

@@ -7,11 +7,25 @@ import { useDataCatalog } from '@/features/data-catalog/hooks/usedataCatalog';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Database } from 'lucide-react';
+import { Database, Upload, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDataSourceWizard';
+import { useProjects } from '@/features/admin/projects/hooks/useProjects';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { getSource } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { useNavigation } from '@/hooks/useNavigation';
+import { ROUTES } from '@/config/routes';
 
 function DataCatalogPage() {
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [showImportSection, setShowImportSection] = useState(false);
 
   const {
     datasources,
@@ -28,6 +42,28 @@ function DataCatalogPage() {
     offset: offset
   });
   const dataCatalogSrv = useDataCatalogManagementService();
+  const { projects } = useProjects();
+  const dispatch = useAppDispatch();
+  const { handleNavigation } = useNavigation();
+
+  const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
+    ProjectId: project.bh_project_id,
+    Project_Name: project.bh_project_name
+  })) : [];
+
+  const handleFlatFileImport = () => {
+    setShowImportSection(true);
+  };
+
+  const handleTablesImport = () => {
+    handleNavigation(`${ROUTES.DATA_CATALOG}/datasource-import`);
+  };
+
+  const closeImportSection = () => {
+    setShowImportSection(false);
+    dispatch(getSource());
+    refetch(); // Refresh data after import
+  };
 
   useEffect(() => {
     if (datasources && datasources.length > 0) {
@@ -64,11 +100,38 @@ function DataCatalogPage() {
   if (datasources.length === 0) {
     return (
       <div className="p-6">
-        <EmptyState
-          title="Welcome to Your Data Catalog!"
-          description="Ready to manage your data."
-          Icon={Database}
-        />
+        {showImportSection ? (
+          <ImportDataSourceStepper 
+            gitProjectList={gitProjectList} 
+            closeImportSection={closeImportSection} 
+          />
+        ) : (
+          <EmptyState
+            title="Welcome to Your Data Catalog!"
+            description="Ready to manage your data. Start by importing your first data source."
+            Icon={Database}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="mt-4">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Import Dataset
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-48">
+                  <DropdownMenuItem onClick={handleTablesImport}>
+                    <Database className="w-4 h-4 mr-2" />
+                    Tables
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleFlatFileImport}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Flat File
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+        )}
       </div>
     );
   }

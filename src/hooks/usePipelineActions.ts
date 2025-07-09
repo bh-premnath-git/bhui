@@ -6,7 +6,8 @@ import {
     runNextCheckpoint, 
     stopPipeLine,
     getPipelineById,
-    setBuildPipeLineDtl
+    setBuildPipeLineDtl,
+    setPipeLineType
 } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { convertOptimisedPipelineJsonToPipelineJson, convertUIToPipelineJsonUpToNode, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
 import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
@@ -482,6 +483,7 @@ export const usePipelineActions = ({
             // Update pipeline name and JSON safely
             setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name);
             dispatch(setBuildPipeLineDtl(response.pipeline_json));
+            dispatch(setPipeLineType(response.pipeline_type || null));
             let optimised = await resolveRefsPipelineJson(response?.pipeline_json, response?.pipeline_json);
             setPipelineJson(optimised);
 

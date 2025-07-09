@@ -25,7 +25,7 @@ import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/Build
 import { debugNodeData, validateNodeTransformationData, compareBeforeAfterSubmit } from '@/lib/debugPipeline';
 import { useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
+import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion'; 
 
 // Define the form schema based on Reader.json
 const readerFormSchema = z.object({
@@ -777,6 +777,50 @@ const PipeLineChatPanel = () => {
 
 
 
+      } else if (formData.schema && formData.schema.title === 'Target') {
+        // Handle Target forms specifically
+        const initialValues = formData.initialValues || {};
+        const targetName = initialValues.name || `Target_${formData.currentNodeId}`;
+
+        // User request for target
+        messages.push({
+          id: `target_request_${messageId}`,
+          role: 'user',
+          content: `Configure Target`,
+          msg_owner: originalMsgOwner
+        });
+
+        // Assistant confirmation
+        messages.push({
+          id: `target_added_${messageId}`,
+          role: 'assistant',
+          content: `I've added a Target transformation to your pipeline. Let's configure it:`,
+          msg_owner: originalMsgOwner
+        });
+
+        // The actual form data message (from database) - but ensure initialValues has proper name
+        messages.push({
+          ...formDataMessage,
+          formData: {
+            ...formDataMessage.formData,
+            initialValues: {
+              ...formDataMessage.formData.initialValues,
+              name: targetName // Ensure name is properly set
+            }
+          },
+          suggestions: [] // Will be regenerated
+        });
+
+        // Success message after target configuration
+        messages.push({
+          id: `target_success_${messageId}`,
+          role: 'assistant',
+          content: `Excellent! The Target "${targetName}" has been configured successfully.`,
+          msg_owner: originalMsgOwner,
+          suggestions: [
+            { text: "Add another transformation", onClick: handleShowTransformations },
+          ]
+        });
       } else if (formData.schema && formData.schema.module_name) {
         // Handle other transformation types
         const transformationType = formData.schema.module_name;
@@ -902,14 +946,57 @@ const PipeLineChatPanel = () => {
           setSavedMessageIds(savedFormDataIds);
           setLastSavedMessageCount(recreatedMessages.length);
 
-          // Restore forms based on the last form data message
+          // Restore form states for all saved form data messages
+          const restoredFormStates: Record<string, any> = {};
+          
+          formDataMessages.forEach((formDataMsg: any) => {
+            if (formDataMsg.formData && formDataMsg.formData.currentNodeId) {
+              const nodeId = formDataMsg.formData.currentNodeId;
+              const initialValues = formDataMsg.formData.initialValues || {};
+              
+              // Restore form state based on form type
+              if (formDataMsg.formData.isTarget || formDataMsg.formData.schema?.title === 'Target') {
+                // Target form restoration
+                restoredFormStates[nodeId] = {
+                  ...initialValues,
+                  name: initialValues.name || `Target_${nodeId}`,
+                  nodeId: nodeId
+                };
+              } else if (formDataMsg.formData.schema?.module_name === 'Reader') {
+                // Reader form restoration
+                restoredFormStates[nodeId] = {
+                  ...initialValues,
+                  reader_name: initialValues.reader_name || initialValues.name || 'data source',
+                  name: initialValues.name || initialValues.reader_name || 'data source'
+                };
+              } else {
+                // Other transformation form restoration
+                restoredFormStates[nodeId] = {
+                  ...initialValues,
+                  nodeId: nodeId
+                };
+              }
+            }
+          });
+          
+          // Set the restored form states
+          if (Object.keys(restoredFormStates).length > 0) {
+            setFormStates(prevStates => ({
+              ...prevStates,
+              ...restoredFormStates
+            }));
+            setformsHanStates(prevStates => ({
+              ...prevStates,
+              ...restoredFormStates
+            }));
+          }
+
+          // Check if we need to restore reader form for the last message
           const lastFormDataMessage = formDataMessages[formDataMessages.length - 1];
           if (lastFormDataMessage && lastFormDataMessage.formData) {
             const formData = lastFormDataMessage.formData;
 
-            // Check if we need to restore reader form
             if (formData.schema && formData.schema.module_name === 'Reader') {
-
               const initialValues = formData.initialValues || {};
               const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
 
@@ -1195,7 +1282,7 @@ const PipeLineChatPanel = () => {
       const isTarget = transformationType === 'Target';
 
       // Build the dependency data from selectedDependencies instead of relying on edges state
-      const dependentOnData = selectedDependencies.map((dep, index) => ({
+      const dependentOnData:any = selectedDependencies.map((dep, index) => ({
         source: dep.id,
         targetHandle: `input-${dep.id}` // Use consistent handle naming
       }));
@@ -1881,12 +1968,7 @@ const PipeLineChatPanel = () => {
                 initialValues: {
                   nodeId: targetNodeId,
                   name: `Target_${targetNodeId}`,
-                  dependent_on: edges
-                    .filter(edge => edge.target === targetNodeId)
-                    .map(edge => ({
-                      source: edge.source,
-                      targetHandle: edge.targetHandle
-                    }))
+                  dependent_on: dependentOnData
                 }
               }
             },
@@ -1932,12 +2014,7 @@ const PipeLineChatPanel = () => {
                     initialValues: {
                       ...formStates[targetNodeId],
                       nodeId: targetNodeId,
-                      dependent_on: edges
-                        .filter(edge => edge.target === targetNodeId)
-                        .map(edge => ({
-                          source: edge.source,
-                          targetHandle: edge.targetHandle
-                        }))
+                      dependent_on: dependentOnData
                     }
                   }
                 };
@@ -1968,12 +2045,7 @@ const PipeLineChatPanel = () => {
                     initialValues: {
                       ...formStates[targetNodeId],
                       nodeId: targetNodeId,
-                      dependent_on: edges
-                        .filter(edge => edge.target === targetNodeId)
-                        .map(edge => ({
-                          source: edge.source,
-                          targetHandle: edge.targetHandle
-                        }))
+                      dependent_on: dependentOnData
                     }
                   }
                 };
@@ -2064,12 +2136,7 @@ const PipeLineChatPanel = () => {
                           initialValues: {
                             ...formStates[targetNodeId],
                             nodeId: targetNodeId,
-                            dependent_on: edges
-                              .filter(edge => edge.target === targetNodeId)
-                              .map(edge => ({
-                                source: edge.source,
-                                targetHandle: edge.targetHandle
-                              }))
+                            dependent_on: dependentOnData
                           }
                         }
                       };
@@ -2111,12 +2178,7 @@ const PipeLineChatPanel = () => {
                           initialValues: {
                             ...formStates[targetNodeId],
                             nodeId: targetNodeId,
-                            dependent_on: edges
-                              .filter(edge => edge.target === targetNodeId)
-                              .map(edge => ({
-                                source: edge.source,
-                                targetHandle: edge.targetHandle
-                              }))
+                            dependent_on: dependentOnData
                           }
                         }
                       };
@@ -2264,7 +2326,13 @@ const PipeLineChatPanel = () => {
 
                               }}
                               nodeId={message.formData.currentNodeId}
-                              initialData={formStates[message.formData.currentNodeId] || message.formData.initialValues}
+                              initialData={{
+                                ...(formStates[message.formData.currentNodeId] || message.formData.initialValues),
+                                // Ensure name is properly set from saved form data
+                                name: formStates[message.formData.currentNodeId]?.name || 
+                                      message.formData.initialValues?.name || 
+                                      `Target_${message.formData.currentNodeId}`
+                              }}
                               onSourceUpdate={(sourceData) => {
 
                                 handleSourceUpdate({
@@ -2320,7 +2388,9 @@ const PipeLineChatPanel = () => {
                                 // Create a safe form state object with fallbacks for missing properties
                                 const updatedFormState = {
                                   ...(data.transformationData || {}),
-                                  name: data.title || data.label || 'Unnamed Target',
+                                  name: data.title || data.label || data.name || 
+                                        message.formData.initialValues?.name || 
+                                        `Target_${message.formData.currentNodeId}`,
                                   target: {
                                     target_type: data.source?.target_type || 'File',
                                     target_name: data.source?.target_name || '',
@@ -2411,7 +2481,9 @@ const PipeLineChatPanel = () => {
                                       isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
                                       initialValues: {
                                         ...message.formData.initialValues,
-                                        ...updatedFormState
+                                        ...updatedFormState,
+                                        nodeId: message.formData.currentNodeId,
+                                        name: updatedFormState.name || `Target_${message.formData.currentNodeId}`
                                       }
                                     }
                                   }

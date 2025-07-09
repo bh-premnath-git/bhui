@@ -34,6 +34,7 @@ import { apiService } from '@/lib/api/api-service';
 import { useAppSelector } from '@/hooks/useRedux';
 import { random } from 'lodash';
 import { usePipelineOperations } from '@/hooks/usePipelineOperations';
+import { Pipeline } from '@/types/designer/pipeline';
 
 interface UIProperties {
     color: string;
@@ -175,6 +176,8 @@ interface bnPipelineContextProps {
     setAttachedCluster: React.Dispatch<React.SetStateAction<any>>
     attachCluster: (cluster: any) => void
     detachCluster: () => void
+    pipelines: Pipeline[];
+    setPipelines: React.Dispatch<React.SetStateAction<Pipeline[]>>;
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -221,6 +224,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const navigate = useNavigate();
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
     const { zoomIn, zoomOut, fitView } = useReactFlow();
+    const [pipelines, setPipelines] = useState<Pipeline[]>([]);
 
     const [isSaving, setIsSaving] = useState(false); 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -1346,7 +1350,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         attachedCluster,
         setAttachedCluster,
         attachCluster,
-        detachCluster
+        detachCluster,
+        pipelines,
+        setPipelines
     }), [
         nodes,
         setSanitizedNodes,
@@ -1478,7 +1484,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleCopy,
         handleCenter,
         handleZoomIn,
-        handleZoomOut
+        handleZoomOut,
+        pipelines,
+        setPipelines
     ]);
 
     return (

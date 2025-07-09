@@ -236,7 +236,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         ...baseConfig,
                         condition: condition
                     };
-                case 'SQL Transformation':
+                case 'SQLTransformation':
                     return {
                         ...baseConfig,
                         sql: node.data.transformationData?.sql || "true"

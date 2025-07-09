@@ -81,12 +81,24 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     const { isRightPanelOpen } = useAppSelector((state) => state.buildPipeline);
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const [isAdvance, setIsAdvanvce] = useState<boolean>(false);
+    console.log(connectionConfigList)
+    console.log(initialData, "initialData")
 
     useEffect(() => {
         if (initialData) {
+            console.log('ReaderOptionsForm: Looking for connection with name:', initialData.source?.connection?.name);
+            console.log('ReaderOptionsForm: Looking for connection with ID:', initialData.source?.connection?.connection_config_id || initialData.source?.connection_config_id);
+            console.log('ReaderOptionsForm: Available connections:', connectionConfigList);
+            
             const selectedConn = connectionConfigList.find(
                 conn => conn.connection_config_name === initialData.source?.connection?.name
+            ) || connectionConfigList.find(
+                conn => conn.id === initialData.source?.connection?.connection_config_id
+            ) || connectionConfigList.find(
+                conn => conn.id === initialData.source?.connection_config_id
             );
+            
+            console.log('ReaderOptionsForm: Selected connection:', selectedConn);
 
             // Set source_name from data_src_name if it's not already set
             const sourceName = initialData.source?.name || initialData.source?.data_src_name || initialData.data_src_name || '';
@@ -100,7 +112,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     name: sourceName,
                     connection: {
                         ...initialData.source.connection,
-                        connection_config_id: selectedConn?.id || initialData.source.connection.connection_config_id || initialData.source?.connection_config_id,
+                        connection_config_id: selectedConn?.id || initialData.source.connection_config_id || initialData.source?.connection_config_id,
                         name: selectedConn?.connection_config_name || initialData.source.connection.name,
                         connection_type: selectedConn?.custom_metadata?.connection_type || initialData.source.connection.connection_type,
                         database: selectedConn?.custom_metadata?.database || initialData.source.connection.database,
@@ -249,10 +261,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
 
         try {
-            const connectionData = connectionConfigList.find(conn =>
-                conn.id === formData.source?.connection?.connection_config_id
-            );
-
+      
             const sourceData = {
                 nodeId,
                 sourceData: {

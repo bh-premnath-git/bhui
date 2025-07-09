@@ -36,7 +36,6 @@ export const usePipeline = (options: UsePipelineOptions = { shouldFetch: true })
         CATALOG_REMOTE_API_URL,
         true
     );
-
     // For mutations
     const { 
         create: createPipeline,

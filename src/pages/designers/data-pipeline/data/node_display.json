@@ -112,13 +112,13 @@
     },
     {
       "ui_properties": {
-        "module_name": "SQL Transformation",
+        "module_name": "SQLTransformation",
         "color": "#32D1A4",
         "icon": "/assets/buildPipeline/squre/7.svg",
         "ports": {
           "inputs": 1,
           "outputs": 1,
-          "maxInputs": 1
+          "maxInputs": "unlimited"
         }
       }
     },

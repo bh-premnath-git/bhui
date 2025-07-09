@@ -1108,13 +1108,7 @@ const renderArrayFields = (
                     options={columnSuggestions}
                     value={field.value || ''}
                     onChange={field.onChange}
-                    renderInput={(params) => (
-                      <Input
-                        {...params}
-                        placeholder="Select column"
-                        required={arraySchema.minItems && arraySchema.minItems > 0}
-                      />
-                    )}
+                    placeholder="Select column"
                     className=""
                     required={arraySchema.minItems && arraySchema.minItems > 0}
                   />
@@ -1244,13 +1238,7 @@ const renderArrayFields = (
                         options={columnSuggestions}
                         value={field.value || ''}
                         onChange={field.onChange}
-                        renderInput={(params) => (
-                          <Input
-                            {...params}
-                            placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
-                            required={requiredFields.includes(itemKey)}
-                          />
-                        )}
+                        placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
                         className=""
                         required={requiredFields.includes(itemKey)}
                       />

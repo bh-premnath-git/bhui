@@ -231,7 +231,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     }
 
     return {
-      height: '100%',
+      height: '110%',
       width: availableWidth,
       transition: 'all 0.3s ease-in-out'
     };

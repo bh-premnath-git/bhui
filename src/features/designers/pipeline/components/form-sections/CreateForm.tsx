@@ -252,6 +252,9 @@ console.log(initialFormValues,"initialFormValues")
 
   // Add state to track if AI has been attempted for this field
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
+  
+  // Add state for column suggestions
+  const [columnSuggestions, setColumnSuggestions] = useState<string[]>([]);
 
   // Update handleExpressionClick to only generate once per field
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
@@ -581,6 +584,23 @@ console.log(initialFormValues,"initialFormValues")
       setAiAttempted(new Set());
     };
   }, []);
+
+  // Fetch column suggestions when component mounts or dependencies change
+  useEffect(() => {
+    const fetchColumnSuggestions = async () => {
+      try {
+        const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges, pipelineDtl);
+        setColumnSuggestions(suggestions);
+      } catch (error) {
+        console.error('Error fetching column suggestions:', error);
+        setColumnSuggestions([]);
+      }
+    };
+
+    if (currentNodeId && nodes && edges) {
+      fetchColumnSuggestions();
+    }
+  }, [currentNodeId, nodes, edges, pipelineDtl]);
 
   // Update onSubmitForm to properly handle nested form values
   const onSubmitForm = (values: FormValues) => {
@@ -991,7 +1011,7 @@ console.log(initialFormValues,"initialFormValues")
  
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 max-w-full overflow-hidden">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 max-w-full">
       {/* {schema.title === 'Deduplicator' && renderDeduplicatorFields(control)} */}
       <FormContent
         control={control}
@@ -1589,7 +1609,8 @@ const FormContent: React.FC<{
     fieldKey: string, 
     fieldSchema: any, 
     control: any, 
-    parentKey?: string
+    parentKey?: string,
+    columnSuggestions: string[] = []
   ) => {
     if (!fieldSchema || typeof fieldSchema !== 'object') {
       console.error(`Invalid schema for field ${fieldKey}`);
@@ -1687,7 +1708,7 @@ const FormContent: React.FC<{
   };
 
   // Update renderFieldsInRows to handle required fields in tabs
-  const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string) => {
+  const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string, columnSuggestions: string[] = []) => {
 
     
     if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
@@ -1748,7 +1769,7 @@ const FormContent: React.FC<{
           
           return (
             <div key={key} className="mb-2">
-              {renderField(key, value, control, parentKey)}
+              {renderField(key, value, control, parentKey, columnSuggestions)}
             </div>
           );
         })}
@@ -1765,7 +1786,7 @@ const FormContent: React.FC<{
   };
 
   // Render string array fields (like select_columns, drop_columns)
-  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any) => {
+  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any, columnSuggestions: string[] = []) => {
     const { fields, append, remove } = useFieldArray({
       control,
       name: fieldKey
@@ -1788,7 +1809,7 @@ const FormContent: React.FC<{
                 <Autocomplete
                   value={field.value || ''}
                   onChange={field.onChange}
-                  options={sourceColumns.map(col => col.name)}
+                  options={columnSuggestions}
                   placeholder={`Enter column name`}
                   className="flex-1"
                   renderInput={(params) => (
@@ -1828,7 +1849,8 @@ const FormContent: React.FC<{
     fieldSchema: any;
     control: any;
     formInitialValues: any;
-  }> = ({ fieldKey, fieldSchema, control, formInitialValues }) => {
+    columnSuggestions?: string[];
+  }> = ({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [] }) => {
     const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
     const watchedValue = watch(fieldKey) || {};
     const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1939,7 +1961,7 @@ const FormContent: React.FC<{
                   <Autocomplete 
                     value={entry.key}
                     onChange={(value) => updateEntry(entry.id, 'key', value)}
-                    options={sourceColumns.map(col => col.name)}
+                    options={columnSuggestions}
                     placeholder="Old column name"
                     className="w-full"
                     renderInput={(params) => (
@@ -1984,19 +2006,20 @@ const FormContent: React.FC<{
   };
 
   // Helper function to render ObjectField component
-  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}) => {
+  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}, columnSuggestions: string[] = []) => {
     return (
       <ObjectField
         fieldKey={fieldKey}
         fieldSchema={fieldSchema}
         control={control}
         formInitialValues={formInitialValues}
+        columnSuggestions={columnSuggestions}
       />
     );
   };
 
   // Update renderTabContent to pass control
-  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}) => {
+  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = []) => {
     if (!value || typeof value !== 'object') {
       console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
       return <div>Invalid field configuration for {key}</div>;
@@ -2115,23 +2138,23 @@ const FormContent: React.FC<{
     if (value.type === 'array') {
       // Check if it's a string array
       if (value.items && value.items.type === 'string') {
-        return renderStringArrayField(key, value, control);
+        return renderStringArrayField(key, value, control, columnSuggestions);
       }
       // Otherwise use the existing array renderer
       return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions);
     } else if (value.type === 'object') {
       // Check if it's a rename_columns type object
       if (key === 'rename_columns') {
-        return renderObjectField(key, value, control, formInitialValues);
+        return renderObjectField(key, value, control, formInitialValues, columnSuggestions);
       }
       // Ensure properties exist before passing to renderFieldsInRows
       if (!value.properties || typeof value.properties !== 'object') {
         console.warn(`Object field ${key} has no valid properties:`, value);
         return <div>Invalid object field configuration for {key}</div>;
       }
-      return renderFieldsInRows(value.properties, control, key);
+      return renderFieldsInRows(value.properties, control, key, columnSuggestions);
     } else {
-      return renderField(key, value, control, key);
+      return renderField(key, value, control, key, columnSuggestions);
     }
   };
 
@@ -2417,7 +2440,7 @@ const FormContent: React.FC<{
   };
 
   return (
-    <div className="w-full max-w-full overflow-hidden">
+    <div className="w-full max-w-full">
 
       {schema.title === 'Dedup' || schema.title === 'Deduplicator' ? (
         renderDeduplicatorFields(control, schema)
@@ -2455,7 +2478,7 @@ const FormContent: React.FC<{
 
               {filteredTabs.map(([key, value]: [string, any], index) => (
                 <TabsContent key={key} value={index.toString()}>
-                  {renderTabContent(key, value, control, initialFormValues)}
+                  {renderTabContent(key, value, control, initialFormValues, columnSuggestions)}
                 </TabsContent>
               ))}
             </Tabs>
@@ -2681,7 +2704,7 @@ const FormContent: React.FC<{
         </div>
       ) : (
         <div className="space-y-1">
-          {renderFieldsInRows(schema.properties || {}, control)}
+          {renderFieldsInRows(schema.properties || {}, control, undefined, columnSuggestions)}
         </div>
       )}
 

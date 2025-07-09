@@ -202,7 +202,7 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             
             // Create base form data with common fields
             const safeInitialData: FormData = {
-                name: '', // Always start with empty name for Target forms
+                name: initialData.name || '', // Use the provided name from initialData
                 target: {
                     target_type: targetType,
                     target_name: initialData.target?.target_name || '',

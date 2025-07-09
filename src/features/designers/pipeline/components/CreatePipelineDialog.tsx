@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { ChevronDown, ChevronUp, Wrench, FileText, Zap, Activity } from 'lucide-react';
-import { insertPipeline, setBuildPipeLineDtl, setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { insertPipeline, setBuildPipeLineDtl, setPipeLineType, setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { Input } from '@/components/ui/input';
 import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 import {
@@ -39,7 +39,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
   const { projects } = useProjects();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { setPipeline_id, setPipeLineName, setProjectName } =
+  const { setPipeline_id, setPipeLineName, setProjectName,setPipelines,pipelines } =
     usePipelineContext();
   const { selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
 
@@ -94,7 +94,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
       const response = await dispatch(
         insertPipeline({ ...values, tags: {}, engine_type: selectedEngineType }),
       ).unwrap();
-
+      setPipelines([...pipelines, response]);
       if (!response?.error) {
         setPipeLineName?.(values.pipeline_name);
         setPipeline_id(response.pipeline_id);
@@ -102,11 +102,9 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
 
         dispatch(setBuildPipeLineDtl(response));
         dispatch(setSelectedPipeline(response));
+        dispatch(setPipeLineType(response.pipeline_type));
 
-        const route =
-          values.pipeline_type === 'requirement'
-            ? ROUTES.DESIGNERS.REQUIREMENTS.NEW
-            : `/designers/build-playground/${response.pipeline_id}`;
+        const route = `/designers/build-playground/${response.pipeline_id}`;
         navigate(route);
       }
     } finally {

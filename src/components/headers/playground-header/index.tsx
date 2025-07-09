@@ -37,7 +37,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const dispatch = useAppDispatch();
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
-  const { pipelineDtl } = useAppSelector((state: RootState) => state.buildPipeline);
+  const { pipelineDtl,pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
   const autoSaveStatus = 'saved';
   const lastSavedTime = new Date().toISOString();
   const toggleAutoSave = () => { };
@@ -57,7 +57,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
         "icon": type.icon,
         "id": type.id,
         "ports": {
-          "inputs": type.label?.toLowerCase()?.toString()=="sensor"?0:1,
+          "inputs": type.label?.toLowerCase()?.toString() == "sensor" ? 0 : 1,
           "outputs": 1,
           "maxInputs": 1
         },
@@ -68,7 +68,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             icon: type?.icon,
             label: type?.label,
           },
-          properties:  type.operators.map((op) => op.properties),
+          properties: type.operators.map((op) => op.properties),
           description: type?.description,
           fullyOptimized: false,
         }
@@ -175,9 +175,9 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           {!isFlow && (
             <div className="flex items-center space-x-2">
               <ModeSelector />
-              
+
               <div className="h-6 w-px bg-gray-300 mx-2" />
-              
+
               <Popover open={showClusterDropdown} onOpenChange={setShowClusterDropdown}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -219,13 +219,16 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
         </div>
 
         {/* Middle section - Node controls */}
-       {pipelineDtl?.pipeline_type!="requirement"&&( <div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
+        {pipelineType?.toLowerCase() != "requirement" &&
+         (<div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
           <NodeDropList
             filteredNodes={isFlow ? flowNodes : filteredNodes}
             handleNodeClick={handleNodeClick}
             addNodeToHistory={addNodeToHistory}
           />
+
         </div>)}
+         
 
         {/* Right section - Pipeline controls and AI button */}
         <div className="flex items-center justify-end space-x-4 w-full sm:w-auto">
@@ -268,7 +271,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               setIsSparkParamOpen(false);
             }}
           />
-          
+
         </>
       )}
 

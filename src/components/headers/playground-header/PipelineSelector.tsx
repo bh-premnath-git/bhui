@@ -45,6 +45,7 @@ import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useDeletePipeline } from '@/hooks/useDeletePipeline';
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 
 interface Pipeline {
   pipeline_id: number;
@@ -71,7 +72,6 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
   const [tempName, setTempName] = useState(initialName);
   const [errorMessage, setErrorMessage] = useState('');
   const [open, setOpen] = useState(false);
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -84,6 +84,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
   const deletePipelineMutation = useDeletePipeline();
+  const { pipelines, setPipelines } = usePipelineContext();
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -100,6 +101,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
 
   useEffect(() => {
     setTempName(initialName);
+    fetchPipelineList()
   }, [initialName]);
 
   // Fetch pipeline list
@@ -326,7 +328,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                     {/* Favorite pipelines */}
                     {favoritePipelines.length > 0 && (
                       <CommandGroup heading="Favorites">
-                        {favoritePipelines.map((pipeline) => (
+                        {favoritePipelines.map((pipeline:any) => (
                           <CommandItem
                             key={pipeline.pipeline_id}
                             value={pipeline.pipeline_name}
@@ -383,7 +385,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                     {/* Regular pipelines */}
                     {regularPipelines.length > 0 && (
                       <CommandGroup heading={favoritePipelines.length > 0 ? "All Pipelines" : undefined}>
-                        {regularPipelines.map((pipeline) => (
+                        {regularPipelines.map((pipeline:any) => (
                           <CommandItem
                             key={pipeline.pipeline_id}
                             value={pipeline.pipeline_name}

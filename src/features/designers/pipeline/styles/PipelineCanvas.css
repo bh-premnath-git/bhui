@@ -8,7 +8,7 @@
 /* Right aside panel adjustments */
 .with-right-aside {
   width: calc(100% - 10px) !important;
-  margin-right: 500px;
+  margin-right: 0px;
 }
 
 /* Bottom drawer panel adjustments */

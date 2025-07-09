@@ -1,0 +1,33 @@
+/* Autocomplete dropdown styles with high z-index */
+.autocomplete-dropdown {
+  z-index: 999999 !important;
+  position: fixed !important;
+  pointer-events: auto !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.autocomplete-suggestion {
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.autocomplete-suggestion:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.autocomplete-suggestion:focus {
+  background-color: #f3f4f6 !important;
+  outline: none !important;
+}
+
+/* Ensure the autocomplete wrapper doesn't create stacking context issues */
+.autocomplete-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure the dropdown appears above everything else */
+.autocomplete-dropdown * {
+  z-index: inherit !important;
+}

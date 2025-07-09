@@ -18,7 +18,7 @@ const MainContentInternal = () => {
       <div className="flex-shrink-0 mt-12"> 
         <Header />
       </div>
-      <main className="flex-1 relative overflow-auto h-[calc(100vh-64px)] w-full "> 
+      <main className="flex-1 relative overflow-auto h-full w-full "> 
         {/* Key forces remount when location changes and fixes stale DOM issues */}
         <Outlet key={location.pathname} />
       </main>

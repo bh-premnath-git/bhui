@@ -20,6 +20,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RowCountBadge } from './components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AiChatComponent from './AiChatComponent';
+import { alignNodesToTopLeft } from '@/utils/nodeAlignment';
 
 interface Schema {
     title: string;
@@ -379,58 +380,8 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     }, [id, handleSearchResultClick]);
 
     const handleAlignTopLeftClick = useCallback(() => {
-        console.log("Align Top Left clicked");
-        try {
-            if (!nodesInFlow || nodesInFlow.length === 0) {
-                console.log("No nodes to align");
-                return;
-            }
-            
-            // Simple grid layout starting from top-left
-            const startX = -250; // Move nodes more to the right
-            const startY = -120; // Move nodes even higher up (can go negative)
-            const gridSpacing = 150; // Space between nodes
-            const nodesPerRow = 4; // Number of nodes per row
-            
-            const newNodes = nodesInFlow.map((node, index) => {
-                const row = Math.floor(index / nodesPerRow);
-                const col = index % nodesPerRow;
-                
-                return {
-                    ...node,
-                    position: {
-                        x: startX + (col * gridSpacing),
-                        y: startY + (row * gridSpacing)
-                    }
-                };
-            });
-
-            // Update nodes with new positions
-            updateSetNode(newNodes, edgesInFlow);
-
-            // Center the view after a short delay
-            setTimeout(() => {
-                if (reactFlowInstance && reactFlowInstance.setCenter) {
-                    // Calculate the center of the grid
-                    const rows = Math.ceil(nodesInFlow.length / nodesPerRow);
-                    const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
-                    const centerY = startY + ((rows - 1) * gridSpacing) / 2;
-                    
-                    reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-                }
-                
-                // Try to click the fitView button directly as a fallback
-                const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-                if (fitViewButton instanceof HTMLElement) {
-                    console.log("Clicking fitView button after top-left alignment");
-                    fitViewButton.click();
-                }
-            }, 100);
-            
-        } catch (error) {
-            console.error("Error in align top left:", error);
-        }
-    }, [nodesInFlow, edgesInFlow, reactFlowInstance, updateSetNode]);
+        alignNodesToTopLeft(nodesInFlow, edgesInFlow, updateSetNode, reactFlowInstance);
+    }, [nodesInFlow, edgesInFlow, updateSetNode, reactFlowInstance]);
 
     const handleMetricsClick = useCallback(async (e: React.MouseEvent) => {
         console.log('handleMetricsClick called for node:', id)
@@ -452,7 +403,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         if (titleValue && pipelineDtl && (pipelineDtl.name || pipelineDtl.pipeline_name)) {
             setIsLoading(true);
             setIsShowingInDrawer(true);
-            await handleAlignTopLeftClick();
+            // await handleAlignTopLeftClick();
             
             try {
                 console.log('Making API call with params:', {
@@ -490,6 +441,9 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     />
                 );
                 setBottomDrawerContent(terminalComponent, `${titleValue || 'Transformation'} Data`);
+                
+                // Realign all nodes to top-left when drawer is opened
+                handleAlignTopLeftClick();
             } catch (error) {
                 console.error("Error fetching transformation output:", error);
             } finally {

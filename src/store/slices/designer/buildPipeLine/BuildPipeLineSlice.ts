@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
 import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
+import { setPipeLineName } from "../features/autoSaveSlice";
 
 const token: any = sessionStorage?.getItem("token");
 const decoded: any = token ? jwtDecode(token) : null;
@@ -47,6 +48,7 @@ export interface BuildPipelineState {
   isMetricsLoading: boolean;
   listedContentTpes: any;
   pipelineDtl:any;
+  pipelineType: string | null;
   aiSuggestion:any;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
@@ -85,7 +87,8 @@ const initialState: BuildPipelineState = {
   isFlow:false,
   isRightPanelOpen:false,
   selectedEngineType: 'pyspark',
-  selectedMode: 'engine'
+  selectedMode: 'engine',
+  pipelineType: null
 };
 
 interface ApiResponse {
@@ -550,6 +553,9 @@ const buildPipeLineSlice = createSlice({
     setBuildPipeLineDtl: (state, action: PayloadAction<any>) => {
       state.pipelineDtl = action.payload;
     },
+    setPipeLineType: (state, action: PayloadAction<string | null>) => {
+      state.pipelineType = action.payload;
+    },
     setIsFlow: (state, action: PayloadAction<any>) => {
       state.isFlow = action.payload;
     },
@@ -892,6 +898,7 @@ export const {
   setIsPipelineRunning,
   setNestedField,
   setBuildPipeLineDtl,
+  setPipeLineType,
   setIsFlow,
   setBuildPipeLineNodes,
   setIsDebug,

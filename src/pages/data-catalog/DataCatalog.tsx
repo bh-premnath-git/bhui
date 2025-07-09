@@ -3,29 +3,17 @@ import { withPageErrorBoundary } from '@/components/withPageErrorBoundary';
 import { DataCatalog } from '@/features/data-catalog/DataCatalog';
 import { useDataCatalogManagementService } from '@/features/data-catalog/services/datacatalogMgtSrv';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useDataCatalog } from '@/features/data-catalog/hooks/usedataCatalog';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Database, Upload, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDataSourceWizard';
-import { useProjects } from '@/features/admin/projects/hooks/useProjects';
-import { useAppDispatch } from '@/hooks/useRedux';
-import { getSource } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
-import { useNavigation } from '@/hooks/useNavigation';
-import { ROUTES } from '@/config/routes';
+import { Database } from 'lucide-react';
 
 function DataCatalogPage() {
+  const { handleNavigation } = useNavigation();
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [showImportSection, setShowImportSection] = useState(false);
 
   const {
     datasources,
@@ -71,6 +59,24 @@ function DataCatalogPage() {
     }
   }, [datasources, dataCatalogSrv]);
 
+   useEffect(() => {
+      const handleOpenImportSource = () => {
+        handleNavigation(`${ROUTES.DATA_CATALOG}/datasource-import`);
+      };
+      
+      const handleImportClick = () => {
+        setShowImportSection(!showImportSection);
+      };
+  
+      window.addEventListener("openImportSourceDialog", handleOpenImportSource);
+      window.addEventListener("openLocalImport", handleImportClick);
+  
+      return () => {
+        window.removeEventListener("openImportSourceDialog", handleOpenImportSource);
+        window.removeEventListener("openLocalImport", handleImportClick);
+      }
+    }, [handleNavigation]);
+
   if (isError) return <ErrorState message="Something went wrong" />;
 
   const pageIndex = Math.floor(offset / pageSize);
@@ -100,38 +106,11 @@ function DataCatalogPage() {
   if (datasources.length === 0) {
     return (
       <div className="p-6">
-        {showImportSection ? (
-          <ImportDataSourceStepper 
-            gitProjectList={gitProjectList} 
-            closeImportSection={closeImportSection} 
-          />
-        ) : (
-          <EmptyState
-            title="Welcome to Your Data Catalog!"
-            description="Ready to manage your data. Start by importing your first data source."
-            Icon={Database}
-            action={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="mt-4">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Import Dataset
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-48">
-                  <DropdownMenuItem onClick={handleTablesImport}>
-                    <Database className="w-4 h-4 mr-2" />
-                    Tables
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleFlatFileImport}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Flat File
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
-          />
-        )}
+        <EmptyState
+          title="Welcome to Your Data Catalog!"
+          description="Ready to manage your data."
+          Icon={Database}
+        />
       </div>
     );
   }
@@ -139,20 +118,18 @@ function DataCatalogPage() {
   return (
     <div className="p-6">
       <div className="relative">
-        {isFetching && (
-          <LoadingState fullScreen />
-        )}
-        <DataCatalog
-          datasources={datasources}
-          onRefetch={refetch}
-          pageCount={Math.ceil((total || 0) / pageSize)}
-          pageIndex={pageIndex}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
-          hasNextPage={next}
-          hasPreviousPage={prev}
-        />
+            {isFetching && <LoadingState fullScreen />}
+            <DataCatalog
+              datasources={datasources}
+              onRefetch={refetch}
+              pageCount={Math.ceil((total || 0) / pageSize)}
+              pageIndex={pageIndex}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              hasNextPage={next}
+              hasPreviousPage={prev}
+            />
       </div>
     </div>
   );

@@ -14,6 +14,8 @@ import CreateFormFormik from '@/features/designers/pipeline/components/form-sect
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
+import { useAppSelector } from '@/hooks/useRedux';
+import { RootState } from '@/store';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
@@ -23,6 +25,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
 
   // No sidebar width needed since we removed the sidebar
   const sidebarWidth = 0;
+  const { pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
 
   const {
     pipelineDtl,
@@ -228,14 +231,14 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     }
 
     return {
-      height: '100%',
+      height: '110%',
       width: availableWidth,
       transition: 'all 0.3s ease-in-out'
     };
   };
   return (
     <>
-      {pipelineDtl?.pipeline_type != "requirement" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+      {pipelineType?.toLowerCase() == "design" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
         <div
           className={`flex-1 relative p-1 transition-all duration-300`}
           style={getMainContentStyle()}>

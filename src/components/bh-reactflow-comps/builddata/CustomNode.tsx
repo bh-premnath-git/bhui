@@ -20,6 +20,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RowCountBadge } from './components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AiChatComponent from './AiChatComponent';
+import { alignNodesToTopLeft } from '@/utils/nodeAlignment';
 
 interface Schema {
     title: string;
@@ -379,60 +380,11 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     }, [id, handleSearchResultClick]);
 
     const handleAlignTopLeftClick = useCallback(() => {
-        console.log("Align Top Left clicked");
-        try {
-            if (!nodesInFlow || nodesInFlow.length === 0) {
-                console.log("No nodes to align");
-                return;
-            }
-            
-            // Simple grid layout starting from top-left
-            const startX = -250; // Move nodes more to the right
-            const startY = -120; // Move nodes even higher up (can go negative)
-            const gridSpacing = 150; // Space between nodes
-            const nodesPerRow = 4; // Number of nodes per row
-            
-            const newNodes = nodesInFlow.map((node, index) => {
-                const row = Math.floor(index / nodesPerRow);
-                const col = index % nodesPerRow;
-                
-                return {
-                    ...node,
-                    position: {
-                        x: startX + (col * gridSpacing),
-                        y: startY + (row * gridSpacing)
-                    }
-                };
-            });
-
-            // Update nodes with new positions
-            updateSetNode(newNodes, edgesInFlow);
-
-            // Center the view after a short delay
-            setTimeout(() => {
-                if (reactFlowInstance && reactFlowInstance.setCenter) {
-                    // Calculate the center of the grid
-                    const rows = Math.ceil(nodesInFlow.length / nodesPerRow);
-                    const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
-                    const centerY = startY + ((rows - 1) * gridSpacing) / 2;
-                    
-                    reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-                }
-                
-                // Try to click the fitView button directly as a fallback
-                const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-                if (fitViewButton instanceof HTMLElement) {
-                    console.log("Clicking fitView button after top-left alignment");
-                    fitViewButton.click();
-                }
-            }, 100);
-            
-        } catch (error) {
-            console.error("Error in align top left:", error);
-        }
-    }, [nodesInFlow, edgesInFlow, reactFlowInstance, updateSetNode]);
+        alignNodesToTopLeft(nodesInFlow, edgesInFlow, updateSetNode, reactFlowInstance);
+    }, [nodesInFlow, edgesInFlow, updateSetNode, reactFlowInstance]);
 
     const handleMetricsClick = useCallback(async (e: React.MouseEvent) => {
+        console.log('handleMetricsClick called for node:', id)
         e.stopPropagation();
         e.preventDefault();
         
@@ -441,20 +393,35 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             (t) => t.transformationName?.toLowerCase() === titleValue?.toLowerCase()
         )?.rowCount;
         
-        // Only proceed if rowCount exists (meaning the node is in debug list)
-        if (rowCount) {
+        console.log('Row count found:', rowCount);
+        console.log('Transformation counts:', transformationCounts);
+        console.log('Title value:', titleValue);
+        console.log('Pipeline details:', pipelineDtl);
+        console.log('Attached cluster:', attachedCluster);
+        
+        // Proceed with API call if we have the necessary data
+        if (titleValue && pipelineDtl && (pipelineDtl.name || pipelineDtl.pipeline_name)) {
             setIsLoading(true);
             setIsShowingInDrawer(true);
-            await handleAlignTopLeftClick();
+            // await handleAlignTopLeftClick();
             
             try {
+                console.log('Making API call with params:', {
+                    pipelineName: pipelineDtl?.name || pipelineDtl?.pipeline_name,
+                    transformationName: titleValue,
+                    host: attachedCluster?.master_ip || "host.docker.internal",
+                    isFlow
+                });
+                
                 // First fetch the data
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineDtl?.name || pipelineDtl?.pipeline_name,
                     transformationName: titleValue,
-                    host:attachedCluster.master_ip||"host.docker.internal",
+                    host: attachedCluster?.master_ip || "host.docker.internal",
                     isFlow
                 })).unwrap();
+                
+                console.log('API call result:', result);
                 
                 // Format the data for the Terminal component
                 const previewData: PreviewData = {
@@ -474,13 +441,22 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     />
                 );
                 setBottomDrawerContent(terminalComponent, `${titleValue || 'Transformation'} Data`);
+                
+                // Realign all nodes to top-left when drawer is opened
+                handleAlignTopLeftClick();
             } catch (error) {
                 console.error("Error fetching transformation output:", error);
             } finally {
                 setIsLoading(false);
             }
+        } else {
+            console.log('Missing required data for API call:', {
+                titleValue,
+                pipelineDtl,
+                pipelineName: pipelineDtl?.name || pipelineDtl?.pipeline_name
+            });
         }
-    }, [dispatch, pipelineDtl, titleValue, isFlow, transformationCounts, closeBottomDrawer, setBottomDrawerContent, handleAlignTopLeftClick]);
+    }, [dispatch, pipelineDtl, titleValue, isFlow, transformationCounts, closeBottomDrawer, setBottomDrawerContent, handleAlignTopLeftClick, attachedCluster]);
 
     // Effect to handle drawer state synchronization - only reacts to external drawer close
     useEffect(() => {
@@ -513,7 +489,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     )?.rowCount}
                     isLoading={isLoading}
                     onMetricsClick={handleMetricsClick}
-                    className="relative mb-1"
+                    className="relative mb-1 mt-4"
                 />
 
                 {/* Main node content */}

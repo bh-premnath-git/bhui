@@ -25,7 +25,7 @@ import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/Build
 import { debugNodeData, validateNodeTransformationData, compareBeforeAfterSubmit } from '@/lib/debugPipeline';
 import { useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
+import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion'; 
 
 // Define the form schema based on Reader.json
 const readerFormSchema = z.object({
@@ -79,11 +79,18 @@ const SingleDependencySelectForm: React.FC<{
   targetNodeId: string;
   maxInputs: number | string;
 }> = ({ dependencies, onSubmit, onClose, targetNodeType, targetNodeId, maxInputs }) => {
+  console.log('SingleDependencySelectForm rendered with dependencies:', dependencies);
+  
   return (
+    <div className="single-dependency-select-form rounded-lg bg-white shadow-sm">
       <Select onValueChange={(value) => {
+        console.log('SingleDependencySelectForm: Selected value:', value);
         const selected = dependencies.find(dep => dep.id === value);
+        console.log('SingleDependencySelectForm: Found selected dependency:', selected);
+        
         if (selected) {
           // Automatically submit when an option is selected
+          console.log('SingleDependencySelectForm: Calling onSubmit with selected dependency');
           onSubmit(selected);
         }
       }}>
@@ -98,7 +105,7 @@ const SingleDependencySelectForm: React.FC<{
           ))}
         </SelectContent>
       </Select>
-     
+    </div>
   );
 };
 
@@ -517,6 +524,11 @@ const PipeLineChatPanel = () => {
             behavior: 'smooth'
           });
         }, 100);
+        
+        // Additional fallback to ensure scrolling works
+        setTimeout(() => {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }, 300);
       }
     }
   }, [messages]);
@@ -1158,17 +1170,41 @@ const PipeLineChatPanel = () => {
 
   // Function to handle single dependency selection
   const handleSingleDependencySubmit = (selectedDependency: any, targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
+    console.log('handleSingleDependencySubmit called with:', {
+      selectedDependency,
+      targetNodeType: targetNodeType.ui_properties.module_name,
+      targetNodeId,
+      maxInputs
+    });
+
     // Add user message showing the selection
     addMessageWithFormData({
       role: 'user',
       content: `Connect "${selectedDependency.data.title || selectedDependency.data.label}" to ${targetNodeType.ui_properties.module_name}`
     });
 
+    // Clear lastAddedTransformation to prevent interference
+    setLastAddedTransformation(null);
+
+    // Remove the dependency selection form from messages
+    setMessages(prevMessages => 
+      prevMessages.filter(msg => 
+        !(msg.formData?.isSingleDependencySelect && msg.formData?.currentNodeId === `dependency-select-${targetNodeId}`)
+      )
+    );
+
     handleDependencySelection(selectedDependency, targetNodeType, targetNodeId, maxInputs, 1);
   };
 
   // Function to handle multiple dependency selection
   const handleMultiDependencySubmit = (selectedDependencies: any[], targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
+    console.log('handleMultiDependencySubmit called with:', {
+      selectedDependencies,
+      targetNodeType: targetNodeType.ui_properties.module_name,
+      targetNodeId,
+      maxInputs
+    });
+
     // Add user message showing the selection
     const dependencyNames = selectedDependencies.map(dep => dep.data.title || dep.data.label).join(', ');
     addMessageWithFormData({
@@ -1178,6 +1214,13 @@ const PipeLineChatPanel = () => {
 
     // Clear lastAddedTransformation to prevent useEffect interference
     setLastAddedTransformation(null);
+
+    // Remove the dependency selection form from messages
+    setMessages(prevMessages => 
+      prevMessages.filter(msg => 
+        !(msg.formData?.isMultiDependencySelect && msg.formData?.currentNodeId === `dependency-select-${targetNodeId}`)
+      )
+    );
 
     // Handle each connection without asking for more dependencies
     selectedDependencies.forEach((dependency, index) => {
@@ -1683,6 +1726,12 @@ const PipeLineChatPanel = () => {
 
   // Function to ask for dependencies based on maxInputs
   const askForDependencies = (node, maxInputs, targetNodeId) => {
+    console.log('askForDependencies called with:', {
+      node: node.ui_properties.module_name,
+      maxInputs,
+      targetNodeId,
+      totalNodes: nodes.length
+    });
 
     // Filter out nodes that can be used as dependencies
     const availableDependencies = nodes.filter(existingNode =>
@@ -1690,9 +1739,11 @@ const PipeLineChatPanel = () => {
       existingNode.id !== targetNodeId
     );
 
+    console.log('Available dependencies:', availableDependencies.map(dep => ({ id: dep.id, label: dep.data.label })));
 
     if (availableDependencies.length === 0) {
       // No available dependencies, show message and directly show transformations
+      console.log('No available dependencies found, showing transformations');
       setTimeout(() => {
         handleShowTransformations();
       }, 300);
@@ -1712,6 +1763,13 @@ const PipeLineChatPanel = () => {
     // Show message asking for dependencies with dropdown form
     setTimeout(() => {
       const isSingleInput = maxInputs === 1;
+
+      console.log('Adding dependency selection message:', {
+        isSingleInput,
+        dependencyMessage,
+        targetNodeId,
+        availableDependencies: availableDependencies.length
+      });
 
       addMessageWithFormData({
         role: 'assistant',
@@ -1863,9 +1921,14 @@ const PipeLineChatPanel = () => {
       // Check if this is a Target transformation
       const isTarget = transformationType === 'Target';
 
+      // Build the dependency data from the current connection
+      const dependentOnData = [{
+        source: sourceNode.id,
+        targetHandle: targetHandle
+      }];
+
       // If this is a Target transformation, show the Target form immediately
       if (isTarget) {
-
         // Add a message to show that we're configuring the Target
         setTimeout(() => {
           setMessages(prevMessages => [
@@ -1881,17 +1944,12 @@ const PipeLineChatPanel = () => {
                 initialValues: {
                   nodeId: targetNodeId,
                   name: `Target_${targetNodeId}`,
-                  dependent_on: edges
-                    .filter(edge => edge.target === targetNodeId)
-                    .map(edge => ({
-                      source: edge.source,
-                      targetHandle: edge.targetHandle
-                    }))
+                  dependent_on: dependentOnData
                 }
               }
             },
           ]);
-        }, 300);
+        }, 600); // Increased timeout to ensure connections are established
 
         return; // Skip the rest of the function
       }
@@ -1915,12 +1973,10 @@ const PipeLineChatPanel = () => {
         import('@/lib/pipelineAutoSuggestion').then(module => {
           module.getColumnSuggestions(targetNodeId, nodes, edges, pipelineContext.pipelineDtl)
             .then(columns => {
-
               // Add a message to show that we're configuring the transformation
               setTimeout(() => {
-                // Check if this is a Target transformation
-                const isTarget = transformationType === 'Target';
-
+                console.log('Opening form for transformation:', transformationType, 'with targetNodeId:', targetNodeId);
+                
                 const newMessage = {
                   role: 'assistant',
                   content: "",
@@ -1932,31 +1988,25 @@ const PipeLineChatPanel = () => {
                     initialValues: {
                       ...formStates[targetNodeId],
                       nodeId: targetNodeId,
-                      dependent_on: edges
-                        .filter(edge => edge.target === targetNodeId)
-                        .map(edge => ({
-                          source: edge.source,
-                          targetHandle: edge.targetHandle
-                        }))
+                      dependent_on: dependentOnData
                     }
                   }
                 };
 
-
                 setMessages((prevMessages: any) => {
                   const newMessages = [...prevMessages, newMessage];
+                  console.log('Added form message to chat:', newMessage);
                   return newMessages;
                 });
-              }, 300);
+              }, 800); // Increased timeout to ensure dependencies are properly set
             })
             .catch(err => {
               console.error('Error getting column suggestions:', err);
 
               // Fallback if we can't get column suggestions
               setTimeout(() => {
-                // Check if this is a Target transformation
-                const isTarget = transformationType === 'Target';
-
+                console.log('Opening form (fallback) for transformation:', transformationType, 'with targetNodeId:', targetNodeId);
+                
                 const newMessage = {
                   role: 'assistant',
                   content: '',
@@ -1968,28 +2018,25 @@ const PipeLineChatPanel = () => {
                     initialValues: {
                       ...formStates[targetNodeId],
                       nodeId: targetNodeId,
-                      dependent_on: edges
-                        .filter(edge => edge.target === targetNodeId)
-                        .map(edge => ({
-                          source: edge.source,
-                          targetHandle: edge.targetHandle
-                        }))
+                      dependent_on: dependentOnData
                     }
                   }
                 };
 
-
                 setMessages((prevMessages: any) => {
                   const newMessages = [...prevMessages, newMessage];
+                  console.log('Added fallback form message to chat:', newMessage);
                   return newMessages;
                 });
-              }, 300);
+              }, 800); // Increased timeout to ensure dependencies are properly set
             });
         });
       } else {
         // Fallback if schema not found
-         
+        console.warn('Schema not found for transformation:', transformationType);
+        setTimeout(() => {
           handleShowTransformations();
+        }, 300);
       }
     } else {
       // For multi-input transformations, ask for more dependencies
@@ -2064,12 +2111,7 @@ const PipeLineChatPanel = () => {
                           initialValues: {
                             ...formStates[targetNodeId],
                             nodeId: targetNodeId,
-                            dependent_on: edges
-                              .filter(edge => edge.target === targetNodeId)
-                              .map(edge => ({
-                                source: edge.source,
-                                targetHandle: edge.targetHandle
-                              }))
+                            dependent_on: dependentOnData
                           }
                         }
                       };
@@ -2111,12 +2153,7 @@ const PipeLineChatPanel = () => {
                           initialValues: {
                             ...formStates[targetNodeId],
                             nodeId: targetNodeId,
-                            dependent_on: edges
-                              .filter(edge => edge.target === targetNodeId)
-                              .map(edge => ({
-                                source: edge.source,
-                                targetHandle: edge.targetHandle
-                              }))
+                            dependent_on: dependentOnData
                           }
                         }
                       };
@@ -2411,7 +2448,9 @@ const PipeLineChatPanel = () => {
                                       isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
                                       initialValues: {
                                         ...message.formData.initialValues,
-                                        ...updatedFormState
+                                        ...updatedFormState,
+                                        nodeId: message.formData.currentNodeId,
+                                        name: updatedFormState.name || `Target_${message.formData.currentNodeId}`
                                       }
                                     }
                                   }

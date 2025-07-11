@@ -8,12 +8,27 @@ import { useDataCatalog } from '@/features/data-catalog/hooks/usedataCatalog';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Database } from 'lucide-react';
+import { Database, ImportIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { ROUTES } from '@/config/routes';
+import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDataSourceWizard';
+import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 
 function DataCatalogPage() {
   const { handleNavigation } = useNavigation();
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [showImportSection, setShowImportSection] = useState(false);
+  const { projects } = useProjects();
+
+  useEffect(() => {
+    const handleOpenLocalImport = () => setShowImportSection(true);
+    window.addEventListener("openLocalImport", handleOpenLocalImport);
+    return () => window.removeEventListener("openLocalImport", handleOpenLocalImport);
+  }, []);
+
+  const closeImportSection = () => setShowImportSection(false);
 
   const {
     datasources,
@@ -30,28 +45,6 @@ function DataCatalogPage() {
     offset: offset
   });
   const dataCatalogSrv = useDataCatalogManagementService();
-  const { projects } = useProjects();
-  const dispatch = useAppDispatch();
-  const { handleNavigation } = useNavigation();
-
-  const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
-    ProjectId: project.bh_project_id,
-    Project_Name: project.bh_project_name
-  })) : [];
-
-  const handleFlatFileImport = () => {
-    setShowImportSection(true);
-  };
-
-  const handleTablesImport = () => {
-    handleNavigation(`${ROUTES.DATA_CATALOG}/datasource-import`);
-  };
-
-  const closeImportSection = () => {
-    setShowImportSection(false);
-    dispatch(getSource());
-    refetch(); // Refresh data after import
-  };
 
   useEffect(() => {
     if (datasources && datasources.length > 0) {
@@ -63,14 +56,14 @@ function DataCatalogPage() {
       const handleOpenImportSource = () => {
         handleNavigation(`${ROUTES.DATA_CATALOG}/datasource-import`);
       };
-      
+
       const handleImportClick = () => {
         setShowImportSection(!showImportSection);
       };
-  
+
       window.addEventListener("openImportSourceDialog", handleOpenImportSource);
       window.addEventListener("openLocalImport", handleImportClick);
-  
+
       return () => {
         window.removeEventListener("openImportSourceDialog", handleOpenImportSource);
         window.removeEventListener("openLocalImport", handleImportClick);
@@ -106,11 +99,40 @@ function DataCatalogPage() {
   if (datasources.length === 0) {
     return (
       <div className="p-6">
-        <EmptyState
-          title="Welcome to Your Data Catalog!"
-          description="Ready to manage your data."
-          Icon={Database}
-        />
+        {showImportSection ? (
+          <ImportDataSourceStepper
+            gitProjectList={Array.isArray(projects) ? projects.map((project: any) => ({
+              ProjectId: project.bh_project_id,
+              Project_Name: project.bh_project_name
+            })) : []}
+            closeImportSection={closeImportSection}
+          />
+        ) : (
+          <EmptyState
+            title="Welcome to Your Data Catalog!"
+            description="Ready to manage your data."
+            Icon={Database}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">Add Dataset</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() => window.dispatchEvent(new Event("openImportSourceDialog"))}
+                  >
+                    <Database className="mr-2 h-4 w-4" /> Tables
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => window.dispatchEvent(new Event("openLocalImport"))}
+                  >
+                    <ImportIcon className="mr-2 h-4 w-4" /> Flat File
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+        )}
       </div>
     );
   }

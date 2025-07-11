@@ -21,19 +21,18 @@ const createKeycloakMock = () => {
 const getUrlParams = () => {
   if (!isBrowser) return { realm: undefined, clientId: undefined };
   
-  const urlParams = new URLSearchParams(window.location.search);
+  // Extract from URL path - get the last part of the pathname
+  const pathSegments = window.location.pathname.split('/').filter(segment => segment);
+  const realmFromUrl = pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : undefined;
+  const clientIdFromUrl = realmFromUrl; // Use the same value for both realm and clientId
   
-  // Get values from URL params
-  const realmFromUrl = urlParams.get('client_key');
-  const clientIdFromUrl = urlParams.get('client_key');
-  
-  // If URL params are present, save them to sessionStorage for future use
+  // If URL path contains a realm, save it to sessionStorage for future use
   if (realmFromUrl) {
     sessionStorage.setItem('kc_realm_param', realmFromUrl);
     sessionStorage.setItem('kc_client_id_param', clientIdFromUrl || realmFromUrl);
   }
   
-  // Use URL params if available, otherwise try to get from sessionStorage
+  // Use URL path value if available, otherwise try to get from sessionStorage
   const realm = realmFromUrl || sessionStorage.getItem('kc_realm_param');
   const clientId = clientIdFromUrl || sessionStorage.getItem('kc_client_id_param');
   

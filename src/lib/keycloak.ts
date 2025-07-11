@@ -21,18 +21,26 @@ const createKeycloakMock = () => {
 const getUrlParams = () => {
   if (!isBrowser) return { realm: undefined, clientId: undefined };
   
-  // Extract from URL path - get the last part of the pathname
+  // Check if current URL matches /tenant/:tenantId pattern
   const pathSegments = window.location.pathname.split('/').filter(segment => segment);
-  const realmFromUrl = pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : undefined;
-  const clientIdFromUrl = realmFromUrl; // Use the same value for both realm and clientId
+  const isTenantRoute = pathSegments.length >= 2 && pathSegments[0] === 'tenant';
   
-  // If URL path contains a realm, save it to sessionStorage for future use
-  if (realmFromUrl) {
+  let realmFromUrl, clientIdFromUrl;
+  
+  if (isTenantRoute) {
+    // Extract tenant ID from /tenant/:tenantId route
+    realmFromUrl = pathSegments[1]; // Get the tenant ID (second segment)
+    clientIdFromUrl = realmFromUrl;
+    
+    console.log("realmFromUrl >>>", realmFromUrl);
+    console.log("clientIdFromUrl >>>", clientIdFromUrl);
+    
+    // Save to sessionStorage for future use
     sessionStorage.setItem('kc_realm_param', realmFromUrl);
-    sessionStorage.setItem('kc_client_id_param', clientIdFromUrl || realmFromUrl);
+    sessionStorage.setItem('kc_client_id_param', clientIdFromUrl);
   }
   
-  // Use URL path value if available, otherwise try to get from sessionStorage
+  // Use extracted values (if on tenant route) or get from sessionStorage
   const realm = realmFromUrl || sessionStorage.getItem('kc_realm_param');
   const clientId = clientIdFromUrl || sessionStorage.getItem('kc_client_id_param');
   

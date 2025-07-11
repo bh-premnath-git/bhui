@@ -26,6 +26,7 @@ export interface BaseUser {
 
 // Complete User type with all API properties
 export interface User extends BaseUser {
+  fullName: any;
   id: string;
   createdTimestamp: number;
   totp: boolean;

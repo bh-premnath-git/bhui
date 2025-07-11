@@ -13,6 +13,8 @@ gemini_cli_config.json
 react_src.db
 
 node_modules
+aws
+awscliv2.zip
 dist
 dist-ssr
 *.local

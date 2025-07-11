@@ -31,10 +31,7 @@ const getUrlParams = () => {
     // Extract tenant ID from /tenant/:tenantId route
     realmFromUrl = pathSegments[1]; // Get the tenant ID (second segment)
     clientIdFromUrl = realmFromUrl;
-    
-    console.log("realmFromUrl >>>", realmFromUrl);
-    console.log("clientIdFromUrl >>>", clientIdFromUrl);
-    
+      
     // Save to sessionStorage for future use
     sessionStorage.setItem('kc_realm_param', realmFromUrl);
     sessionStorage.setItem('kc_client_id_param', clientIdFromUrl);

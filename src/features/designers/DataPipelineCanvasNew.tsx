@@ -11,18 +11,21 @@ import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/Sho
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
-import PipelineSidebar from './components/PipelineSidebar';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
+import RequirementForm from '@/pages/designers/requirements/RequirementForm';
+import { useAppSelector } from '@/hooks/useRedux';
+import { RootState } from '@/store';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
-  const { isRightAsideOpen, isBottomDrawerOpen, isExpanded, rightAsideWidth } = useSidebar();
+  const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
   const { id } = useParams();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
 
-  // Calculate sidebar width based on expanded state
-  const sidebarWidth = isExpanded ? 0 : 0; // Adjust these values based on your actual sidebar widths
+  // No sidebar width needed since we removed the sidebar
+  const sidebarWidth = 0;
+  const { pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
 
   const {
     pipelineDtl,
@@ -47,6 +50,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     handleCenter,
     handleAlignHorizontal,
     handleAlignVertical,
+    handleAlignTopLeft,
     handleRun,
     handleStop,
     handleNext,
@@ -71,7 +75,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     fetchPipelineDetails
   } = usePipelineContext();
 
-  // Add resize event handler to force canvas resizing when right aside, sidebar, or bottom drawer opens/closes
+  // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
   useEffect(() => {
     const handleResize = () => {
       // Force a resize event to make ReactFlow recalculate dimensions
@@ -90,7 +94,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         try {
           handleCenter();
           // Make sure nodes are visible when layout changes
-          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen || isExpanded)) {
+          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
             console.log('Centering nodes after layout change');
             handleCenter();
           }
@@ -122,7 +126,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
       clearTimeout(secondTimer);
       clearTimeout(thirdTimer);
     };
-  }, [isRightAsideOpen, isBottomDrawerOpen, isExpanded, handleCenter, nodes.length]);
+  }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
   // Listen for RightAside panel resize events
   useEffect(() => {
@@ -216,159 +220,156 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     )
   }), [transformationCounts, pipelineDtl, debuggedNodesList]);
 
- 
-  const getMainContentStyle = () => {
-    const bottomHeight = isBottomDrawerOpen ? 0 : 0;
 
-    // Calculate the available width
-    let availableWidth = `calc(100% - ${sidebarWidth}px`;
+  const getMainContentStyle = () => {
+    // Calculate the available width without sidebar
+    let availableWidth = '100%';
     if (isRightAsideOpen) {
       // Extract percentage value from rightAsideWidth (e.g., 'w-[25%]' -> '25%')
       const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
-      availableWidth += ` - ${rightAsidePercentage}%`;
+      availableWidth = `calc(100% - ${rightAsidePercentage}%)`;
     }
-    availableWidth += ')';
 
     return {
-      height: '100%',
+      height: '110%',
       width: availableWidth,
-      marginLeft: `${sidebarWidth}px`,
       transition: 'all 0.3s ease-in-out'
     };
   };
   return (
-    <div className={`flex h-full w-[99%] pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
-      {/* Pipeline Sidebar */}
-      <PipelineSidebar className="h-full" />
-
-      <div
-        className={`flex-1 relative p-1 transition-all duration-300`}
-        style={getMainContentStyle()}>
-
-        {/* Main Canvas */}
+    <>
+      {pipelineType?.toLowerCase() == "design" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
         <div
-          className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            flex: '1 1 auto',
-            height: '100%'
-          }}>
+          className={`flex-1 relative p-1 transition-all duration-300`}
+          style={getMainContentStyle()}>
 
-          <ComposableCanvas
-            className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-canvas' : ''}`}
-            type="pipeline"
-            nodeTypes={memoizedNodeTypes}
-            edgeTypes={edgeTypes}
-            renderControls={true}
-            controls={
-              <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
-                <FlowControls
-                  onZoomIn={handleZoomIn}
-                  onZoomOut={handleZoomOut}
-                  onCenter={handleCenter}
-                  onAlignHorizontal={handleAlignHorizontal}
-                  onAlignVertical={handleAlignVertical}
-                  handleRunClick={handleRun}
-                  onStop={handleStop}
-                  onNext={handleNext}
-                  isPipelineRunning={isPipelineRunning}
-                  isLoading={isCanvasLoading}
-                  pipelineConfig={handleRunClick}
-                  terminalLogs={terminalLogs}
-                  proplesLogs={conversionLogs}
-                />
-              </div>}
-            loading={isCanvasLoading}
-            defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
-            minZoom={0.2}
-            maxZoom={1.5}
-          />
-        </div>
+          {/* Main Canvas */}
+          <div
+            className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              flex: '1 1 auto',
+              height: '100%'
+            }}>
 
-        {/* Node Form Dialog */}
-        <Dialog
-          open={isFormOpen}
-          onOpenChange={handleDialogClose}
-          aria-modal="true"
-        >
-          <DialogContent className="max-w-[60%]">
-            {selectedSchema && (
-              <CreateFormFormik
-                schema={selectedSchema}
-                sourceColumns={sourceColumns}
-                onClose={handleDialogClose}
-                currentNodeId={selectedSchema?.nodeId || ''}
-                initialValues={{
-                  ...formStates[selectedSchema?.nodeId],
-                  nodeId: selectedSchema?.nodeId
-                }}
-                nodes={nodes}
-                edges={edges}
-                pipelineDtl={pipelineDtl}
-                onSubmit={handleFormSubmit}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Leave Prompt Dialog */}
-        <Dialog
-          open={showLeavePrompt}
-          onOpenChange={setShowLeavePrompt}
-        >
-          <DialogContent>
-            <div className="flex flex-col items-center text-center">
-              {/* Warning Icon */}
-              <div className="mb-4 p-3 rounded-full bg-amber-50">
-                <svg
-                  className="w-8 h-8 text-amber-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            <ComposableCanvas
+              className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-canvas' : ''}`}
+              type="pipeline"
+              nodeTypes={memoizedNodeTypes}
+              edgeTypes={edgeTypes}
+              renderControls={true}
+              controls={
+                <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                  <FlowControls
+                    onZoomIn={handleZoomIn}
+                    onZoomOut={handleZoomOut}
+                    onCenter={handleCenter}
+                    onAlignHorizontal={handleAlignHorizontal}
+                    onAlignVertical={handleAlignVertical}
+                    onAlignTopLeft={handleAlignTopLeft}
+                    handleRunClick={handleRun}
+                    onStop={handleStop}
+                    onNext={handleNext}
+                    isPipelineRunning={isPipelineRunning}
+                    isLoading={isCanvasLoading}
+                    pipelineConfig={handleRunClick}
+                    terminalLogs={terminalLogs}
+                    proplesLogs={conversionLogs}
                   />
-                </svg>
+                </div>}
+              loading={isCanvasLoading}
+              defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
+              minZoom={0.2}
+              maxZoom={1.5}
+            />
+          </div>
+
+          {/* Node Form Dialog */}
+          <Dialog
+            open={isFormOpen}
+            onOpenChange={handleDialogClose}
+            aria-modal="true"
+          >
+            <DialogContent className="max-w-[60%]">
+              {selectedSchema && (
+                <CreateFormFormik
+                  schema={selectedSchema}
+                  sourceColumns={sourceColumns}
+                  onClose={handleDialogClose}
+                  currentNodeId={selectedSchema?.nodeId || ''}
+                  initialValues={{
+                    ...formStates[selectedSchema?.nodeId],
+                    nodeId: selectedSchema?.nodeId
+                  }}
+                  nodes={nodes}
+                  edges={edges}
+                  pipelineDtl={pipelineDtl}
+                  onSubmit={handleFormSubmit}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Leave Prompt Dialog */}
+          <Dialog
+            open={showLeavePrompt}
+            onOpenChange={setShowLeavePrompt}
+          >
+            <DialogContent>
+              <div className="flex flex-col items-center text-center">
+                {/* Warning Icon */}
+                <div className="mb-4 p-3 rounded-full bg-amber-50">
+                  <svg
+                    className="w-8 h-8 text-amber-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  Unsaved Changes
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  You have unsaved changes in your pipeline. Are you sure you want to leave? All changes will be lost.
+                </p>
+
+                <div className="flex gap-3 w-full">
+                  <Button onClick={() => setShowLeavePrompt(false)}>
+                    Stay
+                  </Button>
+                  <Button onClick={handleLeavePage}>
+                    Leave Page
+                  </Button>
+                </div>
               </div>
+            </DialogContent>
+          </Dialog>
 
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                Unsaved Changes
-              </h2>
-              <p className="text-gray-600 mb-6">
-                You have unsaved changes in your pipeline. Are you sure you want to leave? All changes will be lost.
-              </p>
+          {/* Terminal/Logs Component */}
+          <Terminal
+            isOpen={showLogs}
+            onClose={() => setShowLogs(false)}
+            title="Pipeline Validation Logs"
+            terminalLogs={terminalLogs}
+            proplesLogs={conversionLogs}
+          />
 
-              <div className="flex gap-3 w-full">
-                <Button onClick={() => setShowLeavePrompt(false)}>
-                  Stay
-                </Button>
-                <Button onClick={handleLeavePage}>
-                  Leave Page
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+          {/* Loading Overlay */}
 
-        {/* Terminal/Logs Component */}
-        <Terminal
-          isOpen={showLogs}
-          onClose={() => setShowLogs(false)}
-          title="Pipeline Validation Logs"
-          terminalLogs={terminalLogs}
-          proplesLogs={conversionLogs}
-        />
-
-        {/* Loading Overlay */}
-
-      </div>
-    </div>
+        </div>
+      </div>) : (<>
+        <RequirementForm /> </>)}
+    </>
   );
 };
 

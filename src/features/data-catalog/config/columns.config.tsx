@@ -5,13 +5,19 @@ import { formatDate } from "@/lib/date-format";
 import {
   Database,
   PlusIcon,
-  ImportIcon
+  ImportIcon,
+  Trash2
 } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 const columnHelper = createColumnHelper<DataSource>();
 
-const columns: ColumnDefWithFilters<DataSource>[] = [
+interface ColumnsProps {
+  onDelete?: (datasource: DataSource) => void;
+}
+
+const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<DataSource>[] => [
   columnHelper.accessor('data_src_name', {
     header: 'Name',
     cell: (info) => {
@@ -46,6 +52,37 @@ const columns: ColumnDefWithFilters<DataSource>[] = [
     cell: (info) => formatDate(info.getValue()),
     enableColumnFilter: false,
   }),
+  columnHelper.display({
+    id: 'actions',
+    header: 'Actions',
+    cell: (info) => {
+      const datasource = info.row.original;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  props?.onDelete?.(datasource);
+                }}
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Delete {datasource.data_src_name}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete data source</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
+    enableColumnFilter: false,
+  }),
 ];
 
 const getToolbarConfig = (): TToolbarConfig => {
@@ -77,4 +114,7 @@ const getToolbarConfig = (): TToolbarConfig => {
   }
 }
 
-export { columns, getToolbarConfig }
+// Keep the original columns export for backward compatibility
+const columns: ColumnDefWithFilters<DataSource>[] = createColumns();
+
+export { columns, createColumns, getToolbarConfig }

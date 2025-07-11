@@ -129,7 +129,7 @@ export const navigationItems: NavItem[] = [
         parent: ROUTES.ADMIN.INDEX
       },
       {
-        title: "Manage Compute Config",
+        title: "Manage Compute",
         icon: Server,
         path: ROUTES.ADMIN.COMPUTE_CLUSTER.INDEX,
         parent: ROUTES.ADMIN.INDEX

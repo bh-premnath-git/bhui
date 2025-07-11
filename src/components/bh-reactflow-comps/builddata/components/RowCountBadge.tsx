@@ -23,16 +23,26 @@ export const RowCountBadge: React.FC<RowCountBadgeProps> = ({
     const baseClasses = "bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur-sm rounded px-2 py-1 flex items-center justify-center shadow-lg border border-blue-200/50 cursor-pointer hover:from-blue-100 hover:to-indigo-100 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105";
     const positionClasses = isRelativePositioning ? "" : "absolute -top-0 -right-0";
     
+    const handleClick = (e: React.MouseEvent) => {
+        console.log('RowCountBadge clicked');
+        e.stopPropagation();
+        e.preventDefault();
+        
+        if (onMetricsClick) {
+            console.log('Calling onMetricsClick');
+            setTimeout(() => {
+                onMetricsClick(e);
+            }, 0);
+        } else {
+            console.log('No onMetricsClick handler provided');
+        }
+    };
+    
     return (
         <div 
-            className={`${baseClasses} ${positionClasses} ${className}`}
-            onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                if (onMetricsClick) {
-                    onMetricsClick(e);
-                }
-            }}
+            className={`${baseClasses} ${positionClasses} ${className} z-10`}
+            style={{ zIndex: 10 }}
+            onClick={handleClick}
             title="View Data in Bottom Drawer"
         >
             <div className="flex items-center gap-1.5">

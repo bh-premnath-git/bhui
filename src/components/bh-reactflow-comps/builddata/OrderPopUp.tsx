@@ -46,6 +46,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
         toast.error('Failed to load connection configurations');
       }
     };
+    console.log("Fetching connection configs...",connectionConfigList);
 
     fetchConnectionConfigs();
   }, [dispatch]);
@@ -75,6 +76,10 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
       console.log('Source file_path_prefix:', source?.file_path_prefix);
       console.log('Pipeline connection:', pipelineJsonData?.connection);
       
+      console.log('OrderPopUp: Building initial data with connection:', connection);
+      console.log('OrderPopUp: Source data:', source);
+      console.log('OrderPopUp: Pipeline JSON data:', pipelineJsonData);
+      
       const initialData = {
         reader_name: source?.data_src_name || pipelineJsonData?.name || '',
         name: pipelineJsonData?.name || source?.data_src_name || '',
@@ -95,6 +100,8 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
           file_type: pipelineJsonData?.connection?.file_type || source?.file_type || 'CSV',
           connection: {
             ...(pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata),
+            name: connection?.connection_config_name || connection?.connection_name || '',
+            connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || connection?.id || '',
             file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || 
                              source?.file_path_prefix || 
                              connection?.custom_metadata?.file_path_prefix || '',
@@ -102,6 +109,8 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
           connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
         }
       };
+      
+      console.log('OrderPopUp: Final initialData:', initialData);
 
       setInitialData(initialData);
     }
@@ -148,7 +157,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
         <DialogHeader className="py-2 px-2 shrink-0">
           <DialogTitle className="flex items-center">
             <div className="mr-2 font-semibold text-base">
-              {source?.data_src_name}
+              {source?.data_src_name || source?.name }
             </div>
             {source?.data_src_desc && (
               <TooltipProvider>

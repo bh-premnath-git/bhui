@@ -59,13 +59,20 @@ const normalizeColumn = (col: string | { name: string; dataType?: string }) => {
   };
 }; 
 
-// Add these styles at the top of the file
-const expressionEditorStyles = {
-  wrapper: 'relative rounded-md border border-gray-200 shadow-sm hover:border-gray-300 focus-within:border-gray-300 my-2',
-  header: 'flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50',
-  headerTitle: 'text-sm font-medium text-gray-700',
-  editorContainer: 'p-0.5 bg-white ',
-  editor: 'min-h-[200px] max-h-[400px] overflow-auto bg-white'
+// Dynamic height calculation function
+const calculateEditorHeight = (content: string): number => {
+  const lines = content.split('\n');
+  const lineHeight = 20; // Monaco editor line height
+  const padding = 16; // Top and bottom padding
+  const minHeight = 40; // Same as regular input field
+  const maxHeight = 300; // Maximum height to prevent excessive growth
+  
+  const calculatedHeight = Math.max(
+    minHeight,
+    Math.min(maxHeight, (lines.length * lineHeight) + padding)
+  );
+  
+  return calculatedHeight;
 };
 
 export const FormField: React.FC<FormFieldProps> = React.memo(({
@@ -90,6 +97,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   const { control, setValue, setError, formState: { errors } } = useForm();
   const [isEditorReady, setIsEditorReady] = React.useState(false);
   const [editorError, setEditorError] = React.useState<string | null>(null);
+  const [editorHeight, setEditorHeight] = React.useState(40); // Start with input field height
   const completionProviderRef = React.useRef<monaco.IDisposable | null>(null);
   const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = React.useRef<typeof monaco | null>(null);
@@ -181,6 +189,15 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
     };
   }, [isEditorReady, sourceColumns, isExpression]);
 
+  // Update editor height when content changes
+  useEffect(() => {
+    if (isExpression && value) {
+      const content = typeof value === 'object' && 'expression' in value ? value.expression : value;
+      const newHeight = calculateEditorHeight(content || '');
+      setEditorHeight(newHeight);
+    }
+  }, [value, isExpression]);
+
   // Update the MonacoEditor onMount handler
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     try {
@@ -197,6 +214,18 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
         editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
       });
+
+      // Listen for content changes to update height
+      editor.onDidChangeModelContent(() => {
+        const content = editor.getValue();
+        const newHeight = calculateEditorHeight(content);
+        setEditorHeight(newHeight);
+      });
+
+      // Initial height calculation
+      const initialContent = editor.getValue();
+      const initialHeight = calculateEditorHeight(initialContent);
+      setEditorHeight(initialHeight);
     } catch (error) {
       console.error('Error in Monaco Editor:', error);
       setEditorError(error?.message || 'Error initializing editor');
@@ -214,6 +243,12 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
     
     return (
       <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
         <Controller
           control={control}
           name={name}
@@ -229,11 +264,11 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 disabled={disabled}
               >
                 <SelectTrigger 
-                  className={`w-full mt-1 ${error ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full ${error ? 'border-red-500' : ''}`}
                 >
                   <SelectValue placeholder={`Select ${fieldKey}`} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent style={{zIndex:9999}}>
                   {options.map((option: string) => (
                     <SelectItem key={option} value={option}>
                       {option.replace(/_/g, ' ').split(' ').map(word =>
@@ -244,7 +279,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 </SelectContent>
               </Select>
               {error && (
-                <span className="text-red-500 text-sm">
+                <span className="text-red-500 text-sm mt-1 block">
                   {typeof error === 'string' ? error : error?.message}
                 </span>
               )}
@@ -258,19 +293,30 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   // Handle expression fields
   if (isExpression) {
     return (
-<div
-            role="textbox"
-            aria-label={`SQL expression editor for ${fieldKey}`}
-            onClick={() => !disabled && onExpressionClick?.()}
-            className={`cursor-pointer ${disabled ? 'opacity-50' : ''}`}
-            tabIndex={0}
-            onFocus={(e) => {
-              e.stopPropagation();
-            }}
-          >        <div className={expressionEditorStyles.wrapper}>
-          <div className={expressionEditorStyles.editorContainer}>
+      <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <div
+          role="textbox"
+          aria-label={`SQL expression editor for ${fieldKey}`}
+          onClick={() => !disabled && onExpressionClick?.()}
+          className={`relative cursor-pointer ${disabled ? 'opacity-50' : ''}`}
+          tabIndex={0}
+          onFocus={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <div className={`
+            border rounded-md bg-white
+            ${error ? 'border-red-500' : 'border-gray-300'}
+            ${disabled ? 'bg-gray-50' : ''}
+          `}>
             <MonacoEditor
-              height="100px"
+              height={`${editorHeight}px`}
               language="sql"
               theme="vs-light"
               value={typeof value === 'object' && 'expression' in value ? value.expression : value}
@@ -287,6 +333,9 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 overviewRulerLanes: 0,
                 renderLineHighlight: 'none',
                 selectionHighlight: false,
+                fontSize: 14,
+                fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                padding: { top: 8, bottom: 8 },
                 quickSuggestions: {
                   other: true,
                   comments: false,
@@ -305,14 +354,20 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                   showInlineDetails: true,
                   filterGraceful: true,
                   selectionMode: 'always'
-                }
+                },
+                automaticLayout: true
               }}
               onMount={handleEditorMount}
             />
-            {editorError && (
-              <div className="text-red-500 text-sm mt-1">{editorError}</div>
-            )}
           </div>
+          {editorError && (
+            <div className="text-red-500 text-sm mt-1">{editorError}</div>
+          )}
+          {error && (
+            <span className="text-red-500 text-sm mt-1 block">
+              {typeof error === 'string' ? error : error?.message}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -338,7 +393,6 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
           defaultValue={value || ''}
           render={({ field }) => (
             <PythonEditor
-              id={name}
               label={fieldKey}
               description={fieldSchema.description}
               value={field.value}
@@ -349,7 +403,6 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
               error={error ? (typeof error === 'string' ? error : error?.message) : undefined}
               minHeight="400px"
               containerClassName="w-full"
-              disabled={disabled}
               
             />
           )}
@@ -362,6 +415,12 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   if (fieldSchema.type === 'boolean') {
     return (
       <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
         <Controller
           control={control}
           name={name}
@@ -373,7 +432,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
                 field.onChange(pressed);
                 onChange?.(pressed);
               }}
-              className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+              variant="outline"
+              className={`${errors[name] || error ? 'border-red-500' : ''}`}
               aria-label={fieldKey}
               disabled={disabled}
             >
@@ -382,7 +442,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
           )}
         />
         {error && (
-          <span className="text-red-500 text-sm">
+          <span className="text-red-500 text-sm mt-1 block">
             {typeof error === 'string' ? error : error?.message}
           </span>
         )}
@@ -392,6 +452,12 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
 
   return (
     <div className="form-field">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
       <Controller
         control={control}
         name={name}
@@ -408,7 +474,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
             placeholder={`Enter ${fieldKey}`}
             required={required}
             disabled={disabled}
-            className={`border ${errors[name] || error ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+            className={`${errors[name] || error ? 'border-red-500' : ''}`}
             aria-label={fieldKey}
             onBlur={onBlur}
             onKeyDown={onKeyDown}
@@ -416,7 +482,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
         )}
       />
       {error && (
-        <span className="text-red-500 text-sm">
+        <span className="text-red-500 text-sm mt-1 block">
           {typeof error === 'string' ? error : error?.message}
         </span>
       )}

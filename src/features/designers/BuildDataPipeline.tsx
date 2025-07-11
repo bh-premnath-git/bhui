@@ -52,7 +52,6 @@ export function PipelineList({ pipeline }: { pipeline: any[] }) {
       queryClient.invalidateQueries({ queryKey: ['pipelines'] });
       queryClient.invalidateQueries({ queryKey: ['pipelines', 'list'] });
 
-      
       // Fetch fresh data through Redux
       await dispatch(getAllPipeline());
       

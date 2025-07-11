@@ -19,7 +19,7 @@
     },
     {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SQL Transformation",
+      "title": "SQLTransformation",
       "description": "",
       "type": "object",
       "ui_type": "normal",
@@ -296,61 +296,59 @@
       ]
     },
     {
-      "$schema": "http://json-schema.org/draft-04/schema#",
-      "description": "",
-      "type": "object",
-      "ui_type": "object",
-      "title": "DQ Check",
-      "properties": {
-        "transformation": {
-          "type": "string",
-          "minLength": 1
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "limit": {
-          "type": "number"
-        },
-        "dq_rules": {
-          "type": "array",
-          "uniqueItems": true,
-          "minItems": 1,
-          "items": {
-            "required": [
-              "rule_name",
-              "column",
-              "rule_type",
-              "value"
-            ],
-            "properties": {
-              "rule_name": {
-                "type": "string",
-                "minLength": 1
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DQCheck",
+  "type": "object",
+  "ui_type": "tab-container",
+  "description": "Schema for Data Quality Check transformation",
+  "properties": {
+   
+    "dq_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "column": {
+            "type": "autocomplete",
+            "minLength": 1
+          },
+          "rule_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "minItems": 1
               },
-              "column": {
-                "type": "string",
-                "minLength": 1
-              },
-              "rule_type": {
-                "type": "string",
-                "minLength": 1
-              },
-              "value": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
+              { "type": "number" },
+              { "type": "boolean" }            
+            ]
+          },
+          "value2": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["error", "warning"],
+            "default": "warning",
+            "description": "Specifies if the rule is an error or warning. Defaults to warning."
           }
-        }
-      },
-      "required": [
-        "transformation",
-        "name",
-        "dq_rules"
-      ]
-    },
+        },
+        "required": ["rule_name", "column", "rule_type", "value"]
+      }
+    }
+  },
+  "required": ["transformation", "name", "dq_rules"]
+},
+  
     {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "description": "",
@@ -383,7 +381,7 @@
             "type": "object",
             "properties": {
               "column": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               },
               "order": {
@@ -395,8 +393,8 @@
               }
             },
             "required": [
-              "order_column",
-              "sort"
+              "column",
+              "order"
             ]
           }
         }
@@ -992,7 +990,7 @@
             "required": [],
             "properties": {
               "column": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               },
               "order": {

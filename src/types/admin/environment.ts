@@ -11,10 +11,10 @@ export interface EnvironmentTags {
 export interface Environment {
   created_at: string | null;
   updated_at: string | null;
-  created_by: string | null;
-  updated_by: string | null;
-  is_deleted: boolean;
-  deleted_by: string | null;
+  created_by: number | null;
+  updated_by: number | null;
+  is_deleted: boolean | null;
+  deleted_by: number | null;
   bh_env_id: number;
   bh_env_name: string;
   bh_env_provider: number;
@@ -33,6 +33,7 @@ export interface Environment {
   bh_env_provider_name: string;
   cloud_provider_name: string;
   secret_access_key: string | null;
+  cloud_provider_alias: string | null;
 }
 
 
@@ -76,7 +77,7 @@ export interface AWSValidationData {
 };
 
 export interface EnvironmentListResponse {
-  data: (Environment | MWAAEnvironments)[];
+  data: Environment[];
   total: number;
   offset: number;
   limit: number;

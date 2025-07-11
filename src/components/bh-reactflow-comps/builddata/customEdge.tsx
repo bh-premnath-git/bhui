@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useEffect } from "react";
+import { memo, useMemo, useState, useEffect, useCallback } from "react";
 import { useReactFlow } from "reactflow";
 import { useTransformationOutputQuery } from "@/lib/hooks/useTransformationOutput";
 import { HiChartBar } from "react-icons/hi";
@@ -12,6 +12,7 @@ import MetricsDrawerContent from "./MetricsDrawerContent";
 import { DataTable } from "@/components/bh-table/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Terminal, PreviewData } from "./LogsPage";
+import { alignNodesToTopLeft } from '@/utils/nodeAlignment';
 
 const edgeStyles = {
     stroke: '#b1b1b7',
@@ -122,7 +123,8 @@ export const CustomEdge = memo(({
         nodes, 
         edges, 
         updateSetNode, 
-        reactFlowInstance 
+        reactFlowInstance,
+        attachedCluster
       } = usePipelineContext()
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
@@ -137,6 +139,11 @@ export const CustomEdge = memo(({
 
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
     const sourceNode = getNode(source);
+
+    // Function to align all nodes to top-left
+    const handleAlignTopLeftClick = useCallback(() => {
+        alignNodesToTopLeft(nodes, edges, updateSetNode, reactFlowInstance);
+    }, [nodes, edges, updateSetNode, reactFlowInstance]);
     
     const rowCount = transformationCounts.find(
         (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
@@ -190,60 +197,6 @@ export const CustomEdge = memo(({
         };
     }, [sourceHandle, targetHandle, source, target, getNode]);
 
- const handleAlignTopLeftClick = () => {
-    console.log("Align Top Left clicked");
-    try {
-      if (!nodes || nodes.length === 0) {
-        console.log("No nodes to align");
-        return;
-      }
-      
-      // Simple grid layout starting from top-left
-      const startX = -250; // Move nodes more to the right
-      const startY = -120; // Move nodes even higher up (can go negative)
-      const gridSpacing = 150; // Space between nodes
-      const nodesPerRow = 4; // Number of nodes per row
-      
-      const newNodes = nodes.map((node, index) => {
-        const row = Math.floor(index / nodesPerRow);
-        const col = index % nodesPerRow;
-        
-        return {
-          ...node,
-          position: {
-            x: startX + (col * gridSpacing),
-            y: startY + (row * gridSpacing)
-          }
-        };
-      });
-
-      // Update nodes with new positions
-      updateSetNode(newNodes, edges);
-
-      // Center the view after a short delay
-      setTimeout(() => {
-        if (reactFlowInstance && reactFlowInstance.setCenter) {
-          // Calculate the center of the grid
-          const rows = Math.ceil(nodes.length / nodesPerRow);
-          const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
-          const centerY = startY + ((rows - 1) * gridSpacing) / 2;
-          
-          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }
-        
-        // Try to click the fitView button directly as a fallback
-        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-        if (fitViewButton instanceof HTMLElement) {
-          console.log("Clicking fitView button after top-left alignment");
-          fitViewButton.click();
-        }
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error in align top left:", error);
-    }
-  };
-
     const handleMetricsClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
@@ -258,6 +211,7 @@ export const CustomEdge = memo(({
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
                     transformationName: sourceNode?.data.title,
+                    host:attachedCluster.master_ip||"host.docker.internal",
                     isFlow
                 })).unwrap();
                 
@@ -282,6 +236,9 @@ export const CustomEdge = memo(({
                     />
                 );
                 setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
+                
+                // Realign all nodes to top-left when drawer is opened
+                handleAlignTopLeftClick();
             } catch (error) {
                 console.error("Error fetching transformation output:", error);
             } finally {
@@ -324,8 +281,11 @@ export const CustomEdge = memo(({
             
             // Set the drawer content
             setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
+            
+            // Realign all nodes to top-left when drawer is opened
+            handleAlignTopLeftClick();
         }
-    }, [metricsData, isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow, setBottomDrawerContent]);
+    }, [metricsData, isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow, setBottomDrawerContent, handleAlignTopLeftClick]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();

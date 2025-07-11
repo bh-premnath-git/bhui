@@ -88,7 +88,7 @@ export const NodeToolbar = ({ show, onEdit, onDelete, onDebug, onRefresh, onAiCh
     };
 
     return (
-        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-lg rounded-md px-1 py-1 z-20 flex gap-1">
+        <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-lg rounded-md px-1 py-1 z-50 flex gap-1" style={{ zIndex: 50 }}>
             {renderToolbarButtons()}
         </div>
     );

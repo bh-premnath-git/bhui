@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { FormField } from './FormField';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Node, Edge } from 'reactflow';
 import { useDispatch, useSelector } from 'react-redux';
 // import { generatePipelineAgent } from '@/store/slices/buildPipeLine/BuildPipeLineSlice';
@@ -12,6 +10,9 @@ import { generateInitialValues } from './get-initial-form';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Schema } from '../../types/formTypes';
+import { LookupDataTable } from './LookupDataTable';
+import { LookupColumnsTable } from './LookupColumnsTable';
+import { SourceSelector } from './SourceSelector';
 
 import {
   Select,
@@ -111,6 +112,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         ...values
       };
       
+      // Ensure rename_columns is properly initialized
+      if (!schemaFormValues.rename_columns) {
+        schemaFormValues.rename_columns = {};
+      }
+      
       console.log("Final SchemaTransformation form values:", schemaFormValues);
       return schemaFormValues;
     }
@@ -176,31 +182,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
             header: true
           }
         },
-        lookup_data: initialValues?.lookup_data || [
-          { id: 1, department: 'Engineering' },
-          { id: 2, department: 'Medical' },
-          { id: 3, department: 'Arts' },
-          { id: 4, department: 'Commerce' },
-          { id: 5, department: 'Science' },
-          { id: 6, department: 'Mathematics' },
-          { id: 7, department: 'Physics' },
-          { id: 8, department: 'Chemistry' },
-          { id: 9, department: 'Biology' },
-          { id: 10, department: 'Geography' }
-        ],
-        lookup_columns: initialValues?.lookup_columns || [
-          { column: 'id', out_column_name: 'id' },
-          { column: 'name', out_column_name: 'name' },
-          { column: 'department', out_column_name: 'department' },
-          { column: 'city', out_column_name: 'city' },
-          { column: 'state', out_column_name: 'state' },
-          { column: 'zip', out_column_name: 'zip' },
-          { column: 'address', out_column_name: 'address' },
-          { column: 'age', out_column_name: 'age' }
-        ],
+        lookup_data: initialValues?.lookup_data || [],
+        lookup_columns: initialValues?.lookup_columns,
         lookup_conditions: initialValues?.lookup_conditions || {
-          column_name: 'id',
-          lookup_with: 'id'
+          column_name: '',
+          lookup_with: ''
         },
         keep: initialValues?.keep || 'First',
         ...values
@@ -211,6 +197,34 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     if (schema?.title === 'CustomPySpark') {
       return {
         user_code: initialValues?.user_code || '',
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
+    // Add specific initialization for SequenceGenerator form
+    if (schema?.title === 'SequenceGenerator') {
+      return {
+        transformation: 'sequence_generator', // Required field
+        for_column_name: initialValues?.for_column_name || '',
+        order_by: initialValues?.order_by || [{ column: '', order: 'asc' }],
+        start_with: initialValues?.start_with || 1,
+        step: initialValues?.step || 1,
+        ...values
+      };
+    }
+    
+    // Add specific initialization for DQCheck form
+    if (schema?.title === 'DQCheck') {
+      return {
+        dq_rules: initialValues?.dq_rules || [{
+          rule_name: '',
+          column: '',
+          rule_type: '',
+          value: '',
+          value2: '',
+          action: 'warning'
+        }],
         dependent_on: initialValues?.dependent_on || [],
         ...values
       };
@@ -238,6 +252,9 @@ console.log(initialFormValues,"initialFormValues")
 
   // Add state to track if AI has been attempted for this field
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
+  
+  // Add state for column suggestions
+  const [columnSuggestions, setColumnSuggestions] = useState<string[]>([]);
 
   // Update handleExpressionClick to only generate once per field
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
@@ -568,6 +585,23 @@ console.log(initialFormValues,"initialFormValues")
     };
   }, []);
 
+  // Fetch column suggestions when component mounts or dependencies change
+  useEffect(() => {
+    const fetchColumnSuggestions = async () => {
+      try {
+        const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges, pipelineDtl);
+        setColumnSuggestions(suggestions);
+      } catch (error) {
+        console.error('Error fetching column suggestions:', error);
+        setColumnSuggestions([]);
+      }
+    };
+
+    if (currentNodeId && nodes && edges) {
+      fetchColumnSuggestions();
+    }
+  }, [currentNodeId, nodes, edges, pipelineDtl]);
+
   // Update onSubmitForm to properly handle nested form values
   const onSubmitForm = (values: FormValues) => {
     console.log('Raw form values before cleaning:', values);
@@ -660,13 +694,21 @@ console.log(initialFormValues,"initialFormValues")
       
       // Special handling for SchemaTransformation rename_columns
       if (key === 'rename_columns' && value !== null && typeof value === 'object' && schema.title === 'SchemaTransformation') {
-        // Keep the object even if empty, but clean out empty values
+        console.log('Processing rename_columns:', value);
+        
+        // Keep the object even if empty, but clean out empty key-value pairs
         const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
-          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
-            objAcc[objKey] = objValue;
+          // Only include entries where both key and value are non-empty strings
+          if (objKey && objKey.trim() !== '' && 
+              objValue && String(objValue).trim() !== '') {
+            objAcc[objKey.trim()] = String(objValue).trim();
           }
           return objAcc;
         }, {} as Record<string, any>);
+        
+        console.log('Cleaned rename_columns:', cleanObj);
+        
+        // Always include the rename_columns field, even if empty
         acc[key] = cleanObj;
         return acc;
       }
@@ -767,6 +809,31 @@ console.log(initialFormValues,"initialFormValues")
           acc[key] = cleanedExpressions;
         }
         return acc;
+      }
+      
+      // Special handling for SequenceGenerator numeric fields
+      if (schema.title === 'SequenceGenerator') {
+        if (key === 'start_with' || key === 'step') {
+          // Convert string to number for numeric fields
+          const numValue = parseFloat(value as string);
+          if (!isNaN(numValue)) {
+            acc[key] = numValue;
+          }
+          return acc;
+        }
+        
+        // Special handling for order_by in SequenceGenerator
+        if (key === 'order_by' && Array.isArray(value)) {
+          // Filter out items where column is empty
+          const cleanedOrderBy = value.filter(item => 
+            item.column?.trim()
+          );
+          
+          if (cleanedOrderBy.length > 0) {
+            acc[key] = cleanedOrderBy;
+          }
+          return acc;
+        }
       }
       
       // Handle other array fields
@@ -944,7 +1011,7 @@ console.log(initialFormValues,"initialFormValues")
  
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 max-w-full">
       {/* {schema.title === 'Deduplicator' && renderDeduplicatorFields(control)} */}
       <FormContent
         control={control}
@@ -956,6 +1023,7 @@ console.log(initialFormValues,"initialFormValues")
         nodes={nodes}
         edges={edges}
         watch={watch}
+        initialFormValues={initialFormValues}
       />
       
       <div className="mt-4">
@@ -1040,13 +1108,7 @@ const renderArrayFields = (
                     options={columnSuggestions}
                     value={field.value || ''}
                     onChange={field.onChange}
-                    renderInput={(params) => (
-                      <Input
-                        {...params}
-                        placeholder="Select column"
-                        required={arraySchema.minItems && arraySchema.minItems > 0}
-                      />
-                    )}
+                    placeholder="Select column"
                     className=""
                     required={arraySchema.minItems && arraySchema.minItems > 0}
                   />
@@ -1149,25 +1211,11 @@ const renderArrayFields = (
         {arraySchema.minItems && arraySchema.minItems > 0 && <span className="text-red-500">*</span>}
       </label> */}
       
-      {/* Headers */}
-      <div className="flex justify-between gap-2">
-        {itemPropertiesEntries.map(([fieldKey, fieldSchema]: [string, any]) => (
-          <div key={fieldKey}>
-            <div className="font-medium text-sm text-gray-700">
-              {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' ')}
-              {requiredFields.includes(fieldKey) && 
-                <span className="text-red-500 ml-1">*</span>}
-            </div>
-          </div>
-        ))}
-        <div /> {/* Spacer for remove button */}
-      </div>
+      {/* Headers are now handled by individual FormField components */}
 
       {/* Form Fields */}
       {fields.map((field, index) => (
-        <div key={field.id} className="flex justify-between gap-2">
+        <div key={field.id} className={`grid gap-2 mb-4 items-start`} style={{gridTemplateColumns: `repeat(${itemPropertiesEntries.length}, 1fr) auto`}}>
           {itemPropertiesEntries.map(([itemKey, itemSchema]: [string, any]) => {
             const isExpression = itemSchema.type === 'expression' || 
                                itemSchema['ui-hint'] === 'expression';
@@ -1176,6 +1224,12 @@ const renderArrayFields = (
             if (itemSchema.type === 'autocomplete') {
               return (
                 <div key={`${section}.${index}.${itemKey}`} className="w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {itemKey.replace(/_/g, ' ').split(' ').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                    {requiredFields.includes(itemKey) && <span className="text-red-500 ml-1">*</span>}
+                  </label>
                   <Controller
                     name={`${section}.${index}.${itemKey}`}
                     control={control}
@@ -1184,13 +1238,7 @@ const renderArrayFields = (
                         options={columnSuggestions}
                         value={field.value || ''}
                         onChange={field.onChange}
-                        renderInput={(params) => (
-                          <Input
-                            {...params}
-                            placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
-                            required={requiredFields.includes(itemKey)}
-                          />
-                        )}
+                        placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
                         className=""
                         required={requiredFields.includes(itemKey)}
                       />
@@ -1236,14 +1284,17 @@ const renderArrayFields = (
               </div>
             );
           })}
-          <button
-            type="button"
-            onClick={() => remove(index)}
-            disabled={fields.length <= (arraySchema.minItems || 1)}
-            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100"
-          >
-            <span className="text-gray-500 text-xl">×</span>
-          </button>
+          <div className="flex flex-col">
+            <div className="h-6 mb-1"></div> {/* Spacer to match label height */}
+            <button
+              type="button"
+              onClick={() => remove(index)}
+              disabled={fields.length <= (arraySchema.minItems || 1)}
+              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 text-red-500 hover:text-red-700"
+            >
+              <span className="text-xl">×</span>
+            </button>
+          </div>
         </div>
       ))}
 
@@ -1301,7 +1352,7 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select keep value" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{zIndex:9999}}>
                 {['any', 'first', 'last', 'distinct', 'unique_only'].map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -1384,9 +1435,9 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
                     <SelectTrigger className="w-1/2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="asc">Ascending</SelectItem>
-                      <SelectItem value="desc">Descending</SelectItem>
+                    <SelectContent  style={{zIndex:9999}}>
+                      <SelectItem value="asc">Asc</SelectItem>
+                      <SelectItem value="desc">Desc</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -1425,7 +1476,8 @@ const FormContent: React.FC<{
   nodes: Node[];
   edges: Edge[];
   watch: any; // Add watch function as a prop
-}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch }) => {
+  initialFormValues: any; // Add initialFormValues as a prop
+}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch, initialFormValues }) => {
 
   
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -1545,7 +1597,8 @@ const FormContent: React.FC<{
     fieldKey: string, 
     fieldSchema: any, 
     control: any, 
-    parentKey?: string
+    parentKey?: string,
+    columnSuggestions: string[] = []
   ) => {
     if (!fieldSchema || typeof fieldSchema !== 'object') {
       console.error(`Invalid schema for field ${fieldKey}`);
@@ -1643,7 +1696,7 @@ const FormContent: React.FC<{
   };
 
   // Update renderFieldsInRows to handle required fields in tabs
-  const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string) => {
+  const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string, columnSuggestions: string[] = []) => {
 
     
     if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
@@ -1704,7 +1757,7 @@ const FormContent: React.FC<{
           
           return (
             <div key={key} className="mb-2">
-              {renderField(key, value, control, parentKey)}
+              {renderField(key, value, control, parentKey, columnSuggestions)}
             </div>
           );
         })}
@@ -1721,7 +1774,7 @@ const FormContent: React.FC<{
   };
 
   // Render string array fields (like select_columns, drop_columns)
-  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any) => {
+  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any, columnSuggestions: string[] = []) => {
     const { fields, append, remove } = useFieldArray({
       control,
       name: fieldKey
@@ -1744,9 +1797,15 @@ const FormContent: React.FC<{
                 <Autocomplete
                   value={field.value || ''}
                   onChange={field.onChange}
-                  options={sourceColumns.map(col => col.name)}
+                  options={columnSuggestions}
                   placeholder={`Enter column name`}
                   className="flex-1"
+                  renderInput={(params) => (
+                    <Input
+                      {...params}
+                      placeholder="Enter column name"
+                    />
+                  )}
                 />
               )}
             />
@@ -1772,17 +1831,40 @@ const FormContent: React.FC<{
     );
   };
 
-  // Render object field (like rename_columns)
-  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any) => {
+  // ObjectField component to handle rename_columns
+  const ObjectField: React.FC<{
+    fieldKey: string;
+    fieldSchema: any;
+    control: any;
+    formInitialValues: any;
+    columnSuggestions?: string[];
+  }> = ({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [] }) => {
     const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
     const watchedValue = watch(fieldKey) || {};
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+        }
+      };
+    }, []);
 
     useEffect(() => {
+      console.log(`renderObjectField - ${fieldKey}:`, watchedValue);
       const entries = Object.entries(watchedValue).map(([key, value], index) => ({
         id: `${key}-${index}`,
         key,
         value: value as string
       }));
+      
+      // If no entries exist, add one empty entry for user to fill
+      if (entries.length === 0) {
+        entries.push({ id: `empty-${Date.now()}`, key: '', value: '' });
+      }
+      
       setObjectEntries(entries);
     }, [watchedValue]);
 
@@ -1797,13 +1879,17 @@ const FormContent: React.FC<{
       
       // Update form value
       const newObject = updatedEntries.reduce((acc, entry) => {
-        if (entry.key && entry.value) {
-          acc[entry.key] = entry.value;
+        if (entry.key.trim() && entry.value.trim()) {
+          acc[entry.key.trim()] = entry.value.trim();
         }
         return acc;
       }, {} as Record<string, string>);
       
-      setValue(fieldKey, newObject);
+      setValue(fieldKey, newObject, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
     };
 
     const updateEntry = (id: string, field: 'key' | 'value', newValue: string) => {
@@ -1812,95 +1898,251 @@ const FormContent: React.FC<{
       );
       setObjectEntries(updatedEntries);
       
-      // Update form value
-      const newObject = updatedEntries.reduce((acc, entry) => {
-        if (entry.key && entry.value) {
-          acc[entry.key] = entry.value;
-        }
-        return acc;
-      }, {} as Record<string, string>);
+      // Use debouncing to improve performance - only update form after a delay
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
       
+      updateTimeoutRef.current = setTimeout(() => {
+        // Only save entries that have BOTH key and value filled
+        const newObject = updatedEntries.reduce((acc, entry) => {
+          if (entry.key.trim() && entry.value.trim()) {
+            acc[entry.key.trim()] = entry.value.trim();
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        setValue(fieldKey, newObject, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true
+        });
+      }, 300); // 300ms debounce
     };
 
+    // Get the current form default value for this field
+    const currentDefaultValue = formInitialValues[fieldKey] || {};
+    
     return (
-      <div className="space-y-4">
-        <div className="font-medium text-sm">
-          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ')}
-        </div>
-        
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 text-sm font-medium text-gray-600">
-            <div>Old Column Name</div>
-            <div>New Column Name</div>
-          </div>
-          
-          {objectEntries.map((entry) => (
-            <div key={entry.id} className="flex gap-2 items-center">
-              <Autocomplete
-                value={entry.key}
-                onChange={(value) => updateEntry(entry.id, 'key', value)}
-                options={sourceColumns.map(col => col.name)}
-                placeholder="Old column name"
-                className="flex-1"
-              />
-              <Input
-                value={entry.value}
-                onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
-                placeholder="New column name"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                onClick={() => removeEntry(entry.id)}
-                className="text-red-500 hover:text-red-700 p-1"
-              >
-                ×
-              </button>
+      <Controller
+        control={control}
+        name={fieldKey}
+        defaultValue={currentDefaultValue}
+        render={({ field: { onChange, value, ...field } }) => {
+          return (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">
+              {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
             </div>
-          ))}
-        </div>
-        
-        <Button
-          type="button"
-          onClick={addEntry}
-          variant="outline"
-          size="sm"
-        >
-          Add Rename Rule
-        </Button>
-      </div>
+            
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
+                <div>Old Column Name</div>
+                <div>New Column Name</div>
+                <div className="w-10"></div> {/* Space for delete button */}
+              </div>
+              
+              {objectEntries.map((entry) => (
+                <div key={entry.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <Autocomplete 
+                    value={entry.key}
+                    onChange={(value) => updateEntry(entry.id, 'key', value)}
+                    options={columnSuggestions}
+                    placeholder="Old column name"
+                    className="w-full"
+                    renderInput={(params) => (
+                      <Input
+                        {...params}
+                        placeholder="Old column name"
+                        className="w-full"
+                      />
+                    )}
+                  />
+                  <Input
+                    value={entry.value}
+                    onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
+                    placeholder="New column name"
+                    className="w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeEntry(entry.id)}
+                    className="text-red-500 hover:text-red-700 p-2 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-red-50"
+                    title="Remove rename rule"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <Button
+              type="button"
+              onClick={addEntry}
+              variant="outline"
+              size="sm"
+            >
+              Add Rename Rule
+            </Button>
+          </div>
+          );
+        }}
+      />
+    );
+  };
+
+  // Helper function to render ObjectField component
+  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}, columnSuggestions: string[] = []) => {
+    return (
+      <ObjectField
+        fieldKey={fieldKey}
+        fieldSchema={fieldSchema}
+        control={control}
+        formInitialValues={formInitialValues}
+        columnSuggestions={columnSuggestions}
+      />
     );
   };
 
   // Update renderTabContent to pass control
-  const renderTabContent = (key: string, value: any, control: any) => {
+  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = []) => {
     if (!value || typeof value !== 'object') {
       console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
       return <div>Invalid field configuration for {key}</div>;
     }
     
+    // Special handling for lookup_data field
+    if (key === 'lookup_data' && value.type === 'array') {
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={key}
+            control={control}
+            render={({ field }) => (
+              <LookupDataTable
+                value={field.value || []}
+                onChange={field.onChange}
+                disabled={false}
+              />
+            )}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for lookup_columns field
+    if (key === 'lookup_columns' && value.type === 'array') {
+      // Get current form values
+      const currentLookupType = watch('lookup_type');
+      const lookupData = watch('lookup_data');
+      const lookupConfig = watch('lookup_config');
+      
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={key}
+            control={control}
+            render={({ field }) => (
+              <LookupColumnsTable
+                value={field.value || []}
+                onChange={field.onChange}
+                availableColumns={[]} // Will be fetched automatically
+                disabled={false}
+                selectedSource={lookupConfig?.source}
+                lookupType={currentLookupType}
+                lookupData={lookupData}
+              />
+            )}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for lookup_config field
+    if (key === 'lookup_config' && value.type === 'object') {
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={`${key}.source`}
+            control={control}
+            render={({ field }) => (
+              <SourceSelector
+                value={field.value || {}}
+                onChange={field.onChange}
+                disabled={false}
+              />
+            )}
+          />
+          
+          {/* Other lookup config fields */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Configuration Name
+              </label>
+              <Controller
+                name={`${key}.name`}
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter configuration name"
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Has Header
+              </label>
+              <Controller
+                name={`${key}.read_options.header`}
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="header-checkbox"
+                      checked={field.value || false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="header-checkbox" className="text-sm text-gray-700">
+                      First row contains headers
+                    </label>
+                  </div>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     if (value.type === 'array') {
       // Check if it's a string array
       if (value.items && value.items.type === 'string') {
-        return renderStringArrayField(key, value, control);
+        return renderStringArrayField(key, value, control, columnSuggestions);
       }
       // Otherwise use the existing array renderer
       return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions);
     } else if (value.type === 'object') {
       // Check if it's a rename_columns type object
       if (key === 'rename_columns') {
-        return renderObjectField(key, value, control);
+        return renderObjectField(key, value, control, formInitialValues, columnSuggestions);
       }
       // Ensure properties exist before passing to renderFieldsInRows
       if (!value.properties || typeof value.properties !== 'object') {
         console.warn(`Object field ${key} has no valid properties:`, value);
         return <div>Invalid object field configuration for {key}</div>;
       }
-      return renderFieldsInRows(value.properties, control, key);
+      return renderFieldsInRows(value.properties, control, key, columnSuggestions);
     } else {
-      return renderField(key, value, control, key);
+      return renderField(key, value, control, key, columnSuggestions);
     }
   };
 
@@ -2067,11 +2309,15 @@ const FormContent: React.FC<{
                     render={({ field }) => (
                       itemSchema.enum ? (
                         <div className="w-32">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {itemKey.charAt(0).toUpperCase() + itemKey.slice(1)}
+                            {schema && schema.required && schema.required.includes(fieldKey) && <span className="text-red-500"> *</span>}
+                          </label>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger>
                               <SelectValue placeholder={`Select ${itemKey}`} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent  style={{zIndex:9999}}>
                               {itemSchema.enum.map((option: string) => (
                                 <SelectItem key={option} value={option}>
                                   {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -2084,7 +2330,7 @@ const FormContent: React.FC<{
                         <FormField
                           fieldSchema={{
                             type: itemSchema.type,
-                            title: itemKey,
+                            title: itemKey.charAt(0).toUpperCase() + itemKey.slice(1),
                             properties: {}
                           }}
                           name={field.name}
@@ -2182,12 +2428,7 @@ const FormContent: React.FC<{
   };
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between">
-        <h2 className="text-lg font-semibold">
-          {schema.title}
-        </h2>
-      </div>
+    <div className="w-full max-w-full">
 
       {schema.title === 'Dedup' || schema.title === 'Deduplicator' ? (
         renderDeduplicatorFields(control, schema)
@@ -2196,23 +2437,41 @@ const FormContent: React.FC<{
       ) : schema.title === 'SequenceGenerator' ? (
         renderSequenceGeneratorFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (
-        <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
-          <TabsList>
-            {Object.keys(schema.properties || {}).map((key, index) => (
-              <TabsTrigger key={key} value={index.toString()}>
-                {key.replace(/_/g, ' ').split(' ').map(word =>
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        (() => {
+          // Filter tabs based on lookup_type for Lookup form
+          const filteredTabs = Object.entries(schema.properties || {}).filter(([key]) => {
+            if (schema.title === 'Lookup') {
+              const currentLookupType = watch('lookup_type');
+              if (key === 'lookup_data' && currentLookupType === 'Column Based') {
+                return false; // Don't show lookup_data tab for Column Based
+              }
+              if (key === 'lookup_config' && currentLookupType === 'Literal') {
+                return false; // Don't show lookup_config tab for Literal
+              }
+            }
+            return true;
+          });
 
-          {Object.entries(schema.properties || {}).map(([key, value]: [string, any], index) => (
-            <TabsContent key={key} value={index.toString()}>
-              {renderTabContent(key, value, control)}
-            </TabsContent>
-          ))}
-        </Tabs>
+          return (
+            <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
+              <TabsList>
+                {filteredTabs.map(([key], index) => (
+                  <TabsTrigger key={key} value={index.toString()}>
+                    {key.replace(/_/g, ' ').split(' ').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {filteredTabs.map(([key, value]: [string, any], index) => (
+                <TabsContent key={key} value={index.toString()}>
+                  {renderTabContent(key, value, control, initialFormValues, columnSuggestions)}
+                </TabsContent>
+              ))}
+            </Tabs>
+          );
+        })()
       ) : schema.ui_type === 'array-container' ? (
         <div className="space-y-2">
           <div>
@@ -2263,7 +2522,7 @@ const FormContent: React.FC<{
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select repartition type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent  style={{zIndex:9999}}>
                             {schema.properties.repartition_type.enum.map((option: string) => (
                               <SelectItem key={option} value={option}>
                                 {option.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
@@ -2391,9 +2650,9 @@ const FormContent: React.FC<{
                                 <SelectTrigger className="w-32">
                                   <SelectValue placeholder="Order" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="asc">Ascending</SelectItem>
-                                  <SelectItem value="desc">Descending</SelectItem>
+                                <SelectContent  style={{zIndex:9999}}>
+                                  <SelectItem value="asc">Asc</SelectItem>
+                                  <SelectItem value="desc">Desc</SelectItem>
                                 </SelectContent>
                               </Select>
                             )}
@@ -2433,7 +2692,7 @@ const FormContent: React.FC<{
         </div>
       ) : (
         <div className="space-y-1">
-          {renderFieldsInRows(schema.properties || {}, control)}
+          {renderFieldsInRows(schema.properties || {}, control, undefined, columnSuggestions)}
         </div>
       )}
 

@@ -9,10 +9,8 @@ import { userFormSchema, userCreateSchema, type UserCreateValues, type UserFormV
 import {
   NameFields,
   EmailField,
-  StatusField,
-  ProjectsAndEnvironmentsFields,
   TenantAdminField,
-  RolesField,
+  RoleAssignmentsField,
 } from "./FormFields";
 import type { UserMutationData } from "@/types/admin/user";
 
@@ -59,6 +57,7 @@ export function UserForm({
       projects: [],
       environments: [],
       roles: [],
+      assignments: [],
       is_tenant_admin: false,
       ...initialData,
     },
@@ -115,10 +114,8 @@ export function UserForm({
               <EmailField form={form} />
               {isEditMode && (
                 <>
-                  <StatusField form={form} />
                   <TenantAdminField form={form} />
-                  <RolesField form={form} />
-                  <ProjectsAndEnvironmentsFields form={form} />
+                  <RoleAssignmentsField form={form} />
                 </>
               )}
             </div>

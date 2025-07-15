@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useAlertHub } from "../hooks/usealertHub";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { MONITOR_REMOTE_URL } from "@/config/platformenv";
-import { X, Check, Eye, Edit2, User, Save } from "lucide-react";
-
+import { X, Eye, Edit2, User, Save } from "lucide-react";
+ 
 type DialogProps = {
   open: boolean;
   mode: "assign" | "resolve";
@@ -16,7 +15,7 @@ type DialogProps = {
   currentResolution?: string[] | any;
   alertId?: string;
 };
-
+ 
 export function FlexibleDialog({
   open,
   mode,
@@ -31,17 +30,17 @@ export function FlexibleDialog({
   const [correctionPlan, setCorrectionPlan] = useState("");
   const [preventionPlan, setPreventionPlan] = useState("");
   const [isViewMode, setIsViewMode] = useState(false);
-
+ 
   const { alertHub, updateAlert } = useAlertHub();
   const queryClient = useQueryClient();
-
+ 
   useEffect(() => {
     setUser(currentUser);
-
+ 
     if (currentResolution) {
       try {
         let resolutionData: any;
-
+ 
         if (Array.isArray(currentResolution) && currentResolution.length > 0) {
           const firstItem = currentResolution[0];
           if (typeof firstItem === "string") {
@@ -62,7 +61,7 @@ export function FlexibleDialog({
         } else {
           resolutionData = currentResolution;
         }
-
+ 
         setCorrectionPlan(resolutionData.correction_plan || "");
         setPreventionPlan(resolutionData.prevention_plan || "");
         setIsViewMode(true);
@@ -77,25 +76,25 @@ export function FlexibleDialog({
       setIsViewMode(false);
     }
   }, [open, currentUser, currentResolution]);
-
+ 
   if (!open) return null;
-
+ 
   const handleSubmit = async () => {
     if (mode === "assign") {
       if (!user || !onAssign) return;
-
+ 
       try {
         if (alertId) {
           await updateAlert.mutateAsync({
             alert_Id: alertId,
             assigned_to: user,
           });
-
+ 
           toast.success("Alert assigned successfully!");
           await queryClient.invalidateQueries({
-            queryKey: ["resource", "alert", MONITOR_REMOTE_URL, "/alert/"],
+            queryKey: ["alert", "list"],
           });
-
+ 
           onAssign(user);
           onClose();
         }
@@ -108,14 +107,14 @@ export function FlexibleDialog({
         toast.error("Please enter both correction plan and prevention plan.");
         return;
       }
-      
+     
       const existing =
         typeof currentResolution === "string"
           ? JSON.parse(currentResolution)
           : Array.isArray(currentResolution)
           ? currentResolution[0]
           : currentResolution;
-
+ 
       if (
         correctionPlan.trim() === (existing?.correction_plan ?? "").trim() &&
         preventionPlan.trim() === (existing?.prevention_plan ?? "").trim()
@@ -123,24 +122,24 @@ export function FlexibleDialog({
         toast.warning("No changes detected in resolution.");
         return;
       }
-
+ 
       try {
         if (alertId) {
           const resolutionData = {
             correction_plan: correctionPlan,
             prevention_plan: preventionPlan,
           };
-
+ 
           await updateAlert.mutateAsync({
             alert_Id: alertId,
             resolution_reason: resolutionData,
           } as any);
-
+ 
           toast.success("Alert resolved successfully!");
           await queryClient.invalidateQueries({
-            queryKey: ["resource", "alert", MONITOR_REMOTE_URL, "/alert/"],
+            queryKey: ["alert", "list"],
           });
-
+ 
           onResolve?.(correctionPlan, preventionPlan);
           onClose();
         }
@@ -150,19 +149,19 @@ export function FlexibleDialog({
       }
     }
   };
-
+ 
   const toggleEditMode = () => {
     setIsViewMode(!isViewMode);
   };
-
+ 
   const userList =
     alertHub?.length > 0
       ? [...new Set(alertHub.map((alert) => alert.project_name))].map((user) => ({
           project_name: user,
         }))
       : [];
-
-      
+ 
+     
   const isAssignDisabled = mode === "assign" && (!user || user === currentUser);
   const isResolveDisabled =
     mode === "resolve" &&
@@ -174,8 +173,8 @@ export function FlexibleDialog({
           (typeof currentResolution === "string"
             ? JSON.parse(currentResolution)?.prevention_plan?.trim()
             : currentResolution?.[0]?.prevention_plan?.trim() || currentResolution?.prevention_plan?.trim())));
-
-
+ 
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
@@ -185,7 +184,7 @@ export function FlexibleDialog({
             {mode === "assign"? "Assign To": isViewMode? "View Resolution"
               : "Add Resolution"}
           </h2>
-
+ 
           <div className="flex gap-2">
             {mode === "resolve" && currentResolution && (
               <button
@@ -205,7 +204,7 @@ export function FlexibleDialog({
             </button>
           </div>
         </div>
-
+ 
         {/* Assign dropdown */}
         {mode === "assign" && (
           <select
@@ -221,7 +220,7 @@ export function FlexibleDialog({
             ))}
           </select>
         )}
-
+ 
         {/* Resolve fields */}
         {mode === "resolve" && (
           <>
@@ -249,7 +248,7 @@ export function FlexibleDialog({
             </div>
           </>
         )}
-
+ 
         {/* Submit / Assign button */}
         {!isViewMode && (
           <div className="flex justify-end gap-2">

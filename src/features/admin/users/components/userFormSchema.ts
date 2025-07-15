@@ -52,10 +52,3 @@ export const getEnvironmentOptions = (environments: Environment[]) => {
     value: environment.bh_env_id?.toString()
   }));
 };
-
-// Static fallback options (kept for backward compatibility)
-export const environmentOptions = [
-  { label: 'Development', value: 'development' },
-  { label: 'Staging', value: 'staging' },
-  { label: 'Production', value: 'production' },
-]

@@ -4,6 +4,15 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, getEnvironmentOptions } from "./userFormSchema"
+import { Button } from "@/components/ui/button"
+import { useFieldArray } from "react-hook-form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useAppSelector } from "@/hooks/useRedux"
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
@@ -139,5 +148,90 @@ export const RolesField = ({ form }: { form: any }) => {
       placeholder="Select roles"
       options={roleOptions}
     />
+  )
+}
+
+export const RoleAssignmentsField = ({ form }: { form: any }) => {
+  const projects = useAppSelector((state) => state.users.projects)
+  const environments = useAppSelector((state) => state.users.environments)
+  const projectOptions = getProjectOptions(projects)
+  const environmentOptions = getEnvironmentOptions(environments)
+  const roleOptions = [
+    { label: 'Designer', value: 'designer' },
+    { label: 'Ops User', value: 'ops_user' },
+    { label: 'Admin', value: 'admin' },
+  ]
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'assignments'
+  })
+
+  return (
+    <div className="space-y-2">
+      <RequiredFormLabel>Role Assignments</RequiredFormLabel>
+      {fields.map((field: any, index: number) => (
+        <div key={field.id} className="grid grid-cols-4 gap-2 items-center">
+          <Select
+            value={form.watch(`assignments.${index}.project`) || ''}
+            onValueChange={(val) => form.setValue(`assignments.${index}.project`, val)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projectOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={form.watch(`assignments.${index}.environment`) || ''}
+            onValueChange={(val) => form.setValue(`assignments.${index}.environment`, val)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Environment" />
+            </SelectTrigger>
+            <SelectContent>
+              {environmentOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={form.watch(`assignments.${index}.role`) || ''}
+            onValueChange={(val) => form.setValue(`assignments.${index}.role`, val)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Role" />
+            </SelectTrigger>
+            <SelectContent>
+              {roleOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <button
+            type="button"
+            onClick={() => remove(index)}
+            className="text-destructive hover:underline text-sm"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => append({ project: '', environment: '', role: '' })}
+      >
+        Add Assignment
+      </Button>
+    </div>
   )
 }

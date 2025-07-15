@@ -4,7 +4,6 @@ import { debounce } from 'lodash';
 import { ProjectPaginatedResponse, ProjectMutationData, ProjectGitValidation, Project } from '@/types/admin/project';
 import { toast } from 'sonner';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
-import { AlertHub } from '@/types/dataops/alertsHub';
 
 interface UseProjectsOptions {
   shouldFetch?: boolean;
@@ -28,8 +27,7 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
   }
   return error;
 };
-
-export const useProjects = (alertHub: AlertHub[], options: UseProjectsOptions = { shouldFetch: true }) => {
+export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
   // For queries - returns Project objects
   const { getOne: getProject, getAll: getAllProjects } = useResource<Project>(
     'bh_project',

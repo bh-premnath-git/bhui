@@ -4,7 +4,6 @@ import { debounce } from 'lodash';
 import type { User, UserMutationData } from '@/types/admin/user';
 import { toast } from 'sonner';
 import { KEYCLOAK_API_REMOTE_URL } from '@/config/platformenv';
-import { JSX } from 'react/jsx-runtime';
 
 // Define the API response structure to match the server
 export interface ApiUsersResponse {
@@ -20,7 +19,6 @@ export interface ApiUsersResponse {
 
 // Define the response structure that the components will use
 export interface UsersResponse {
-  map(arg0: (u: any) => JSX.Element): import("react").ReactNode;
   users: User[];
   totalCount?: number;
   page?: number;

@@ -139,7 +139,7 @@ export const useUsers = (options: UseUsersOptions = { mutationsOnly: true }) => 
         params: prepareParams()
       })
     : { data: undefined, isLoading: false, isFetching: false, isError: false };
-
+        
   // Get single user
   const {
     data: user,

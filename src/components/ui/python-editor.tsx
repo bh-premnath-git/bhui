@@ -67,40 +67,46 @@ export const PythonEditor: React.FC<PythonEditorProps> = ({
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
     
-    // Add placeholder text functionality
-    const updatePlaceholder = () => {
-      const model = editor.getModel();
-      if (model) {
-        const isEmpty = model.getValue().trim() === '';
-        const placeholder = isEmpty ? '# Enter your custom PySpark code...' : '';
-        
-        if (isEmpty && !model.getValue()) {
-          model.setValue(placeholder);
-          // Set selection to after the placeholder
-          editor.setPosition({ lineNumber: 1, column: placeholder.length + 1 });
+    // Only add placeholder functionality if no initial value is provided
+    const hasInitialContent = editorValue && editorValue.trim() && 
+                             !editorValue.includes('# Enter your custom PySpark code...');
+    
+    if (!hasInitialContent) {
+      // Add placeholder text functionality
+      const updatePlaceholder = () => {
+        const model = editor.getModel();
+        if (model) {
+          const isEmpty = model.getValue().trim() === '';
+          const placeholder = isEmpty ? '# Enter your custom PySpark code...' : '';
+          
+          if (isEmpty && !model.getValue()) {
+            model.setValue(placeholder);
+            // Set selection to after the placeholder
+            editor.setPosition({ lineNumber: 1, column: placeholder.length + 1 });
+          }
         }
-      }
-    };
+      };
 
-    // Set initial placeholder if editor is empty
-    if (!editorValue.trim()) {
-      updatePlaceholder();
+      // Set initial placeholder if editor is empty
+      if (!editorValue.trim()) {
+        updatePlaceholder();
+      }
+
+      // Handle focus/blur for placeholder behavior
+      editor.onDidFocusEditorText(() => {
+        const model = editor.getModel();
+        if (model && model.getValue() === '# Enter your custom PySpark code...') {
+          model.setValue('');
+        }
+      });
+
+      editor.onDidBlurEditorText(() => {
+        const model = editor.getModel();
+        if (model && model.getValue().trim() === '') {
+          model.setValue('# Enter your custom PySpark code...');
+        }
+      });
     }
-
-    // Handle focus/blur for placeholder behavior
-    editor.onDidFocusEditorText(() => {
-      const model = editor.getModel();
-      if (model && model.getValue() === '# Enter your custom PySpark code...') {
-        model.setValue('');
-      }
-    });
-
-    editor.onDidBlurEditorText(() => {
-      const model = editor.getModel();
-      if (model && model.getValue().trim() === '') {
-        model.setValue('# Enter your custom PySpark code...');
-      }
-    });
     
     // Add custom Python snippets and completions
     monaco.languages.registerCompletionItemProvider('python', {
@@ -114,6 +120,37 @@ export const PythonEditor: React.FC<PythonEditorProps> = ({
         );
 
         const suggestions: monaco.languages.CompletionItem[] = [
+          {
+            label: 'pyspark_template',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: [
+              '# --- Begin Custom Logic ---',
+              '',
+              '# Your transformation logic here',
+              'result = input_df.withColumn("${1:new_column}", ${2:lit("value")})',
+              '',
+              '# Optional: Create additional outputs',
+              '# result_summary = result.groupBy("${3:column}").agg(count("*").alias("count"))',
+              '# result_clean = result.filter(col("${4:column}").isNotNull())',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '',
+              '# --- End Custom Logic ---'
+            ].join('\n'),
+            documentation: 'PySpark transformation template structure with proper spacing',
+            range: range,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+          },
           {
             label: 'pyspark_transform',
             kind: monaco.languages.CompletionItemKind.Snippet,

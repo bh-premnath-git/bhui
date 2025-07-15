@@ -164,6 +164,35 @@ const normalizeTransformationData = (transform: any, type: string): any => {
                 dq_rules: Array.isArray(transform.dq_rules) ? transform.dq_rules : []
             };
         
+        case 'Lookup':
+            return {
+                ...normalizedData,
+                lookup_type: transform.lookup_type || 'Column Based',
+                lookup_config: transform.lookup_config || { name: '', source: {}, read_options: { header: true } },
+                lookup_data: Array.isArray(transform.lookup_data) ? transform.lookup_data : [],
+                lookup_columns: Array.isArray(transform.lookup_columns) ? transform.lookup_columns : [],
+                lookup_conditions: transform.lookup_conditions || {
+                    column_name: '',
+                    lookup_with: ''
+                },
+                keep: transform.keep || 'First'
+            };
+        
+        case 'Repartition':
+            return {
+                ...normalizedData,
+                repartition_type: transform.repartition_type || 'repartition',
+                repartition_value: transform.repartition_value || '',
+                override_partition: transform.override_partition || '',
+                repartition_expression: Array.isArray(transform.repartition_expression) 
+                    ? transform.repartition_expression.map(expr => ({
+                        expression: expr.expression || '',
+                        sort_order: expr.sort_order || 'asc'
+                    }))
+                    : [],
+                limit: transform.limit || ''
+            };
+        
         default:
             return normalizedData;
     }

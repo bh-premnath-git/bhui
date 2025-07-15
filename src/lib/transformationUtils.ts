@@ -179,7 +179,7 @@ export const getNodePorts = (type: string) => {
         'DQ Check': { inputs: 1, outputs: 1, maxInputs: 1 },
         Deduplicator: { inputs: 1, outputs: 1, maxInputs: 1 },
         Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
-        'SQLTransformation': { inputs: 1, outputs: 1, maxInputs: 1 },
+        'SQLTransformation': { inputs: 1, outputs: 1, maxInputs: 'unlimited' },
         'SetCombiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
         DqCheck: { inputs: 1, outputs: 1, maxInputs: 1 },
         Lookup: { inputs: 1, outputs: 1, maxInputs: 1 },

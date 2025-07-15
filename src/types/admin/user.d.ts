@@ -64,6 +64,11 @@ export type UserUpdateData = {
   roles?: string[];
   projects?: string[];
   environments?: string[];
+  assignments?: {
+    project: string;
+    environment: string;
+    role: string;
+  }[];
   is_tenant_admin?: boolean;
 };
 

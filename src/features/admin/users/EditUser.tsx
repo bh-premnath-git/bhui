@@ -42,9 +42,7 @@ export function EditUser() {
     last_name: user.lastName,
     email: user.email,
     enabled: user.enabled,
-    roles: [],
-    projects: [],
-    environments: [],
+    assignments: [],
     is_tenant_admin: false
   };
 

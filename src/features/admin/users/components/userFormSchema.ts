@@ -18,6 +18,15 @@ export const userEditSchema = z.object({
   projects: z.array(z.string()).optional(),
   environments: z.array(z.string()).optional(),
   roles: z.array(z.string()).optional(),
+  assignments: z
+    .array(
+      z.object({
+        project: z.string().min(1, 'Project is required'),
+        environment: z.string().min(1, 'Environment is required'),
+        role: z.string().min(1, 'Role is required'),
+      })
+    )
+    .optional(),
   is_tenant_admin: z.boolean().optional(),
   username: z.string().optional(),
 });
@@ -31,6 +40,12 @@ export type UserCreateValues = z.infer<typeof userCreateSchema>
 export interface SelectOption {
   label: string
   value: string
+}
+
+export interface RoleAssignment {
+  project: string
+  environment: string
+  role: string
 }
 
 export const getProjectOptions = (projects: Project[]) => {

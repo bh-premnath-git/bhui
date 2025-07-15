@@ -35,8 +35,6 @@ export interface MonitorTemplate {
   }
   
   export interface AlertHub {
-    username: string | number | readonly string[];
-    id: any;
     alert_id: string;
     alert_key: string;
     monitor_id: string;

@@ -3,6 +3,7 @@ import type { ColumnDefWithFilters } from "@/types/table";
 import { AlertHub } from "@/types/dataops/alertsHub";
 import { useState } from "react";
 import { FlexibleDialog } from "../components/AlertForm";
+import { Plus, Eye } from "lucide-react"; // Import icons
 
 export const columnHelper = createColumnHelper<AlertHub>();
 
@@ -34,23 +35,56 @@ export const columns: ColumnDefWithFilters<AlertHub>[] = [
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const [open, setOpen] = useState(false);
       const value = getValue();
+      const alertId = row.original.alert_id; // Get alert_id from the row
+      // console.log(value) // null
+
+      // Check if resolution data exists - handle both object and array formats
+      let hasResolutionData = false;
+      let resolutionData = null;
+
+      if (value) {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          hasResolutionData = true;
+          resolutionData = value;
+        } else if (Array.isArray(value) && value.length > 0) {
+          hasResolutionData = true;
+          resolutionData = value;
+        }
+      }
+
       return (
         <>
           <span
-            className="cursor-pointer bg-red-100 and text-red-700"
+            className={`cursor-pointer px-2 py-1 rounded flex items-center gap-1 ${
+              hasResolutionData 
+                ? "bg-green-100 text-green-700" 
+                : "bg-red-100 text-red-700"
+            }`}
             onClick={() => setOpen(true)}
           >
-            {value ? value : "Not Resolved"}
+            {hasResolutionData ? (
+              <>
+                <Eye size={16} />
+                View Resolution
+              </>
+            ) : (
+              <>
+                <Plus size={16} />
+                Add Reason
+              </>
+            )}
           </span>
           <FlexibleDialog
             open={open}
             mode="resolve"
             onClose={() => setOpen(false)}
-              onResolve={(resolutionReason, resolutionPlan) => {
-              console.log("Correction :", resolutionReason);
-              console.log("Reason :", resolutionPlan);
+            alertId={alertId} // Pass alertId to dialog
+            onResolve={(correctionPlan, preventionPlan) => {
+              console.log("Correction Plan:", correctionPlan);
+              console.log("Prevention Plan:", preventionPlan);
               setOpen(false);
             }}
+            currentResolution={hasResolutionData ? resolutionData : null}
           />
         </>
       );
@@ -63,10 +97,12 @@ export const columns: ColumnDefWithFilters<AlertHub>[] = [
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const [open, setOpen] = useState(false);
       const value = getValue();
+      const alertId = row.original.alert_id; // Get alert_id from the row
+
       return (
         <>
           <span
-            className="cursor-pointer  bg-blue-100 and text-blue-700"
+            className="cursor-pointer bg-blue-100 text-blue-700 px-2 py-1 rounded"
             onClick={() => setOpen(true)}
           >
             {value || "Unassigned"}
@@ -75,8 +111,9 @@ export const columns: ColumnDefWithFilters<AlertHub>[] = [
             open={open}
             mode="assign"
             onClose={() => setOpen(false)}
+            alertId={alertId} // Pass alertId to dialog
             onAssign={(assignee) => {
-              console.log("Assigned To :", assignee);
+              console.log("Assigned To:", assignee);
               setOpen(false);
             }}
             currentUser={value}
@@ -94,3 +131,4 @@ export const columns: ColumnDefWithFilters<AlertHub>[] = [
     enableColumnFilter: false,
   }),
 ];
+ 

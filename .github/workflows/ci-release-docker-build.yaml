@@ -1,6 +1,4 @@
-# This workflow will build Docker Image and publish it to AWS ECR & Google Artifact Registry
-
-name: Release -- Build Docker Image and push to GAR
+name: Release -- Build Docker Image and push to ECR
 
 on:
   pull_request:
@@ -9,109 +7,152 @@ on:
     branches: [ release/* ]
 
 env:
-  PR_NUMBER: ${{ github.event.pull_request.number }}
   DEFAULT_IMAGE_TAG: "latest"
   IMAGE_NAME: bh-ui
-  GIT_HASH: ${{ github.event.pull_request.head.sha }}
-  BRANCH_NAME: ""
   CURRENT_APP_VER: ${{ vars.APP_VER }}
   REPOSITORY: "058264070106.dkr.ecr.us-east-1.amazonaws.com"
-  PR_GAR_URL: '058264070106.dkr.ecr.us-east-1.amazonaws.com'
-  RELEASE_GAR_URL: '058264070106.dkr.ecr.us-east-1.amazonaws.com'
-  ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+  PR_GAR_URL: "058264070106.dkr.ecr.us-east-1.amazonaws.com"
+  RELEASE_GAR_URL: "058264070106.dkr.ecr.us-east-1.amazonaws.com"
   AWS_REGION: "us-east-1"
 
-# A wrkfow is made up of ome or more jobs that can run sequentially or parallel
-
 jobs:
-  release-build-docker-image-push-gar:
-    name: Release -- Build Docker Image and push to GAR
-    runs-on: ubuntu-latest
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: [self-hosted, bh]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
-      - name: Configure AWS credentials using OIDC
+      - name: Install AWS CLI v2
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
+
+      - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
-        
+
       - name: Log in to Amazon ECR
-        run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.REPOSITORY }}
-        
-      - name: Extract Branch Name
-        run: |-
-          echo "BRANCH_NAME=$(GITHUB_REF#refs/heads/)" >> GITHUB_ENV
-      
-      - name: Checking the PR Number and Set IMAGE_TAG variable to PR_Number
-        if: github.event_name == 'pull_request'
-        run: |-
-          CURRENT_APP_VER="${CURRENT_APP_VER:-1.0.0}"
-          GITHUB_RUN_NUMBER="${GITHUB_RUN_NUMBER:-0}"
-          PR_NUMBER="${PR_NUMBER:-0}"
-
-          PR_IMAGE_TAG="$CURRENT_APP_VER-$GITHUB_RUN_NUMBER-PR.$PR_NUMBER"
-
-          echo "IMAGE_TAG=$PR_IMAGE_TAG" >> $GITHUB_ENV
-          echo "Generated IMAGE_TAG: $IMAGE_TAG"
-
-      - name: Pull Request -- Build Docker image
-        if: github.event_name == 'pull_request'
         run: |
-          echo "Image Tag is: $IMAGE_TAG"
-          echo "Image Name is: $IMAGE_NAME"
-          docker build --no-cache \
-            --tag "$PR_GAR_URL/$IMAGE_NAME:$IMAGE_TAG" .
+          aws ecr get-login-password --region "${AWS_REGION}" | \
+          docker login --username AWS --password-stdin "${REPOSITORY}"
       
-      - name: Pull Request -- Push Docker image
-        if: github.event_name == 'pull_request'
+      - name: Export AWS Credentials
         run: |
-          docker push "$PR_GAR_URL/$IMAGE_NAME:$IMAGE_TAG"
-      
-      - name: Release Branch and Set IMAGE_TAG variable
-        if: github.event_name == 'push'
-        run: |-
-          CURRENT_APP_VER="${CURRENT_APP_VER:-1.0.0}"
-          GITHUB_RUN_NUMBER="${GITHUB_RUN_NUMBER:-0}"          
-          RELEASE_IMAGE_TAG="$CURRENT_APP_VER-$GITHUB_RUN_NUMBER"
-          echo "IMAGE_TAG=$RELEASE_IMAGE_TAG" >> $GITHUB_ENV
-          echo "Generated IMAGE_TAG: $IMAGE_TAG"
-          echo "GIT_HASH=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
-      
-      - name: Release Branch -- Build Docker Image
-        if: github.event_name == 'push'
-        run: |-        
-          docker build --no-cache \
-            --tag "$RELEASE_GAR_URL/$IMAGE_NAME:$IMAGE_TAG" \
-            --tag "$RELEASE_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG" \
-            --tag "$RELEASE_GAR_URL/$IMAGE_NAME:$GIT_HASH" .
+          echo "Exporting AWS credentials"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+
+      - name: Configure npm for AWS CodeArtifact
+        run: |
+          TOKEN=$(aws codeartifact get-authorization-token \
+            --domain bighammer \
+            --domain-owner 058264070106 \
+            --query authorizationToken \
+            --output text)
+    
+          echo "registry=https://bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/" > .npmrc
+          echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:always-auth=true" >> .npmrc
+          echo "//bighammer-058264070106.d.codeartifact.us-east-1.amazonaws.com/npm/bh-npm-repo/:_authToken=${TOKEN}" >> .npmrc
+          echo "AWS CodeArtifact configured successfully"
           
-      - name: Release Branch -- Push Docker Image
-        if: github.event_name == 'push'
-        run: |-        
-          docker push "$RELEASE_GAR_URL/$IMAGE_NAME:$IMAGE_TAG"
-          docker push "$RELEASE_GAR_URL/$IMAGE_NAME:$DEFAULT_IMAGE_TAG"
-          docker push "$RELEASE_GAR_URL/$IMAGE_NAME:$GIT_HASH"
-        
-      - name: Pull Request -- MSTeams Notifications
-        if: github.event_name == 'pull_request'
-        run: |-
-          cat << EOF > message.json
-          {"@type": "MessageCard","@context":"https://schema.org/extensions","summary":"Building Docker Image - 'bh-authoring-api'","themeColor":"abcdef","title":"Pull Request Docker Image ${IMAGE_NAME}:${IMAGE_TAG} is Pushed to PR# GAR Docker Repo","sections":[{"facts":[{"name":"Repository:","value":"$GITHUB_REPOITORY"},{"name":"Branch:","value":"$GITHUB_REF_NAME"},{"name":"Commit:","value":"$GITHUB_SHA"}]}],"potentialAction":[{"@type":"OpenUri","name":"View on GitHub","targets":[{"os":"default","url":"GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"}]}]}
-          EOF
-            curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" --header 'Content-Type: application/json' -d @message.json
+      - name: Extract Branch Name
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: Release Branch -- MSTeams Notifications
+      - name: Set IMAGE_TAG for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "IMAGE_TAG=${{ env.CURRENT_APP_VER }}-${{ github.run_number }}-PR.${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+
+      - name: Build Docker Image for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          docker build --no-cache -t "${PR_GAR_URL}/${IMAGE_NAME}:${IMAGE_TAG}" .
+
+      - name: Push Docker Image for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          docker push "${PR_GAR_URL}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+      - name: Set IMAGE_TAG for Main Branch
         if: github.event_name == 'push'
-        run: |-
-          cat << EOF > message.json
-          {"@type": "MessageCard","@context":"https://schema.org/extensions","summary":"Building Docker Image - 'bh-authoring-api'","themeColor":"abcdef","title":"Main (or) Release Docker Image ${IMAGE_NAME}:${IMAGE_TAG} is Pushed to Main GAR Docker Repo","sections":[{"facts":[{"name":"Repository:","value":"$GITHUB_REPOITORY"},{"name":"Branch:","value":"$GITHUB_REF_NAME"},{"name":"Commit:","value":"$GITHUB_SHA"}]}],"potentialAction":[{"@type":"OpenUri","name":"View on GitHub","targets":[{"os":"default","url":"GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"}]}]}
-          EOF
-            curl -X POST "${{ secrets.CI_MS_TEAMS_WEBHOOK }}" --header 'Content-Type: application/json' -d @message.json
+        run: |
+          echo "IMAGE_TAG=${{ env.CURRENT_APP_VER }}-${{ github.run_number }}-rc" >> $GITHUB_ENV
+          echo "GIT_HASH=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
+
+      - name: Build Docker Image for Main Branch
+        if: github.event_name == 'push'
+        run: |
+          docker build --no-cache \
+            -t "${RELEASE_GAR_URL}/${IMAGE_NAME}:${IMAGE_TAG}" \
+            -t "${RELEASE_GAR_URL}/${IMAGE_NAME}:${DEFAULT_IMAGE_TAG}" \
+            -t "${RELEASE_GAR_URL}/${IMAGE_NAME}:${GIT_HASH}" .
+
+      - name: Push Docker Image for Main Branch
+        if: github.event_name == 'push'
+        run: |
+          docker push "${RELEASE_GAR_URL}/${IMAGE_NAME}:${IMAGE_TAG}"
+          docker push "${RELEASE_GAR_URL}/${IMAGE_NAME}:${DEFAULT_IMAGE_TAG}"
+          docker push "${RELEASE_GAR_URL}/${IMAGE_NAME}:${GIT_HASH}"
+
+      
+      # PR Build Success Notification
+      - name: MS Teams Notification (PR Success)
+        if: github.event_name == 'pull_request' && success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
+          notification-summary: |
+            PR -- Successfully built and pushed Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 00FF00
+
+      # PR Build Failure Notification
+      - name: MS Teams Notification (PR Failure)
+        if: github.event_name == 'pull_request' && failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
+          notification-summary: |
+            PR -- Failed to build or push Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: FF0000
+
+      # Main Branch Build Success Notification
+      - name: MS Teams Notification (Main Success)
+        if: github.event_name == 'push' && success()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
+          notification-summary: |
+            Main Branch -- Successfully built and pushed Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: 00FF00
+
+      # Main Branch Build Failure Notification
+      - name: MS Teams Notification (Main Failure)
+        if: github.event_name == 'push' && failure()
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ secrets.COMMON_GITHUB_TOKEN }}
+          ms-teams-webhook-uri: ${{ secrets.BH_CI_PIPELINE_ALERTS }}
+          notification-summary: |
+            Main Branch -- Failed to build or push Docker image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            [View GitHub Actions Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          notification-color: FF0000

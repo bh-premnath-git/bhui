@@ -17,6 +17,8 @@ export const userEditSchema = z.object({
   enabled: z.boolean(),
   projects: z.array(z.string()).optional(),
   environments: z.array(z.string()).optional(),
+  roles: z.array(z.string()).optional(),
+  is_tenant_admin: z.boolean().optional(),
   username: z.string().optional(),
 });
 

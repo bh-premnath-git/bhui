@@ -41,7 +41,11 @@ export function EditUser() {
     first_name: user.firstName,
     last_name: user.lastName,
     email: user.email,
-    enabled: user.enabled
+    enabled: user.enabled,
+    roles: [],
+    projects: [],
+    environments: [],
+    is_tenant_admin: false
   };
 
   return (

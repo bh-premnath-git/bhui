@@ -61,6 +61,10 @@ export type UserUpdateData = {
   username?: string;
   enabled?: boolean;
   emailVerified?: boolean;
+  roles?: string[];
+  projects?: string[];
+  environments?: string[];
+  is_tenant_admin?: boolean;
 };
 
 // Keep UserMutationData as a union for backward compatibility

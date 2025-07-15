@@ -11,6 +11,8 @@ import {
   EmailField,
   StatusField,
   ProjectsAndEnvironmentsFields,
+  TenantAdminField,
+  RolesField,
 } from "./FormFields";
 import type { UserMutationData } from "@/types/admin/user";
 
@@ -56,6 +58,8 @@ export function UserForm({
       enabled: true,
       projects: [],
       environments: [],
+      roles: [],
+      is_tenant_admin: false,
       ...initialData,
     },
   });
@@ -112,6 +116,8 @@ export function UserForm({
               {isEditMode && (
                 <>
                   <StatusField form={form} />
+                  <TenantAdminField form={form} />
+                  <RolesField form={form} />
                   <ProjectsAndEnvironmentsFields form={form} />
                 </>
               )}

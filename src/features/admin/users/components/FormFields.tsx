@@ -105,3 +105,39 @@ export const ProjectsAndEnvironmentsFields = ({ form }: { form: any }) => {
     </div>
   )
 }
+
+export const TenantAdminField = ({ form }: { form: any }) => (
+  <div>
+    <FormField
+      control={form.control}
+      name="is_tenant_admin"
+      render={({ field }) => (
+        <FormItem className="flex flex-row items-center gap-2">
+          <FormLabel>Tenant Admin</FormLabel>
+          <FormControl>
+            <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+          </FormControl>
+          <span className="text-sm text-muted-foreground">{field.value ? 'Yes' : 'No'}</span>
+        </FormItem>
+      )}
+    />
+  </div>
+)
+
+export const RolesField = ({ form }: { form: any }) => {
+  const roleOptions = [
+    { label: 'Designer', value: 'designer' },
+    { label: 'Ops User', value: 'ops_user' },
+    { label: 'Admin', value: 'admin' },
+  ]
+
+  return (
+    <MultiSelect
+      form={form}
+      name="roles"
+      label="Roles"
+      placeholder="Select roles"
+      options={roleOptions}
+    />
+  )
+}

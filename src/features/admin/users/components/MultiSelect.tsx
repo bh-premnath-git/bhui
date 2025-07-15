@@ -1,6 +1,7 @@
 import { FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
@@ -79,36 +80,38 @@ export const MultiSelect = ({ form, name, label, placeholder, options }: MultiSe
           <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
             <Command>
               <CommandInput placeholder={`Search ${name}...`} />
-              <CommandList>
-                <CommandEmpty>No {name} found.</CommandEmpty>
-                <CommandGroup>
-                  {options.map((option) => (
-                    <CommandItem
-                      value={option.label}
-                      key={option.value}
-                      onSelect={() => {
-                        const currentValue = field.value || []
-                        const newValue = currentValue.includes(option.value)
-                          ? currentValue.filter((value: string) => value !== option.value)
-                          : [...currentValue, option.value]
-                        form.setValue(name, newValue)
-                      }}
-                    >
-                      <div
-                        className={cn(
-                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                          field.value?.includes(option.value)
-                            ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible"
-                        )}
+              <ScrollArea className="h-48">
+                <CommandList>
+                  <CommandEmpty>No {name} found.</CommandEmpty>
+                  <CommandGroup>
+                    {options.map((option) => (
+                      <CommandItem
+                        value={option.label}
+                        key={option.value}
+                        onSelect={() => {
+                          const currentValue = field.value || []
+                          const newValue = currentValue.includes(option.value)
+                            ? currentValue.filter((value: string) => value !== option.value)
+                            : [...currentValue, option.value]
+                          form.setValue(name, newValue)
+                        }}
                       >
-                        <X className="h-4 w-4" />
-                      </div>
-                      {option.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
+                        <div
+                          className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            field.value?.includes(option.value)
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
+                        >
+                          <X className="h-4 w-4" />
+                        </div>
+                        {option.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </ScrollArea>
             </Command>
           </PopoverContent>
         </Popover>

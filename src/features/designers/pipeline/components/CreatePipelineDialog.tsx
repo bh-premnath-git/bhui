@@ -51,7 +51,8 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    reset,
+    formState: { errors, isValid },
   } = useForm<FormValues>({
     defaultValues: {
       bh_project_id: '',
@@ -103,7 +104,9 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
         dispatch(setBuildPipeLineDtl(response));
         dispatch(setSelectedPipeline(response));
         dispatch(setPipeLineType(response.pipeline_type));
-
+         reset();
+        setShowNotes(false);
+        dispatch(setSelectedEngineType('pyspark')); // Reset to default engine type
         const route = `/designers/build-playground/${response.pipeline_id}`;
         navigate(route);
       }
@@ -357,7 +360,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
             >
               Close
             </Button>
-            <Button type="submit" disabled={isLoading} className="h-8 text-xs">
+            <Button type="submit" disabled={isLoading || !isValid} className="h-8 text-xs">
               {isLoading ? 'Creating…' : 'Create Pipeline'}
             </Button>
           </DialogFooter>

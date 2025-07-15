@@ -93,7 +93,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
 
     
     // Update the sources mapping with defensive checks
-    const sources = uiNodes
+    const readerSources = uiNodes
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
             const source = node.data.source || {};
@@ -110,6 +110,43 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 connection: connectionConfig
             };
         });
+
+    // Collect lookup sources from Lookup transformations
+    const lookupSources = uiNodes
+        .filter(node => node.data.label === 'Lookup')
+        .map(node => {
+            const lookupConfig = node.data.transformationData?.lookup_config;
+            if (lookupConfig && lookupConfig.source && 
+                (lookupConfig.source.data_src_name || lookupConfig.source.name)) {
+                
+                const source = lookupConfig.source;
+                const connectionConfig = source?.connection_config?.custom_metadata;
+                const source_type = source.type || source.source_type;
+                const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
+                const sourceName = source.data_src_name || source.name;
+                
+                return {
+                    name: sourceName,
+                    source_type: isFileSource ? "File" : "Relational",
+                    ...(isFileSource ? {} : { table_name: source?.table_name || source.data_src_name }),
+                    file_name: source.file_name ? `${source.file_name}` : undefined,
+                    data_src_id: source.data_src_id,
+                    connection: connectionConfig
+                };
+            }
+            return null;
+        })
+        .filter(Boolean); // Remove null entries
+
+    // Combine reader sources and lookup sources, removing duplicates by name
+    const allSources = [...readerSources];
+    lookupSources.forEach(lookupSource => {
+        if (!allSources.find(source => source.name === lookupSource.name)) {
+            allSources.push(lookupSource);
+        }
+    });
+
+    const sources = allSources;
 
     // Update the reader transformations
     const readerTransformations = uiNodes
@@ -239,7 +276,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 case 'SQLTransformation':
                     return {
                         ...baseConfig,
-                        sql: node.data.transformationData?.sql || "true"
+                        query: node.data.transformationData?.query || "true"
                     };
                 case 'Joiner':
                     // debugger
@@ -399,11 +436,21 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         lookup_type: node.data.transformationData?.lookup_type || 'Column Based'
                     };
                     
-                    // Only add lookup_config if it has meaningful values
+                    // Handle lookup_config with proper source reference format
                     if (node.data.transformationData?.lookup_config && 
                         (node.data.transformationData.lookup_config.name || 
                          Object.keys(node.data.transformationData.lookup_config.source || {}).length > 0)) {
-                        lookupConfig.lookup_config = node.data.transformationData.lookup_config;
+                        
+                        const lookupConfigData = { ...node.data.transformationData.lookup_config };
+                        
+                        // Convert source to $ref format if it has a data_src_name or name
+                        if (lookupConfigData.source && 
+                            (lookupConfigData.source.data_src_name || lookupConfigData.source.name)) {
+                            const sourceName = lookupConfigData.source.data_src_name || lookupConfigData.source.name;
+                            lookupConfigData.source = { "$ref": `#/sources/${sourceName}` };
+                        }
+                        
+                        lookupConfig.lookup_config = lookupConfigData;
                     }
                     
                     // Only add lookup_data if it's an array with at least one item
@@ -418,11 +465,22 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         lookupConfig.lookup_columns = node.data.transformationData.lookup_columns;
                     }
                     
-                    // Only add lookup_conditions if it has meaningful values
-                    if (node.data.transformationData?.lookup_conditions && 
-                        (node.data.transformationData.lookup_conditions.column_name || 
-                         node.data.transformationData.lookup_conditions.lookup_with)) {
-                        lookupConfig.lookup_conditions = node.data.transformationData.lookup_conditions;
+                    // Handle lookup_conditions as an array
+                    if (node.data.transformationData?.lookup_conditions) {
+                        const conditions = node.data.transformationData.lookup_conditions;
+                        
+                        if (Array.isArray(conditions)) {
+                            // If it's an array, take the first valid condition as a single object
+                            const validCondition = conditions.find(condition => 
+                                condition && (condition.column_name || condition.lookup_with)
+                            );
+                            if (validCondition) {
+                                lookupConfig.lookup_conditions = validCondition;
+                            }
+                        } else if (conditions && (conditions.column_name || conditions.lookup_with)) {
+                            // If it's a single object, use it directly
+                            lookupConfig.lookup_conditions = conditions;
+                        }
                     }
                     
                     // Only add keep if it has a value

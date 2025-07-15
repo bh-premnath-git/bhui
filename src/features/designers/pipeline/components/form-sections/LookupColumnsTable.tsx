@@ -2,11 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Loader2, Database, Search, X, ChevronDown, Settings2 } from 'lucide-react';
+import { Trash2, Loader2, Plus, Edit2, Save, X } from 'lucide-react';
 import { getColumnsForDataSource } from '@/lib/pipelineAutoSuggestion';
 import './LookupColumnsTable.css';
 
@@ -23,9 +19,8 @@ interface LookupColumnsTableProps {
   selectedSource?: any; // Selected source from lookup config
   lookupType?: string; // 'Column Based' or 'Literal'
   lookupData?: any[]; // Lookup data for Literal type
+  onLookupDataChange?: (data: any[]) => void; // Callback to update lookup data
 }
-
-type UIVersion = 'v1' | 'v2';
 
 export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
   value = [],
@@ -34,16 +29,26 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
   disabled = false,
   selectedSource,
   lookupType,
-  lookupData
+  lookupData,
+  onLookupDataChange
 }) => {
-  const [uiVersion, setUiVersion] = useState<UIVersion>('v2');
+  // Debug props to understand why button might not be visible
+  console.log('LookupColumnsTable props:', {
+    lookupType,
+    hasOnLookupDataChange: !!onLookupDataChange,
+    lookupDataLength: lookupData?.length || 0,
+    disabled
+  });
   const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
     new Set(value.map(item => item.column))
   );
   const [fetchedColumns, setFetchedColumns] = useState<string[]>([]);
   const [isLoadingColumns, setIsLoadingColumns] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddColumnInput, setShowAddColumnInput] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
+  const [editingRowData, setEditingRowData] = useState<any>({});
 
   // Update selected columns when value changes
   React.useEffect(() => {
@@ -69,6 +74,24 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
         // For literal type, get columns from lookup data
         const columns = Object.keys(lookupData[0]);
         setFetchedColumns(columns);
+        
+        // Clean up lookup_columns to remove columns that no longer exist in lookup data
+        if (value.length > 0) {
+          const validColumns = new Set(columns);
+          const invalidColumns = value.filter(item => !validColumns.has(item.column));
+          
+          // Only update if there are invalid columns to remove
+          if (invalidColumns.length > 0) {
+            const filteredLookupColumns = value.filter(item => validColumns.has(item.column));
+            console.log('Cleaning up invalid lookup_columns:', {
+              original: value,
+              invalidColumns: invalidColumns.map(item => item.column),
+              filtered: filteredLookupColumns,
+              availableColumns: columns
+            });
+            onChange(filteredLookupColumns);
+          }
+        }
       } else {
         setFetchedColumns([]);
       }
@@ -85,13 +108,27 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
     return availableColumns;
   }, [fetchedColumns, availableColumns]);
 
-  // Filter columns based on search term
-  const filteredColumns = useMemo(() => {
-    if (!searchTerm) return finalAvailableColumns;
-    return finalAvailableColumns.filter(column => 
-      column.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [finalAvailableColumns, searchTerm]);
+  // Additional cleanup effect that runs when finalAvailableColumns change
+  useEffect(() => {
+    if (lookupType === 'Literal' && finalAvailableColumns.length > 0 && value.length > 0) {
+      const validColumns = new Set(finalAvailableColumns);
+      const invalidColumns = value.filter(item => !validColumns.has(item.column));
+      
+      // Only update if there are invalid columns to remove
+      if (invalidColumns.length > 0) {
+        const filteredLookupColumns = value.filter(item => validColumns.has(item.column));
+        console.log('Additional cleanup of invalid lookup_columns:', {
+          original: value,
+          invalidColumns: invalidColumns.map(item => item.column),
+          filtered: filteredLookupColumns,
+          availableColumns: finalAvailableColumns
+        });
+        onChange(filteredLookupColumns);
+      }
+    }
+  }, [finalAvailableColumns, lookupType]);
+
+
 
   const handleColumnToggle = (columnName: string, checked: boolean) => {
     const newSelectedColumns = new Set(selectedColumns);
@@ -114,6 +151,8 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
     setSelectedColumns(newSelectedColumns);
   };
 
+
+
   const handleOutputColumnNameChange = (columnName: string, newOutputName: string) => {
     const newValue = value.map(item => 
       item.column === columnName 
@@ -132,31 +171,208 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
     onChange(newValue);
   };
 
-  // Render skeleton loading state
-  const renderSkeletonLoader = () => (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-md w-40 skeleton-pulse"></div>
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md w-20 skeleton-pulse"></div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md flex-1 skeleton-pulse"></div>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16 skeleton-pulse"></div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // Add new column to lookup data (for literal type)
+  const handleAddNewColumn = () => {
+    if (lookupType === 'Literal' && onLookupDataChange && lookupData) {
+      const existingColumns = finalAvailableColumns;
+      let columnIndex = 1;
+      let defaultColumnName = `column${columnIndex}`;
+      
+      // Find a unique column name
+      while (existingColumns.includes(defaultColumnName)) {
+        columnIndex++;
+        defaultColumnName = `column${columnIndex}`;
+      }
+      
+      // Add the new column to all existing rows with empty value
+      const updatedLookupData = lookupData.map(row => ({
+        ...row,
+        [defaultColumnName]: ''
+      }));
+      
+      // If no data exists, create first row with the new column
+      if (updatedLookupData.length === 0) {
+        updatedLookupData.push({ [defaultColumnName]: '' });
+      }
+      
+      onLookupDataChange(updatedLookupData);
+    }
+  };
 
-  // Render Version 1 (Original Design)
-  const renderVersionOne = () => {
+  // Add custom column with user-specified name
+  const handleAddCustomColumn = () => {
+    if (lookupType === 'Literal' && onLookupDataChange && newColumnName.trim()) {
+      const trimmedColumnName = newColumnName.trim();
+      const existingColumns = finalAvailableColumns;
+      
+      // Validate column name
+      if (trimmedColumnName.length === 0) {
+        setError('Column name cannot be empty');
+        return;
+      }
+      
+      // Check for invalid characters (basic validation)
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmedColumnName)) {
+        setError('Column name must start with a letter or underscore and contain only letters, numbers, and underscores');
+        return;
+      }
+      
+      // Check if column name already exists
+      if (existingColumns.includes(trimmedColumnName)) {
+        setError(`Column "${trimmedColumnName}" already exists`);
+        return;
+      }
+      
+      // Clear any previous errors
+      setError(null);
+      
+      // Add the new column to all existing rows with empty value
+      const currentData = lookupData || [];
+      let updatedLookupData = currentData.map(row => ({
+        ...row,
+        [trimmedColumnName]: ''
+      }));
+      
+      // If no data exists, create first row with the new column
+      if (updatedLookupData.length === 0) {
+        updatedLookupData.push({ [trimmedColumnName]: '' });
+      }
+      
+      // Auto-cleanup: Remove default columns (column1, column2, etc.) if they exist and are empty
+      // This helps clean up the initial default columns when users add meaningful columns
+      const defaultColumnPattern = /^column\d+$/;
+      updatedLookupData = updatedLookupData.map(row => {
+        const cleanedRow = { ...row };
+        Object.keys(cleanedRow).forEach(key => {
+          if (defaultColumnPattern.test(key)) {
+            // Check if this default column is empty across all rows
+            const isEmptyAcrossAllRows = updatedLookupData.every(r => !r[key] || r[key].trim() === '');
+            if (isEmptyAcrossAllRows) {
+              delete cleanedRow[key];
+            }
+          }
+        });
+        return cleanedRow;
+      });
+      
+      onLookupDataChange(updatedLookupData);
+      
+      // Reset the input state
+      setNewColumnName('');
+      setShowAddColumnInput(false);
+    }
+  };
+
+  // Cancel adding custom column
+  const handleCancelAddColumn = () => {
+    setNewColumnName('');
+    setShowAddColumnInput(false);
+    setError(null);
+  };
+
+  // Remove column from lookup data (for literal type)
+  const handleRemoveColumnFromLookupData = (columnName: string) => {
+    if (lookupType === 'Literal' && onLookupDataChange && lookupData) {
+      // Remove the column from all rows
+      const updatedLookupData = lookupData.map(row => {
+        const { [columnName]: removed, ...rest } = row;
+        return rest;
+      });
+      
+      onLookupDataChange(updatedLookupData);
+      
+      // Also remove from selected columns
+      handleRemoveColumn(columnName);
+    }
+  };
+
+  // Add new row to lookup data (for literal type)
+  const handleAddNewRow = () => {
+    console.log('handleAddNewRow called', { 
+      lookupType, 
+      onLookupDataChange: !!onLookupDataChange, 
+      finalAvailableColumns: finalAvailableColumns.length,
+      currentLookupData: lookupData?.length || 0
+    });
+    
+    if (lookupType === 'Literal' && onLookupDataChange) {
+      // Create a new row with empty values for all existing columns
+      const newRow: any = {};
+      finalAvailableColumns.forEach(column => {
+        newRow[column] = '';
+      });
+      
+      console.log('Creating new row:', newRow);
+      
+      // Add the new row to lookup data (handle case when lookupData is empty/undefined)
+      const currentData = lookupData || [];
+      const updatedLookupData = [...currentData, newRow];
+      
+      console.log('Calling onLookupDataChange with:', updatedLookupData);
+      onLookupDataChange(updatedLookupData);
+      
+      // Start editing the new row
+      setEditingRowIndex(updatedLookupData.length - 1);
+      setEditingRowData(newRow);
+    } else {
+      console.log('Conditions not met for adding row:', {
+        isLiteral: lookupType === 'Literal',
+        hasCallback: !!onLookupDataChange
+      });
+    }
+  };
+
+  // Start editing a row
+  const handleEditRow = (rowIndex: number) => {
+    if (lookupData && lookupData[rowIndex]) {
+      setEditingRowIndex(rowIndex);
+      setEditingRowData({ ...lookupData[rowIndex] });
+    }
+  };
+
+  // Save edited row
+  const handleSaveRow = () => {
+    if (lookupType === 'Literal' && onLookupDataChange && lookupData && editingRowIndex !== null) {
+      const updatedLookupData = [...lookupData];
+      updatedLookupData[editingRowIndex] = { ...editingRowData };
+      onLookupDataChange(updatedLookupData);
+      
+      // Reset editing state
+      setEditingRowIndex(null);
+      setEditingRowData({});
+    }
+  };
+
+  // Cancel editing row
+  const handleCancelEditRow = () => {
+    setEditingRowIndex(null);
+    setEditingRowData({});
+  };
+
+  // Update cell value during editing
+  const handleCellValueChange = (column: string, value: string) => {
+    setEditingRowData(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  // Delete a row
+  const handleDeleteRow = (rowIndex: number) => {
+    if (lookupType === 'Literal' && onLookupDataChange && lookupData) {
+      const updatedLookupData = lookupData.filter((_, index) => index !== rowIndex);
+      onLookupDataChange(updatedLookupData);
+      
+      // If we were editing this row, cancel editing
+      if (editingRowIndex === rowIndex) {
+        setEditingRowIndex(null);
+        setEditingRowData({});
+      }
+    }
+  };
+
+  // Main render function
+  const renderTable = () => {
     // Show loading state
     if (isLoadingColumns) {
       return (
@@ -170,8 +386,8 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
       );
     }
 
-    // Show error state
-    if (error) {
+    // Show error state (only for loading errors, not custom column validation errors)
+    if (error && !error.includes('already exists') && !error.includes('Column name')) {
       return (
         <div className="text-center py-8">
           <p className="text-red-500 mb-4">{error}</p>
@@ -199,324 +415,330 @@ export const LookupColumnsTable: React.FC<LookupColumnsTableProps> = ({
 
     return (
       <div className="space-y-4">
-       
-
-        {/* Available Columns Section */}
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <h4 className="font-medium mb-3">Available Columns</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-            {finalAvailableColumns.map((column) => (
-              <div key={column} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`column-${column}`}
-                  checked={selectedColumns.has(column)}
-                  onCheckedChange={(checked) => handleColumnToggle(column, checked as boolean)}
-                  disabled={disabled}
-                />
-                <label
-                  htmlFor={`column-${column}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+        {/* Columns Configuration Table */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-900">
+              {lookupType === 'Literal' ? 'Select Columns from Lookup Data' : 'Available Columns Configuration'}
+            </h4>
+            {lookupType === 'Literal' && onLookupDataChange && (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddNewColumn}
+                  disabled={disabled || showAddColumnInput || editingRowIndex !== null}
+                  className="h-8 px-3 text-xs"
                 >
-                  {column}
-                </label>
+                  <Plus className="h-3 w-3 mr-1" />
+                  Quick Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddColumnInput(true)}
+                  disabled={disabled || showAddColumnInput || editingRowIndex !== null}
+                  className="h-8 px-3 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Custom Column
+                </Button>
               </div>
-            ))}
+            )}
           </div>
-        </div>
-
-        {/* Selected Columns Configuration */}
-        {selectedColumns.size > 0 && (
-          <div className="border rounded-lg overflow-hidden bg-white">
+          
+          {/* Custom Column Input */}
+          {lookupType === 'Literal' && onLookupDataChange && showAddColumnInput && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Input
+                  value={newColumnName}
+                  onChange={(e) => {
+                    setNewColumnName(e.target.value);
+                    // Clear error when user starts typing
+                    if (error && (error.includes('already exists') || error.includes('Column name'))) {
+                      setError(null);
+                    }
+                  }}
+                  placeholder="Enter column name"
+                  className="h-8 text-sm flex-1"
+                  disabled={disabled}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomColumn();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      handleCancelAddColumn();
+                    }
+                  }}
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={handleAddCustomColumn}
+                  disabled={disabled || !newColumnName.trim()}
+                  className="h-8 px-3 text-xs"
+                >
+                  Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelAddColumn}
+                  disabled={disabled}
+                  className="h-8 px-3 text-xs"
+                >
+                  Cancel
+                </Button>
+              </div>
+              {/* Show custom column validation error */}
+              {error && (error.includes('already exists') || error.includes('Column name')) && (
+                <div className="text-sm text-red-600 px-3">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="border rounded-lg overflow-hidden bg-white lookup-columns-fade-in">
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b w-12">
+                      Select
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">
+                      {lookupType === 'Literal' ? 'Lookup Data Columns' : 'Available Columns'}
+                    </th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">
                       Source Column
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">
                       Output Column Name
                     </th>
-                    <th className="px-4 py-3 w-12 border-b"></th>
+                    {lookupType === 'Literal' && onLookupDataChange && (
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b w-12">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {value.map((item, index) => (
-                    <tr key={item.column} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 border-b">
-                        <span className="text-sm font-medium text-gray-900">
-                          {item.column}
-                        </span>
+                  {finalAvailableColumns.map((column, index) => {
+                    const isSelected = selectedColumns.has(column);
+                    const selectedItem = value.find(item => item.column === column);
+                    
+                    return (
+                      <tr 
+                        key={column} 
+                        className={`hover:bg-gray-50 transition-colors lookup-columns-slide-in ${isSelected ? 'bg-blue-50' : ''}`}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        <td className="px-4 py-3 border-b">
+                          <Checkbox
+                            id={`column-${column}`}
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleColumnToggle(column, checked as boolean)}
+                            disabled={disabled}
+                          />
+                        </td>
+                        <td className="px-4 py-3 border-b">
+                          <label
+                            htmlFor={`column-${column}`}
+                            className="text-sm font-medium text-gray-900 cursor-pointer"
+                          >
+                            {column}
+                          </label>
+                        </td>
+                        <td className="px-4 py-3 border-b">
+                          {isSelected && (
+                            <span className="text-sm font-medium text-gray-900 lookup-columns-fade-in">
+                              {column}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 border-b">
+                          {isSelected && (
+                            <Input
+                              value={selectedItem?.out_column_name || ''}
+                              onChange={(e) => handleOutputColumnNameChange(column, e.target.value)}
+                              className="h-8 text-sm lookup-columns-scale-in"
+                              disabled={disabled}
+                              placeholder="Enter output column name"
+                            />
+                          )}
+                        </td>
+                        {lookupType === 'Literal' && onLookupDataChange && (
+                          <td className="px-4 py-3 border-b">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveColumnFromLookupData(column)}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              disabled={disabled}
+                              title="Remove column from lookup data"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Add Column Row - Only for Literal type */}
+                  {lookupType === 'Literal' && onLookupDataChange && (
+                    <tr className="bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <td className="px-4 py-3 border-b"></td>
+                      <td className="px-4 py-3 border-b" colSpan={lookupType === 'Literal' && onLookupDataChange ? 3 : 2}>
+                        {showAddColumnInput ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={newColumnName}
+                              onChange={(e) => {
+                                setNewColumnName(e.target.value);
+                                // Clear error when user starts typing
+                                if (error && (error.includes('already exists') || error.includes('Column name'))) {
+                                  setError(null);
+                                }
+                              }}
+                              placeholder="Enter new column name"
+                              className="h-8 text-sm flex-1"
+                              disabled={disabled}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddCustomColumn();
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  handleCancelAddColumn();
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              onClick={handleAddCustomColumn}
+                              disabled={disabled || !newColumnName.trim()}
+                              className="h-8 px-3 text-xs"
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCancelAddColumn}
+                              disabled={disabled}
+                              className="h-8 px-3 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleAddNewColumn}
+                              disabled={disabled || editingRowIndex !== null}
+                              className="h-8 px-3 text-xs"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Quick Add Column
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowAddColumnInput(true)}
+                              disabled={disabled || editingRowIndex !== null}
+                              className="h-8 px-3 text-xs"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Custom Column
+                            </Button>
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 border-b">
-                        <Input
-                          value={item.out_column_name}
-                          onChange={(e) => handleOutputColumnNameChange(item.column, e.target.value)}
-                          className="h-8 text-sm"
-                          disabled={disabled}
-                          placeholder="Enter output column name"
-                        />
-                      </td>
-                      <td className="px-4 py-3 border-b">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveColumn(item.column)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
+                      {lookupType === 'Literal' && onLookupDataChange && (
+                        <td className="px-4 py-3 border-b"></td>
+                      )}
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
+          
+          {/* Show custom column validation error for inline input */}
+          {lookupType === 'Literal' && onLookupDataChange && showAddColumnInput && error && (error.includes('already exists') || error.includes('Column name')) && (
+            <div className="text-sm text-red-600 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+              {error}
+            </div>
+          )}
+        </div>
+
+       
+        {/* Add Row Button - Only for Literal type */}
+        {(() => {
+          const shouldShowButton = lookupType === 'Literal' && onLookupDataChange;
+          console.log('Add Row Button visibility check:', {
+            lookupType,
+            isLiteral: lookupType === 'Literal',
+            hasCallback: !!onLookupDataChange,
+            shouldShowButton,
+            finalAvailableColumnsLength: finalAvailableColumns.length
+          });
+          return shouldShowButton;
+        })() && (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              onClick={handleAddNewRow}
+              disabled={disabled || finalAvailableColumns.length === 0 || editingRowIndex !== null}
+              className="h-10 px-6 text-sm font-medium"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {lookupData && lookupData.length > 0 ? 'Add Another Row' : 'Add First Row'}
+            </Button>
+          </div>
+        )}
+
+        {/* Message when no columns exist */}
+        {lookupType === 'Literal' && onLookupDataChange && finalAvailableColumns.length === 0 && (
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-sm">Add columns first using the "Add Column" button above</p>
+          </div>
+        )}
+
+        {/* Summary */}
+        {selectedColumns.size > 0 && (
+          <div className="text-sm text-gray-600 lookup-columns-fade-in">
+            <p>{selectedColumns.size} column{selectedColumns.size !== 1 ? 's' : ''} selected</p>
+          </div>
         )}
 
         {selectedColumns.size === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No columns selected</p>
-            <p className="text-sm">Select columns from the available list above</p>
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-sm">Select columns from the table above to configure lookup</p>
           </div>
         )}
       </div>
     );
   };
 
-  // Add new column handler
-  const handleAddNewColumn = () => {
-    const newEntry: LookupColumn = {
-      column: '',
-      out_column_name: ''
-    };
-    onChange([...value, newEntry]);
-  };
-
-  // Update column selection from dropdown
-  const handleColumnSelection = (index: number, columnName: string) => {
-    const newValue = [...value];
-    newValue[index] = {
-      ...newValue[index],
-      column: columnName,
-      out_column_name: columnName // Auto-populate output name
-    };
-    onChange(newValue);
-    
-    // Update selected columns set
-    const newSelectedColumns = new Set(selectedColumns);
-    newSelectedColumns.add(columnName);
-    setSelectedColumns(newSelectedColumns);
-  };
-
-  // Remove column by index
-  const handleRemoveColumnByIndex = (index: number) => {
-    const columnToRemove = value[index]?.column;
-    if (columnToRemove) {
-      const newSelectedColumns = new Set(selectedColumns);
-      newSelectedColumns.delete(columnToRemove);
-      setSelectedColumns(newSelectedColumns);
-    }
-    
-    const newValue = value.filter((_, i) => i !== index);
-    onChange(newValue);
-  };
-
-  // Render Version 2 (Enhanced Design)
-  const renderVersionTwo = () => {
-    // Show loading state with skeleton
-    if (isLoadingColumns) {
-      return renderSkeletonLoader();
-    }
-
-    // Show error state
-    if (error) {
-      return (
-        <Card className="border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-900/10">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/20">
-              <Database className="h-8 w-8 text-red-600 dark:text-red-400" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-red-900 dark:text-red-100">
-              Connection Error
-            </h3>
-            <p className="mt-2 text-sm text-red-700 dark:text-red-300 text-center max-w-md">
-              {error}
-            </p>
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400 text-center">
-              Please check your source configuration and try again
-            </p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    // If no available columns, show message
-    if (!finalAvailableColumns || finalAvailableColumns.length === 0) {
-      return (
-        <Card className="border-dashed border-2 border-gray-200 dark:border-gray-700">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="rounded-full bg-gray-100 p-3 dark:bg-gray-800">
-              <Settings2 className="h-8 w-8 text-gray-600 dark:text-gray-400" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-              No Columns Available
-            </h3>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center max-w-md">
-              {lookupType === 'Column Based' 
-                ? 'Please select a data source in the lookup config tab to see available columns'
-                : 'Please add lookup data first to see available columns'
-              }
-            </p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Columns Configuration</CardTitle>
-            <CardDescription>
-              Select input columns and configure their output names
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {value.length > 0 ? (
-              <div className="space-y-4">
-                {/* Table Header */}
-                <div className="grid grid-cols-12 gap-4 pb-3 border-b border-border/40">
-                  <div className="col-span-4">
-                    <span className="text-sm font-semibold text-foreground">Input Column</span>
-                  </div>
-                  <div className="col-span-4">
-                    <span className="text-sm font-semibold text-foreground">Select Column</span>
-                  </div>
-                  <div className="col-span-3">
-                    <span className="text-sm font-semibold text-foreground">Output Name</span>
-                  </div>
-                  <div className="col-span-1">
-                    <span className="text-sm font-semibold text-foreground">Actions</span>
-                  </div>
-                </div>
-                
-                {/* Table Rows */}
-                {value.map((item, index) => (
-                  <div
-                    key={`${item.column}-${index}`}
-                    className="grid grid-cols-12 gap-4 items-center p-4 rounded-lg border border-border/40 hover:border-border transition-colors lookup-columns-slide-in"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    {/* Input Column Display */}
-                    <div className="col-span-4">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          Input
-                        </Badge>
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {item.column || 'Not selected'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Select Column Dropdown */}
-                    <div className="col-span-4">
-                      <Select
-                        value={item.column}
-                        onValueChange={(value) => handleColumnSelection(index, value)}
-                        disabled={disabled}
-                      >
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Select column..." />
-                        </SelectTrigger>
-                        <SelectContent style={{zIndex:9999}}>
-                          {finalAvailableColumns.map((column) => (
-                            <SelectItem key={column} value={column}>
-                              <div className="flex items-center gap-2">
-                                <Database className="h-3 w-3 text-muted-foreground" />
-                                <span>{column}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Output Name Input */}
-                    <div className="col-span-3">
-                      <Input
-                        value={item.out_column_name}
-                        onChange={(e) => handleOutputColumnNameChange(item.column, e.target.value)}
-                        className="h-9 text-sm"
-                        disabled={disabled}
-                        placeholder="Output name..."
-                      />
-                    </div>
-                    
-                    {/* Actions */}
-                    <div className="col-span-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveColumnByIndex(index)}
-                        className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        disabled={disabled}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remove column</span>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="rounded-full bg-muted p-3 mx-auto w-fit">
-                  <PlusCircle className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold">No Columns Configured</h3>
-                <p className="mt-2 text-sm text-muted-foreground text-center max-w-md">
-                  Click "Add Column" to start configuring your lookup columns
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddNewColumn}
-                  className="mt-4"
-                  disabled={disabled}
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add Your First Column
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Version Selector */}
-      <div className="flex justify-end">
-        <Select value={uiVersion} onValueChange={(value: UIVersion) => setUiVersion(value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent style={{zIndex:9999}}>
-            <SelectItem value="v1">Version 1</SelectItem>
-            <SelectItem value="v2">Version 2</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Render selected version */}
-      {uiVersion === 'v1' ? renderVersionOne() : renderVersionTwo()}
-    </div>
-  );
+  return renderTable();
 };

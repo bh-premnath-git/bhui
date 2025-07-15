@@ -1,14 +1,102 @@
-{
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "description": "",
-    "type": "object",
-    "properties": {
-      "condition": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "required": [
-      "condition"
-    ]
-  }
+# =============================================================================
+# 🧩 CUSTOM PYSPARK TRANSFORMATION TEMPLATE
+# =============================================================================
+# 💡 INSTRUCTIONS :
+# - Input DataFrames are auto-injected and named using their transformation names.
+# - You must return at least one DataFrame named `result` or `result_<suffix>`.
+# - Returned DataFrames will be made available for downstream transformations.
+#     • result         → <transformation_name>
+#     • result_clean   → <transformation_name>_clean
+#     • result_summary → <transformation_name>_summary
+# =============================================================================
+
+# Your Code Starts Here 
+
+# =============================================================================
+# 📦 IMPORTS
+# =============================================================================
+# Add required imports below
+# Example:
+# from pyspark.sql.functions import col, lit, when, avg, count
+# from pyspark.sql.types import StringType, IntegerType, DoubleType
+
+# --- Your Imports Here ---
+
+
+
+
+
+
+
+# =============================================================================
+# 📥 INPUT DATAFRAMES
+# =============================================================================
+# Input DataFrames are available as variables named after their source transformations.
+# For example:
+# input_df = read_input_data      # If a previous transformation is named "read_input_data"
+
+# --- Initialize or reference your input DataFrame(s) ---
+# Dynamically get input DataFrames (excluding built-in variables)
+
+
+
+
+
+
+
+
+
+# =============================================================================
+# ✨ YOUR TRANSFORMATION LOGIC
+# =============================================================================
+# Write your PySpark code here.
+# ✅ At least one DataFrame must be assigned to a variable starting with "result"
+#    Examples:
+#    result = input_df.withColumn("flag", lit("Y"))
+#    result_main = input_df.filter(col("status") == "active")
+#    result_summary = result_main.groupBy("category").agg(count("*").alias("cnt"))
+
+# --- Begin Custom Logic ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# --- End Custom Logic ---
+
+# =============================================================================
+# 📤 OUTPUT DATAFRAMES
+# =============================================================================
+# 🚨 At least one result DataFrame is required!
+#    - Use `result` for single-output transformations.
+#    - Use `result_<suffix>` for multiple outputs.
+#
+# These outputs will be wired for downstream transformations as:
+#    • result → <transformation_name>
+#    • result_<suffix> → <transformation_name>_<suffix>
+#
+# ✅ Example:
+# result = input_df.withColumn("processed", lit("yes"))
+# result_agg = result.groupBy("type").agg(count("*").alias("cnt"))
+
+# --- Save or define your result DataFrame(s) ---
+
+
+
+
+
+
+
+
+
+
+# Your Code Ends Here 

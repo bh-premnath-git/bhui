@@ -25,7 +25,6 @@ import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/Build
 import { debugNodeData, validateNodeTransformationData, compareBeforeAfterSubmit } from '@/lib/debugPipeline';
 import { useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion'; 
 
 // Define the form schema based on Reader.json
 const readerFormSchema = z.object({
@@ -51,6 +50,13 @@ type ChatMessage = {
   content: string;
   msg_owner?: string;
   suggestions?: Suggestion[];
+  showDependencyEdit?: boolean; // Flag to show edit icon for dependencies
+  dependencyEditData?: {
+    targetNodeId: string;
+    targetNodeType: any;
+    dependencies: any[];
+    transformationType: string;
+  };
   formData?: {
     schema: any;
     sourceColumns: any[];
@@ -61,12 +67,14 @@ type ChatMessage = {
     isMultiSourceSelect?: boolean;
     isSingleDependencySelect?: boolean;
     isMultiDependencySelect?: boolean;
+    formId?: string; // Add unique form identifier
     dependencyData?: {
       dependencies: any[];
       targetNodeType: any;
       targetNodeId: string;
       maxInputs: number | string;
     };
+    isDependencyEdit?: boolean; // Flag to indicate dependency edit form
   };
 };
 
@@ -95,7 +103,7 @@ const SingleDependencySelectForm: React.FC<{
         }
       }}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Choose a node to connect" />
+          <SelectValue placeholder="Select a node to connect to" />
         </SelectTrigger>
         <SelectContent style={{ zIndex: 9999 }}>
           {dependencies.map((dep) => (
@@ -105,6 +113,86 @@ const SingleDependencySelectForm: React.FC<{
           ))}
         </SelectContent>
       </Select>
+    </div>
+  );
+};
+
+// Dependency edit component
+const DependencyEditForm: React.FC<{
+  dependencies: any[];
+  currentConnections: any[];
+  onSubmit: (selectedDependencies: any[]) => void;
+  onClose: () => void;
+  targetNodeType: any;
+  targetNodeId: string;
+  maxInputs: number | string;
+}> = ({ dependencies, currentConnections, onSubmit, onClose, targetNodeType, targetNodeId, maxInputs }) => {
+  const [selectedDependencies, setSelectedDependencies] = useState<any[]>(() => {
+    // Initialize with current connections
+    const currentConnectionIds = currentConnections.map(conn => conn.source);
+    return dependencies.filter(dep => currentConnectionIds.includes(dep.id));
+  });
+
+  const handleDependencyToggle = (dependency: any) => {
+    setSelectedDependencies(prev => {
+      const isSelected = prev.some(dep => dep.id === dependency.id);
+      if (isSelected) {
+        return prev.filter(dep => dep.id !== dependency.id);
+      } else {
+        if (maxInputs === 1) {
+          // For single input, replace the selection
+          return [dependency];
+        } else {
+          // For multiple inputs, add to selection
+          const maxAllowed = maxInputs === "unlimited" ? 10 : maxInputs;
+          if (prev.length < maxAllowed) {
+            return [...prev, dependency];
+          } else {
+            return prev;
+          }
+        }
+      }
+    });
+  };
+
+  const handleSubmit = () => {
+    onSubmit(selectedDependencies);
+  };
+
+  return (
+    <div className="dependency-edit-form p-4 rounded-lg bg-gray-50 border">
+      <h4 className="font-semibold mb-2">Edit Connections</h4>
+      <div className="space-y-2 mb-4">
+        {dependencies.map((dep) => (
+          <div key={dep.id} className="flex items-center">
+            <input
+              type="checkbox"
+              id={`edit-dep-${dep.id}`}
+              checked={selectedDependencies.some(selected => selected.id === dep.id)}
+              onChange={() => handleDependencyToggle(dep)}
+              className="mr-2"
+            />
+            <label htmlFor={`edit-dep-${dep.id}`} className="flex-1">
+              {dep.data.title || dep.data.label}
+            </label>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={handleSubmit}
+          disabled={selectedDependencies.length === 0}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          Update Connections
+        </button>
+        <button
+          onClick={onClose}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 };
@@ -229,9 +317,9 @@ const MultiSourceSelectForm: React.FC<{
               className="flex-1 cursor-pointer text-sm"
             >
               <div className="font-medium">{source.data_src_name}</div>
-              {source.data_src_desc && (
+              {/* {source.data_src_desc && (
                 <div className="text-gray-500 text-xs">{source.data_src_desc}</div>
-              )}
+              )} */}
             </label>
           </div>
         ))}
@@ -342,6 +430,76 @@ const PipeLineChatPanel = () => {
   useEffect(() => {
     setformsHanStates(formStates);
   }, [formStates]);
+
+  // Function to save individual AI agent chat messages (user requests and AI responses)
+  const saveAIAgentChatMessage = useCallback(async (message: ChatMessage) => {
+    if (!id) {
+      console.warn('No pipeline id available, skipping chat message save');
+      return;
+    }
+
+    if (isSavingChatHistory) {
+      console.warn('Already saving chat history, skipping individual message save');
+      return;
+    }
+
+    // Check if message is already saved
+    if (message.id && savedMessageIds.has(message.id)) {
+      return;
+    }
+
+    setIsSavingChatHistory(true);
+    try {
+      // Format message for API
+      const formattedMessage = {
+        role: message.role,
+        content: message.content,
+        timestamp: new Date().toISOString(),
+        suggestions: [], // Don't save suggestions as they contain functions
+        formData: message.formData ? {
+          schema: message.formData.schema,
+          sourceColumns: message.formData.sourceColumns || [],
+          currentNodeId: message.formData.currentNodeId,
+          isTarget: message.formData.isTarget,
+          initialValues: message.formData.initialValues ? JSON.parse(JSON.stringify(message.formData.initialValues)) : {}
+        } : undefined
+      };
+
+      const chatHistoryData = {
+        pipeline_id: id,
+        messages: [formattedMessage],
+        append: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Saving AI agent chat message:', { 
+        messageId: message.id, 
+        role: message.role, 
+        content: message.content,
+        pipelineId: id,
+        apiUrl: `${CATALOG_REMOTE_API_URL}/api/v1/pipeline/${id}/chat-history`
+      });
+      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      
+      // Update saved message tracking
+      if (message.id) {
+        setSavedMessageIds(prev => new Set([...prev, message.id!]));
+      }
+      
+      console.log('AI agent chat message saved successfully:', result);
+    } catch (error) {
+      console.error('Failed to save AI agent chat message:', error);
+      console.error('Error details:', {
+        id,
+        messageId: message.id,
+        messageRole: message.role,
+        error: error instanceof Error ? error.message : error
+      });
+    } finally {
+      setIsSavingChatHistory(false);
+    }
+  }, [id, isSavingChatHistory, savedMessageIds]);
   const handleAddAnotherSource = () => {
     dispatch(setIsRightPanelOpen(true));
     setMessages(prevMessages => [
@@ -511,6 +669,44 @@ const PipeLineChatPanel = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, lastAddedTransformation]);
 
+
+  // Auto-save AI agent chat messages when messages change
+  useEffect(() => {
+    if (messages.length === 0 || !id) return;
+    
+    // Get the last message that was added
+    const lastMessage = messages[messages.length - 1];
+    
+    // Only save if it's a new message (not already saved) and is a user or assistant message
+    if (lastMessage && lastMessage.id && !savedMessageIds.has(lastMessage.id)) {
+      // Only save user and assistant messages from AI agent interactions
+      if (lastMessage.role === 'user' || lastMessage.role === 'assistant') {
+        // Check if this is an AI agent conversation message (not a form interaction)
+        // We can differentiate by checking if the message has complex formData with forms
+        const isAIAgentMessage = !lastMessage.formData || 
+          (!lastMessage.formData.isTarget && 
+           !lastMessage.formData.isConfirmation && 
+           !lastMessage.formData.isMultiSourceSelect && 
+           !lastMessage.formData.isSingleDependencySelect && 
+           !lastMessage.formData.isMultiDependencySelect);
+        
+        if (isAIAgentMessage) {
+          console.log('Auto-saving AI agent message:', { 
+            messageId: lastMessage.id, 
+            role: lastMessage.role, 
+            content: lastMessage.content?.substring(0, 100) + '...' 
+          });
+          
+          // Use a slight delay to allow for immediate consecutive messages
+          const timeoutId = setTimeout(() => {
+            saveAIAgentChatMessage(lastMessage);
+          }, 500);
+          
+          return () => clearTimeout(timeoutId);
+        }
+      }
+    }
+  }, [messages, id, savedMessageIds, saveAIAgentChatMessage]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -769,72 +965,60 @@ const PipeLineChatPanel = () => {
     const messageId = formDataMessage.id;
     const originalMsgOwner = formDataMessage.msg_owner;
 
-   
     // Generate messages based on form data type
     if (formDataMessage.formData) {
       const formData = formDataMessage.formData;
-
-      // Handle Reader/Source configuration
-      if (formData.schema && formData.schema.module_name === 'Reader') {
-        // Extract data source info from form data
-        const initialValues = formData.initialValues || {};
-        const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
-
-
-        // The actual form data message (from database)
-        messages.push({
-          ...formDataMessage,
-          suggestions: [] // Will be regenerated
-        });
-
-
-
-      } else if (formData.schema && formData.schema.module_name) {
-        // Handle other transformation types
-        const transformationType = formData.schema.module_name;
-        const nodeId = formData.currentNodeId;
-
-        // User request for transformation
-        messages.push({
-          id: `transform_request_${messageId}`,
-          role: 'user',
-          content: `Add ${transformationType} transformation`,
-          msg_owner: originalMsgOwner
-        });
-
-        // Assistant confirmation
-        messages.push({
-          id: `transform_added_${messageId}`,
-          role: 'assistant',
-          content: `I've added a ${transformationType} transformation to your pipeline. Let's configure it:`,
-          msg_owner: originalMsgOwner
-        });
-
-        // The actual form data message (from database)
-        messages.push({
-          ...formDataMessage,
-          suggestions: [] // Will be regenerated
-        });
-
-        // Success message after transformation configuration
-        messages.push({
-          id: `transform_success_${messageId}`,
-          role: 'assistant',
-          content: `Excellent! The ${transformationType} transformation has been configured successfully.`,
-          msg_owner: originalMsgOwner,
-          suggestions: [
-            { text: "Add another transformation", onClick: handleShowTransformations },
-          ]
-        });
-      } else {
-        // Generic form data message
-        messages.push({
-          ...formDataMessage,
-          suggestions: [] // Will be regenerated
-        });
+      
+      // Show dependency information for transformations (not for readers)
+      if (formData.schema && formData.schema.title && formData.initialValues && formData.initialValues.dependent_on) {
+        const transformationType = formData.schema.title;
+        const dependencies = formData.initialValues.dependent_on;
+        
+        if (dependencies && dependencies.length > 0) {
+          // Extract the source node name from dependencies
+          const sourceNodeId = dependencies[0].source;
+          
+          // Try to find a readable name for the source
+          let sourceName = sourceNodeId;
+          if (sourceNodeId.includes('Reader')) {
+            sourceName = 'data source';
+          } else if (sourceNodeId.includes('Filter')) {
+            sourceName = 'Filter transformation';
+          } else if (sourceNodeId.includes('SchemaTransformation')) {
+            sourceName = 'Schema transformation';
+          } else if (sourceNodeId.includes('Aggregate')) {
+            sourceName = 'Aggregate transformation';
+          } else if (sourceNodeId.includes('Join')) {
+            sourceName = 'Join transformation';
+          } else if (sourceNodeId.includes('Sort')) {
+            sourceName = 'Sort transformation';
+          }
+          
+          // Add dependency information message with edit functionality
+          messages.push({
+            id: `dependency_${messageId}`,
+            role: 'assistant',
+            content: `This ${transformationType}  depends on: ${sourceName}`,
+            msg_owner: originalMsgOwner,
+            showDependencyEdit: true, // Flag to show edit icon
+            dependencyEditData: {
+              targetNodeId: formData.currentNodeId,
+              targetNodeType: formData.schema,
+              dependencies: dependencies,
+              transformationType: transformationType
+            }
+          });
+        }
       }
+
+      // Add the original form data message
+      messages.push({
+        ...formDataMessage,
+        suggestions: [] // Will be regenerated
+      });
+
     } else {
-      // Fallback for messages without form data (shouldn't happen with new logic)
+      // Fallback for messages without form data
       messages.push({
         ...formDataMessage,
         suggestions: []
@@ -842,9 +1026,231 @@ const PipeLineChatPanel = () => {
     }
 
     return messages;
-  }, [handleCreatePipeline, handleAddAnotherSource, handleShowTransformations]);
+  }, []);
 
 
+
+  // Helper function to generate connection messages
+  const generateConnectionMessages = (transformationType: string, sourceColumns: any[], nodeId: string, msgOwner: string) => {
+    const messages: ChatMessage[] = [];
+    
+    // Find connected nodes from the pipeline context
+    const connectedNodes = edges.filter(edge => edge.target === nodeId);
+    
+    connectedNodes.forEach((edge, index) => {
+      const sourceNode = nodes.find(node => node.id === edge.source);
+      if (sourceNode) {
+        const sourceName = sourceNode.data.title || sourceNode.data.label || sourceNode.id;
+        messages.push({
+          id: `connection_${nodeId}_${edge.source}_${index}`,
+          role: 'user',
+          content: `Connect "${sourceName}" to ${transformationType}`,
+          msg_owner: msgOwner
+        });
+      }
+    });
+
+    return messages;
+  };
+
+  // Helper function to generate summary messages for chat history
+  const generateSummaryMessages = useCallback((formDataMessages: any[]) => {
+    const summaryMessages: ChatMessage[] = [];
+    
+    // Create a summary of all configurations
+    const summaryContent = formDataMessages.map((msg, index) => {
+      const formData = msg.formData;
+      if (!formData) return '';
+      
+      if (formData.schema && formData.schema.module_name === 'Reader') {
+        const initialValues = formData.initialValues || {};
+        const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
+        return `• Added data source "${dataSourceName}"`;
+      } else if (formData.schema && (formData.schema.module_name || formData.schema.title)) {
+        const transformationType = formData.schema.module_name || formData.schema.title;
+        return `• Configured ${transformationType} transformation`;
+      }
+      return '';
+    }).filter(Boolean);
+
+    
+
+    return summaryMessages;
+  }, [handleShowTransformations, handleAddAnotherSource]);
+
+  // Helper function to generate individual configuration messages
+  const generateConfigurationMessage = useCallback((formData: any, actionType: 'configured' | 'added' | 'connected' = 'configured') => {
+    if (!formData) return '';
+    
+    if (formData.schema && formData.schema.module_name === 'Reader') {
+      const initialValues = formData.initialValues || {};
+      const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
+      return `${actionType === 'configured' ? 'Configured' : 'Added'} data source "${dataSourceName}"`;
+    } else if (formData.schema && (formData.schema.module_name || formData.schema.title)) {
+      const transformationType = formData.schema.module_name || formData.schema.title;
+      
+      if (actionType === 'connected') {
+        // For connection messages, check if we have source information
+        const sourceInfo = formData.sourceColumns && formData.sourceColumns.length > 0 
+          ? ` from ${formData.sourceColumns.length} source(s)` 
+          : '';
+        return `Connected${sourceInfo} to ${transformationType}`;
+      } else {
+        return `${actionType === 'configured' ? 'Configured' : 'Added'} ${transformationType} transformation`;
+      }
+    }
+    return '';
+  }, []);
+
+  // Function to add dynamic configuration messages to chat
+  const addConfigurationMessage = useCallback((formData: any, actionType: 'configured' | 'added' | 'connected' = 'configured') => {
+    const messageContent = generateConfigurationMessage(formData, actionType);
+    if (messageContent) {
+      const configMessage: ChatMessage = {
+        id: generateMessageId(),
+        role: 'assistant',
+        content: messageContent,
+        msg_owner: decoded?.name || decoded?.username || 'system'
+      };
+      setMessages(prev => [...prev, configMessage]);
+    }
+  }, [generateConfigurationMessage, decoded]);
+
+  // Function to generate chat messages from API form data
+  const generateChatFromAPIData = useCallback((apiFormData: any[]) => {
+    const generatedMessages: ChatMessage[] = [];
+    
+    apiFormData.forEach((formDataItem, index) => {
+      const formData = formDataItem.formData;
+      if (!formData) return;
+      
+      // Generate user request message
+      let userContent = '';
+      let assistantContent = '';
+      
+      if (formData.schema && formData.schema.module_name === 'Reader') {
+        const initialValues = formData.initialValues || {};
+        const dataSourceName = initialValues.reader_name || initialValues.name || 'data source';
+        userContent = `Add data source "${dataSourceName}"`;
+        assistantContent = `Configured data source "${dataSourceName}"`;
+      } else if (formData.schema && formData.schema.module_name) {
+        const transformationType = formData.schema.module_name;
+        
+        userContent = `Add ${transformationType} transformation`;
+        assistantContent = `Configured ${transformationType} transformation`;
+        
+        // Check for connections
+        if (formData.sourceColumns && formData.sourceColumns.length > 0) {
+          const connectionMessages = generateConnectionMessages(transformationType, formData.sourceColumns, formData.currentNodeId, formDataItem.msg_owner);
+          generatedMessages.push(...connectionMessages);
+        }
+      }
+      
+      if (userContent) {
+        generatedMessages.push({
+          id: `api_user_${index}_${Date.now()}`,
+          role: 'user',
+          content: userContent,
+          msg_owner: formDataItem.msg_owner
+        });
+      }
+      
+      if (assistantContent) {
+        generatedMessages.push({
+          id: `api_assistant_${index}_${Date.now()}`,
+          role: 'assistant',
+          content: assistantContent,
+          msg_owner: formDataItem.msg_owner
+        });
+      }
+    });
+    
+    return generatedMessages;
+  }, [generateConnectionMessages]);
+
+  // Test function to demonstrate dynamic chat generation (you can call this from console)
+  const testDynamicChatGeneration = useCallback(() => {
+    const sampleAPIData = [
+      {
+        id: "msg1",
+        formData: {
+          schema: { module_name: "Reader" },
+          initialValues: { reader_name: "input.csv", name: "input.csv" },
+          currentNodeId: "reader1"
+        },
+        msg_owner: "user123"
+      },
+      {
+        id: "msg2",
+        formData: {
+          schema: { module_name: "SchemaTransformation" },
+          initialValues: { column_mappings: ["name", "age", "email"] },
+          currentNodeId: "schema1"
+        },
+        msg_owner: "user123"
+      },
+      {
+        id: "msg3",
+        formData: {
+          schema: { module_name: "Filter" },
+          initialValues: { filter_conditions: ["age > 18", "status = 'active'"] },
+          currentNodeId: "filter1"
+        },
+        msg_owner: "user123"
+      }
+    ];
+
+    const generatedMessages = generateChatFromAPIData(sampleAPIData);
+    setMessages(generatedMessages);
+    
+    console.log("🎉 Generated messages:", generatedMessages);
+    console.log("Sample messages that would be shown:");
+    generatedMessages.forEach((msg, index) => {
+      console.log(`${index + 1}. ${msg.role}: ${msg.content}`);
+    });
+  }, [generateChatFromAPIData]);
+
+  // Expose the test function to window for console access (development only)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    (window as any).testDynamicChatGeneration = testDynamicChatGeneration;
+  }
+
+  // Function to update chat history when pipeline changes occur
+  const updateChatFromPipelineChange = useCallback((changeType: 'node_added' | 'node_configured' | 'connection_made', data: any) => {
+    const userMessage = {
+      id: generateMessageId(),
+      role: 'user' as const,
+      content: '',
+      msg_owner: decoded?.name || decoded?.username || 'user'
+    };
+
+    const assistantMessage = {
+      id: generateMessageId(),
+      role: 'assistant' as const,
+      content: '',
+      msg_owner: decoded?.name || decoded?.username || 'system'
+    };
+
+    switch (changeType) {
+      case 'node_added':
+        userMessage.content = `Add ${data.nodeType} transformation`;
+        assistantMessage.content = `Added ${data.nodeType} transformation to your pipeline`;
+        break;
+      
+      case 'node_configured':
+        const configMessage = generateConfigurationMessage(data.formData, 'configured');
+        userMessage.content = `Configure ${data.nodeType} transformation`;
+        assistantMessage.content = configMessage || `Configured ${data.nodeType} transformation`;
+        break;
+      
+      case 'connection_made':
+        userMessage.content = `Connect "${data.sourceName}" to ${data.targetName}`;
+        assistantMessage.content = `Connected "${data.sourceName}" to ${data.targetName}`;
+        break;
+    }
+
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+  }, [generateConfigurationMessage, decoded]);
 
   // Load chat history when id changes
   useEffect(() => {
@@ -901,10 +1307,10 @@ const PipeLineChatPanel = () => {
             recreatedMessages.push(...contextualMessages);
           });
 
-          // Add final completion message if we have form data messages
+          // Add final summary message if we have form data messages
           if (formDataMessages.length > 0) {
-            const lastFormData = formDataMessages[formDataMessages.length - 1];
-           
+            const summaryMessages = generateSummaryMessages(formDataMessages);
+            recreatedMessages.push(...summaryMessages);
           }
 
           setMessages(recreatedMessages);
@@ -1001,6 +1407,8 @@ const PipeLineChatPanel = () => {
     setMessages(prevMessages => [...prevMessages, messageWithId]);
   }, []);
 
+
+
   // We're now using the handleSourceUpdate from the context
 
   const form = useForm<ReaderFormValues>({
@@ -1016,7 +1424,20 @@ const PipeLineChatPanel = () => {
     if (!trimmedInput || isApiLoading) return;
     
     // Add user message
-    addMessageWithFormData({ role: 'user', content: trimmedInput });
+    const userMessage = { 
+      role: 'user' as const, 
+      content: trimmedInput,
+      id: generateMessageId()
+    };
+    addMessageWithFormData(userMessage);
+    
+    // Save user message to chat history
+    try {
+      await saveAIAgentChatMessage(userMessage);
+    } catch (error) {
+      console.error('Failed to save user message to chat history:', error);
+    }
+    
     setInput('');
     setIsApiLoading(true);
 
@@ -1049,28 +1470,56 @@ const PipeLineChatPanel = () => {
           console.log('Pipeline updated successfully with new schema');
 
           // Add success response message
-          addMessageWithFormData({ 
-            role: 'assistant', 
-            content: 'Pipeline updated successfully! Your changes have been applied.' 
-          });
+          const assistantMessage = { 
+            role: 'assistant' as const, 
+            content: 'Pipeline updated successfully! Your changes have been applied.',
+            id: generateMessageId()
+          };
+          addMessageWithFormData(assistantMessage);
+          
+          // Save assistant message to chat history
+          try {
+            await saveAIAgentChatMessage(assistantMessage);
+          } catch (error) {
+            console.error('Failed to save assistant success message to chat history:', error);
+          }
 
           // Show success toast
           toast.success('Pipeline updated successfully');
 
         } catch (pipelineError) {
           console.error('Error updating pipeline:', pipelineError);
-          addMessageWithFormData({ 
-            role: 'assistant', 
-            content: 'Failed to update the pipeline. Please try again.' 
-          });
+          const errorMessage = { 
+            role: 'assistant' as const, 
+            content: 'Failed to update the pipeline. Please try again.',
+            id: generateMessageId()
+          };
+          addMessageWithFormData(errorMessage);
+          
+          // Save error message to chat history
+          try {
+            await saveAIAgentChatMessage(errorMessage);
+          } catch (error) {
+            console.error('Failed to save assistant error message to chat history:', error);
+          }
+          
           toast.error('Failed to update pipeline');
         }
       } else {
         // Add a generic response if no pipeline_json is returned
-        addMessageWithFormData({ 
-          role: 'assistant', 
-          content: response?.message || 'Request processed successfully.' 
-        });
+        const assistantMessage = { 
+          role: 'assistant' as const, 
+          content: response?.message || 'Request processed successfully.',
+          id: generateMessageId()
+        };
+        addMessageWithFormData(assistantMessage);
+        
+        // Save assistant message to chat history
+        try {
+          await saveAIAgentChatMessage(assistantMessage);
+        } catch (error) {
+          console.error('Failed to save assistant generic message to chat history:', error);
+        }
       }
 
       console.log('Request processed successfully:', response?.messages);
@@ -1079,10 +1528,19 @@ const PipeLineChatPanel = () => {
       console.error('API Error:', error);
       
       // Add error response message
-      addMessageWithFormData({ 
-        role: 'assistant', 
-        content: `Error: ${error?.response?.data?.message || 'Failed to process your request. Please try again.'}` 
-      });
+      const errorMessage = { 
+        role: 'assistant' as const, 
+        content: `Error: ${error?.response?.data?.message || 'Failed to process your request. Please try again.'}`,
+        id: generateMessageId()
+      };
+      addMessageWithFormData(errorMessage);
+      
+      // Save error message to chat history
+      try {
+        await saveAIAgentChatMessage(errorMessage);
+      } catch (error) {
+        console.error('Failed to save assistant API error message to chat history:', error);
+      }
 
       // Show error toast
       toast.error(error?.response?.data?.message || 'Failed to process your request');
@@ -1099,7 +1557,7 @@ const PipeLineChatPanel = () => {
     if (!skipUserMessage) {
       const sourceType = item.connection_config?.custom_metadata?.connection_type || 
                         (item.connection_config?.connection_name?.toLowerCase() === 's3' ? 'S3' : 'Local');
-      const sourceDetails = item.data_src_desc ? ` (${item.data_src_desc})` : '';
+      const sourceDetails = item.data_src_desc ? `` : '';
       
       addMessageWithFormData({
         role: 'user',
@@ -1168,6 +1626,142 @@ const PipeLineChatPanel = () => {
     }
   };
 
+  // Function to handle editing dependencies
+  const handleEditDependency = useCallback((targetNodeId: string, targetNodeType: any, maxInputs: number | string) => {
+    console.log('handleEditDependency called for:', targetNodeId);
+    
+    // Get current connections for this node
+    const currentConnections = edges.filter(edge => edge.target === targetNodeId);
+    console.log('Current connections:', currentConnections);
+    
+    // Find available dependencies (excluding the current node itself)
+    const availableDependencies = nodes.filter(node => 
+      node.id !== targetNodeId && 
+      !node.data.isTarget &&
+      node.data.ports?.outputs > 0
+    );
+    
+    if (availableDependencies.length === 0) {
+      toast.error("No available nodes to connect to.");
+      return;
+    }
+    
+    // Show dependency selection form with current connections highlighted
+    const dependencyMessage = `Edit connections for ${targetNodeType.ui_properties.module_name}:`;
+    
+    setTimeout(() => {
+      addMessageWithFormData({
+        role: 'assistant',
+        content: dependencyMessage,
+        formData: {
+          schema: { type: 'dependency-edit' },
+          sourceColumns: [],
+          currentNodeId: `dependency-edit-${targetNodeId}`,
+          initialValues: {
+            currentConnections: currentConnections.map(conn => conn.source)
+          },
+          isTarget: false,
+          isDependencyEdit: true,
+          dependencyData: {
+            dependencies: availableDependencies,
+            targetNodeType: targetNodeType,
+            targetNodeId: targetNodeId,
+            maxInputs: maxInputs,
+            currentConnections: currentConnections
+          }
+        }
+      });
+    }, 100);
+  }, [nodes, edges, addMessageWithFormData, toast]);
+
+  // Function to handle dependency edit submission
+  const handleDependencyEditSubmit = (selectedDependencies: any[], targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
+    console.log('handleDependencyEditSubmit called with:', {
+      selectedDependencies,
+      targetNodeType: targetNodeType.ui_properties.module_name,
+      targetNodeId,
+      maxInputs
+    });
+
+    // Remove the dependency edit form from messages
+    setMessages(prevMessages => 
+      prevMessages.filter(msg => 
+        !(msg.formData?.isDependencyEdit && msg.formData?.currentNodeId === `dependency-edit-${targetNodeId}`)
+      )
+    );
+
+    // Get current connections for this node
+    const currentConnections = edges.filter(edge => edge.target === targetNodeId);
+    
+    // Remove all current connections for this node
+    setEdges(prevEdges => prevEdges.filter(edge => edge.target !== targetNodeId));
+    
+    // Add user message showing the edit
+    const dependencyNames = selectedDependencies.map(dep => dep.data.title || dep.data.label).join(', ');
+    addMessageWithFormData({
+      role: 'user',
+      content: `Update connections to ${dependencyNames} for ${targetNodeType.ui_properties.module_name}`
+    });
+
+    // Create new connections
+    selectedDependencies.forEach((dependency, index) => {
+      setTimeout(() => {
+        handleDependencySelection(dependency, targetNodeType, targetNodeId, maxInputs, 1, true);
+      }, index * 100);
+    });
+
+    // Update existing dependency messages with new dependency information
+    setTimeout(() => {
+      updateDependencyMessages(targetNodeId, selectedDependencies, targetNodeType.ui_properties.module_name);
+    }, selectedDependencies.length * 100 + 100);
+
+    // Add success message
+    setTimeout(() => {
+      addMessageWithFormData({
+        role: 'assistant',
+        content: `Successfully updated connections! ${targetNodeType.ui_properties.module_name} is now connected to ${dependencyNames}.`,
+        suggestions: [
+          { 
+            text: "Edit Again", 
+            onClick: () => handleEditDependency(targetNodeId, targetNodeType, maxInputs)
+          }
+        ]
+      });
+    }, selectedDependencies.length * 100 + 200);
+  };
+
+  // Function to update existing dependency messages after edit
+  const updateDependencyMessages = (targetNodeId: string, newDependencies: any[], transformationType: string) => {
+    setMessages(prevMessages => {
+      return prevMessages.map(msg => {
+        // Find messages that show dependency information for this node
+        if (msg.showDependencyEdit && msg.dependencyEditData?.targetNodeId === targetNodeId) {
+          // Update the message content and dependency data
+          const dependencyNames = newDependencies.map(dep => {
+            const sourceNode = nodes.find(node => node.id === dep.id);
+            return sourceNode?.data?.title || sourceNode?.data?.label || dep.id;
+          }).join(', ');
+
+          // Create new dependency data structure
+          const updatedDependencies = newDependencies.map(dep => ({
+            source: dep.id,
+            targetHandle: `input-${dep.id}`
+          }));
+
+          return {
+            ...msg,
+            content: `This ${transformationType} depends on: ${dependencyNames}`,
+            dependencyEditData: {
+              ...msg.dependencyEditData,
+              dependencies: updatedDependencies
+            }
+          };
+        }
+        return msg;
+      });
+    });
+  };
+
   // Function to handle single dependency selection
   const handleSingleDependencySubmit = (selectedDependency: any, targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
     console.log('handleSingleDependencySubmit called with:', {
@@ -1192,6 +1786,20 @@ const PipeLineChatPanel = () => {
         !(msg.formData?.isSingleDependencySelect && msg.formData?.currentNodeId === `dependency-select-${targetNodeId}`)
       )
     );
+
+    // Add success message with Edit option
+    setTimeout(() => {
+      addMessageWithFormData({
+        role: 'assistant',
+        content: `Great! Connected "${selectedDependency.data.title || selectedDependency.data.label}" to ${targetNodeType.ui_properties.module_name}.`,
+        suggestions: [
+          { 
+            text: "Edit Connection", 
+            onClick: () => handleEditDependency(targetNodeId, targetNodeType, maxInputs)
+          }
+        ]
+      });
+    }, 200);
 
     handleDependencySelection(selectedDependency, targetNodeType, targetNodeId, maxInputs, 1);
   };
@@ -1221,6 +1829,20 @@ const PipeLineChatPanel = () => {
         !(msg.formData?.isMultiDependencySelect && msg.formData?.currentNodeId === `dependency-select-${targetNodeId}`)
       )
     );
+
+    // Add success message with Edit option
+    setTimeout(() => {
+      addMessageWithFormData({
+        role: 'assistant',
+        content: `Perfect! Connected ${selectedDependencies.length} nodes (${dependencyNames}) to ${targetNodeType.ui_properties.module_name}.`,
+        suggestions: [
+          { 
+            text: "Edit Connections", 
+            onClick: () => handleEditDependency(targetNodeId, targetNodeType, maxInputs)
+          }
+        ]
+      });
+    }, 200);
 
     // Handle each connection without asking for more dependencies
     selectedDependencies.forEach((dependency, index) => {
@@ -1256,6 +1878,7 @@ const PipeLineChatPanel = () => {
                 sourceColumns: [], // Add empty sourceColumns array to satisfy the type requirement
                 currentNodeId: targetNodeId,
                 isTarget: true,
+                formId: `form_${targetNodeId}_${Date.now()}`, // Add unique form identifier
                 initialValues: {
                   nodeId: targetNodeId,
                   name: `Target_${targetNodeId}`,
@@ -1757,8 +2380,8 @@ const PipeLineChatPanel = () => {
 
     // Create a message asking for dependencies
     const dependencyMessage = maxInputs === 1 ?
-      `Select a node to connect it to:` :
-      `The ${node.ui_properties.module_name} transformation can have up to ${maxInputs === "unlimited" ? "multiple" : maxInputs} dependencies. Select nodes to connect it to:`;
+      `Select a node to connect to:` :
+      `The ${node.ui_properties.module_name} transformation can have up to ${maxInputs === "unlimited" ? "multiple" : maxInputs} dependencies. Select nodes to connect to:`;
 
     // Show message asking for dependencies with dropdown form
     setTimeout(() => {
@@ -1941,6 +2564,7 @@ const PipeLineChatPanel = () => {
                 sourceColumns: [], // Add empty sourceColumns array to satisfy the type requirement
                 currentNodeId: targetNodeId,
                 isTarget: true,
+                formId: `form_${targetNodeId}_${Date.now()}`, // Add unique form identifier
                 initialValues: {
                   nodeId: targetNodeId,
                   name: `Target_${targetNodeId}`,
@@ -1977,6 +2601,9 @@ const PipeLineChatPanel = () => {
               setTimeout(() => {
                 console.log('Opening form for transformation:', transformationType, 'with targetNodeId:', targetNodeId);
                 
+                const formId = `form_${targetNodeId}_${Date.now()}`;
+                console.log(`📝 Creating new form with formId: ${formId}, nodeId: ${targetNodeId}, transformation: ${transformationType}`);
+                
                 const newMessage = {
                   role: 'assistant',
                   content: "",
@@ -1985,6 +2612,7 @@ const PipeLineChatPanel = () => {
                     sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
                     currentNodeId: targetNodeId,
                     isTarget: isTarget, // Add flag to indicate if this is a Target
+                    formId: formId, // Add unique form identifier
                     initialValues: {
                       ...formStates[targetNodeId],
                       nodeId: targetNodeId,
@@ -2007,6 +2635,9 @@ const PipeLineChatPanel = () => {
               setTimeout(() => {
                 console.log('Opening form (fallback) for transformation:', transformationType, 'with targetNodeId:', targetNodeId);
                 
+                const formId = `form_${targetNodeId}_${Date.now()}`;
+                console.log(`📝 Creating new form (fallback) with formId: ${formId}, nodeId: ${targetNodeId}, transformation: ${transformationType}`);
+                
                 const newMessage = {
                   role: 'assistant',
                   content: '',
@@ -2015,6 +2646,7 @@ const PipeLineChatPanel = () => {
                     sourceColumns: [],
                     currentNodeId: targetNodeId,
                     isTarget: isTarget, // Add flag to indicate if this is a Target
+                    formId: formId, // Add unique form identifier
                     initialValues: {
                       ...formStates[targetNodeId],
                       nodeId: targetNodeId,
@@ -2108,6 +2740,7 @@ const PipeLineChatPanel = () => {
                           sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
                           currentNodeId: targetNodeId,
                           isTarget: isTarget, // Add flag to indicate if this is a Target
+                          formId: `form_${targetNodeId}_${Date.now()}`, // Add unique form identifier
                           initialValues: {
                             ...formStates[targetNodeId],
                             nodeId: targetNodeId,
@@ -2150,6 +2783,7 @@ const PipeLineChatPanel = () => {
                           sourceColumns: [],
                           currentNodeId: targetNodeId,
                           isTarget: isTarget, // Add flag to indicate if this is a Target
+                          formId: `form_${targetNodeId}_${Date.now()}`, // Add unique form identifier
                           initialValues: {
                             ...formStates[targetNodeId],
                             nodeId: targetNodeId,
@@ -2272,6 +2906,41 @@ const PipeLineChatPanel = () => {
                           index={suggestionIndex}
                         />
                       ))}
+                    </div>
+                  )}
+
+                  {/* Render dependency edit functionality */}
+                  {message.role === 'assistant' && message.showDependencyEdit && message.dependencyEditData && (
+                    <div className="pl-8 mt-2">
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+                        <span className="text-sm text-gray-600">Dependencies:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {message.dependencyEditData.dependencies.map((dep, idx) => {
+                            const sourceNode = nodes.find(node => node.id === dep.source);
+                            const sourceName = sourceNode?.data?.title || sourceNode?.data?.label || dep.source;
+                            return (
+                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                {sourceName}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const targetNode = nodes.find(node => node.id === message.dependencyEditData.targetNodeId);
+                            if (targetNode) {
+                              const maxInputs = targetNode.data?.ui_properties?.max_inputs || 'unlimited';
+                              handleEditDependency(message.dependencyEditData.targetNodeId, targetNode.data, maxInputs);
+                            }
+                          }}
+                          className="ml-auto p-1 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Edit dependencies"
+                        >
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -2523,6 +3192,32 @@ const PipeLineChatPanel = () => {
                               maxInputs={message.formData.dependencyData?.maxInputs || 'unlimited'}
                             />
                           </div>
+                        ) : message.formData && message.formData.isDependencyEdit ? (
+                          <div className="form-wrapper">
+                            <DependencyEditForm
+                              dependencies={message.formData.dependencyData?.dependencies || []}
+                              currentConnections={message.formData.dependencyData?.currentConnections || []}
+                              onSubmit={(selectedDependencies) => {
+                                handleDependencyEditSubmit(
+                                  selectedDependencies,
+                                  message.formData.dependencyData?.targetNodeType,
+                                  message.formData.dependencyData?.targetNodeId || '',
+                                  message.formData.dependencyData?.maxInputs || 'unlimited'
+                                );
+                              }}
+                              onClose={() => {
+                                // Remove the dependency edit form from messages
+                                setMessages(prevMessages => 
+                                  prevMessages.filter(msg => 
+                                    !(msg.formData?.isDependencyEdit && msg.formData?.currentNodeId === message.formData.currentNodeId)
+                                  )
+                                );
+                              }}
+                              targetNodeType={message.formData.dependencyData?.targetNodeType}
+                              targetNodeId={message.formData.dependencyData?.targetNodeId || ''}
+                              maxInputs={message.formData.dependencyData?.maxInputs || 'unlimited'}
+                            />
+                          </div>
                         ) : (
                           <div className="form-wrapper">
                             {message.formData && message.formData.schema && message.formData.currentNodeId ? (
@@ -2534,6 +3229,7 @@ const PipeLineChatPanel = () => {
 
                                 }}
                                 currentNodeId={message.formData.currentNodeId}
+                                formId={message.formData.formId}
                                 initialValues={{
                                   // Start with the original form data initial values
                                   ...message.formData.initialValues,
@@ -2551,67 +3247,39 @@ const PipeLineChatPanel = () => {
                                 pipelineDtl={pipelineDtl}
                                 onSubmit={(data) => {
                                   const nodeId = message.formData.currentNodeId;
-                                  const updatedTitle = data.name || data.title || "Transformation";
+                                  const formId = message.formData.formId;
+                                  const schemaTitle = message.formData.schema?.title || "Transformation";
+                                  
+                                  // Find the current node to preserve its original title if no new title is provided
+                                  const currentNode = pipelineContext.nodes.find(node => node.id === nodeId);
+                                  const currentTitle = currentNode?.data?.title || currentNode?.data?.label || schemaTitle;
+                                  
+                                  // Only update title if explicitly provided in form data, otherwise keep the current title
+                                  const updatedTitle = data.name || data.title || currentTitle;
+
+                                  // Debug: Log form submission details
+                                  console.log(`🔧 Form submission - nodeId: ${nodeId}, formId: ${formId}`);
+                                  console.log(`🔧 Schema title: ${schemaTitle}, data.name: ${data.name}, data.title: ${data.title}`);
+                                  console.log(`🔧 Current title: ${currentTitle}, Final updatedTitle: ${updatedTitle}`);
+                                  console.log(`🔧 Form data:`, data);
 
                                   // Debug: Log current state before update
                                   debugNodeData(pipelineContext.nodes, `📋 Nodes before form submission for ${nodeId}:`);
 
-                                  // Directly update the node in the context
-                                  const currentNodes = [...pipelineContext.nodes];
-                                  const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
-                                  if (nodeIndex !== -1) {
-                                    const currentNodeData = JSON.parse(JSON.stringify(currentNodes[nodeIndex].data));
-                                    if (!currentNodeData.transformationData) {
-                                      currentNodeData.transformationData = {};
-                                    }
+                                  // Create a clean copy of the form data for form states
+                                  const cleanFormData = { ...data };
+                                  delete cleanFormData.nodeId;
 
-                                    // Create a clean copy of the form data
-                                    const cleanFormData = { ...data };
+                                  // Update form states with the data including nodeId for tracking
+                                  const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
+                                  setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+                                  setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
 
-                                    // Remove nodeId from the transformation data as it's metadata
-                                    delete cleanFormData.nodeId;
-
-                                    // Special handling for different transformation types
-                                    if (currentNodes[nodeIndex].data.label === 'Filter') {
-                                      // Ensure condition is properly set
-                                      if (data.condition !== undefined) {
-                                        cleanFormData.condition = data.condition;
-                                      }
-                                    }
-
-                                    // Update the node with the transformation data
-                                    const updatedNode = {
-                                      ...currentNodes[nodeIndex],
-                                      data: {
-                                        ...currentNodeData,
-                                        title: updatedTitle,
-                                        transformationData: cleanFormData, // This is the key fix - store the clean data
-                                        source: currentNodeData.source || {}
-                                      }
-                                    };
-
-
-                                    currentNodes[nodeIndex] = updatedNode;
-                                    pipelineContext.setNodes(currentNodes);
-
-                                    // Debug: Log nodes after update
-                                    debugNodeData(currentNodes, `📋 Nodes after form submission for ${nodeId}:`);
-
-                                    // Update form states with the data including nodeId for tracking
-                                    const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
-                                    setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
-                                    setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
-
-                                    // Mark as unsaved
-                                    setUnsavedChanges();
-
-                                    // Validate nodes after update
-                                    validateNodeTransformationData(currentNodes);
-
-                                    window.dispatchEvent(new Event('resize'));
-                                  }
+                                  // Mark as unsaved
+                                  setUnsavedChanges();
 
                                   // Call handleFormSubmit to ensure all state is updated properly
+                                  console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
                                   const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
                                   handleFormSubmit(formSubmitData);
 
@@ -2655,10 +3323,13 @@ const PipeLineChatPanel = () => {
                                     }
 
 
-                                    // STEP 1: Update the existing message's formData.initialValues
+                                    // STEP 1: Update ONLY the specific message's formData.initialValues using formId
                                     const messagesWithUpdatedFormData = prevMessages.map(msg => {
-                                      if (msg.formData && msg.formData.currentNodeId === nodeId) {
-
+                                      // FIX: Use formId instead of nodeId to target the specific form
+                                      if (msg.formData && msg.formData.formId === formId) {
+                                        console.log(`✅ Updating form data for formId: ${formId}, nodeId: ${nodeId}`);
+                                        console.log(`📝 Previous values:`, msg.formData.initialValues);
+                                        console.log(`📝 New values:`, cleanFormData);
                                         const updatedInitialValues = {
                                           ...msg.formData.initialValues,
                                           ...cleanFormData
@@ -2795,4 +3466,73 @@ const PipeLineChatPanel = () => {
 };
 
 export default PipeLineChatPanel;
+
+/* 
+ * USAGE EXAMPLES FOR DYNAMIC CHAT GENERATION
+ * 
+ * 1. To generate chat messages from API form data:
+ * 
+ * const apiFormData = [
+ *   {
+ *     id: "msg1",
+ *     formData: {
+ *       schema: { module_name: "SchemaTransformation" },
+ *       initialValues: { column_mappings: ["col1", "col2"] },
+ *       currentNodeId: "node1"
+ *     },
+ *     msg_owner: "user123"
+ *   },
+ *   {
+ *     id: "msg2", 
+ *     formData: {
+ *       schema: { module_name: "Filter" },
+ *       initialValues: { filter_conditions: ["age > 18"] },
+ *       currentNodeId: "node2"
+ *     },
+ *     msg_owner: "user123"
+ *   }
+ * ];
+ * 
+ * const generatedMessages = generateChatFromAPIData(apiFormData);
+ * setMessages(generatedMessages);
+ * 
+ * This will generate messages like:
+ * - "Add SchemaTransformation transformation" (user)
+ * - "Configured SchemaTransformation transformation with column mappings: 2 columns" (assistant)
+ * - "Add Filter transformation" (user)
+ * - "Configured Filter transformation with filter conditions: age > 18" (assistant)
+ * 
+ * 
+ * 2. To add a single configuration message:
+ * 
+ * const formData = {
+ *   schema: { module_name: "Filter" },
+ *   initialValues: { filter_conditions: ["status = 'active'"] },
+ *   currentNodeId: "node1"
+ * };
+ * 
+ * addConfigurationMessage(formData, 'configured');
+ * // This will add: "Configured Filter transformation with filter conditions: status = 'active'"
+ * 
+ * 
+ * 3. To generate just the message content without adding to chat:
+ * 
+ * const messageContent = generateConfigurationMessage(formData, 'configured');
+ * console.log(messageContent); // "Configured Filter transformation with filter conditions: status = 'active'"
+ * 
+ * 
+ * 4. The system automatically handles these transformation types:
+ * - Reader: "Configured data source \"input.csv\""
+ * - Filter: "Configured Filter transformation with filter conditions: age > 18"
+ * - SchemaTransformation: "Configured SchemaTransformation transformation with column mappings: 5 columns"
+ * - Aggregate: "Configured Aggregate transformation with group by: country, aggregates: 3 functions"
+ * - Join: "Configured Join transformation with inner join on 2 conditions"
+ * - Sort: "Configured Sort transformation with sort by: name, age"
+ * 
+ * 
+ * 5. Connection messages are automatically generated when sourceColumns are present:
+ * - "Connect \"input.csv\" to Filter"
+ * - "Connect \"users_table\" to SchemaTransformation"
+ */
+
 

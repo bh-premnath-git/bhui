@@ -14,7 +14,7 @@
 /* Bottom drawer panel adjustments */
 .with-bottom-drawer {
   height: calc(100% - 10px) !important;
-  margin-bottom: 300px;
+  margin-bottom: 10;
 }
 
 /* Combined state adjustments */

@@ -684,7 +684,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         </CardContent>
       </Card>
 
-      <Card className="h-fit">
+      {/* <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Links</h3>
           <Button
@@ -700,7 +700,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         <CardContent className="pt-0 max-h-[200px] overflow-y-auto">
           <LinksSection links={links} onRemoveLink={handleRemoveLink} />
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">

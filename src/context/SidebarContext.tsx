@@ -23,14 +23,17 @@ interface SidebarContextType {
   closeBottomDrawer: () => void;
   bottomDrawerContent: ReactNode | null;
   bottomDrawerTitle: string;
+  bottomDrawerHeight: string;
   setBottomDrawerContent: (content: ReactNode, title?: string) => void;
+  updateBottomDrawerHeight: (height: string) => void;
   location: ReturnType<typeof useLocation>;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
-// Define default width
-const DEFAULT_ASIDE_WIDTH = 'w-[25%]'; 
+// Define default width and height
+const DEFAULT_ASIDE_WIDTH = 'w-[25%]';
+const DEFAULT_DRAWER_HEIGHT = 'h-[520px]'; 
 
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -54,12 +57,14 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsBottomDrawerOpen(false);
     setBottomDrawerContentState(null);
     setBottomDrawerTitle('Console');
+    setBottomDrawerHeightState(DEFAULT_DRAWER_HEIGHT);
   }, [location.pathname]);
   
   // Bottom Drawer state
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
   const [bottomDrawerContent, setBottomDrawerContentState] = useState<ReactNode | null>(null);
   const [bottomDrawerTitle, setBottomDrawerTitle] = useState('Console');
+  const [bottomDrawerHeightState, setBottomDrawerHeightState] = useState<string>(DEFAULT_DRAWER_HEIGHT);
 
   const toggleSidebar = () => {
     setIsExpanded(prev => !prev);
@@ -115,6 +120,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimeout(() => {
       setBottomDrawerContentState(null);
       setBottomDrawerTitle('Console');
+      setBottomDrawerHeightState(DEFAULT_DRAWER_HEIGHT);
     }, 300);
   };
   
@@ -122,6 +128,10 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBottomDrawerContentState(content);
     if (title) setBottomDrawerTitle(title);
     if (content) openBottomDrawer();
+  };
+
+  const updateBottomDrawerHeight = (newHeight: string) => {
+    setBottomDrawerHeightState(newHeight);
   };
 
   return (
@@ -145,7 +155,9 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
         closeBottomDrawer,
         bottomDrawerContent,
         bottomDrawerTitle,
+        bottomDrawerHeight: bottomDrawerHeightState,
         setBottomDrawerContent,
+        updateBottomDrawerHeight,
         location,
       }}
     >

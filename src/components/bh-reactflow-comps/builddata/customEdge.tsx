@@ -27,6 +27,40 @@ const MetricsDrawerWrapper: React.FC<{
 }> = ({ metricsData }) => {
     //console.log(metricsData, "metricsData");
     
+    // State to track drawer height for responsive table
+    const [drawerHeight, setDrawerHeight] = useState<number>(520);
+    
+    // Listen for drawer resize events
+    useEffect(() => {
+        const handleDrawerResize = (event: CustomEvent) => {
+            const newHeight = event.detail.height;
+            setDrawerHeight(newHeight);
+        };
+
+        // Add event listener for drawer resize
+        document.addEventListener('bottomDrawerResize', handleDrawerResize as EventListener);
+
+        // Also listen for window resize events
+        const handleWindowResize = () => {
+            // Update drawer height from the container if it exists
+            const container = document.getElementById('bottom-drawer-container');
+            if (container) {
+                const containerHeight = container.getBoundingClientRect().height;
+                setDrawerHeight(containerHeight);
+            }
+        };
+
+        window.addEventListener('resize', handleWindowResize);
+        
+        // Initial height check
+        handleWindowResize();
+
+        return () => {
+            document.removeEventListener('bottomDrawerResize', handleDrawerResize as EventListener);
+            window.removeEventListener('resize', handleWindowResize);
+        };
+    }, []);
+    
     // Create columns for the DataTable based on the first row of data
     const columns = useMemo(() => {
         if (!metricsData?.[0]?.rows?.length) return [];
@@ -52,11 +86,13 @@ const MetricsDrawerWrapper: React.FC<{
                 
                 <TabsContent value="table" className="w-full">
                     {metricsData?.[0]?.rows?.length > 0 ? (
-                        <DataTable 
-                            data={metricsData[0].rows}
-                            columns={columns}
-                            pagination={true}
-                        />
+                        <div style={{ height: `${Math.max(drawerHeight - 200, 200)}px` }}>
+                            <DataTable 
+                                data={metricsData[0].rows}
+                                columns={columns}
+                                pagination={true}
+                            />
+                        </div>
                     ) : (
                         <div className="flex items-center justify-center h-40 text-gray-500">
                             No data available
@@ -75,7 +111,7 @@ const MetricsDrawerWrapper: React.FC<{
     );
 };
 
-interface CustomEdgeProps {
+ interface CustomEdgeProps {
     id: string;
     sourceX: number;
     sourceY: number;
@@ -482,11 +518,14 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
     // Check if MetricsButton should be shown (when it has content)
     const showMetricsButton = rowCount && debuggedNodesList?.length > 0;
     
+    // Adjust the foreignObject position to center the scissors button properly
+    const foreignObjectX = showMetricsButton ? edgeCenter.x - 70 : edgeCenter.x - 70;
+    
     return (
         <foreignObject
             width={140}
             height={40}
-            x={edgeCenter.x - 30}
+            x={foreignObjectX}
             y={edgeCenter.y - 20}
             className="edge-buttons"
             style={{ zIndex: 1000, pointerEvents: 'all' }}
@@ -494,22 +533,58 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
             onMouseLeave={() => onHoverChange(false)}
             onClick={e => e.stopPropagation()}
         >
-            <div className="flex items-center justify-center w-full h-full" onClick={e => e.stopPropagation()}>
-               
-                <RemoveButton isHovered={isHovered} onClick={onRemove} showMetricsButton={showMetricsButton} />
+            <div className="flex items-center justify-center w-full h-full gap-2" onClick={e => e.stopPropagation()}>
+                {showMetricsButton && (
+                    <MetricsButton
+                        isHovered={isHovered} 
+                        onClick={onMetricsClick} 
+                        isLoading={isLoading}
+                        rowCount={rowCount}
+                    />
+                )}
+                <RemoveButton isHovered={isHovered} onClick={onRemove} />
             </div>
         </foreignObject>
     );
 };
 
 
+interface MetricsButtonProps {
+    isHovered: boolean;
+    onClick: (e: React.MouseEvent) => void;
+    isLoading: boolean;
+    rowCount?: number;
+}
+
+const MetricsButton: React.FC<MetricsButtonProps> = ({ isHovered, onClick, isLoading, rowCount }) => (
+    <button
+        className={`flex items-center justify-center w-6 h-6
+                 bg-white rounded-full 
+                 shadow-md border border-gray-200
+                 hover:bg-blue-50 hover:border-blue-200
+                 transition-all duration-200
+                 ${isHovered ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        onClick={onClick}
+        style={{
+            pointerEvents: isHovered ? 'all' : 'none'
+        }}
+        title={`View Metrics${rowCount ? ` (${rowCount} rows)` : ''}`}
+        disabled={isLoading}
+    >
+        {isLoading ? (
+            <Loader className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+        ) : (
+            <HiChartBar className="w-3.5 h-3.5 text-gray-500 hover:text-blue-500 transition-colors duration-200" />
+        )}
+    </button>
+);
+
 interface RemoveButtonProps {
     isHovered: boolean;
     onClick: (e: React.MouseEvent) => void;
-    showMetricsButton?: boolean;
 }
 
-const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick, showMetricsButton = false }) => (
+const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
     <button
         className={`flex items-center justify-center w-6 h-6
                  bg-white rounded-full 
@@ -519,9 +594,7 @@ const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick, showMet
                  ${isHovered ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
         onClick={onClick}
         style={{
-            pointerEvents: isHovered ? 'all' : 'none',
-            // Adjust positioning based on whether MetricsButton is shown
-            transform: showMetricsButton ? 'translateX(-40px)' : 'translateX(0px)'
+            pointerEvents: isHovered ? 'all' : 'none'
         }}
         title="Cut Connection"
     >

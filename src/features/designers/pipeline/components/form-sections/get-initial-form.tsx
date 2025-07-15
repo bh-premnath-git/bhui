@@ -141,7 +141,10 @@ console.log(initialValues,"initialValues")
         repartition_type: initialValues?.repartition_type || 'repartition',
         repartition_value: initialValues?.repartition_value || '',
         override_partition: initialValues?.override_partition || '',
-        repartition_expression: initialValues?.repartition_expression || [],
+        repartition_expression: initialValues?.repartition_expression || [{
+          expression: '',
+          sort_order: 'asc'
+        }],
         limit: initialValues?.limit || ''
       };
 
@@ -157,7 +160,7 @@ console.log(initialValues,"initialValues")
           }
         },
         lookup_data: initialValues?.lookup_data || [],
-        lookup_columns: initialValues?.lookup_columns ,
+        lookup_columns: Array.isArray(initialValues?.lookup_columns) ? initialValues.lookup_columns : [],
         lookup_conditions: initialValues?.lookup_conditions || {
           column_name: 'id',
           lookup_with: 'id'

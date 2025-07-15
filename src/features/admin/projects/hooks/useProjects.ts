@@ -27,7 +27,6 @@ const handleApiError = (error: unknown, options: ApiErrorOptions) => {
   }
   return error;
 };
-
 export const useProjects = (options: UseProjectsOptions = { shouldFetch: true }) => {
   // For queries - returns Project objects
   const { getOne: getProject, getAll: getAllProjects } = useResource<Project>(

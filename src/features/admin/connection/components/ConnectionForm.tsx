@@ -50,8 +50,9 @@ interface ConnectionFormProps {
 
 // Utility function to clean the connectionConfigName
 const cleanConnectionConfigName = (name: string) => {
-  return name.replace(/[_-]/g, '');
+  return name.toLowerCase().replace(/[\s_-]/g, '');
 };
+
 
 export function ConnectionForm({
   connectionType,
@@ -338,7 +339,7 @@ export function ConnectionForm({
         return {
           name: connectionConfigName,
           connection_type: "PostgreSQL",
-          schema: data.schemas || null,
+          schema: Array.isArray(data.schemas) ? data.schemas[0] : data.schemas || null,
           database: data?.database || null,
           secret_name: `bh-postgres-${cleanedName}`
         };

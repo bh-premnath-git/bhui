@@ -16,6 +16,10 @@ import { apiService } from "@/lib/api/api-service";
 import { validatePipelineConnections } from "@/lib/validatePipelineConnections";
 import { validateFormData } from "@/components/bh-reactflow-comps/builddata/validation";
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
+import nodeDisplayData from '@/pages/designers/data-pipeline/data/node_display.json';
+import readerSchema from '@/components/bh-reactflow-comps/builddata/json/Reader.json';
+import targetSchema from '@/components/bh-reactflow-comps/builddata/json/Target.json';
+import writerSchema from '@/components/bh-reactflow-comps/builddata/json/Writer.json';
 
 export interface Log {
   timestamp: string
@@ -44,6 +48,186 @@ interface TerminalProps {
   pipelineName?: string
   activeTabOnOpen?: "terminal" | "proples" | "preview"
 }
+
+// Helper function to get node display configuration
+const getNodeDisplayConfig = (moduleName: string) => {
+  return nodeDisplayData.nodes.find(node => 
+    node.ui_properties.module_name === moduleName
+  )?.ui_properties;
+};
+
+// Helper function to validate Reader/Source form data
+const validateReaderFormData = (formData: any, sourceData: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  // Check if we have either formData or sourceData
+  const readerData = formData || sourceData?.source;
+  
+  if (!readerData && !sourceData) {
+    return { isValid: false, errors: ['Reader configuration is missing'] };
+  }
+
+  // For Reader nodes, we need to check both formData structure and sourceData structure
+  // as they can be stored in different formats depending on the context
+  
+  // Check reader name (can be in different locations)
+  const readerName = formData?.reader_name || formData?.source?.name || sourceData?.source?.name || sourceData?.data?.label;
+  if (!readerName) {
+    errors.push('Reader name is required');
+  }
+
+  // Check source configuration
+  const source = formData?.source || sourceData?.source;
+  if (!source) {
+    errors.push('Source configuration is required');
+  } else {
+    // Check source type
+    const sourceType = source.type;
+    if (!sourceType) {
+      errors.push('Source type is required');
+    }
+    
+    // Check connection
+    const connection = source.connection || source.connection_config;
+    if (!connection) {
+      errors.push('Connection configuration is required');
+    } else {
+      const connectionId = connection.connection_config_id;
+      if (!connectionId) {
+        errors.push('Connection ID is required');
+      }
+    }
+
+    // Validate based on source type
+    if (sourceType === 'File') {
+      const fileType = formData?.file_type || source.file_type;
+      if (!fileType) {
+        errors.push('File type is required for file sources');
+      }
+      
+      const fileName = source.file_name;
+      if (!fileName) {
+        errors.push('File name is required for file sources');
+      }
+    } else if (sourceType === 'Relational') {
+      const tableName = source.table_name;
+      if (!tableName) {
+        errors.push('Table name is required for relational sources');
+      }
+    }
+  }
+
+  return { isValid: errors.length === 0, errors };
+};
+
+// Helper function to validate Target form data
+const validateTargetFormData = (formData: any, sourceData: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  // Check if we have either formData or sourceData
+  const targetData = formData || sourceData?.source;
+  
+  if (!targetData && !sourceData) {
+    return { isValid: false, errors: ['Target configuration is missing'] };
+  }
+
+  // For Target nodes, we need to check both formData structure and sourceData structure
+  // as they can be stored in different formats depending on the context
+  
+  // Check name field (can be in different locations)
+  const targetName = formData?.name || sourceData?.source?.name || sourceData?.data?.label;
+  if (!targetName) {
+    errors.push('Target name is required');
+  }
+
+  // Check target configuration
+  const target = formData?.target || sourceData?.source;
+  if (!target) {
+    errors.push('Target configuration is required');
+  } else {
+    // Check target type
+    const targetType = target.target_type;
+    if (!targetType) {
+      errors.push('Target type is required');
+    }
+    
+    // Check connection
+    const connection = target.connection;
+    if (!connection) {
+      errors.push('Connection configuration is required');
+    } else {
+      if (!connection.connection_config_id) {
+        errors.push('Connection ID is required');
+      }
+    }
+
+    // Validate based on target type
+    if (targetType === 'File') {
+      const fileType = formData?.file_type || sourceData?.source?.file_type;
+      if (!fileType) {
+        errors.push('File type is required for file targets');
+      }
+      
+      const fileName = target.file_name;
+      if (!fileName) {
+        errors.push('File name is required for file targets');
+      }
+    } else if (targetType === 'Relational') {
+      const tableName = target.table_name;
+      if (!tableName) {
+        errors.push('Table name is required for relational targets');
+      }
+    }
+
+    // Check load mode
+    const loadMode = target.load_mode;
+    if (!loadMode) {
+      errors.push('Load mode is required');
+    }
+  }
+
+  return { isValid: errors.length === 0, errors };
+};
+
+// Helper function to validate node connections based on port configuration
+const validateNodeConnections = (node: any, edges: any[], nodes: any[]): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  const nodeTitle = node.data?.title || node.data?.label || node.id;
+  const moduleName = node.data?.module_name;
+  
+  if (!moduleName) {
+    return { isValid: false, errors: [`${nodeTitle}: Module name not found`] };
+  }
+
+  const displayConfig = getNodeDisplayConfig(moduleName);
+  if (!displayConfig) {
+    return { isValid: false, errors: [`${nodeTitle}: Display configuration not found for module ${moduleName}`] };
+  }
+
+  const ports = displayConfig.ports;
+  
+  // Count actual connections
+  const incomingEdges = edges.filter(edge => edge.target === node.id);
+  const outgoingEdges = edges.filter(edge => edge.source === node.id);
+  
+  // Validate input connections
+  if (ports.inputs === 0 && incomingEdges.length > 0) {
+    errors.push(`${nodeTitle}: Should not have any input connections (found ${incomingEdges.length})`);
+  } else if (ports.inputs > 0 && incomingEdges.length === 0) {
+    errors.push(`${nodeTitle}: Missing required input connection(s) (expected ${ports.inputs})`);
+  } else if (ports.maxInputs !== "unlimited" && incomingEdges.length > ports.maxInputs) {
+    errors.push(`${nodeTitle}: Too many input connections (found ${incomingEdges.length}, max allowed ${ports.maxInputs})`);
+  }
+  
+  // Validate output connections
+  if (ports.outputs === 0 && outgoingEdges.length > 0) {
+    errors.push(`${nodeTitle}: Should not have any output connections (found ${outgoingEdges.length})`);
+  } else if (ports.outputs > 0 && outgoingEdges.length === 0) {
+    errors.push(`${nodeTitle}: Missing required output connection (expected ${ports.outputs})`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+};
 
 export const Terminal: React.FC<TerminalProps> = ({
   isOpen,
@@ -78,6 +262,9 @@ export const Terminal: React.FC<TerminalProps> = ({
   const [validationLogs, setValidationLogs] = React.useState<Log[]>([])
   const [validationProblems, setValidationProblems] = React.useState<Log[]>([])
   const [isValidating, setIsValidating] = React.useState(false)
+  
+  // State for preview data tabs when multiple outputs are present
+  const [activePreviewTab, setActivePreviewTab] = React.useState<string>("0")
   
   // Get all nodes from the pipeline context to extract task IDs
   const { nodes, edges, formStates } = usePipelineContext()
@@ -325,11 +512,14 @@ export const Terminal: React.FC<TerminalProps> = ({
         nodes.forEach(node => {
           const nodeId = node.id;
           const nodeTitle = node.data?.title || node.data?.label || nodeId;
+          const moduleName = node.data?.module_name;
+          const transformation = node.data?.transformation;
           
           // Log flow node validation start
+          const nodeType = moduleName || (transformation ? `${transformation} (transformation)` : 'Unknown');
           const nodeStartLog: Log = {
             timestamp: new Date().toISOString(),
-            message: `Validating flow node: ${nodeTitle}`,
+            message: `Validating flow node: ${nodeTitle} (Type: ${nodeType})`,
             level: 'info'
           };
           allLogs.push(nodeStartLog);
@@ -346,15 +536,175 @@ export const Terminal: React.FC<TerminalProps> = ({
             return;
           }
           
-          // Check for node type
-          if (!node.type) {
-            const noTypeLog: Log = {
+          // Check for module name or transformation
+          if (!moduleName && !transformation) {
+            const noModuleLog: Log = {
               timestamp: new Date().toISOString(),
-              message: `${nodeTitle}: Node type not specified`,
+              message: `${nodeTitle}: Node type not specified - cannot validate node configuration`,
               level: 'warning'
             };
-            allLogs.push(noTypeLog);
-            problemLogs.push(noTypeLog);
+            allLogs.push(noModuleLog);
+            problemLogs.push(noModuleLog);
+          }
+          
+          // Validate node connections based on port configuration (only if we have module name)
+          if (moduleName) {
+            const connectionValidation = validateNodeConnections(node, edges, nodes);
+            connectionValidation.errors.forEach(error => {
+              const connectionLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: error,
+                level: 'error'
+              };
+              allLogs.push(connectionLog);
+              problemLogs.push(connectionLog);
+            });
+            
+            if (connectionValidation.isValid) {
+              const connectionSuccessLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${nodeTitle}: Connection validation passed`,
+                level: 'info'
+              };
+              allLogs.push(connectionSuccessLog);
+            }
+          }
+          
+          // Get form data for validation
+          const formData = formStates[nodeId] || node.data?.formData;
+          const sourceData = node.data?.sourceData;
+          
+          // Validate specific node types with their respective validation functions
+          if (moduleName === 'Reader') {
+            // Use Reader-specific validation
+            const readerValidation = validateReaderFormData(formData, sourceData);
+            if (!readerValidation.isValid) {
+              readerValidation.errors.forEach(error => {
+                const readerLog: Log = {
+                  timestamp: new Date().toISOString(),
+                  message: `${nodeTitle}: ${error}`,
+                  level: 'error'
+                };
+                allLogs.push(readerLog);
+                problemLogs.push(readerLog);
+              });
+            } else {
+              const readerSuccessLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${nodeTitle}: Reader configuration is valid`,
+                level: 'info'
+              };
+              allLogs.push(readerSuccessLog);
+            }
+          } else if (moduleName === 'Target' || transformation?.toLowerCase() === 'target') {
+            // Use Target-specific validation
+            const targetValidation = validateTargetFormData(formData, sourceData);
+            if (!targetValidation.isValid) {
+              targetValidation.errors.forEach(error => {
+                const targetLog: Log = {
+                  timestamp: new Date().toISOString(),
+                  message: `${nodeTitle}: ${error}`,
+                  level: 'error'
+                };
+                allLogs.push(targetLog);
+                problemLogs.push(targetLog);
+              });
+            } else {
+              const targetSuccessLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${nodeTitle}: Target configuration is valid`,
+                level: 'info'
+              };
+              allLogs.push(targetSuccessLog);
+            }
+          } else if (moduleName || transformation) {
+            // For other transformation nodes, use existing validation logic
+            if (!formData || Object.keys(formData).length === 0) {
+              const noFormDataLog: Log = {
+                timestamp: new Date().toISOString(),
+                message: `${nodeTitle}: Node configuration is incomplete - please configure this transformation`,
+                level: 'error'
+              };
+              allLogs.push(noFormDataLog);
+              problemLogs.push(noFormDataLog);
+            } else {
+              // Check if we have schema data for this module
+              const schemaTitle = moduleName || transformation;
+              const nodeSchema = schemaData?.schema?.find(s => s.title === schemaTitle);
+              
+              if (nodeSchema) {
+                try {
+                  const validation = validateFormData(
+                    formData,
+                    nodeSchema,
+                    false, // Not a source node
+                    sourceData,
+                    Boolean(formData)
+                  );
+
+                  if (!validation.isValid) {
+                    const errorLog: Log = {
+                      timestamp: new Date().toISOString(),
+                      message: `${nodeTitle}: ${validation.warnings.join(', ')}`,
+                      level: 'error'
+                    };
+                    allLogs.push(errorLog);
+                    problemLogs.push(errorLog);
+                  } else if (validation.status === 'warning') {
+                    const warningLog: Log = {
+                      timestamp: new Date().toISOString(),
+                      message: `${nodeTitle}: ${validation.warnings.join(', ')}`,
+                      level: 'warning'
+                    };
+                    allLogs.push(warningLog);
+                    problemLogs.push(warningLog);
+                  } else {
+                    const successLog: Log = {
+                      timestamp: new Date().toISOString(),
+                      message: `${nodeTitle}: Configuration validation passed`,
+                      level: 'info'
+                    };
+                    allLogs.push(successLog);
+                  }
+                } catch (error) {
+                  const errorLog: Log = {
+                    timestamp: new Date().toISOString(),
+                    message: `${nodeTitle}: Validation failed - ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    level: 'error'
+                  };
+                  allLogs.push(errorLog);
+                  problemLogs.push(errorLog);
+                }
+              } else {
+                // No schema found, basic validation
+                const basicValidLog: Log = {
+                  timestamp: new Date().toISOString(),
+                  message: `${nodeTitle}: Basic configuration check passed (Schema validation unavailable for ${schemaTitle})`,
+                  level: 'info'
+                };
+                allLogs.push(basicValidLog);
+              }
+            }
+          } else {
+            // Node has no identifiable type
+            const unknownNodeLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Unknown node type - cannot validate configuration`,
+              level: 'warning'
+            };
+            allLogs.push(unknownNodeLog);
+            problemLogs.push(unknownNodeLog);
+          }
+          
+          // Check for task_id (flow-specific requirement)
+          if (isFlow && !node.data.formData?.task_id) {
+            const noTaskIdLog: Log = {
+              timestamp: new Date().toISOString(),
+              message: `${nodeTitle}: Missing task ID configuration`,
+              level: 'warning'
+            };
+            allLogs.push(noTaskIdLog);
+            problemLogs.push(noTaskIdLog);
           }
           
           // Check for required properties based on node type
@@ -366,36 +716,6 @@ export const Terminal: React.FC<TerminalProps> = ({
             };
             allLogs.push(noScheduleLog);
             problemLogs.push(noScheduleLog);
-          }
-          
-          // Check for task_id
-          if (!node.data.formData?.task_id) {
-            const noTaskIdLog: Log = {
-              timestamp: new Date().toISOString(),
-              message: `${nodeTitle}: Missing task ID configuration`,
-              level: 'warning'
-            };
-            allLogs.push(noTaskIdLog);
-            problemLogs.push(noTaskIdLog);
-          }
-          
-          // Check for form data completeness
-          const formData = formStates[nodeId];
-          if (!formData || Object.keys(formData).length === 0) {
-            const noFormDataLog: Log = {
-              timestamp: new Date().toISOString(),
-              message: `${nodeTitle}: Node configuration is incomplete`,
-              level: 'warning'
-            };
-            allLogs.push(noFormDataLog);
-            problemLogs.push(noFormDataLog);
-          } else {
-            const validFormLog: Log = {
-              timestamp: new Date().toISOString(),
-              message: `${nodeTitle}: Node configuration is valid`,
-              level: 'info'
-            };
-            allLogs.push(validFormLog);
           }
         });
       }
@@ -546,6 +866,7 @@ export const Terminal: React.FC<TerminalProps> = ({
    * we store a local height state and apply it to our container.
    */
   const [height, setHeight] = React.useState(defaultHeight)
+  const [drawerHeight, setDrawerHeight] = React.useState<number>(520); // Track drawer height for responsive tables
   const initialLogFetchRef = React.useRef<Set<string>>(new Set());
 
   // Update local logs when props change
@@ -587,12 +908,45 @@ export const Terminal: React.FC<TerminalProps> = ({
   React.useEffect(() => {
     if (previewData) {
       setLocalPreviewData(previewData);
+      // Reset preview tab to first tab when new data arrives
+      setActivePreviewTab("0");
       // If preview data is provided and not in flow context, switch to the preview tab
       if (!isFlow) {
         setActiveTab("preview");
       }
     }
   }, [previewData, isFlow]);
+
+  // Listen for drawer resize events to update table height
+  React.useEffect(() => {
+    const handleDrawerResize = (event: CustomEvent) => {
+      const newHeight = event.detail.height;
+      setDrawerHeight(newHeight);
+    };
+
+    // Add event listener for drawer resize
+    document.addEventListener('bottomDrawerResize', handleDrawerResize as EventListener);
+
+    // Also listen for window resize events
+    const handleWindowResize = () => {
+      // Update drawer height from the container if it exists
+      const container = document.getElementById('bottom-drawer-container');
+      if (container) {
+        const containerHeight = container.getBoundingClientRect().height;
+        setDrawerHeight(containerHeight);
+      }
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+    
+    // Initial height check
+    handleWindowResize();
+
+    return () => {
+      document.removeEventListener('bottomDrawerResize', handleDrawerResize as EventListener);
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, []);
   const startStreaming = React.useCallback(async () => {
     // First, ensure any existing stream is stopped
     if (isStreaming && cleanupRef.current) {
@@ -993,9 +1347,15 @@ export const Terminal: React.FC<TerminalProps> = ({
         <Tabs
 
           value={activeTab}
-          onValueChange={(val) =>
-            setActiveTab(val as "terminal" | "proples" | "preview")
-          }
+          onValueChange={(val) => {
+            const newTab = val as "terminal" | "proples" | "preview";
+            setActiveTab(newTab);
+            
+            // Trigger validation when problems tab is clicked
+            if (newTab === "proples") {
+              runValidation();
+            }
+          }}
         >
           <div className="flex justify-between items-center border-b bg-neutral-100 w-full">
             <TabsList className="bg-transparent">
@@ -1076,6 +1436,7 @@ export const Terminal: React.FC<TerminalProps> = ({
             // Custom scrollbars if desired
             style={{
               lineHeight: "1.4rem",
+              height: `${Math.max(drawerHeight - 120, 300)}px`, // Responsive height based on drawer height
               maxHeight: "calc(100vh - 150px)",
               overflowY: "auto"
             }}
@@ -1281,41 +1642,90 @@ export const Terminal: React.FC<TerminalProps> = ({
               <TabsContent value="preview">
                 {localPreviewData && localPreviewData.outputs && localPreviewData.outputs.length > 0 ? (
                   <div className="font-sans">
-                    {localPreviewData.outputs.map((output, index) => {
-                      // Create columns for the DataTable based on the first row
-                      const columns = output.rows.length > 0
-                        ? Object.keys(output.rows[0]).map(key => ({
-                          accessorKey: key,
-                          header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-                          cell: ({ row }: any) => (
-                            <div className="truncate max-w-[200px]" title={row.getValue(key)}>
-                              {row.getValue(key)}
-                            </div>
-                          )
-                        }))
-                        : [];
+                    {localPreviewData.outputs.length > 1 ? (
+                      // Multiple outputs - show tabs
+                      <Tabs value={activePreviewTab} onValueChange={setActivePreviewTab}>
+                        <TabsList className="inline-flex">
+                          {localPreviewData.outputs.map((output, index) => (
+                            <TabsTrigger key={index} value={index.toString()}>
+                              {output.name || `Output ${index + 1}`}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                        {localPreviewData.outputs.map((output, index) => {
+                          // Create columns for the DataTable based on the first row
+                          const columns = output.rows.length > 0
+                            ? Object.keys(output.rows[0]).map(key => ({
+                              accessorKey: key,
+                              header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                              cell: ({ row }: any) => (
+                                <div className="truncate max-w-[200px]" title={row.getValue(key)}>
+                                  {row.getValue(key)}
+                                </div>
+                              )
+                            }))
+                            : [];
 
-                      return (
-                        <div key={index} className="mb-6">
-                          {output.name && output.name !== localPreviewData.transformationName && (
-                            <h4 className="text-sm font-medium mb-2">{output.name}</h4>
-                          )}
+                          return (
+                            <TabsContent key={index} value={index.toString()}>
+                              {output.rows.length > 0 ? (
+                                <div className="h-full">
+                                  <DataTable
+                                    data={output.rows}
+                                    columns={columns}
+                                    pagination={true}
+                                    topVariant="status"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="italic text-neutral-500 p-4 text-center border rounded">
+                                  No data available for this output
+                                </div>
+                              )}
+                            </TabsContent>
+                          );
+                        })}
+                      </Tabs>
+                    ) : (
+                      // Single output - show directly without tabs
+                      localPreviewData.outputs.map((output, index) => {
+                        // Create columns for the DataTable based on the first row
+                        const columns = output.rows.length > 0
+                          ? Object.keys(output.rows[0]).map(key => ({
+                            accessorKey: key,
+                            header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                            cell: ({ row }: any) => (
+                              <div className="truncate max-w-[200px]" title={row.getValue(key)}>
+                                {row.getValue(key)}
+                              </div>
+                            )
+                          }))
+                          : [];
 
-                          {output.rows.length > 0 ? (
-                            <DataTable
-                              data={output.rows}
-                              columns={columns}
-                              pagination={true}
-                              topVariant="status"
-                            />
-                          ) : (
-                            <div className="italic text-neutral-500 p-4 text-center border rounded">
-                              No data available for this output
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div key={index} className="">
+                            {output.name && output.name !== localPreviewData.transformationName && (
+                              <h4 className="text-sm font-medium mb-2">{output.name}</h4>
+                            )}
+
+                            {output.rows.length > 0 ? (
+                              <div className="h-full">
+                                <DataTable
+                                  data={output.rows}
+                                  columns={columns}
+                                  pagination={true}
+                                  topVariant="status"
+                                />
+                              </div>
+                            ) : (
+                              <div className="italic text-neutral-500 p-4 text-center border rounded">
+                                No data available for this output
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 ) : (
                   <div className="italic text-neutral-500 flex items-center justify-center h-40">
@@ -1327,7 +1737,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           </div>
         </Tabs>
       )}
-    </div>
+    </div> 
   )
 }
   

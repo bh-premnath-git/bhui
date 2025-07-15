@@ -7,6 +7,9 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 import { PythonEditor } from '@/components/ui/python-editor';
+import { Hammer, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Autocomplete } from '@/components/ui/autocomplete';
 
 interface FormFieldProps {
   className?: string;
@@ -18,6 +21,7 @@ interface FormFieldProps {
   isExpression?: boolean;
   required?: boolean;
   onExpressionClick?: () => void;
+  onHammerClick?: () => void;
   onBlur?: () => void;
   sourceColumns?: SourceColumn[];
   additionalColumns?: string[] | Array<{ name: string; dataType: string; }>;
@@ -26,6 +30,8 @@ interface FormFieldProps {
   onValidate?: (value: string) => string | undefined;
   onChange?: (...event: any[]) => void;
   onKeyDown?: (event: React.KeyboardEvent) => void;
+  isAiEnabled?: boolean;
+  isLoading?: boolean;
 }
 
 interface SourceColumn {
@@ -84,6 +90,7 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   isExpression,
   required,
   onExpressionClick,
+  onHammerClick,
   onBlur,
   sourceColumns = [],
   additionalColumns = [
@@ -93,6 +100,8 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
   onValidate,
   onChange, 
   onKeyDown,
+  isAiEnabled = false,
+  isLoading = false,
 }) => {
   const { control, setValue, setError, formState: { errors } } = useForm();
   const [isEditorReady, setIsEditorReady] = React.useState(false);
@@ -232,10 +241,54 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
     }
   };
 
+  // Check for autocomplete type
+  const isAutocompleteField = fieldSchema?.type === 'autocomplete';
+  
   // Check for select type
   const isSelectField = 
     fieldSchema?.type === 'select' || 
     (enumValues && enumValues.length > 0);
+
+  // If it's an autocomplete field, use the Autocomplete component
+  if (isAutocompleteField && !isExpression) {
+    const options = sourceColumns?.map(col => col.name) || [];
+    
+    return (
+      <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <Controller
+          control={control}
+          name={name}
+          defaultValue={value || ''}
+          render={({ field }) => (
+            <div className="relative">
+              <Autocomplete
+                options={options}
+                value={field.value || ''}
+                onChange={(newValue) => {
+                  field.onChange(newValue);
+                  onChange?.(newValue);
+                }}
+                placeholder={`Select ${fieldKey}`}
+                className={`w-full ${error ? 'border-red-500' : ''}`}
+                disabled={disabled}
+              />
+              {error && (
+                <span className="text-red-500 text-sm mt-1 block">
+                  {typeof error === 'string' ? error : error?.message}
+                </span>
+              )}
+            </div>
+          )}
+        />
+      </div>
+    );
+  }
 
   // If it's a select field, use the Select component
   if (isSelectField && !isExpression) {
@@ -300,73 +353,93 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
           ).join(' ')}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
-        <div
-          role="textbox"
-          aria-label={`SQL expression editor for ${fieldKey}`}
-          onClick={() => !disabled && onExpressionClick?.()}
-          className={`relative cursor-pointer ${disabled ? 'opacity-50' : ''}`}
-          tabIndex={0}
-          onFocus={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          <div className={`
-            border rounded-md bg-white
-            ${error ? 'border-red-500' : 'border-gray-300'}
-            ${disabled ? 'bg-gray-50' : ''}
-          `}>
-            <MonacoEditor
-              height={`${editorHeight}px`}
-              language="sql"
-              theme="vs-light"
-              value={typeof value === 'object' && 'expression' in value ? value.expression : value}
-              onChange={(newValue) => onChange?.(newValue || '')}
-              options={{
-                minimap: { enabled: false },
-                lineNumbers: 'off',
-                folding: false,
-                wordWrap: 'on',
-                contextmenu: false,
-                scrollBeyondLastLine: false,
-                overviewRulerBorder: false,
-                hideCursorInOverviewRuler: true,
-                overviewRulerLanes: 0,
-                renderLineHighlight: 'none',
-                selectionHighlight: false,
-                fontSize: 14,
-                fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-                padding: { top: 8, bottom: 8 },
-                quickSuggestions: {
-                  other: true,
-                  comments: false,
-                  strings: true
-                },
-                suggestOnTriggerCharacters: true,
-                acceptSuggestionOnCommitCharacter: true,
-                acceptSuggestionOnEnter: 'on',
-                suggest: {
-                  showWords: true,
-                  showProperties: true,
-                  showFunctions: true,
-                  showIcons: true,
-                  showStatusBar: true,
-                  preview: true,
-                  showInlineDetails: true,
-                  filterGraceful: true,
-                  selectionMode: 'always'
-                },
-                automaticLayout: true
-              }}
-              onMount={handleEditorMount}
-            />
+        <div className="relative">
+          <div
+            role="textbox"
+            aria-label={`SQL expression editor for ${fieldKey}`}
+            className={`relative ${disabled ? 'opacity-50' : ''}`}
+            tabIndex={0}
+            onFocus={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <div className={`
+              border rounded-md bg-white
+              ${error ? 'border-red-500' : 'border-gray-300'}
+              ${disabled ? 'bg-gray-50' : ''}
+            `}>
+              <MonacoEditor
+                height={`${editorHeight}px`}
+                language="sql"
+                theme="vs-light"
+                value={typeof value === 'object' && 'expression' in value ? value.expression : value}
+                onChange={(newValue) => onChange?.(newValue || '')}
+                options={{
+                  minimap: { enabled: false },
+                  lineNumbers: 'off',
+                  folding: false,
+                  wordWrap: 'on',
+                  contextmenu: false,
+                  scrollBeyondLastLine: false,
+                  overviewRulerBorder: false,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerLanes: 0,
+                  renderLineHighlight: 'none',
+                  selectionHighlight: false,
+                  fontSize: 14,
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                  padding: { top: 8, bottom: 8 },
+                  quickSuggestions: {
+                    other: true,
+                    comments: false,
+                    strings: true
+                  },
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnCommitCharacter: true,
+                  acceptSuggestionOnEnter: 'on',
+                  suggest: {
+                    showWords: true,
+                    showProperties: true,
+                    showFunctions: true,
+                    showIcons: true,
+                    showStatusBar: true,
+                    preview: true,
+                    showInlineDetails: true,
+                    filterGraceful: true,
+                    selectionMode: 'always'
+                  },
+                  automaticLayout: true
+                }}
+                onMount={handleEditorMount}
+              />
+            </div>
+            {editorError && (
+              <div className="text-red-500 text-sm mt-1">{editorError}</div>
+            )}
+            {error && (
+              <span className="text-red-500 text-sm mt-1 block">
+                {typeof error === 'string' ? error : error?.message}
+              </span>
+            )}
           </div>
-          {editorError && (
-            <div className="text-red-500 text-sm mt-1">{editorError}</div>
-          )}
-          {error && (
-            <span className="text-red-500 text-sm mt-1 block">
-              {typeof error === 'string' ? error : error?.message}
-            </span>
+          {onHammerClick && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onHammerClick}
+              disabled={disabled || isLoading}
+              className={`absolute right-2 top-2 p-1 h-auto ${
+                isAiEnabled ? 'bg-black text-white hover:bg-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              } ${isLoading ? 'opacity-70' : ''}`}
+              title={isLoading ? "Generating expression..." : "Generate expression with AI"}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Hammer className="h-4 w-4" />
+              )}
+            </Button>
           )}
         </div>
       </div>
@@ -407,6 +480,49 @@ export const FormField: React.FC<FormFieldProps> = React.memo(({
             />
           )}
         />
+      </div>
+    );
+  }
+
+  // Handle number type
+  if (fieldSchema.type === 'number') {
+    return (
+      <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <Controller
+          control={control}
+          name={name}
+          defaultValue={value || ''}
+          render={({ field }) => (
+            <Input
+              {...field}
+              type="number"
+              value={field.value || ''}
+              onChange={(e) => {
+                const numValue = e.target.value === '' ? '' : Number(e.target.value);
+                field.onChange(numValue);
+                onChange?.(numValue);
+              }}
+              placeholder={`Enter ${fieldKey}`}
+              required={required}
+              disabled={disabled}
+              className={`${error ? 'border-red-500' : ''}`}
+              aria-label={fieldKey}
+              onBlur={onBlur}
+              onKeyDown={onKeyDown}
+            />
+          )}
+        />
+        {error && (
+          <span className="text-red-500 text-sm mt-1 block">
+            {typeof error === 'string' ? error : error?.message}
+          </span>
+        )}
       </div>
     );
   }

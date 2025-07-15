@@ -42,7 +42,6 @@ interface FormValues extends Record<string, any> {
   repartition_expression?: Array<{
     expression: string;
     sort_order: string;
-    order: string;
   }>;
   column_list?: Array<{
     name: string;
@@ -56,6 +55,7 @@ interface CreateFormProps {
   initialValues?: any;
   nodes: Node[];
   sourceColumns: SourceColumn[];
+  formId?: string;
   onClose?: () => void;
   pipelineDtl?: any;
   currentNodeId: string;
@@ -69,8 +69,115 @@ interface SourceColumn {
 }
 const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
+// PySpark transformation template
+const PYSPARK_TEMPLATE = `# =============================================================================
+# 🧩 CUSTOM PYSPARK TRANSFORMATION TEMPLATE
+# =============================================================================
+# 💡 INSTRUCTIONS :
+# - Input DataFrames are auto-injected and named using their transformation names.
+# - You must return at least one DataFrame named \`result\` or \`result_<suffix>\`.
+# - Returned DataFrames will be made available for downstream transformations.
+#     • result         → <transformation_name>
+#     • result_clean   → <transformation_name>_clean
+#     • result_summary → <transformation_name>_summary
+# =============================================================================
 
-const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, currentNodeId, edges }) => {
+# Your Code Starts Here 
+
+# =============================================================================
+# 📦 IMPORTS
+# =============================================================================
+# Add required imports below
+# Example:
+# from pyspark.sql.functions import col, lit, when, avg, count
+# from pyspark.sql.types import StringType, IntegerType, DoubleType
+
+# --- Your Imports Here ---
+
+
+
+
+
+
+
+# =============================================================================
+# 📥 INPUT DATAFRAMES
+# =============================================================================
+# Input DataFrames are available as variables named after their source transformations.
+# For example:
+# input_df = read_input_data      # If a previous transformation is named "read_input_data"
+
+# --- Initialize or reference your input DataFrame(s) ---
+# Dynamically get input DataFrames (excluding built-in variables)
+
+
+
+
+
+
+
+
+
+# =============================================================================
+# ✨ YOUR TRANSFORMATION LOGIC
+# =============================================================================
+# Write your PySpark code here.
+# ✅ At least one DataFrame must be assigned to a variable starting with "result"
+#    Examples:
+#    result = input_df.withColumn("flag", lit("Y"))
+#    result_main = input_df.filter(col("status") == "active")
+#    result_summary = result_main.groupBy("category").agg(count("*").alias("cnt"))
+
+# --- Begin Custom Logic ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# --- End Custom Logic ---
+
+# =============================================================================
+# 📤 OUTPUT DATAFRAMES
+# =============================================================================
+# 🚨 At least one result DataFrame is required!
+#    - Use \`result\` for single-output transformations.
+#    - Use \`result_<suffix>\` for multiple outputs.
+#
+# These outputs will be wired for downstream transformations as:
+#    • result → <transformation_name>
+#    • result_<suffix> → <transformation_name>_<suffix>
+#
+# ✅ Example:
+# result = input_df.withColumn("processed", lit("yes"))
+# result_agg = result.groupBy("type").agg(count("*").alias("cnt"))
+
+# --- Save or define your result DataFrame(s) ---
+
+
+
+
+
+
+
+
+
+
+# Your Code Ends Here `;
+
+
+const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, currentNodeId, edges, formId }) => {
+  // Debug: Log form initialization
+  console.log(`🎯 CreateFormFormik initialized with formId: ${formId}, currentNodeId: ${currentNodeId}, schema: ${schema?.title}`);
+  
   const initialFormValues:any = useMemo(() => {
     const values = generateInitialValues(schema, initialValues,currentNodeId);
     
@@ -90,7 +197,10 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         repartition_type: 'repartition',
         repartition_value: '',
         override_partition: '',
-        repartition_expression: initialValues?.repartition_expression || [],
+        repartition_expression: initialValues?.repartition_expression || [{
+          expression: '',
+          sort_order: 'asc'
+        }],
         limit: '',
         ...values
       };
@@ -196,7 +306,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     // Add specific initialization for CustomPySpark form
     if (schema?.title === 'CustomPySpark') {
       return {
-        user_code: initialValues?.user_code || '',
+        user_code: initialValues?.user_code || PYSPARK_TEMPLATE,
         dependent_on: initialValues?.dependent_on || [],
         ...values
       };
@@ -217,12 +327,16 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     // Add specific initialization for DQCheck form
     if (schema?.title === 'DQCheck') {
       return {
+        transformation: initialValues?.transformation || 'dq_check',
+        name: initialValues?.name || '',
+        limit: initialValues?.limit || undefined,
         dq_rules: initialValues?.dq_rules || [{
           rule_name: '',
           column: '',
+          column_type: 'string',
           rule_type: '',
           value: '',
-          value2: '',
+          value2: undefined,
           action: 'warning'
         }],
         dependent_on: initialValues?.dependent_on || [],
@@ -249,6 +363,7 @@ console.log(initialFormValues,"initialFormValues")
   // Add debounce state and ref
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedFields, setGeneratedFields] = useState<Set<string>>(new Set());
+  const [loadingFields, setLoadingFields] = useState<Set<string>>(new Set());
 
   // Add state to track if AI has been attempted for this field
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
@@ -267,6 +382,7 @@ console.log(initialFormValues,"initialFormValues")
     }
 
     setIsGenerating(true);
+    setLoadingFields(prev => new Set(prev).add(fieldName));
     try {
       if (schema?.title === 'Aggregator') {
         const match = fieldName.match(/aggregations\.(\d+)\.expression/);
@@ -568,6 +684,11 @@ console.log(initialFormValues,"initialFormValues")
       }
     } finally {
       setIsGenerating(false);
+      setLoadingFields(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fieldName);
+        return newSet;
+      });
     }
   }, [schema?.title, sourceColumns, setValue, dispatch, watch, isGenerating, currentNodeId, nodes, edges]);
 
@@ -802,7 +923,7 @@ console.log(initialFormValues,"initialFormValues")
       if (key === 'repartition_expression' && Array.isArray(value) && schema.title === 'Repartition') {
         // Filter out items where expression is empty
         const cleanedExpressions = value.filter(item => 
-          item.expression?.trim() && item.sort_order?.trim() && (item.order === 'asc' || item.order === 'desc')
+          item.expression?.trim() && item.sort_order?.trim()
         );
         
         if (cleanedExpressions.length > 0) {
@@ -900,10 +1021,16 @@ console.log(initialFormValues,"initialFormValues")
 
     // Update SchemaTransformation validation
     if (schema.title === 'SchemaTransformation') {
+      // Check if name is required and provided
+      if (!cleanValues.name || cleanValues.name.trim() === '') {
+        alert('SchemaTransformation requires a name. Please provide a name for the transformation.');
+        return;
+      }
+      
       // Only require derived_fields if it's specified as required in the schema
       const isDerivedFieldsRequired = schema && Array.isArray(schema.required) && schema.required.includes('derived_fields');
       if (isDerivedFieldsRequired && (!cleanValues.derived_fields || !cleanValues.derived_fields.length)) {
-        console.error('SchemaTransformation requires at least one valid derived field');
+        alert('SchemaTransformation requires at least one valid derived field.');
         return;
       }
     }
@@ -1024,12 +1151,16 @@ console.log(initialFormValues,"initialFormValues")
         edges={edges}
         watch={watch}
         initialFormValues={initialFormValues}
+        aiAttempted={aiAttempted}
+        isGenerating={isGenerating}
+        loadingFields={loadingFields}
+        setValue={setValue}
       />
       
       <div className="mt-4">
         <Button
           type="submit"
-          className="w-full py-2 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
+          className="px-6 py-2 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
         >
           Save
         </Button>
@@ -1038,13 +1169,81 @@ console.log(initialFormValues,"initialFormValues")
   );
 };
 
+// Helper function to get rule type options based on column type
+const getRuleTypeOptions = (columnType: string): string[] => {
+  switch (columnType) {
+    case 'string':
+      return [
+        'equals', 'not_equals', 'minlength', 'maxlength', 'lengthequals',
+        'equalsignorecase', 'matches', 'startswith', 'endswith', 'beginswith', 'contains',
+        'not_null', 'isempty', 'belongsto', 'lowercase', 'uppercase'
+      ];
+    case 'number':
+      return [
+        'equals', 'not_equals', 'greaterthan', 'lessthan', 'greaterthanorequals', 
+        'lessthanorequals', 'not_null', 'between'
+      ];
+    case 'boolean':
+      return ['istrue', 'isfalse', 'not_null'];
+    case 'timestamp':
+      return [
+        'timestampequals', 'timestampbefore', 'timestampafter', 'timestampwithin', 
+        'timestampnotnull', 'timestampisempty'
+      ];
+    case 'date':
+      return [
+        'dateequals', 'datebefore', 'dateafter', 'datewithin', 
+        'datenotnull', 'dateisempty'
+      ];
+    default:
+      return [
+        'equals', 'not_equals', 'minlength', 'maxlength', 'lengthequals',
+        'equalsignorecase', 'matches', 'startswith', 'endswith', 'beginswith', 'contains',
+        'not_null', 'isempty', 'belongsto', 'lowercase', 'uppercase'
+      ];
+  }
+};
+
+// Helper function to check if a field requires a value based on column type and rule type
+const requiresValue = (columnType: string, ruleType: string): boolean => {
+  const noValueRules = ['is_null', 'not_null', 'is_true', 'is_false'];
+  return !noValueRules.includes(ruleType);
+};
+
+// Helper function to check if a field requires value2 (for between operations)
+const requiresValue2 = (columnType: string, ruleType: string): boolean => {
+  return columnType === 'number' && ruleType === 'between';
+};
+
+// Helper function to get appropriate value type for field
+const getValueType = (columnType: string, ruleType: string): string => {
+  if (!requiresValue(columnType, ruleType)) {
+    return 'hidden';
+  }
+  
+  switch (columnType) {
+    case 'number':
+      return 'number';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    default:
+      return 'string';
+  }
+};
+
 const renderArrayFields = (
   arraySchema: ArraySchema,
   control: any,
   section: string,
   onExpressionClick: (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => void,
   sourceColumns: SourceColumn[],
-  columnSuggestions: string[]
+  columnSuggestions: string[],
+  aiAttempted: Set<string>,
+  isGenerating: boolean,
+  setValue?: any,
+  watch?: any
 ) => {
   console.log(`Rendering array fields for section: ${section}`, {
     arraySchema,
@@ -1133,7 +1332,7 @@ const renderArrayFields = (
             append({ column_list: '' });
           }}
           variant="outline"
-          className="w-full"
+          className="px-6 py-2"
         >
           <span className="text-green-600">+ Add Column</span>
         </Button>
@@ -1164,7 +1363,8 @@ const renderArrayFields = (
         (acc, key) => ({
           ...acc,
           [key]: itemProperties[key].enum ? 
-            (itemProperties[key].default || itemProperties[key].enum[0]) : ''
+            (itemProperties[key].default || itemProperties[key].enum[0]) : 
+            (key === 'column_type' ? 'string' : '')
         }),
         {}
       );
@@ -1200,6 +1400,249 @@ const renderArrayFields = (
   } catch (error) {
     console.error('Error in Object.entries for itemProperties:', error, { itemProperties });
     return <div>Error processing array item properties</div>;
+  }
+
+  // Special handling for DQCheck rules
+  if (section === 'dq_rules') {
+    return (
+      <div className="space-y-4">
+        {fields.map((field, index) => (
+          <div key={field.id} className="border rounded-lg p-4 bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Rule Name */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.rule_name`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="rule_name"
+                      fieldSchema={{ type: 'string' }}
+                      name={`${section}.${index}.rule_name`}
+                      value={field.value}
+                      onChange={field.onChange}
+                      required={true}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Column */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.column`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="column"
+                      fieldSchema={{ type: 'autocomplete' }}
+                      name={`${section}.${index}.column`}
+                      value={field.value}
+                      onChange={field.onChange}
+                      sourceColumns={columnSuggestions.map(colName => ({
+                        name: colName,
+                        dataType: 'string'
+                      }))}
+                      required={true}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Column Type */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.column_type`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="column_type"
+                      fieldSchema={{ 
+                        type: 'select',
+                        enum: ['string', 'number', 'boolean', 'array']
+                      }}
+                      name={`${section}.${index}.column_type`}
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        // Reset rule_type when column_type changes
+                        setValue && setValue(`${section}.${index}.rule_type`, '');
+                        setValue && setValue(`${section}.${index}.value`, '');
+                        setValue && setValue(`${section}.${index}.value2`, '');
+                      }}
+                      required={true}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Rule Type (conditional based on column type) */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.rule_type`}
+                  control={control}
+                  render={({ field }) => {
+                    const formValues = watch ? watch() : {};
+                    const columnType = formValues[section]?.[index]?.column_type || 'string';
+                    return (
+                      <FormField
+                        fieldKey="rule_type"
+                        fieldSchema={{ 
+                          type: 'select',
+                          enum: getRuleTypeOptions(columnType)
+                        }}
+                        name={`${section}.${index}.rule_type`}
+                        value={field.value}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          // Reset values when rule_type changes
+                          setValue && setValue(`${section}.${index}.value`, '');
+                          setValue && setValue(`${section}.${index}.value2`, '');
+                        }}
+                        required={true}
+                      />
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Value (conditional based on column type and rule type) */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.value`}
+                  control={control}
+                  render={({ field }) => {
+                    const formValues = watch ? watch() : {};
+                    const columnType = formValues[section]?.[index]?.column_type || 'string';
+                    const ruleType = formValues[section]?.[index]?.rule_type || '';
+                    const valueType = getValueType(columnType, ruleType);
+                    
+                    if (valueType === 'hidden') {
+                      return null;
+                    }
+
+                    if (valueType === 'array') {
+                      return (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Values
+                            <span className="text-red-500 ml-1">*</span>
+                          </label>
+                          <Input
+                            value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
+                            onChange={(e) => {
+                              const values = e.target.value.split(',').map(v => v.trim()).filter(v => v);
+                              field.onChange(values);
+                            }}
+                            placeholder="Enter values separated by commas"
+                            required={requiresValue(columnType, ruleType)}
+                          />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <FormField
+                        fieldKey="value"
+                        fieldSchema={{ 
+                          type: valueType === 'boolean' ? 'boolean' : 
+                                valueType === 'number' ? 'number' : 'string'
+                        }}
+                        name={`${section}.${index}.value`}
+                        value={field.value}
+                        onChange={field.onChange}
+                        required={requiresValue(columnType, ruleType)}
+                      />
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Value2 (for between operations) */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.value2`}
+                  control={control}
+                  render={({ field }) => {
+                    const formValues = watch ? watch() : {};
+                    const columnType = formValues[section]?.[index]?.column_type || 'string';
+                    const ruleType = formValues[section]?.[index]?.rule_type || '';
+                    
+                    if (!requiresValue2(columnType, ruleType)) {
+                      return null;
+                    }
+
+                    return (
+                      <FormField
+                        fieldKey="value2"
+                        fieldSchema={{ type: 'number' }}
+                        name={`${section}.${index}.value2`}
+                        value={field.value}
+                        onChange={field.onChange}
+                        required={true}
+                      />
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Action */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.action`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="action"
+                      fieldSchema={{ 
+                        type: 'select',
+                        enum: ['error', 'warning']
+                      }}
+                      name={`${section}.${index}.action`}
+                      value={field.value}
+                      onChange={field.onChange}
+                      required={false}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Remove Button */}
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                disabled={fields.length <= (arraySchema.minItems || 1)}
+                className="flex items-center justify-center px-3 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200 disabled:opacity-50"
+              >
+                Remove Rule
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* Add Button */}
+        <Button
+          type="button"
+          onClick={() => {
+            append({
+              rule_name: '',
+              column: '',
+              column_type: 'string',
+              rule_type: '',
+              value: '',
+              value2: '',
+              action: 'warning'
+            });
+          }}
+          variant="outline"
+          className="px-6 py-2 mt-4"
+        >
+          <span className="text-green-600">+ Add Rule</span>
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -1271,7 +1714,9 @@ const renderArrayFields = (
                         dataType: 'string'
                       }))}
                       required={requiredFields.includes(itemKey)}
-                      onExpressionClick={isExpression ? () => {
+                      isAiEnabled={aiAttempted.has(`${section}.${index}.${itemKey}`)}
+                      isLoading={isGenerating}
+                      onHammerClick={isExpression ? () => {
                         onExpressionClick(
                           field.name || itemKey,
                           field.onChange,
@@ -1313,7 +1758,7 @@ const renderArrayFields = (
           append(emptyItem);
         }}
         variant="outline"
-        className="w-full mt-4"
+        className="px-6 py-2 mt-4"
       >
         <span className="text-green-600">+ Add Field</span>
       </Button>
@@ -1397,8 +1842,8 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
           <Button
             type="button"
             onClick={() => appendDedup('')}
-            variant="default"
-            className="w-full mt-2"
+            variant="outline"
+            className="px-6 py-2 mt-2"
           >
             Add Dedup Column
           </Button>
@@ -1454,8 +1899,8 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
           <Button
             type="button"
             onClick={() => appendOrder({ column: '', order: 'asc' })}
-            variant="default"
-            className="w-full mt-2"
+            variant="outline"
+            className="px-6 py-2 mt-2"
           >
             Add Order By Column
           </Button>
@@ -1477,7 +1922,11 @@ const FormContent: React.FC<{
   edges: Edge[];
   watch: any; // Add watch function as a prop
   initialFormValues: any; // Add initialFormValues as a prop
-}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch, initialFormValues }) => {
+  aiAttempted: Set<string>; // Add aiAttempted as a prop
+  isGenerating: boolean; // Add isGenerating as a prop
+  loadingFields: Set<string>; // Add loadingFields as a prop
+  setValue: any; // Add setValue as a prop
+}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch, initialFormValues, aiAttempted, isGenerating, loadingFields, setValue }) => {
 
   
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -1609,17 +2058,17 @@ const FormContent: React.FC<{
     if (fieldSchema.type === 'array') {
       // Check if this is a special case with column_list structure
       if (fieldSchema.items && fieldSchema.items.column_list && fieldSchema.items.column_list.type === 'autocomplete') {
-        return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions);
+        return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch);
       }
       
       // For other array types, use the standard array rendering
-      return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions);
+      return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch);
     }
 
     const isExpression = fieldSchema.type === 'expression' || 
                         fieldSchema['ui-hint'] === 'expression' ||
                         (fieldKey === 'condition' && fieldSchema.type === 'string') ||
-                        (fieldKey === 'sql' && fieldSchema.type === 'string') ||
+                        (fieldKey === 'query' && fieldSchema.type === 'string') ||
                         (fieldKey === 'join_condition' && fieldSchema.type === 'string') ||
                         (parentKey === 'conditions' && fieldKey === 'join_condition');
 
@@ -1675,7 +2124,9 @@ const FormContent: React.FC<{
               dataType: 'string'
             }))}
             required={isFieldRequired(fieldKey, fieldSchema, parentKey)}
-            onExpressionClick={() => {
+            isAiEnabled={aiAttempted.has(fieldKey)}
+            isLoading={isGenerating}
+            onHammerClick={() => {
               if (isExpression) {
                 onExpressionClick(
                   name || fieldKey,
@@ -1750,7 +2201,7 @@ const FormContent: React.FC<{
           if (value.type === 'array' && value.items && value.items.column_list && value.items.column_list.type === 'autocomplete') {
             return (
               <div key={key} className="mb-2">
-                {renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions)}
+                {renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch)}
               </div>
             );
           }
@@ -1823,7 +2274,7 @@ const FormContent: React.FC<{
           type="button"
           onClick={() => append('')}
           variant="outline"
-          size="sm"
+          className="px-6 py-2"
         >
           Add Column
         </Button>
@@ -1838,7 +2289,8 @@ const FormContent: React.FC<{
     control: any;
     formInitialValues: any;
     columnSuggestions?: string[];
-  }> = ({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [] }) => {
+    setValue: any;
+  }> = ({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [], setValue }) => {
     const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
     const watchedValue = watch(fieldKey) || {};
     const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1982,7 +2434,7 @@ const FormContent: React.FC<{
               type="button"
               onClick={addEntry}
               variant="outline"
-              size="sm"
+              className="px-6 py-2"
             >
               Add Rename Rule
             </Button>
@@ -1994,7 +2446,7 @@ const FormContent: React.FC<{
   };
 
   // Helper function to render ObjectField component
-  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}, columnSuggestions: string[] = []) => {
+  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
     return (
       <ObjectField
         fieldKey={fieldKey}
@@ -2002,12 +2454,13 @@ const FormContent: React.FC<{
         control={control}
         formInitialValues={formInitialValues}
         columnSuggestions={columnSuggestions}
+        setValue={setValue}
       />
     );
   };
 
   // Update renderTabContent to pass control
-  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = []) => {
+  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
     if (!value || typeof value !== 'object') {
       console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
       return <div>Invalid field configuration for {key}</div>;
@@ -2129,11 +2582,11 @@ const FormContent: React.FC<{
         return renderStringArrayField(key, value, control, columnSuggestions);
       }
       // Otherwise use the existing array renderer
-      return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions);
+      return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch);
     } else if (value.type === 'object') {
       // Check if it's a rename_columns type object
       if (key === 'rename_columns') {
-        return renderObjectField(key, value, control, formInitialValues, columnSuggestions);
+        return renderObjectField(key, value, control, formInitialValues, columnSuggestions, setValue);
       }
       // Ensure properties exist before passing to renderFieldsInRows
       if (!value.properties || typeof value.properties !== 'object') {
@@ -2174,6 +2627,8 @@ const FormContent: React.FC<{
                   value={field.value}
                   onChange={field.onChange}
                   fieldKey="transformation"
+                  isAiEnabled={false}
+                  isLoading={false}
                 />
               )}
             />
@@ -2199,6 +2654,8 @@ const FormContent: React.FC<{
                 value={field.value}
                 onChange={field.onChange}
                 fieldKey="limit"
+                isAiEnabled={false}
+                isLoading={false}
               />
             )}
           />
@@ -2240,6 +2697,15 @@ const FormContent: React.FC<{
                         required={requiredFields.includes(key)}
                         fieldKey={key}
                         sourceColumns={sourceColumns}
+                        isAiEnabled={aiAttempted.has(`column_list.${index}.${key}`)}
+                        isLoading={isGenerating}
+                        onHammerClick={fieldSchema['ui-hint'] === 'expression' ? () => {
+                          onExpressionClick(
+                            field.name || key,
+                            field.onChange,
+                            `column_list.${index}.${key}`
+                          );
+                        } : undefined}
                       />
                     )}
                   />
@@ -2265,9 +2731,10 @@ const FormContent: React.FC<{
               }), {});
               append(defaultValues);
             }}
-            className="text-green-600 font-bold w-full"
+            variant="outline"
+            className="px-6 py-2"
           >
-            Add Column
+            <span className="text-green-600">+ Add Column</span>
           </Button>
         </div>
       </div>
@@ -2339,6 +2806,8 @@ const FormContent: React.FC<{
                           required={schema && schema.required && schema.required.includes(fieldKey)}
                           fieldKey={itemKey}
                           sourceColumns={sourceColumns}
+                          isAiEnabled={false}
+                          isLoading={false}
                         />
                       )
                     )}
@@ -2378,11 +2847,12 @@ const FormContent: React.FC<{
                 
                 append(defaultValues);
               }}
-              className="text-green-600 font-bold"
+              variant="outline"
+              className="px-6 py-2"
             >
-              Add {fieldKey.split('_').map(word => 
+              <span className="text-green-600">+ Add {fieldKey.split('_').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' ')}
+              ).join(' ')}</span>
             </Button>
           </div>
         );
@@ -2408,6 +2878,8 @@ const FormContent: React.FC<{
               required={schema && schema.required && schema.required.includes(fieldKey)}
               fieldKey={fieldKey}
               sourceColumns={sourceColumns}
+              isAiEnabled={false}
+              isLoading={false}
             />
           )}
         />
@@ -2466,7 +2938,7 @@ const FormContent: React.FC<{
 
               {filteredTabs.map(([key, value]: [string, any], index) => (
                 <TabsContent key={key} value={index.toString()}>
-                  {renderTabContent(key, value, control, initialFormValues, columnSuggestions)}
+                  {renderTabContent(key, value, control, initialFormValues, columnSuggestions, setValue)}
                 </TabsContent>
               ))}
             </Tabs>
@@ -2475,7 +2947,7 @@ const FormContent: React.FC<{
       ) : schema.ui_type === 'array-container' ? (
         <div className="space-y-2">
           <div>
-            {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, control, 'derived_fields', onExpressionClick, sourceColumns, columnSuggestions) : renderArrayFields(schema.properties?.sort_columns, control, 'sort_columns', onExpressionClick, sourceColumns, columnSuggestions)}
+            {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, control, 'derived_fields', onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch) : renderArrayFields(schema.properties?.sort_columns, control, 'sort_columns', onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch)}
           </div>
         </div>
       ) : schema.title === 'Repartition' ? (
@@ -2632,23 +3104,9 @@ const FormContent: React.FC<{
                             control={control}
                             rules={{ required: true }}
                             render={({ field }) => (
-                              <Input
-                                {...field}
-                                placeholder="Sort Order"
-                                className="w-32"
-                              />
-                            )}
-                          />
-                          
-                          {/* Order */}
-                          <Controller
-                            name={`repartition_expression.${index}.order`}
-                            control={control}
-                            rules={{ required: true }}
-                            render={({ field }) => (
                               <Select value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Order" />
+                                  <SelectValue placeholder="Sort Order" />
                                 </SelectTrigger>
                                 <SelectContent  style={{zIndex:9999}}>
                                   <SelectItem value="asc">Asc</SelectItem>
@@ -2675,13 +3133,12 @@ const FormContent: React.FC<{
                         type="button"
                         onClick={() => appendExpression({
                           expression: '',
-                          sort_order: '',
-                          order: 'asc'
+                          sort_order: 'asc'
                         })}
                         variant="outline"
-                        className="w-full mt-2"
+                        className="px-6 py-2 mt-2"
                       >
-                        Add Expression
+                        <span className="text-green-600">+ Add Expression</span>
                       </Button>
                     </div>
                   </div>

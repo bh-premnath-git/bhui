@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Mic, MicOff, Send } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { apiService } from '@/lib/api/api-service'
@@ -14,6 +14,8 @@ interface Message {
   text: string
   sender: 'user' | 'ai'
   timestamp: Date
+  role?: 'user' | 'assistant'
+  content?: string
 }
 
 interface NodeSuggestion {
@@ -39,10 +41,85 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   const [mentionStartPos, setMentionStartPos] = useState(0)
   const [mentionQuery, setMentionQuery] = useState('')
+  
+  // Chat history state
+  const [isSavingChatHistory, setIsSavingChatHistory] = useState(false)
+  const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set())
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
+
+  // Helper function to generate unique message IDs
+  const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+  // Function to save individual AI agent chat messages (user requests and AI responses)
+  const saveAIAgentChatMessage = useCallback(async (message: Message) => {
+    if (!id) {
+      console.warn('No pipeline id available, skipping chat message save')
+      return
+    }
+
+    if (isSavingChatHistory) {
+      console.warn('Already saving chat history, skipping individual message save')
+      return
+    }
+
+    // Check if message is already saved
+    if (message.id && savedMessageIds.has(message.id)) {
+      return
+    }
+
+    setIsSavingChatHistory(true)
+    try {
+      // Format message for API - convert to the expected format
+      const formattedMessage = {
+        role: message.role || (message.sender === 'user' ? 'user' : 'assistant'),
+        content: message.content || message.text,
+        timestamp: new Date().toISOString(),
+        suggestions: [], // Don't save suggestions as they contain functions
+      }
+
+      const chatHistoryData = {
+        pipeline_id: id,
+        messages: [formattedMessage],
+        append: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      console.log('Saving AI agent chat message:', { 
+        messageId: message.id, 
+        role: formattedMessage.role, 
+        content: formattedMessage.content,
+        pipelineId: id,
+        chatHistoryData
+      })
+      
+      const result = await apiService.savePipelineChatHistory(id, chatHistoryData)
+      
+      // Update saved message tracking
+      if (message.id) {
+        setSavedMessageIds(prev => new Set([...prev, message.id!]))
+      }
+      
+      console.log('AI agent chat message saved successfully:', { 
+        messageId: message.id, 
+        result,
+        savedMessageIds: savedMessageIds.size + 1
+      })
+    } catch (error) {
+      console.error('Failed to save AI agent chat message:', error)
+      console.error('Error details:', {
+        id,
+        messageId: message.id,
+        messageRole: message.role || message.sender,
+        error: error instanceof Error ? error.message : error
+      })
+    } finally {
+      setIsSavingChatHistory(false)
+    }
+  }, [id, isSavingChatHistory, savedMessageIds])
 
   const {
     isListening,
@@ -71,6 +148,42 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Auto-save AI agent chat messages when messages change (backup mechanism)
+  useEffect(() => {
+    if (messages.length === 0 || !id) return
+    
+    // Get the last message that was added
+    const lastMessage = messages[messages.length - 1]
+    
+    console.log('Auto-save effect triggered:', {
+      messagesLength: messages.length,
+      lastMessageId: lastMessage?.id,
+      lastMessageRole: lastMessage?.role || lastMessage?.sender,
+      alreadySaved: lastMessage?.id ? savedMessageIds.has(lastMessage.id) : false,
+      savedMessageIdsSize: savedMessageIds.size
+    })
+    
+    // Only save if it's a new message (not already saved) and is a user or assistant message
+    if (lastMessage && lastMessage.id && !savedMessageIds.has(lastMessage.id)) {
+      // Only save user and assistant messages from AI agent interactions
+      const messageRole = lastMessage.role || (lastMessage.sender === 'user' ? 'user' : 'assistant')
+      if (messageRole === 'user' || messageRole === 'assistant') {
+        console.log('Auto-save backup triggered for message:', { 
+          messageId: lastMessage.id, 
+          role: messageRole, 
+          content: (lastMessage.content || lastMessage.text)?.substring(0, 100) + '...' 
+        })
+        
+        // Use a slight delay to allow for immediate consecutive messages
+        const timeoutId = setTimeout(() => {
+          saveAIAgentChatMessage(lastMessage)
+        }, 1000) // Increased delay to avoid conflicts with immediate saves
+        
+        return () => clearTimeout(timeoutId)
+      }
+    }
+  }, [messages, id, savedMessageIds, saveAIAgentChatMessage])
 
   // Update input text with speech transcript
   useEffect(() => {
@@ -189,13 +302,23 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
     if (!inputText.trim() || isApiLoading) return
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       text: inputText.trim(),
+      content: inputText.trim(),
       sender: 'user',
+      role: 'user',
       timestamp: new Date()
     }
 
     setMessages(prev => [...prev, userMessage])
+    
+    // Save user message to chat history immediately
+    try {
+      await saveAIAgentChatMessage(userMessage)
+    } catch (error) {
+      console.error('Failed to save user message to chat history:', error)
+    }
+    
     setInputText('')
     setIsApiLoading(true)
     setShowNodeSuggestions(false)
@@ -241,26 +364,97 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
           setUnsavedChanges()
           console.log('Pipeline updated successfully with new schema')
 
+          // Add success response message
+          const assistantMessage: Message = { 
+            id: generateMessageId(),
+            text: 'Pipeline updated successfully! Your changes have been applied.',
+            content: 'Pipeline updated successfully! Your changes have been applied.',
+            sender: 'ai',
+            role: 'assistant',
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, assistantMessage])
+
+          // Save assistant message to chat history immediately
+          try {
+            await saveAIAgentChatMessage(assistantMessage)
+          } catch (error) {
+            console.error('Failed to save assistant success message to chat history:', error)
+          }
+
           // Show success toast
           toast.success('Pipeline updated successfully')
 
           // Close the dialog after successful pipeline update
           setTimeout(() => {
             setIsAiChatOpen(false)
-          }, 1000) // Small delay to show the success message
+          }, 2000) // Increased delay to allow for saving
 
         } catch (pipelineError) {
           console.error('Error updating pipeline:', pipelineError)
+          const errorMessage: Message = { 
+            id: generateMessageId(),
+            text: 'Failed to update the pipeline. Please try again.',
+            content: 'Failed to update the pipeline. Please try again.',
+            sender: 'ai',
+            role: 'assistant',
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, errorMessage])
+          
+          // Save error message to chat history immediately
+          try {
+            await saveAIAgentChatMessage(errorMessage)
+          } catch (error) {
+            console.error('Failed to save assistant error message to chat history:', error)
+          }
+          
+          toast.error('Failed to update pipeline')
+        }
+      } else {
+        // Add a generic response if no pipeline_json is returned
+        const assistantMessage: Message = { 
+          id: generateMessageId(),
+          text: response?.message || 'Request processed successfully.',
+          content: response?.message || 'Request processed successfully.',
+          sender: 'ai',
+          role: 'assistant',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, assistantMessage])
+        
+        // Save assistant message to chat history immediately
+        try {
+          await saveAIAgentChatMessage(assistantMessage)
+        } catch (error) {
+          console.error('Failed to save assistant generic message to chat history:', error)
         }
       }
 
-      // Don't create AI text response - just show success
       console.log('Request processed successfully:', response?.messages)
 
     } catch (error: any) {
       console.error('API Error:', error)
+      
+      // Add error response message
+      const errorMessage: Message = { 
+        id: generateMessageId(),
+        text: `Error: ${error?.response?.data?.message || 'Failed to process your request. Please try again.'}`,
+        content: `Error: ${error?.response?.data?.message || 'Failed to process your request. Please try again.'}`,
+        sender: 'ai',
+        role: 'assistant',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMessage])
+      
+      // Save error message to chat history immediately
+      try {
+        await saveAIAgentChatMessage(errorMessage)
+      } catch (error) {
+        console.error('Failed to save assistant API error message to chat history:', error)
+      }
 
-      // Show error toast only - no AI text response
+      // Show error toast
       toast.error(error?.response?.data?.message || 'Failed to process your request')
 
     } finally {
@@ -292,7 +486,11 @@ export default function AiChatComponent({ isAiChatOpen, setIsAiChatOpen, data, c
   return (
     <Dialog open={isAiChatOpen} onOpenChange={setIsAiChatOpen}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
-        <div className="flex-1 flex flex-col min-h-0">
+     
+        
+        {/* Messages Area */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        
           <div ref={messagesEndRef} />
         </div>
 

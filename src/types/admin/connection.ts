@@ -10,6 +10,7 @@ export interface Connection {
     bh_env_id: number;
     config: string;
     init_vector: string;
+    created_at: string;
 };
 
 

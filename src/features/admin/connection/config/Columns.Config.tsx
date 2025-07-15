@@ -4,17 +4,27 @@ import { Connection } from "@/types/admin/connection";
 import { Badge } from "@/components/ui/badge";
 import { ROUTES } from "@/config/routes";
 import { useNavigation } from "@/hooks/useNavigation";
-import { PlusIcon, Cable } from "lucide-react";
+import { PlusIcon, Cable, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
+import { formatTimestamp } from "@/lib/date-format";
 
 const columnHelper = createColumnHelper<Connection>();
 
 const columns: ColumnDefWithFilters<Connection>[] = [
     columnHelper.accessor('connection_config_name',{
         header: 'Name',
-        enableColumnFilter: true
+        enableColumnFilter: true,
+        cell: ({ row }) => {
+            const name = row.getValue('connection_config_name') as string;
+            return (
+                <div className="flex items-center">
+                    <Database className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {name}
+                </div>
+            );
+        },
     }),
     columnHelper.accessor('connection_name',{
         header:'Database',
@@ -35,6 +45,14 @@ const columns: ColumnDefWithFilters<Connection>[] = [
         );
         },
         enableColumnFilter: true,
+    }),
+    columnHelper.accessor('created_at', {
+        header: 'Created On',
+        enableColumnFilter: true,
+        cell: ({ row }) => {
+            const date = row.getValue('created_at') as string | null;
+            return <div>{formatTimestamp(date)}</div>;
+        },
     }),
     {
       id: 'actions',
@@ -87,4 +105,3 @@ const getToolbarConfig = (): TToolbarConfig => {
   }
   
   export { columns, getToolbarConfig }
-  

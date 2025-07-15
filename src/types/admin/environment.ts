@@ -30,7 +30,7 @@ export interface Environment {
   airflow_env_name: string | null;
   access_key: string | null;
   bh_project_id: string | null;
-  bh_env_provider_name: string;
+  cloud_provider: string;
   cloud_provider_name: string;
   secret_access_key: string | null;
   cloud_provider_alias: string | null;

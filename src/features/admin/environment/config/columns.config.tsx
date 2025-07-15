@@ -14,7 +14,7 @@ const columns: ColumnDefWithFilters<Environment>[] = [
     header: 'Name',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor('bh_env_provider_name', {
+  columnHelper.accessor('cloud_provider', {
     header: 'Type',
     enableColumnFilter: true,
   }),

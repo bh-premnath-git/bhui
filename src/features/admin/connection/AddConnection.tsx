@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { useConnectionType, useConnectionSearch } from './hooks/useConnection';
+import { useConnectionType, useConnectionSearch, useEnvironments } from './hooks/useConnection';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ConnectionForm } from './components/ConnectionForm';
 import { ConnectionType, ConnectionTypes } from '@/types/admin/connection';
+import { Environment } from '@/types/admin/environment';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { ConnectionPageLayout } from './components/ConnectionPageLayout';
 
 export function AddConnection() {
   const { connectionTypes, isLoading } = useConnectionType();
+  const { environments, isLoading: environmentsLoading } = useEnvironments();
   const {
     searchedConnection,
     connectionFound,
@@ -23,8 +26,10 @@ export function AddConnection() {
   const [activeTab, setActiveTab] = useState<string>("source");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [connectionConfigName, setConnectionConfigName] = useState<string>("");
+  const [selectedEnvironment, setSelectedEnvironment] = useState<string>("");
   const [showNameError, setShowNameError] = useState<boolean>(false);
-  if (isLoading) {
+  const [showEnvironmentError, setShowEnvironmentError] = useState<boolean>(false);
+  if (isLoading || environmentsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -41,6 +46,7 @@ export function AddConnection() {
         connectionName={selectedType.connection_name}
         onBack={() => setSelectedType(null)} 
         connectionConfigName={connectionConfigName}
+        selectedEnvironment={selectedEnvironment}
       />
     );
   }
@@ -85,11 +91,26 @@ export function AddConnection() {
   ) ?? [];
 
   const handleCardClick = (type: ConnectionTypes) => {
+    let hasErrors = false;
+    
     if (!connectionConfigName.trim()) {
       setShowNameError(true);
+      hasErrors = true;
+    } else {
+      setShowNameError(false);
+    }
+    
+    if (!selectedEnvironment.trim()) {
+      setShowEnvironmentError(true);
+      hasErrors = true;
+    } else {
+      setShowEnvironmentError(false);
+    }
+    
+    if (hasErrors) {
       return;
     }
-    setShowNameError(false);
+    
     setSelectedType(type);
   };
 
@@ -102,7 +123,8 @@ export function AddConnection() {
       </CardHeader>
 
       <CardContent>
-        <div className="mb-6 space-y-2">
+        <div className="flex gap-2">
+          <div className="mb-6 space-y-2 w-full">
           <Label htmlFor="connectionName" className="font-medium">
             Connection Name <span className="text-red-500">*</span>
           </Label>
@@ -150,9 +172,49 @@ export function AddConnection() {
                 Error checking connection name availability
               </p>
             )}
+            
+            {showNameError && (
+              <p className="text-sm text-red-500 mt-1">
+                Connection name is required
+              </p>
+            )}
           </div>
         </div>
         
+        <div className="mb-6 space-y-2 w-full">
+          <Label htmlFor="environment" className="font-medium">
+            Environment <span className="text-red-500">*</span>
+          </Label>
+          <div>
+            <Select value={selectedEnvironment} onValueChange={(value) => {
+              setSelectedEnvironment(value);
+              if (value) {
+                setShowEnvironmentError(false);
+              }
+            }}>
+              <SelectTrigger className={`w-full max-w-md h-9 text-sm ${
+                showEnvironmentError ? 'border-red-500 focus:ring-red-500' : ''
+              }`}>
+                <SelectValue placeholder="Select environment" />
+              </SelectTrigger>
+              <SelectContent>
+                {environments.map((env) => (
+                  <SelectItem key={env.bh_env_id} value={env.bh_env_id.toString()}>
+                    {env.bh_env_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {showEnvironmentError && (
+              <p className="text-sm text-red-500 mt-1">
+                Environment is required
+              </p>
+            )}
+          </div>
+        </div>
+        
+        </div>
         <Tabs defaultValue="source" value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="source">Source</TabsTrigger>
@@ -176,7 +238,7 @@ export function AddConnection() {
               <Card 
                 key={type.id}
                 className={`transition-all ${
-                  connectionConfigName.trim() 
+                  connectionConfigName.trim() && selectedEnvironment.trim()
                     ? 'cursor-pointer hover:shadow-md' 
                     : 'opacity-70 cursor-not-allowed'
                 }`}

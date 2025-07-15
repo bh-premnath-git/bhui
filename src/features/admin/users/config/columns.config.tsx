@@ -4,6 +4,7 @@ import { ROUTES } from '@/config/routes';
 import { PlusIcon, Users } from 'lucide-react';
 import { User } from '@/types/admin/user';
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getInitials } from '@/lib/utils';
 import { useNavigation } from "@/hooks/useNavigation";
 
@@ -28,28 +29,39 @@ const columns: ColumnDefWithFilters<User>[] = [
     header: 'Email',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor('realm_roles', {
-    header: 'Role',
-    cell: (info) => {
-      return (
-        <div className="flex flex-wrap gap-1">
-          {info.row.original.realm_roles.map((role: string, index: number) => (
-            <Badge key={index} variant="outline">
-              {role}
-            </Badge>
-          ))}
-        </div>
-      )
-    },
-    enableColumnFilter: false,
-  }),
   columnHelper.accessor('emailVerified', {
     header: 'Status',
     cell: (info) => {
       return (
-        <Badge className={info.getValue() ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+        <Badge 
+          variant="outline"
+          className={info.getValue() 
+            ? "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:text-green-900" 
+            : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 hover:text-red-900"
+          }
+        >
           {info.getValue() ? "Active" : "Inactive"}
         </Badge>
+      )
+    },
+    enableColumnFilter: false,
+  }),
+  columnHelper.accessor('id', {
+    id: 'roles',
+    header: 'Roles',
+    cell: (info) => {
+      const { handleNavigation } = useNavigation();
+      return (
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleNavigation(ROUTES.ADMIN.USERS.EDIT(info.row.original.email));
+          }}
+        >
+          View
+        </Button>
       )
     },
     enableColumnFilter: false,
@@ -61,9 +73,8 @@ const getToolbarConfig = (): TToolbarConfig => {
   return {
     buttons: [
       {
-        label: <Users className="mr-2 h-4 w-4" />,
-        className: "bg-primary text-primary-foreground",
-        variant: "outline",
+        label: "Add User",
+        variant: "default",
         icon: PlusIcon,
         onClick: () => {
           handleNavigation(ROUTES.ADMIN.USERS.ADD)

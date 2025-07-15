@@ -9,8 +9,10 @@ import { getSource } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSl
 import { useAppDispatch } from '@/hooks/useRedux';
 import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDataSourceWizard';
-import { columns, getToolbarConfig } from '@/features/data-catalog/config/columns.config';
+import { createColumns, getToolbarConfig } from '@/features/data-catalog/config/columns.config';
 import { CatalagSlideWrapper } from '@/features/data-catalog/components/CatalagSlideWrapper';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
+import { useDeleteDataSource } from '@/features/data-catalog/hooks/useDeleteDataSource';
 
 interface DataCatalogProps {
   datasources: DataSource[];
@@ -42,6 +44,11 @@ export function DataCatalog({
   const [showImportSection, setShowImportSection] = useState(false);
   const { projects } = useProjects();
   const dispatch = useAppDispatch();
+  
+  // Delete functionality state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [datasourceToDelete, setDatasourceToDelete] = useState<DataSource | null>(null);
+  const deleteDataSourceMutation = useDeleteDataSource();
 
   const gitProjectList = Array.isArray(projects) ? projects.map((project: any) => ({
     ProjectId: project.bh_project_id,
@@ -57,7 +64,28 @@ export function DataCatalog({
   const closeImportSection = () => {
     setShowImportSection(false);
     dispatch(getSource());
-  }; 
+  };
+
+  const handleDeleteClick = (datasource: DataSource) => {
+    setDatasourceToDelete(datasource);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (datasourceToDelete) {
+      deleteDataSourceMutation.mutate(datasourceToDelete.data_src_id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setDatasourceToDelete(null);
+          onRefetch(); // Refresh the data after successful deletion
+        },
+        onError: (error) => {
+          console.error('Delete failed:', error);
+          // Dialog stays open on error so user can try again
+        }
+      });
+    }
+  };
 
   // Refetch data when sheet is closed
   useEffect(() => {
@@ -93,7 +121,7 @@ export function DataCatalog({
      ): (
       <>
       <DataTable<DataSource>
-        columns={columns}
+        columns={createColumns({ onDelete: handleDeleteClick })}
         data={datasources}
         topVariant="simple"
         pagination={true}
@@ -116,6 +144,16 @@ export function DataCatalog({
           selectedRow={selectedRow}
         />
       )}
+      
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Data Source"
+        description={`Are you sure you want to delete "${datasourceToDelete?.data_src_name}"? This action cannot be undone and will permanently remove the data source and all associated data.`}
+        confirmText={datasourceToDelete?.data_src_name || ''}
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteDataSourceMutation.isPending}
+      />
     </>
   );
 }

@@ -8,19 +8,19 @@
 /* Right aside panel adjustments */
 .with-right-aside {
   width: calc(100% - 10px) !important;
-  margin-right: 500px;
+  margin-right: 0px;
 }
 
 /* Bottom drawer panel adjustments */
 .with-bottom-drawer {
   height: calc(100% - 10px) !important;
-  margin-bottom: 300px;
+  margin-bottom: 10;
 }
 
 /* Combined state adjustments */
 .with-right-panel.with-bottom-drawer-panel {
   width: calc(100% - 10px) !important;
-  height: calc(100% - 100px) !important;
+  height: calc(100% ) !important;
 }
 
 /* Canvas adjustments */

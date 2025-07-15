@@ -448,3 +448,46 @@ body.resizing * {
   -moz-transform: rotateY(180deg);
   -ms-transform: rotateY(180deg);
 }
+
+/* Monaco Editor styles */
+.monaco-editor, .monaco-diff-editor, .monaco-component {
+  --vscode-foreground: #616161;
+  --vscode-disabledForeground: rgba(97, 97, 97, 0.5);
+  --vscode-errorForeground: #a1260d;
+  --vscode-descriptionForeground: #717171;
+  --vscode-icon-foreground: #424242;
+  --vscode-focusBorder: transparent !important;
+}
+
+.monaco-editor, .monaco-diff-editor, .monaco-component:focus {
+  --vscode-foreground: #616161;
+  --vscode-disabledForeground: rgba(97, 97, 97, 0.5);
+  --vscode-errorForeground: #a1260d;
+  --vscode-descriptionForeground: #717171;
+  --vscode-icon-foreground: #424242;
+  --vscode-focusBorder: transparent !important;
+}
+
+/* Remove all borders on hover, focus, and active states */
+.monaco-editor:hover,
+.monaco-editor:focus,
+.monaco-editor:active,
+.monaco-diff-editor:hover,
+.monaco-diff-editor:focus, 
+.monaco-diff-editor:active,
+.monaco-component:hover,
+.monaco-component:focus,
+.monaco-component:active {
+  border: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  --vscode-focusBorder: transparent !important;
+}
+
+/* Remove borders from Monaco editor internal elements */
+.monaco-editor .monaco-editor-background,
+.monaco-editor .decorationsOverviewRuler,
+.monaco-editor .monaco-scrollable-element {
+  border: none !important;
+  outline: none !important;
+}

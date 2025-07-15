@@ -89,12 +89,12 @@ export function ComputeClusterFormFields({
   const getFieldClassName = (field: any, key?: string) => {
     const isFullWidth = shouldUseFullWidth(field, key);
     if (isFullWidth) {
-      return parentKey === 'compute_config' ? "col-span-3 w-full" : "col-span-2 w-full";
+      return parentKey === 'compute_config' ? "col-span-4 w-full" : "col-span-3 w-full";
     }
     return "w-full";
   };
 
-  const renderArrayField = (key: string, field: any, fieldKey: string, formField: any, isRequired: boolean) => {
+  const renderArrayField = (key: string, field: any, fieldKey: string, formField: any, isRequired: boolean, fieldState: any) => {
     const [showDescription, setShowDescription] = useState(false);
     const currentValue = formField.value || [];
 
@@ -123,14 +123,15 @@ export function ComputeClusterFormFields({
       return (
         <FormItem className={getFieldClassName(field, key)}>
           <div className="flex items-center">
-            <FormLabel>
+            <FormLabel className="text-foreground">
               {field.title || key}
               {isRequired && <span className="text-destructive ml-1">*</span>}
             </FormLabel>
             {field.description && (
               <button
                 type="button"
-                className="ml-1 text-muted-foreground"
+                tabIndex={-1}
+                className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setShowDescription(!showDescription)}
               >
                 <HelpCircle size={16} />
@@ -138,20 +139,20 @@ export function ComputeClusterFormFields({
             )}
           </div>
           {showDescription && field.description && (
-            <FormDescription>{field.description}</FormDescription>
+            <FormDescription className="text-muted-foreground">{field.description}</FormDescription>
           )}
           
           <div className="space-y-3">
             {currentValue.map((item: any, index: number) => (
-              <div key={index} className="flex items-end gap-2 p-3 border rounded-lg">
+              <div key={index} className="flex items-end gap-2 p-3 border border-border rounded-lg bg-card">
                 {Object.entries(field.items.properties).map(([propKey, propField]: [string, any]) => (
                   <div key={propKey} className="flex-1">
-                    <FormLabel className="text-sm">{propField.title || propKey}</FormLabel>
+                    <FormLabel className="text-sm text-foreground">{propField.title || propKey}</FormLabel>
                     <Input
                       value={item[propKey] || ''}
                       onChange={(e) => updateObjectItem(index, propKey, e.target.value)}
                       placeholder={propField.title || propKey}
-                      className="mt-1"
+                      className="mt-1 bg-background border-input"
                     />
                   </div>
                 ))}
@@ -160,7 +161,7 @@ export function ComputeClusterFormFields({
                   variant="outline"
                   size="sm"
                   onClick={() => removeObjectItem(index)}
-                  className="mb-0"
+                  className="mb-0 border-border hover:bg-accent hover:text-accent-foreground"
                 >
                   <X size={16} />
                 </Button>
@@ -169,15 +170,18 @@ export function ComputeClusterFormFields({
             
             <Button
               type="button"
-              variant="outline"
+              variant="default"
               onClick={addObjectItem}
-              className="w-full"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Plus size={16} className="mr-2" />
               Add {key === 'bh_tags' ? 'Tag' : field.title || key}
             </Button>
           </div>
-          <FormMessage />
+          {/* Only show form message if field has been touched and has errors */}
+          {fieldState?.isTouched && fieldState?.error && (
+            <FormMessage />
+          )}
         </FormItem>
       );
     }
@@ -214,14 +218,15 @@ export function ComputeClusterFormFields({
     return (
       <FormItem className={getFieldClassName(field, key)}>
         <div className="flex items-center">
-          <FormLabel>
+          <FormLabel className="text-foreground">
             {field.title || key}
             {isRequired && <span className="text-destructive ml-1">*</span>}
           </FormLabel>
           {field.description && (
             <button
               type="button"
-              className="ml-1 text-muted-foreground"
+              tabIndex={-1}
+              className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setShowDescription(!showDescription)}
             >
               <HelpCircle size={16} />
@@ -229,19 +234,19 @@ export function ComputeClusterFormFields({
           )}
         </div>
         {showDescription && field.description && (
-          <FormDescription>{field.description}</FormDescription>
+          <FormDescription className="text-muted-foreground">{field.description}</FormDescription>
         )}
         
         <div className="space-y-2">
           {/* Selected items */}
           <div className="flex flex-wrap gap-2">
             {currentValue.map((item: string, index: number) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                {item}
+              <Badge key={index} variant="secondary" className="flex items-center gap-1 bg-secondary text-secondary-foreground">
+                {item || 'Empty'}
                 <button
                   type="button"
                   onClick={() => removeItem(index)}
-                  className="ml-1 hover:text-destructive"
+                  className="ml-1 hover:text-destructive transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -253,14 +258,14 @@ export function ComputeClusterFormFields({
           {field.items?.enum ? (
             // Dropdown for enum arrays (like applications)
             <Select onValueChange={addItem}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 bg-background border-input">
                 <SelectValue placeholder={`Select ${field.title || key} to add`} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover border-border">
                 {field.items.enum
                   .filter((option: string) => !currentValue.includes(option))
                   .map((option: string) => (
-                    <SelectItem key={option} value={option}>
+                    <SelectItem key={option} value={option} className="text-popover-foreground hover:bg-accent hover:text-accent-foreground">
                       {option}
                     </SelectItem>
                   ))}
@@ -274,22 +279,25 @@ export function ComputeClusterFormFields({
                 onChange={(e) => setNewItemValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={`Enter ${field.title || key}`}
-                className="h-9 flex-1"
+                className="h-9 flex-1 bg-background border-input"
               />
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={handleAddFromInput}
                 disabled={!newItemValue.trim()}
-                className="h-9"
+                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Plus size={16} />
               </Button>
             </div>
           )}
         </div>
-        <FormMessage />
+        {/* Only show form message if field has been touched and has errors */}
+        {fieldState?.isTouched && fieldState?.error && (
+          <FormMessage />
+        )}
       </FormItem>
     );
   };
@@ -306,9 +314,9 @@ export function ComputeClusterFormFields({
 
     if (field.type === 'object' && field.properties) {
       return (
-        <div key={fieldKey} className="space-y-4 col-span-2 w-full">
-          <h3 className="text-lg font-semibold border-b pb-2">{field.title || key}</h3>
-          <div className="p-4 rounded-lg border bg-muted/20">
+        <div key={fieldKey} className={`space-y-4 ${parentKey === 'compute_config' ? 'col-span-4' : 'col-span-3'} w-full`}>
+          <h3 className="text-lg font-semibold border-b border-border pb-2 text-foreground">{field.title || key}</h3>
+          <div className="p-4 rounded-lg border border-border bg-muted/20">
             <ComputeClusterFormFields 
               schema={field} 
               form={form} 
@@ -329,8 +337,8 @@ export function ComputeClusterFormFields({
           key={fieldKey}
           control={form.control}
           name={fieldKey}
-          render={({ field: formField }) => 
-            renderArrayField(key, field, fieldKey, formField, isRequired)
+          render={({ field: formField, fieldState }) => 
+            renderArrayField(key, field, fieldKey, formField, isRequired, fieldState)
           }
         />
       );
@@ -346,14 +354,14 @@ export function ComputeClusterFormFields({
           if (field.type === 'boolean') {
             return (
               <FormItem className={getFieldClassName(field, key)}>
-                <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="flex flex-row items-center justify-between rounded-lg border border-border p-3 shadow-sm bg-card">
                   <div className="space-y-0.5">
-                    <FormLabel>
+                    <FormLabel className="text-foreground">
                       {field.title || key}
                       {isRequired && <span className="text-destructive ml-1">*</span>}
                     </FormLabel>
                     {field.description && (
-                      <FormDescription>{field.description}</FormDescription>
+                      <FormDescription className="text-muted-foreground">{field.description}</FormDescription>
                     )}
                   </div>
                   <FormControl>
@@ -374,12 +382,12 @@ export function ComputeClusterFormFields({
               return (
                 <FormItem className={getFieldClassName(field, key)}>
                   <div className="flex items-center">
-                    <FormLabel>
+                    <FormLabel className="text-foreground">
                       {field.title || key}
                       {isRequired && <span className="text-destructive ml-1">*</span>}
                     </FormLabel>
                   </div>
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full bg-muted" />
                 </FormItem>
               );
             }
@@ -387,7 +395,7 @@ export function ComputeClusterFormFields({
             return (
               <FormItem className={getFieldClassName(field, key)}>
                 <div className="flex items-center">
-                  <FormLabel>
+                  <FormLabel className="text-foreground">
                     {field.title || key}
                     {isRequired && <span className="text-destructive ml-1">*</span>}
                     {mode === 'edit' && parentKey === '' && (key === 'compute_type' || key === 'bh_env_id' || key === 'compute_config_name') && (
@@ -397,7 +405,8 @@ export function ComputeClusterFormFields({
                   {field.description && (
                     <button
                       type="button"
-                      className="ml-1 text-muted-foreground"
+                      tabIndex={-1}
+                      className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => setShowDescription(!showDescription)}
                     >
                       <HelpCircle size={16} />
@@ -405,7 +414,7 @@ export function ComputeClusterFormFields({
                   )}
                 </div>
                 {showDescription && field.description && (
-                  <FormDescription>{field.description}</FormDescription>
+                  <FormDescription className="text-muted-foreground">{field.description}</FormDescription>
                 )}
                 <Select
                   value={formField.value?.toString() || ''}
@@ -422,7 +431,7 @@ export function ComputeClusterFormFields({
                   }
                 >
                   <FormControl>
-                    <SelectTrigger className={`h-9 ${
+                    <SelectTrigger className={`h-9 bg-background border-input ${
                       mode === 'edit' && parentKey === '' && (key === 'compute_type' || key === 'bh_env_id' || key === 'compute_config_name')
                         ? 'bg-muted cursor-not-allowed opacity-70'
                         : ''
@@ -430,11 +439,11 @@ export function ComputeClusterFormFields({
                       <SelectValue placeholder={`Select ${field.title || key}`} />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border">
                     {field.enum
                       .filter((option: string) => option !== "")
                       .map((option: string, index: number) => (
-                        <SelectItem key={option} value={option}>
+                        <SelectItem key={option} value={option} className="text-popover-foreground hover:bg-accent hover:text-accent-foreground">
                           {field.enumNames && field.enumNames[index] ? field.enumNames[index] : option}
                         </SelectItem>
                       ))}
@@ -449,14 +458,15 @@ export function ComputeClusterFormFields({
             return (
               <FormItem className={getFieldClassName(field, key)}>
                 <div className="flex items-center">
-                  <FormLabel>
+                  <FormLabel className="text-foreground">
                     {field.title || key}
                     {isRequired && <span className="text-destructive ml-1">*</span>}
                   </FormLabel>
                   {field.description && (
                     <button
                       type="button"
-                      className="ml-1 text-muted-foreground"
+                      tabIndex={-1}
+                      className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => setShowDescription(!showDescription)}
                     >
                       <HelpCircle size={16} />
@@ -464,12 +474,13 @@ export function ComputeClusterFormFields({
                   )}
                 </div>
                 {showDescription && field.description && (
-                  <FormDescription>{field.description}</FormDescription>
+                  <FormDescription className="text-muted-foreground">{field.description}</FormDescription>
                 )}
                 <FormControl>
                   <Textarea
                     {...formField}
                     placeholder={field.examples?.[0] || field.default || ''}
+                    className="bg-background border-input"
                   />
                 </FormControl>
                 <FormMessage />
@@ -480,7 +491,7 @@ export function ComputeClusterFormFields({
           return (
             <FormItem className={getFieldClassName(field, key)}>
               <div className="flex items-center">
-                <FormLabel>
+                <FormLabel className="text-foreground">
                   {field.title || key}
                   {isRequired && <span className="text-destructive ml-1">*</span>}
                   {mode === 'edit' && parentKey === '' && (key === 'compute_config_name' || key === 'tenant_key') && (
@@ -490,7 +501,8 @@ export function ComputeClusterFormFields({
                 {field.description && (
                   <button
                     type="button"
-                    className="ml-1 text-muted-foreground"
+                    tabIndex={-1}
+                    className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => setShowDescription(!showDescription)}
                   >
                     <HelpCircle size={16} />
@@ -498,7 +510,7 @@ export function ComputeClusterFormFields({
                 )}
               </div>
               {showDescription && field.description && (
-                <FormDescription>{field.description}</FormDescription>
+                <FormDescription className="text-muted-foreground">{field.description}</FormDescription>
               )}
               <FormControl>
                 <Input
@@ -506,7 +518,7 @@ export function ComputeClusterFormFields({
                   type={field.type === 'number' ? 'number' : 'text'}
                   placeholder={field.examples?.[0] || field.default || ''}
                   value={formField.value || ''}
-                  className={`h-9 ${
+                  className={`h-9 bg-background border-input ${
                     mode === 'edit' && parentKey === '' && (key === 'compute_config_name' || key === 'tenant_key')
                       ? 'bg-muted cursor-not-allowed opacity-70'
                       : ''
@@ -530,15 +542,15 @@ export function ComputeClusterFormFields({
   };
 
   // Use different grid layouts based on context
-  const gridLayout = parentKey === 'compute_config' ? "grid grid-cols-3 gap-3" : 
-                    twoColumnLayout ? "grid grid-cols-2 gap-4" : "space-y-4";
+  const gridLayout = parentKey === 'compute_config' ? "grid grid-cols-4 gap-2" : 
+                    twoColumnLayout ? "grid grid-cols-3 gap-4" : "space-y-4";
   
   return (
     <div className={gridLayout}>
       {Object.entries(fieldsByCategory).map(([category, fields]) => (
-        <div key={category} className={parentKey === 'compute_config' ? "col-span-3 space-y-2" : "col-span-2 space-y-3"}>
+        <div key={category} className={parentKey === 'compute_config' ? "col-span-4 space-y-2" : "col-span-3 space-y-3"}>
           {category !== 'General' && (
-            <h3 className="text-lg font-semibold border-b pb-2">{category}</h3>
+            <h3 className="text-lg font-semibold border-b border-border pb-2 text-foreground">{category}</h3>
           )}
           <div className={gridLayout}>
             {fields.map(({ key, field }) => renderField(key, field))}

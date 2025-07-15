@@ -19,13 +19,27 @@ const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues
     value: value as string
   }));
 
-  const environmentValue = environments.find(env => env.label === environment.bh_env_provider_name)?.value || ''
+  // Get environment value from the environments array
+  const environmentValue = environment.bh_env_provider?.toString() || 
+                           environment.bh_env_provider_name?.toString() || '';
+
+  // Map cloud provider name to platform type code
+  const getPlatformTypeCode = (providerName: string): string => {
+    if (providerName === 'Amazon Web Services' || providerName === 'AWS') {
+      return '101';
+    }
+    if (providerName === 'Google Cloud Platform' || providerName === 'GCP') {
+      return '102';
+    }
+    // If it's already a code, use it
+    return environment.cloud_provider_cd?.toString() || '';
+  };
 
   return {
     environmentName: environment.bh_env_name || '',
     environment: environmentValue,
     platform: {
-      type: environment.cloud_provider_name || '',
+      type: getPlatformTypeCode(environment.cloud_provider_name || ''),
       region: environment.cloud_region_cd?.toString() || '',
       zone: environment.location || '',
     },
@@ -108,7 +122,10 @@ export function EditEnvironment() {
 
   useEffect(() => {
     if (environment) {
+      console.log("Original environment data:", environment);
       const transformedData = transformEnvironmentToFormData(environment);
+      console.log("Transformed Environment Data:", transformedData);
+      console.log("Platform type set to:", transformedData.platform.type);
       setFormInitialData(transformedData);
     }
   }, [environment]);

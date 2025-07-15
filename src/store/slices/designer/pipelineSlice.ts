@@ -41,7 +41,7 @@ const pipelineSlice = createSlice({
         setPipelines: (state, action: PayloadAction<Pipeline[]>) => {
             state.pipelines = action.payload;
         },
-        setSelectedPipeline: (state, action: PayloadAction<Pipeline | null>) => {
+        setSelectedPipeline: (state, action: PayloadAction<any | null>) => {
             state.selectedPipeline = action.payload;
         },
         setLoading: (state, action: PayloadAction<boolean>) => {

@@ -70,23 +70,23 @@ export function ComputeConfigurationStep({
      
 
       {/* Configuration Form */}
-      <Card className="border border-gray-300 shadow-lg bg-white">
-        <CardHeader className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+      <Card className="border border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800">
+        <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-gray-100 to-gray-200 border border-gray-300">
-                <Settings2 className="h-5 w-5 text-gray-700" />
+              <div className="p-2 rounded-lg bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border border-gray-300 dark:border-gray-600">
+                <Settings2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </div>
               <div>
-                <CardTitle className="text-lg text-gray-900">Advanced Parameters</CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Advanced Parameters</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">
                   Customize resource allocation and performance settings
                 </CardDescription>
               </div>
             </div>
             {isLoadingConfigSchema && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 dark:border-gray-400"></div>
                 <span>Loading schema...</span>
               </div>
             )}
@@ -148,15 +148,15 @@ export function ComputeConfigurationStep({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card className="border border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
+        <Card className="border border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
-              <div className="p-1 rounded-full bg-gray-200 border border-gray-300">
-                <Cpu className="h-4 w-4 text-gray-700" />
+              <div className="p-1 rounded-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                <Cpu className="h-4 w-4 text-gray-700 dark:text-gray-300" />
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 text-sm">Performance Tips</h4>
-                <ul className="mt-1 text-xs text-gray-700 space-y-1">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Performance Tips</h4>
+                <ul className="mt-1 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                   <li>• Adjust instance sizes based on your data volume and processing requirements</li>
                   <li>• You can set the compute timeout in seconds to save resources</li>
                 </ul>

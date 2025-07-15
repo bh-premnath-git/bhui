@@ -86,6 +86,118 @@ const generateUniqueTitle = (type: string, existingTitles: Set<string>): string 
     return title;
 };
 
+/**
+ * Normalizes transformation data to ensure proper structure for form components
+ */
+const normalizeTransformationData = (transform: any, type: string): any => {
+    const normalizedData = { ...transform };
+    
+    // Specific handling for different transformation types
+    switch (type) {
+        case 'Deduplicator':
+            return {
+                ...normalizedData,
+                keep: transform.keep || 'any',
+                dedup_by: Array.isArray(transform.dedup_by) ? transform.dedup_by : [],
+                order_by: Array.isArray(transform.order_by) ? transform.order_by : []
+            };
+        
+        case 'Aggregator':
+            return {
+                ...normalizedData,
+                group_by: Array.isArray(transform.group_by) ? transform.group_by : [],
+                aggregations: Array.isArray(transform.aggregate) ? transform.aggregate : 
+                             Array.isArray(transform.aggregations) ? transform.aggregations : [],
+                pivot_by: Array.isArray(transform.pivot) ? transform.pivot : 
+                          Array.isArray(transform.pivot_by) ? transform.pivot_by : []
+            };
+        
+        case 'SchemaTransformation':
+            return {
+                ...normalizedData,
+                derived_fields: Array.isArray(transform.derived_fields) ? transform.derived_fields : [],
+                select_columns: Array.isArray(transform.select_columns) ? transform.select_columns : [],
+                drop_columns: Array.isArray(transform.drop_columns) ? transform.drop_columns : [],
+                rename_columns: transform.rename_columns || {}
+            };
+        
+        case 'Joiner':
+            return {
+                ...normalizedData,
+                conditions: Array.isArray(transform.conditions) ? transform.conditions : [],
+                expressions: Array.isArray(transform.expressions) ? transform.expressions : [],
+                advanced: transform.advanced || { hints: [] }
+            };
+        
+        case 'Filter':
+            return {
+                ...normalizedData,
+                condition: transform.condition || ''
+            };
+        
+        case 'Sorter':
+            return {
+                ...normalizedData,
+                sort_columns: Array.isArray(transform.sort_columns) ? transform.sort_columns : []
+            };
+        
+        case 'SequenceGenerator':
+            return {
+                ...normalizedData,
+                for_column_name: transform.for_column_name || '',
+                start_with: transform.start_with || 1,
+                step: transform.step || 1,
+                order_by: Array.isArray(transform.order_by) ? transform.order_by : []
+            };
+        
+        case 'Reader':
+            return {
+                ...normalizedData,
+                select_columns: Array.isArray(transform.select_columns) ? transform.select_columns : [],
+                drop_columns: Array.isArray(transform.drop_columns) ? transform.drop_columns : [],
+                rename_columns: transform.rename_columns || {}
+            };
+        
+        case 'DQCheck':
+            return {
+                ...normalizedData,
+                dq_rules: Array.isArray(transform.dq_rules) ? transform.dq_rules : []
+            };
+        
+        case 'Lookup':
+            return {
+                ...normalizedData,
+                lookup_type: transform.lookup_type || 'Column Based',
+                lookup_config: transform.lookup_config || { name: '', source: {}, read_options: { header: true } },
+                lookup_data: Array.isArray(transform.lookup_data) ? transform.lookup_data : [],
+                lookup_columns: Array.isArray(transform.lookup_columns) ? transform.lookup_columns : [],
+                lookup_conditions: transform.lookup_conditions || {
+                    column_name: '',
+                    lookup_with: ''
+                },
+                keep: transform.keep || 'First'
+            };
+        
+        case 'Repartition':
+            return {
+                ...normalizedData,
+                repartition_type: transform.repartition_type || 'repartition',
+                repartition_value: transform.repartition_value || '',
+                override_partition: transform.override_partition || '',
+                repartition_expression: Array.isArray(transform.repartition_expression) 
+                    ? transform.repartition_expression.map(expr => ({
+                        expression: expr.expression || '',
+                        sort_order: expr.sort_order || 'asc'
+                    }))
+                    : [],
+                limit: transform.limit || ''
+            };
+        
+        default:
+            return normalizedData;
+    }
+};
+
 
 
 // Cache for data source details to avoid redundant API calls
@@ -474,10 +586,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                         icon: getNodeIcon('Reader'),
                         ports: getNodePorts('Reader'),
                         transformationType: 'Reader',
-                        transformationData: {
-                            ...transform,
-                            name: nodeTitle
-                        },
+                        transformationData: normalizeTransformationData(transform, 'Reader'),
                         source: {
                             "name": sourceName || sourceDetails.data_src_name,
                             "data_src_desc": sourceName || sourceDetails.name,
@@ -604,10 +713,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 icon: getNodeIcon(type),
                 ports: getNodePorts(type),
                 transformationType: type,
-                transformationData: {
-                    ...transform,
-                    name: nodeTitle
-                }
+                transformationData: normalizeTransformationData(transform, type)
             },
             width: 56,
             height: 72

@@ -18,12 +18,12 @@ export const columns: ColumnDef<ComputeCluster>[] = [
     accessorKey: "environment",
     header: "Environment",
     cell: ({ row }) => (
-      <Badge variant="outline">{row.getValue("environment")}</Badge>
+      <span>{row.getValue("environment")}</span>
     ),
   },
   {
     accessorKey: "platform",
-    header: "Platform",
+    header: "Compute Type",
     cell: ({ row }) => (
       <div className="flex items-center">
         <span>{row.getValue("platform")}</span>
@@ -52,7 +52,7 @@ export const columns: ColumnDef<ComputeCluster>[] = [
       const min = row.original.minNodes;
       const max = row.original.maxNodes;
       return (
-        <div className="text-center">
+        <div className="text-left">
           <span className="font-medium">{current}</span>
           <span className="text-muted-foreground text-xs ml-1">
             ({min}-{max})
@@ -69,7 +69,7 @@ export const columns: ColumnDef<ComputeCluster>[] = [
       const getStatusVariant = (status: string) => {
         switch (status) {
           case 'active':
-            return 'default';
+            return 'success';
           case 'inactive':
             return 'secondary';
           case 'pending':

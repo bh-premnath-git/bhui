@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useEffect } from "react";
+import { memo, useMemo, useState, useEffect, useCallback } from "react";
 import { useReactFlow } from "reactflow";
 import { useTransformationOutputQuery } from "@/lib/hooks/useTransformationOutput";
 import { HiChartBar } from "react-icons/hi";
@@ -12,6 +12,7 @@ import MetricsDrawerContent from "./MetricsDrawerContent";
 import { DataTable } from "@/components/bh-table/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Terminal, PreviewData } from "./LogsPage";
+import { alignNodesToTopLeft } from '@/utils/nodeAlignment';
 
 const edgeStyles = {
     stroke: '#b1b1b7',
@@ -25,6 +26,40 @@ const MetricsDrawerWrapper: React.FC<{
     isLoading: boolean;
 }> = ({ metricsData }) => {
     //console.log(metricsData, "metricsData");
+    
+    // State to track drawer height for responsive table
+    const [drawerHeight, setDrawerHeight] = useState<number>(520);
+    
+    // Listen for drawer resize events
+    useEffect(() => {
+        const handleDrawerResize = (event: CustomEvent) => {
+            const newHeight = event.detail.height;
+            setDrawerHeight(newHeight);
+        };
+
+        // Add event listener for drawer resize
+        document.addEventListener('bottomDrawerResize', handleDrawerResize as EventListener);
+
+        // Also listen for window resize events
+        const handleWindowResize = () => {
+            // Update drawer height from the container if it exists
+            const container = document.getElementById('bottom-drawer-container');
+            if (container) {
+                const containerHeight = container.getBoundingClientRect().height;
+                setDrawerHeight(containerHeight);
+            }
+        };
+
+        window.addEventListener('resize', handleWindowResize);
+        
+        // Initial height check
+        handleWindowResize();
+
+        return () => {
+            document.removeEventListener('bottomDrawerResize', handleDrawerResize as EventListener);
+            window.removeEventListener('resize', handleWindowResize);
+        };
+    }, []);
     
     // Create columns for the DataTable based on the first row of data
     const columns = useMemo(() => {
@@ -51,11 +86,13 @@ const MetricsDrawerWrapper: React.FC<{
                 
                 <TabsContent value="table" className="w-full">
                     {metricsData?.[0]?.rows?.length > 0 ? (
-                        <DataTable 
-                            data={metricsData[0].rows}
-                            columns={columns}
-                            pagination={true}
-                        />
+                        <div style={{ height: `${Math.max(drawerHeight - 200, 200)}px` }}>
+                            <DataTable 
+                                data={metricsData[0].rows}
+                                columns={columns}
+                                pagination={true}
+                            />
+                        </div>
                     ) : (
                         <div className="flex items-center justify-center h-40 text-gray-500">
                             No data available
@@ -74,7 +111,7 @@ const MetricsDrawerWrapper: React.FC<{
     );
 };
 
-interface CustomEdgeProps {
+ interface CustomEdgeProps {
     id: string;
     sourceX: number;
     sourceY: number;
@@ -122,7 +159,8 @@ export const CustomEdge = memo(({
         nodes, 
         edges, 
         updateSetNode, 
-        reactFlowInstance 
+        reactFlowInstance,
+        attachedCluster
       } = usePipelineContext()
     // Track if our metrics are currently being shown in the drawer
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
@@ -137,6 +175,11 @@ export const CustomEdge = memo(({
 
     const { data: metricsData, isLoading: isMetricsLoading } = useTransformationOutputQuery(queryParams);
     const sourceNode = getNode(source);
+
+    // Function to align all nodes to top-left
+    const handleAlignTopLeftClick = useCallback(() => {
+        alignNodesToTopLeft(nodes, edges, updateSetNode, reactFlowInstance);
+    }, [nodes, edges, updateSetNode, reactFlowInstance]);
     
     const rowCount = transformationCounts.find(
         (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
@@ -190,60 +233,6 @@ export const CustomEdge = memo(({
         };
     }, [sourceHandle, targetHandle, source, target, getNode]);
 
- const handleAlignTopLeftClick = () => {
-    console.log("Align Top Left clicked");
-    try {
-      if (!nodes || nodes.length === 0) {
-        console.log("No nodes to align");
-        return;
-      }
-      
-      // Simple grid layout starting from top-left
-      const startX = -250; // Move nodes more to the right
-      const startY = -120; // Move nodes even higher up (can go negative)
-      const gridSpacing = 150; // Space between nodes
-      const nodesPerRow = 4; // Number of nodes per row
-      
-      const newNodes = nodes.map((node, index) => {
-        const row = Math.floor(index / nodesPerRow);
-        const col = index % nodesPerRow;
-        
-        return {
-          ...node,
-          position: {
-            x: startX + (col * gridSpacing),
-            y: startY + (row * gridSpacing)
-          }
-        };
-      });
-
-      // Update nodes with new positions
-      updateSetNode(newNodes, edges);
-
-      // Center the view after a short delay
-      setTimeout(() => {
-        if (reactFlowInstance && reactFlowInstance.setCenter) {
-          // Calculate the center of the grid
-          const rows = Math.ceil(nodes.length / nodesPerRow);
-          const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
-          const centerY = startY + ((rows - 1) * gridSpacing) / 2;
-          
-          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }
-        
-        // Try to click the fitView button directly as a fallback
-        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-        if (fitViewButton instanceof HTMLElement) {
-          console.log("Clicking fitView button after top-left alignment");
-          fitViewButton.click();
-        }
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error in align top left:", error);
-    }
-  };
-
     const handleMetricsClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
@@ -258,6 +247,7 @@ export const CustomEdge = memo(({
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
                     transformationName: sourceNode?.data.title,
+                    host:attachedCluster.master_ip||"host.docker.internal",
                     isFlow
                 })).unwrap();
                 
@@ -282,6 +272,9 @@ export const CustomEdge = memo(({
                     />
                 );
                 setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
+                
+                // Realign all nodes to top-left when drawer is opened
+                handleAlignTopLeftClick();
             } catch (error) {
                 console.error("Error fetching transformation output:", error);
             } finally {
@@ -324,8 +317,11 @@ export const CustomEdge = memo(({
             
             // Set the drawer content
             setBottomDrawerContent(terminalComponent, `${sourceNode?.data.title || 'Transformation'} Data`);
+            
+            // Realign all nodes to top-left when drawer is opened
+            handleAlignTopLeftClick();
         }
-    }, [metricsData, isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow, setBottomDrawerContent]);
+    }, [metricsData, isShowingInDrawer, isBottomDrawerOpen, closeBottomDrawer, sourceNode?.data.title, pipelineDtl?.pipeline_name, pipelineName, isFlow, setBottomDrawerContent, handleAlignTopLeftClick]);
 
     const handleEdgeRemove = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -522,11 +518,14 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
     // Check if MetricsButton should be shown (when it has content)
     const showMetricsButton = rowCount && debuggedNodesList?.length > 0;
     
+    // Adjust the foreignObject position to center the scissors button properly
+    const foreignObjectX = showMetricsButton ? edgeCenter.x - 70 : edgeCenter.x - 70;
+    
     return (
         <foreignObject
             width={140}
             height={40}
-            x={edgeCenter.x - 30}
+            x={foreignObjectX}
             y={edgeCenter.y - 20}
             className="edge-buttons"
             style={{ zIndex: 1000, pointerEvents: 'all' }}
@@ -534,22 +533,58 @@ const EdgeControls: React.FC<EdgeControlsProps> = ({
             onMouseLeave={() => onHoverChange(false)}
             onClick={e => e.stopPropagation()}
         >
-            <div className="flex items-center justify-center w-full h-full" onClick={e => e.stopPropagation()}>
-               
-                <RemoveButton isHovered={isHovered} onClick={onRemove} showMetricsButton={showMetricsButton} />
+            <div className="flex items-center justify-center w-full h-full gap-2" onClick={e => e.stopPropagation()}>
+                {showMetricsButton && (
+                    <MetricsButton
+                        isHovered={isHovered} 
+                        onClick={onMetricsClick} 
+                        isLoading={isLoading}
+                        rowCount={rowCount}
+                    />
+                )}
+                <RemoveButton isHovered={isHovered} onClick={onRemove} />
             </div>
         </foreignObject>
     );
 };
 
 
+interface MetricsButtonProps {
+    isHovered: boolean;
+    onClick: (e: React.MouseEvent) => void;
+    isLoading: boolean;
+    rowCount?: number;
+}
+
+const MetricsButton: React.FC<MetricsButtonProps> = ({ isHovered, onClick, isLoading, rowCount }) => (
+    <button
+        className={`flex items-center justify-center w-6 h-6
+                 bg-white rounded-full 
+                 shadow-md border border-gray-200
+                 hover:bg-blue-50 hover:border-blue-200
+                 transition-all duration-200
+                 ${isHovered ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+        onClick={onClick}
+        style={{
+            pointerEvents: isHovered ? 'all' : 'none'
+        }}
+        title={`View Metrics${rowCount ? ` (${rowCount} rows)` : ''}`}
+        disabled={isLoading}
+    >
+        {isLoading ? (
+            <Loader className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+        ) : (
+            <HiChartBar className="w-3.5 h-3.5 text-gray-500 hover:text-blue-500 transition-colors duration-200" />
+        )}
+    </button>
+);
+
 interface RemoveButtonProps {
     isHovered: boolean;
     onClick: (e: React.MouseEvent) => void;
-    showMetricsButton?: boolean;
 }
 
-const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick, showMetricsButton = false }) => (
+const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick }) => (
     <button
         className={`flex items-center justify-center w-6 h-6
                  bg-white rounded-full 
@@ -559,9 +594,7 @@ const RemoveButton: React.FC<RemoveButtonProps> = ({ isHovered, onClick, showMet
                  ${isHovered ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
         onClick={onClick}
         style={{
-            pointerEvents: isHovered ? 'all' : 'none',
-            // Adjust positioning based on whether MetricsButton is shown
-            transform: showMetricsButton ? 'translateX(-40px)' : 'translateX(0px)'
+            pointerEvents: isHovered ? 'all' : 'none'
         }}
         title="Cut Connection"
     >

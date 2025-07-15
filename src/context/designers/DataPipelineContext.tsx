@@ -8,8 +8,9 @@ import React, {
     useRef,
     useContext
 } from 'react';
+import { usePipelineActions } from '@/hooks/usePipelineActions';
 import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
-import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
 import {
     useNodesState,
     useEdgesState,
@@ -26,14 +27,14 @@ import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson, co
 import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
 import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
 import { ValidationIssue } from '@/components/headers/build-playground-header/components/PipelineControls';
-import {
-    getPipelineById, getTransformationCount, runNextCheckpoint, setBuildPipeLineDtl, stopPipeLine, updatePipeline,
-} from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import {updatePipeline} from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
 import { AppDispatch, RootState } from '@/store';
 import { apiService } from '@/lib/api/api-service';
 import { useAppSelector } from '@/hooks/useRedux';
 import { random } from 'lodash';
+import { usePipelineOperations } from '@/hooks/usePipelineOperations';
+import { Pipeline } from '@/types/designer/pipeline';
 
 interface UIProperties {
     color: string;
@@ -175,6 +176,8 @@ interface bnPipelineContextProps {
     setAttachedCluster: React.Dispatch<React.SetStateAction<any>>
     attachCluster: (cluster: any) => void
     detachCluster: () => void
+    pipelines: Pipeline[];
+    setPipelines: React.Dispatch<React.SetStateAction<Pipeline[]>>;
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -219,9 +222,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const time = import.meta.env.VITE_AUTO_SAVE_TIME;
     const autoSaveInterval = parseInt(time, 10) || 5000;
     const navigate = useNavigate();
-    // console.log("Id", id);
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
     const { zoomIn, zoomOut, fitView } = useReactFlow();
+    const [pipelines, setPipelines] = useState<Pipeline[]>([]);
 
     const [isSaving, setIsSaving] = useState(false); 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -384,124 +387,43 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsSaving(false);
         setSaveErrorState(error);
     }, []);
-    // useEffect(() => { 
-    const fetchPipelineDetails = async () => {
-        // alert("fetchPipelineDetails")
-        try {
-            // Check if id exists and is valid
-            if (!id) {
-                return;
-            }
 
-            // Fetch pipeline details
-            const response = await dispatch(getPipelineById({ id })).unwrap();
-            console.log(response, "response")
-            if (!response || !response.pipeline_json) {
-                setNodes([])
-                setEdges([])
-                console.log("response.pipeline_json", response.pipeline_json)
-                throw new Error('Invalid pipeline data received');
-            }
-            console.log(response, "response")
-            // Update pipeline name and JSON safely
-            setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name);
-            dispatch(setBuildPipeLineDtl(response.pipeline_json));
-            let optimised = await resolveRefsPipelineJson(response?.pipeline_json, response?.pipeline_json)
-            console.log(optimised, "optimised")
-            setPipelineJson(optimised);
+    const handleRunClick = useCallback(async (e: React.MouseEvent) => {
 
-            // Convert pipeline to UI JSON
-            const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-            console.log(uiJson, "uiJson")
+        const pipelineConfig: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
+        setSelectedFormState(pipelineConfig);
+        return pipelineConfig;
+    }, [edges, formStates, reactFlowInstance, nodes, pipelineDtl, pipelineName]);
 
-            if (!uiJson || !uiJson.nodes) {
-                setNodes([])
-                setEdges([])
-                throw new Error('Failed to convert pipeline to UI format');
-            }
-
-            // Map nodes with titles safely
-            const nodesWithTitles = uiJson.nodes.map(node => {
-                const matchingTransformation = response.pipeline_json.transformations?.find(
-                    (t: any) => t?.title === node?.data?.title && t?.name
-                );
-
-                if (matchingTransformation) {
-                    return {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            title: matchingTransformation.name,
-                            transformationData: {
-                                ...node.data.transformationData,
-                                name: matchingTransformation.name
-                            }
-                        }
-                    };
-                }
-                return node;
-            });
-            console.log(nodesWithTitles, "nodesWithTitles")
-            console.log(response?.pipeline_json, "response?.pipeline_json")
-            if (response?.pipeline_json == null) {
-                setPipelineJson(null)
-                setNodes([])
-                setEdges([])
-
-            } else {
-                setNodes(nodesWithTitles);
-                setEdges(uiJson.edges || []);
-            }
-            // Update nodes and edges
-
-
-            // Initialize form states
-            const initialFormStates = {};
-            response.pipeline_json.transformations?.forEach((transformation: any) => {
-                const matchingNode = nodesWithTitles.find(
-                    (node: any) =>
-                        node?.data?.label === transformation?.transformation &&
-                        node?.data?.title === transformation?.name
-                );
-
-                if (matchingNode?.id) {
-                    initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
-                }
-            });
-
-            setFormStates(initialFormStates);
-
-        } catch (error) {
-            console.error("Error fetching pipeline details:", error);
-            // Optionally set an error state or show a notification
-        }
-    };
-
-    // Only fetch if we have an ID
-    // const expectedPath = `/designers/build-playground/${id}`;
-
-    // Only fetch if we have an ID and the pathname matches
-    // if (id && location.pathname === expectedPath) {
-    // fetchPipelineDetails();
-    // }
-    // }, [ ]);
-
-    // Add type safety for the getInitialFormState function
-    const getInitialFormState = (transformation: any, nodeId: string) => {
-        if (!transformation || !nodeId) {
-            return {};
-        }
-
-        try {
-            return {
-                ...transformation,
-                nodeId
-            };
-        } catch (error) {
-            console.error(`Error creating initial form state for node ${nodeId}:`, error);
-            return {};
-        }
-    };
+    // Use the pipeline actions hook
+    const { handleRun, handleStop, handleNext, handleRefreshNode, fetchPipelineDetails, handleSourceUpdate } = usePipelineActions({
+        nodes,
+        edges,
+        pipelineDtl,
+        pipelineName,
+        selectedMode,
+        attachedCluster,
+        debuggedNodesList,
+        setIsCanvasLoading,
+        setIsPipelineRunning,
+        setConversionLogs,
+        setTerminalLogs,
+        setTransformationCounts,
+        setSaveError,
+        handleRunClick,
+        setSelectedFormState,
+        setRunDialogOpen,
+        // For fetchPipelineDetails
+        id,
+        setNodes,
+        setEdges,
+        setPipeLineName,
+        setPipelineJson,
+        setFormStates,
+        selectedPipeline,
+        // For handleSourceUpdate
+        setUnsavedChanges
+    });
 
     // Update the auto-save effect
     useEffect(() => {
@@ -529,9 +451,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     }));
                     // Your save logic here
                     const pipeline_json: any = await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl, pipelineName);
-                    console.log(pipeline_json, "pipeline_json")
-
-                    console.log(pipeline_json?.transformations, "pipeline_json")
 
                     pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json?.transformations?.map(transform => {
                         if (transform.transformation.toLowerCase() === "target") {
@@ -542,7 +461,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         }
                         return transform;
                     });
-                    console.log(pipeline_json, "pipeline_json")
 
                     if(id){
                       await apiService.patch({
@@ -597,7 +515,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Modify setNodes to sanitize nodes
     const setSanitizedNodes = useCallback((nodesOrUpdater: any) => {
         // alert()
-        // console.log(typeof nodesOrUpdater)
         // if (typeof nodesOrUpdater === 'function') {
         //     setNodes((prevNodes) => 
         //         nodesOrUpdater(prevNodes).map(sanitizeNode)
@@ -634,7 +551,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // setUnsavedChanges();
     }, [onNodesChange, dispatch, sanitizeNode]);
     const updateSetNode = (newNodes, newEdges) => {
-        console.log("Updating nodes:", newNodes);
         
         // Force a new array reference to ensure React detects the change
         if (Array.isArray(newNodes)) {
@@ -656,7 +572,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setHeaderUpdateTrigger(prev => prev + 1);
     }
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
-        console.log("Updating node:", nodeId, updatedData);
         
         // Ensure nodes is an array before mapping
         if (!Array.isArray(nodes) || nodes.length === 0) {
@@ -680,53 +595,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return node;
         });
         
-        console.log("Updated nodes:", updatedNodes);
-        
         // Use updateSetNode for consistent state management
         updateSetNode(updatedNodes, edges);
     }, [nodes, edges, updateSetNode]);
 
-    const handleCenter = useCallback(() => {
-        try {
-            // Use more generous padding and longer duration for better visibility
-            fitView({ 
-                duration: 800, 
-                padding: 0.2, 
-                includeHiddenNodes: false,
-                minZoom: 0.5,
-                maxZoom: 1.5
-            });
-            
-            // Dispatch a custom event that other components can listen for
-            const centerEvent = new CustomEvent('canvasCentered', {
-                bubbles: true,
-                detail: { timestamp: Date.now() }
-            });
-            document.dispatchEvent(centerEvent);
-            
-            // Force a resize event to ensure ReactFlow recalculates dimensions
-            window.dispatchEvent(new Event('resize'));
-        } catch (error) {
-            console.error('FitView error:', error);
-            
-            // Fallback approach - try to use the ReactFlow instance directly
-            try {
-                const reactFlowViewport = document.querySelector('.react-flow__viewport');
-                if (reactFlowViewport) {
-                    // Reset transform to center view
-                    reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
-                }
-                
-                // Try to click the fitView button as a last resort
-                const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-                if (fitViewButton instanceof HTMLElement) {
-                    fitViewButton.click();
-                }
-            } catch (fallbackError) {
-                console.error('Fallback center approach failed:', fallbackError);
-            }
-        }
-    }, [fitView]);
+
     const makePipeline = async (result: any, isModify = true) => {
         let optimised;
         optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
@@ -735,7 +608,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Set the pipeline JSON first
         setPipelineJson(optimised);
 
-        console.log(uiJson, "uiJson");
         if (!uiJson || !uiJson.nodes) {
             throw new Error('Failed to convert pipeline to UI format');
         }
@@ -761,14 +633,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return node;
         });
 
-        console.log(result.pipeline_definition, "nodesWithTitles");
-
         if (result.pipeline_definition == null) {
             setPipelineJson(null);
             setNodes([]);
             setEdges([]);
         } else {
-            console.log(nodesWithTitles, "nodesWithTitles");
             setNodes([]);
 
             // Set nodes and edges with the new data
@@ -782,6 +651,21 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Initialize form states for the new nodes
         const initialFormStates = {};
+        const getInitialFormState = (transformation: any, nodeId: string) => {
+            if (!transformation || !nodeId) {
+                return {};
+            }
+            try {
+                return {
+                    ...transformation,
+                    nodeId
+                };
+            } catch (error) {
+                console.error(`Error creating initial form state for node ${nodeId}:`, error);
+                return {};
+            }
+        };
+        
         await result.pipeline_definition.transformations?.forEach((transformation: any) => {
             const matchingNode = nodesWithTitles.find(
                 (node: any) =>
@@ -798,76 +682,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setFormStates(initialFormStates);
     }
 
-    const handleSourceUpdate = useCallback(async ({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
-        // debugger
-        console.log('handleSourceUpdate received:', { nodeId, sourceData });
 
-        // Handle the nested structure from TargetPopUp component
-        // The structure can be either:
-        // 1. { sourceData: { data: { ... } } } - from TargetPopUp
-        // 2. { data: { ... } } - from other components
-        let data;
-
-        if (sourceData.sourceData?.data) {
-            // Structure from TargetPopUp
-            data = sourceData.sourceData.data;
-            console.log('Using nested sourceData.sourceData.data structure');
-        } else if (sourceData.data) {
-            // Direct structure
-            data = sourceData.data;
-            console.log('Using direct sourceData.data structure');
-        } else {
-            // Try to use sourceData directly as a fallback
-            data = sourceData;
-            console.log('Using sourceData directly as fallback');
-        }
-
-        if (!data) {
-            console.error('Invalid sourceData structure:', sourceData);
-            // Create a minimal data object to avoid errors
-            data = {
-                label: 'Unnamed Node',
-                title: 'Unnamed Node',
-                source: {},
-                transformationData: {}
-            };
-        }
-
-        console.log('Using data:', data);
-
-        try {
-            setNodes(prevNodes =>
-                prevNodes.map((node: any) => {
-                    if (node.id === nodeId) {
-                        // Make sure we have all the required data
-                        if (!data.label) {
-                            console.warn('Missing label in sourceData, using fallback');
-                        }
-
-                        return {
-                            ...node,
-                            label: data.label || node.label || 'Unnamed Node',
-                            data: {
-                                ...node.data,
-                                title: data.label || node.data?.title || 'Unnamed Node',
-                                source: data.source || node.data?.source || {},
-                                transformationData: data.transformationData || node.data?.transformationData || {}
-                            }
-                        };
-                    }
-                    return node;
-                })
-            );
-        } catch (error) {
-            console.error('Error updating node:', error);
-            console.error('Node ID:', nodeId);
-            console.error('Source data:', sourceData);
-        }
-        setUnsavedChanges();
-
-    }, [setSanitizedNodes, dispatch]);
  const updateAllNodeDependencies = useCallback(() => {
-        console.log("Updating all node dependencies based on current edges");
         
         // Create a map of node IDs to task IDs
         const nodeIdToTaskIdMap = new Map();
@@ -886,8 +702,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         }
         
-        console.log("Node ID to Task ID Map:", Object.fromEntries(nodeIdToTaskIdMap));
-        
         // Create a map of node dependencies based on edges
         const nodeDependencies = new Map();
         
@@ -899,15 +713,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             
             if (nodeIdToTaskIdMap.has(edge.source)) {
                 const sourceTaskId = nodeIdToTaskIdMap.get(edge.source);
-                console.log(`Adding dependency: ${edge.target} depends on ${sourceTaskId}`);
                 nodeDependencies.get(edge.target).push(sourceTaskId);
             }
         }
         
-        console.log("Node Dependencies Map:", Object.fromEntries([...nodeDependencies.entries()].map(
-            ([k, v]) => [k, v]
-        )));
-        
+      
         // Update all form states with their dependencies
         setFormStates(prevFormStates => {
             const newFormStates = { ...prevFormStates };
@@ -915,7 +725,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Update each node's form state with its dependencies
             for (const [nodeId, dependsOnTaskIds] of nodeDependencies.entries()) {
                 if (newFormStates[nodeId]) {
-                    console.log(`Updating form state for node ${nodeId} with dependencies:`, dependsOnTaskIds);
                     newFormStates[nodeId] = {
                         ...newFormStates[nodeId],
                         depends_on: dependsOnTaskIds
@@ -947,7 +756,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         // If edges were removed, update all node dependencies
         if (hasRemovals) {
-            console.log("Edges were removed, updating all node dependencies");
             // Use setTimeout to ensure the edge changes are applied first
             setTimeout(() => {
                 updateAllNodeDependencies();
@@ -956,21 +764,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [onEdgesChange, dispatch, updateAllNodeDependencies]);
 
     const handleFormSubmit = useCallback((data: any) => {
-        console.log('Form data:', data);
         
         // Get the nodeId from either selectedSchema or data.nodeId
         const nodeId = selectedSchema?.nodeId || data.nodeId;
         
         if (nodeId) {
-            console.log(`Updating node ${nodeId} with form data:`, data);
-            
             // Update form states first
             setFormStates((prev: any) => {
                 const newFormStates = {
                     ...prev,
                     [nodeId]: data
                 };
-                console.log('Updated form states:', newFormStates);
                 return newFormStates;
             });
 
@@ -987,7 +791,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // Update the node title if name is provided
                 const updatedTitle = data.name || currentNodes[nodeIndex].data.title;
                 
-                console.log(`Updating node ${nodeId} title to: ${updatedTitle}`);
 
                 // Special handling for Filter nodes
                 let transformationData = {
@@ -998,7 +801,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 
                 // Special handling for Filter nodes
                 if (currentNodes[nodeIndex].data.label === 'Filter') {
-                    console.log('Processing Filter node in handleFormSubmit:', data);
                     // Ensure condition is properly set
                     if (data.condition !== undefined) {
                         transformationData.condition = data.condition;
@@ -1021,7 +823,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 currentNodes[nodeIndex] = updatedNode;
                 
                 // Update the nodes in the context
-                console.log('Setting updated nodes:', currentNodes);
                 setNodes(currentNodes);
                 
                 // Force a re-render by updating a timestamp
@@ -1043,17 +844,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsFormOpen(false);
     }, []);
 
-    const handleRunClick = useCallback(async (e: React.MouseEvent) => {
-
-        const pipelineConfig: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
-        setSelectedFormState(pipelineConfig);
-        return pipelineConfig;
-    }, [edges, formStates, reactFlowInstance]);
-
-
     const handleNodeForm = useCallback((targetNodeId: string) => {
         const targetNode = nodes.find(node => node.id === targetNodeId);
-        console.log(targetNode, "targetNode")
         if (targetNode) {
             const moduleName = targetNode.data.label.split(' ')[0];
             const schemaArray = Array.isArray(schemaData) ? schemaData : Object.values(schemaData);
@@ -1167,13 +959,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const attachCluster = useCallback((cluster: any) => {
         setAttachedCluster(cluster);
         localStorage.setItem('attachedCluster', JSON.stringify(cluster));
-        console.log('Cluster attached:', cluster);
     }, []);
 
     const detachCluster = useCallback(() => {
         setAttachedCluster(null);
         localStorage.removeItem('attachedCluster');
-        console.log('Cluster detached');
     }, []);
 
     // Load attached cluster from localStorage on mount
@@ -1190,306 +980,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, []);
 
-    const handleRun = useCallback(async () => {
-        try {
-            setIsCanvasLoading(true);
-            setIsPipelineRunning(true);
-            // setShowLogs(true);
 
-            setConversionLogs([{
-                timestamp: new Date().toISOString(),
-                message: 'Starting pipeline validation...',
-                level: 'info'
-            }]);
-
-
-            const { pipeline_json }: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
-            console.log(pipeline_json)
-
-            pipeline_json.transformations = pipeline_json.transformations.map(transform => {
-                if (transform.transformation.toLowerCase() === "target") {
-                    return {
-                        ...transform,
-                        transformation: "Writer"
-                    };
-                }
-                return transform;
-            });
-            console.log(debuggedNodesList)
-            console.log(pipelineDtl)
-            
-            // Convert selectedMode to API parameter format
-            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
-                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
-            
-            console.log('Selected Mode:', selectedMode) 
-            console.log('Mode Action for API:', modeAction) 
-
-            const params = new URLSearchParams({
-                pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
-                pipeline_json: JSON.stringify(pipeline_json),
-                mode: modeAction
-            });
-            
-            // Add host parameter if cluster is attached
-            if (attachedCluster?.master_ip) {
-                params.append('host', attachedCluster.master_ip);
-                console.log('Using attached cluster host:', attachedCluster.master_ip);
-            }
-            debuggedNodesList.forEach(checkpoint => {
-                params.append('checkpoints', checkpoint?.title);
-            });
-            // Create the request data object with array
-            // const requestData = {
-            //     pipeline_name: pipelineDtl?.pipeline_name,
-            //     pipeline_json: pipeline_json,
-            //     mode: 'DEBUG',
-            //     checkpoints: debuggedNodesList.map(checkpoint => checkpoint.title)
-            // };
-            // console.log(requestData,"requestData")
-
-            setSelectedFormState(pipeline_json);
-            setRunDialogOpen(true);
-            console.log(pipeline_json, "params")
-            // setConversionLogs(prevLogs => [...prevLogs, {
-            //     timestamp: new Date().toISOString(),
-            //     message: 'Pipeline validation successful. Starting execution...',
-            //     level: 'info'
-            // }]);
-
-            // Pass the request data directly
-            let response:any = await apiService.post({
-                baseUrl: CATALOG_REMOTE_API_URL,
-                url: `/pipeline/debug/start_pipeline?${params.toString()}`,
-                usePrefix: true,
-                method: 'POST',
-                data: params
-            });
-            if (response.error) {
-                throw new Error(response.error);
-            }
-
-            let countsResponse = await dispatch(getTransformationCount({
-                params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
-            })).unwrap();
-            console.log(countsResponse, "countsResponse")
-
-            if (countsResponse.transformationOutputCounts) {
-                setTransformationCounts(countsResponse.transformationOutputCounts);
-            }
-
-        } catch (error) {
-            console.error('Error starting pipeline:', error);
-
-            setTerminalLogs(prevLogs => [...prevLogs, {
-                timestamp: new Date().toISOString(),
-                message: `Error: ${error.message}`,
-                level: 'error'
-            }]);
-
-            if (error.message.includes('Pipeline is incomplete or broken:')) {
-                const errorMessages = error.message.split('\n').slice(1);
-                setValidationErrors(errorMessages);
-            }
-
-            const errorDetail = error.response?.data?.detail || '';
-            const errorMessage = error.message || '';
-            
-            console.log('Error detail:', errorDetail);
-            
-            if (
-                errorMessage.includes('already exist') || 
-                errorMessage.includes('already running') ||
-                errorDetail.includes('ALREADY_EXISTS') ||
-                errorDetail.includes('already running')
-            ) {
-                console.log('Pipeline already exists or is running, fetching transformation counts...');
-                
-                try {
-                    let countsResponse = await dispatch(getTransformationCount({
-                        params: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
-                    })).unwrap();
-                    
-                    console.log(countsResponse, "countsResponse after error");
-                    
-                    if (countsResponse.transformationOutputCounts) {
-                        setTransformationCounts(countsResponse.transformationOutputCounts);
-                        setIsPipelineRunning(true);
-                        
-                        setTerminalLogs(prevLogs => [...prevLogs, {
-                            timestamp: new Date().toISOString(),
-                            message: 'Pipeline is already running. Fetched current transformation counts.',
-                            level: 'info'
-                        }]);
-                    }
-                } catch (countError) {
-                    console.error('Error getting transformation counts after pipeline error:', countError);
-                }
-                return;
-            }
-
-            setSaveError(error.message);
-            setIsPipelineRunning(false);
-        } finally {
-            setIsCanvasLoading(false);
-        }
-    }, [handleRunClick, debuggedNodesList, nodes, edges, pipelineDtl, pipelineName, dispatch, selectedMode]);
-
-
-    const handleStop = useCallback(async () => {
-        try {
-            console.log(pipelineName)
-            console.log(pipelineDtl)
-            const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
-            const host = attachedCluster?.master_ip;
-            
-            let response = await dispatch(stopPipeLine({ 
-                params: pipelineName_val,
-                host: host
-            })).unwrap();
-            if (response.message) {
-                setIsPipelineRunning(false);
-                // Clear transformation counts when stopping the pipeline
-                setTransformationCounts([]);
-            }
-        } catch (error) {
-            console.error('Error stopping pipeline:', error);
-        }
-    }, [pipelineDtl?.pipeline_name, attachedCluster?.master_ip, dispatch]);
-
-    const handleNext = useCallback(async () => {
-        try {
-            console.log('Next pipeline clicked');
-            const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
-            const host = attachedCluster?.master_ip;
-            
-            let result: any = await dispatch(runNextCheckpoint({ 
-                pipeline_name: pipelineName_val,
-                host: host
-            })).unwrap();
-            // Only proceed if first API call was successful
-            if (result && !result.error) {
-                let countsResponse = await dispatch(getTransformationCount({ 
-                    params: pipelineName_val,
-                    host: host
-                })).unwrap();
-                console.log(countsResponse, "countsResponse")
-                if (countsResponse.error) {
-                    throw new Error(countsResponse.error);
-                }
-                if (countsResponse.transformationOutputCounts) {
-                    setTransformationCounts(countsResponse.transformationOutputCounts);
-                }
-            } else {
-                throw new Error(result.error || 'Failed to run next checkpoint');
-            }
-        } catch (error) {
-            console.error('Error in handleNext:', error);
-            // Handle error appropriately (e.g., show error message to user)
-        }
-    }, [pipelineDtl?.pipeline_name, attachedCluster?.master_ip, dispatch]);
-
-    const handleRefreshNode = useCallback(async (nodeId: string) => {
-        try {
-            console.log(`🔄 Refreshing node: ${nodeId}`);
-            setIsCanvasLoading(true);
-
-            // Add log for refresh start
-            setTerminalLogs(prevLogs => [...prevLogs, {
-                timestamp: new Date().toISOString(),
-                message: `Starting refresh for node: ${nodeId}`,
-                level: 'info'
-            }]);
-
-            const partialPipelineJson:any = await convertUIToPipelineJsonUpToNode(
-                nodes, 
-                edges, 
-                pipelineDtl, 
-                nodeId,
-                pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
-            );
-
-            console.log(`📋 Partial pipeline JSON for node ${nodeId}:`, partialPipelineJson);
-
-            // Convert selectedMode to API parameter format
-            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
-                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
-
-            // Create API parameters for partial pipeline execution
-            const params = new URLSearchParams({
-                pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
-                pipeline_json: JSON.stringify(partialPipelineJson?.pipeline_json || partialPipelineJson),
-                mode: modeAction,
-                target_node: nodeId // Add target node info for backend
-            });
-            
-            // Add host parameter if cluster is attached
-            if (attachedCluster?.master_ip) {
-                params.append('host', attachedCluster.master_ip);
-            }
-
-            console.log(`🚀 Executing partial pipeline up to node: ${nodeId}`);
-
-            // Execute the partial pipeline
-            const response:any = await apiService.post({
-                baseUrl: CATALOG_REMOTE_API_URL,
-                url: `/pipeline/debug/reload_and_rerun_pipeline?${params.toString()}`,
-                usePrefix: true,
-                method: 'POST',
-                data: params
-            });
-
-            if (response.error) {
-                throw new Error(response.error);
-            }
-
-            // Add success log
-            setTerminalLogs(prevLogs => [...prevLogs, {
-                timestamp: new Date().toISOString(),
-                message: `✅ Node ${nodeId} refreshed successfully`,
-                level: 'info'
-            }]);
-
-            // Optionally update transformation counts for the refreshed portion
-            try {
-                const host = attachedCluster?.master_ip;
-                const countsResponse = await dispatch(getTransformationCount({
-                    params: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
-                    host: host
-                })).unwrap();
-
-                if (countsResponse.transformationOutputCounts) {
-                    // Update only the counts for nodes up to the target node
-                    setTransformationCounts(prevCounts => {
-                        const newCounts = [...prevCounts];
-                        countsResponse.transformationOutputCounts.forEach(newCount => {
-                            const existingIndex = newCounts.findIndex(c => c.transformationName === newCount.transformationName);
-                            if (existingIndex >= 0) {
-                                newCounts[existingIndex] = newCount;
-                            } else {
-                                newCounts.push(newCount);
-                            }
-                        });
-                        return newCounts;
-                    });
-                }
-            } catch (countError) {
-                console.warn('Could not update transformation counts after refresh:', countError);
-            }
-
-        } catch (error) {
-            console.error(`❌ Error refreshing node ${nodeId}:`, error);
-            
-            // Add error log
-            setTerminalLogs(prevLogs => [...prevLogs, {
-                timestamp: new Date().toISOString(),
-                message: `❌ Error refreshing node ${nodeId}: ${error.message}`,
-                level: 'error'
-            }]);
-        } finally {
-            setIsCanvasLoading(false);
-        }
-    }, [nodes, edges, pipelineDtl, pipelineName, selectedMode, dispatch]);
 
     const getTransformationName = (moduleName: string): string => {
         return moduleName.toLowerCase();
@@ -1640,245 +1131,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setRedoStack([]); // Clear redo stack on new action
     }, [nodes, edges]);
 
-    const handleCopy = useCallback(() => {
-        const selectedNodes = nodes.filter(node => node.selected);
-        const selectedEdges = edges.filter(edge => {
-            const sourceNode = selectedNodes.find(node => node.id === edge.source);
-            const targetNode = selectedNodes.find(node => node.id === edge.target);
-            return sourceNode && targetNode;
-        });
-
-        // Copy form states for selected nodes
-        const selectedFormStates = selectedNodes.reduce((acc, node) => {
-            if (formStates[node.id]) {
-                acc[node.id] = formStates[node.id];
-            }
-            return acc;
-        }, {});
-
-        setCopiedNodes(selectedNodes);
-        setCopiedEdges(selectedEdges);
-        // Store copied form states
-        setCopiedFormStates(selectedFormStates);
-    }, [nodes, edges, formStates]);
-
-    const handlePaste = useCallback(() => {
-        if (copiedNodes.length === 0) return;
-        addNodeToHistory();
-        const idMapping = {};
-        const newNodes = copiedNodes.map(node => {
-            const newId = `${node.id}_copy_${Date.now()}`;
-            idMapping[node.id] = newId;
-
-            return {
-                ...node,
-                id: newId,
-                position: {
-                    x: node.position.x + 50,
-                    y: node.position.y + 50
-                },
-                selected: false
-            };
-        });
-        const newEdges = copiedEdges.map(edge => ({
-            ...edge,
-            id: `${edge.id}_copy_${Date.now()}`,
-            source: idMapping[edge.source],
-            target: idMapping[edge.target],
-            selected: false
-        }));
-
-        const newFormStates = {};
-        Object.entries(copiedFormStates).forEach(([oldNodeId, formState]) => {
-            const newNodeId = idMapping[oldNodeId];
-            if (newNodeId) {
-                newFormStates[newNodeId] = { ...formState };
-            }
-        });
-
-        // Use updateSetNode for consistent state management
-        const updatedNodes = Array.isArray(nodes) ? [...nodes, ...newNodes] : [...newNodes];
-        const updatedEdges = Array.isArray(edges) ? [...edges, ...newEdges] : [...newEdges];
-        
-        console.log("Pasting nodes:", newNodes);
-        console.log("Updated nodes after paste:", updatedNodes);
-        
-        updateSetNode(updatedNodes, updatedEdges);
-        setFormStates(prevFormStates => ({
-            ...prevFormStates,
-            ...newFormStates
-        }));
-        setUnsavedChanges();
-    }, [nodes, edges, copiedNodes, copiedEdges, copiedFormStates, addNodeToHistory, updateSetNode, setFormStates]);
-
-    const handleCut = useCallback(() => {
-        const selectedNodes = nodes.filter(node => node.selected);
-        const selectedEdges = edges.filter(edge => {
-            const sourceNode = selectedNodes.find(node => node.id === edge.source);
-            const targetNode = selectedNodes.find(node => node.id === edge.target);
-            return sourceNode && targetNode;
-        });
-
-        setCopiedNodes(selectedNodes);
-        setCopiedEdges(selectedEdges);
-
-        addNodeToHistory();
-        
-        // Filter out selected nodes and edges
-        const updatedNodes = nodes.filter(node => !node.selected);
-        const updatedEdges = edges.filter(edge => !edge.selected);
-        
-        console.log("Cutting nodes, remaining:", updatedNodes);
-        
-        // Use updateSetNode for consistent state management
-        updateSetNode(updatedNodes, updatedEdges);
-    }, [nodes, edges, addNodeToHistory, updateSetNode]);
-
-    const handleRedo = useCallback(() => {
-        if (redoStack.length > 0) {
-            const lastState = redoStack[redoStack.length - 1];
-            setRedoStack((prev) => prev.slice(0, -1));
-            setHistory((prev) => [...prev, { nodes, edges }]);
-            
-            console.log("Redoing to state:", lastState);
-            
-            // Use updateSetNode for consistent state management
-            updateSetNode(lastState.nodes, lastState.edges);
-        }
-    }, [redoStack, nodes, edges, updateSetNode]);
-
-    const handleUndo = useCallback(() => {
-        if (history.length > 0) {
-            const lastState = history[history.length - 1];
-            setHistory((prev) => prev.slice(0, -1));
-            setRedoStack((prev) => [...prev, { nodes, edges }]);
-            
-            console.log("Undoing to state:", lastState);
-            
-            // Use updateSetNode for consistent state management
-            updateSetNode(lastState.nodes, lastState.edges);
-        }
-    }, [history, nodes, edges, updateSetNode]);
-
     const handleLogsClick = useCallback(() => {
         setShowLogs(prev => !prev);  // Toggle logs visibility
     }, []);
-    const handleZoomIn = useCallback(() => {
-        zoomIn({ duration: 800 });
-    }, [zoomIn]);
-
-    // Add new function for zoom out
-    const handleZoomOut = useCallback(() => {
-        zoomOut({ duration: 800 });
-    }, [zoomOut]);
-
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-        const isFormElement = document.activeElement instanceof HTMLInputElement ||
-            document.activeElement instanceof HTMLTextAreaElement ||
-            document.activeElement instanceof HTMLSelectElement;
-
-        if (!isFormElement) {
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
-                event.preventDefault();
-                handleCopy();
-            }
-
-            // Paste (Ctrl + V)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
-                event.preventDefault();
-                handlePaste();
-            }
-
-            // Cut (Ctrl + X)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
-                event.preventDefault();
-                handleCut();
-            }
-
-            // Undo (Ctrl + Z)
-            if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
-                event.preventDefault();
-                handleUndo();
-            }
-
-            // Redo (Ctrl + Y or Ctrl + Shift + Z)
-            if ((event.ctrlKey || event.metaKey) &&
-                (event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z'))) {
-                event.preventDefault();
-                handleRedo();
-            }
-            // Debug mode toggle (Ctrl + D)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
-                event.preventDefault();
-
-                // Add selected nodes to debug list
-                const selectedNodes = nodes.filter(node => node.selected);
-                if (selectedNodes.length > 0) {
-                    selectedNodes.forEach(node => {
-                        handleDebugToggle(node.id, node.data.title);
-                    });
-                } else {
-                    // If no nodes are selected, show a notification or alert
-                    console.log('Please select nodes to debug');
-                    // Optionally add a UI notification here
-                }
-            }
 
 
 
-            // Existing shortcuts
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-                event.preventDefault();
-                const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                }
-            }
 
-            // Run pipeline (Ctrl + R)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
-                event.preventDefault();
-                handleRun();
-            }
-
-            // Open logs (Ctrl + L)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'l') {
-                event.preventDefault();
-                handleLogsClick();
-            }
-
-            // Stop pipeline (Ctrl + K)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-                event.preventDefault();
-                handleStop();
-            }
-
-            // Next step (Ctrl + N)
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
-                event.preventDefault();
-                handleNext();
-            }
-
-            // Zoom in (Ctrl + Plus)
-            if ((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')) {
-                event.preventDefault();
-                handleZoomIn();
-            }
-
-            // Zoom out (Ctrl + Minus)
-            if ((event.ctrlKey || event.metaKey) && event.key === '-') {
-                event.preventDefault();
-                handleZoomOut();
-            }
-
-            // ... rest of existing shortcuts (Copy, Paste, Cut, etc.) ...
-        }
-    };
     const updatedSelectedNodeId = useCallback(
         (nodeId: string, selectedType: string) => {
-            console.log(selectedType, "selectedType")
             setNodes((prevNodes) =>
                 prevNodes.map((node) => {
                     const selectionId = node.id === nodeId;
@@ -1898,8 +1159,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         []
     );
 
+    // Use the pipeline operations hook
+    const { handleAlignHorizontal,handleAlignVertical,handleAlignTopLeft,handleKeyDown,
+        handleCut,handleRedo,handleUndo,handlePaste,handleCopy,handleCenter,handleZoomIn,handleZoomOut
+    } = usePipelineOperations({nodes,edges,setNodes,setEdges,updateSetNode,setFormStates,formStates,
+        copiedNodes,copiedEdges,copiedFormStates,setCopiedNodes,setCopiedEdges,setCopiedFormStates,history,
+        setHistory,redoStack,setRedoStack,setUnsavedChanges,addNodeToHistory,handleRun,handleStop,handleNext,
+        handleLogsClick,handleDebugToggle,reactFlowInstance,setSanitizedNodes,dispatch
+    });
+
     const handleNodeClick = useCallback((node: Node, source: any) => {
-        console.log(source);
 
         if (!node?.ui_properties?.module_name) {
             console.error('Invalid node data');
@@ -1913,7 +1182,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const nodeLabel = existingNodes.length > 0
             ? `${baseModuleName} ${nodeNumber}`
             : baseModuleName;
-        console.log(baseModuleName)
         // Find the last selected node's position
         const lastNode = nodes[nodes.length-1 ];
         const basePosition = lastNode ? {
@@ -1925,7 +1193,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
 
         const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
-        console.log(baseModuleName, "baseModuleName")
         // debugger
         // Create a more detailed node data structure
         const newNode = {
@@ -1959,187 +1226,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             handleAlignHorizontal()
             reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
         }, 50);
-    }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate]);
-    const handleAlignHorizontal = useCallback(() => {
-        if (nodes.length === 0) return;
-
-        // Create a map of node levels (columns)
-        const nodeLevels = new Map<string, number>();
-        const visited = new Set<string>();
-
-        // Find source nodes (nodes with no incoming edges)
-        const sourceNodes = nodes.filter(node =>
-            !edges.some(edge => edge.target === node.id)
-        );
-
-        // Assign levels through BFS
-        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-        while (queue.length > 0) {
-            const { id, level } = queue.shift()!;
-            if (visited.has(id)) continue;
-
-            visited.add(id);
-            nodeLevels.set(id, level);
-
-            // Find all outgoing edges from this node
-            const outgoingEdges = edges.filter(edge => edge.source === id);
-            outgoingEdges.forEach(edge => {
-                if (!visited.has(edge.target)) {
-                    queue.push({ id: edge.target, level: level + 1 });
-                }
-            });
-        }
-
-        // Get maximum level for spacing calculation
-        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
-        const levelWidth = 200; // Horizontal spacing between levels
-        const nodeSpacing = 150; // Vertical spacing between nodes in the same level
-
-        // Group nodes by their levels
-        const nodesByLevel = new Map<number, string[]>();
-        nodeLevels.forEach((level, nodeId) => {
-            if (!nodesByLevel.has(level)) {
-                nodesByLevel.set(level, []);
-            }
-            nodesByLevel.get(level)!.push(nodeId);
-        });
-
-        // Calculate new positions
-        const startX = 50;
-        const startY = 50;
-        const newNodes = nodes.map(node => {
-            const level = nodeLevels.get(node.id) || 0;
-            const nodesInLevel = nodesByLevel.get(level) || [];
-            const indexInLevel = nodesInLevel.indexOf(node.id);
-
-            return {
-                ...node,
-                position: {
-                    x: startX + (level * levelWidth),
-                    y: startY + (indexInLevel * nodeSpacing)
-                }
-            };
-        });
-
-        setSanitizedNodes(newNodes);
-
-        // Center the view
-        setTimeout(() => {
-            const centerX = startX + (maxLevel * levelWidth) / 2;
-            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
-            const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
-            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }, 50);
-
-        setUnsavedChanges();
-    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
-
-    const handleAlignVertical = useCallback(() => {
-        if (nodes.length === 0) return;
-
-        // Create a map of node levels (rows)
-        const nodeLevels = new Map<string, number>();
-        const visited = new Set<string>();
-
-        // Find source nodes (nodes with no incoming edges)
-        const sourceNodes = nodes.filter(node =>
-            !edges.some(edge => edge.target === node.id)
-        );
-
-        // Assign levels through BFS
-        const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-        while (queue.length > 0) {
-            const { id, level } = queue.shift()!;
-            if (visited.has(id)) continue;
-
-            visited.add(id);
-            nodeLevels.set(id, level);
-
-            // Find all outgoing edges from this node
-            const outgoingEdges = edges.filter(edge => edge.source === id);
-            outgoingEdges.forEach(edge => {
-                if (!visited.has(edge.target)) {
-                    queue.push({ id: edge.target, level: level + 1 });
-                }
-            });
-        }
-
-        // Get maximum level for spacing calculation
-        const maxLevel = Math.max(...Array.from(nodeLevels.values()));
-        const levelHeight = 150; // Vertical spacing between levels
-        const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
-
-        // Group nodes by their levels
-        const nodesByLevel = new Map<number, string[]>();
-        nodeLevels.forEach((level, nodeId) => {
-            if (!nodesByLevel.has(level)) {
-                nodesByLevel.set(level, []);
-            }
-            nodesByLevel.get(level)!.push(nodeId);
-        });
-
-        // Calculate new positions
-        const startX = 50;
-        const startY = 50;
-        const newNodes = nodes.map(node => {
-            const level = nodeLevels.get(node.id) || 0;
-            const nodesInLevel = nodesByLevel.get(level) || [];
-            const indexInLevel = nodesInLevel.indexOf(node.id);
-
-            return {
-                ...node,
-                position: {
-                    x: startX + (indexInLevel * nodeSpacing),
-                    y: startY + (level * levelHeight)
-                }
-            };
-        });
-
-        setSanitizedNodes(newNodes);
-
-        // Center the view
-        setTimeout(() => {
-            const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length));
-            const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
-            const centerY = startY + (maxLevel * levelHeight) / 2;
-            reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }, 50);
-
-        setUnsavedChanges();
-    }, [nodes, edges, setSanitizedNodes, dispatch, reactFlowInstance]);
-
-    const handleAlignTopLeft = useCallback(() => {
-        if (nodes.length === 0) return;
-
-        // Simple top-left alignment - place all nodes in a grid starting from top-left
-        const gridSpacing = 200; // Spacing between nodes
-        const startX = 50;
-        const startY = 50;
-        
-        const newNodes = nodes.map((node, index) => {
-            const row = Math.floor(index / 4); // 4 nodes per row
-            const col = index % 4;
-            
-            return {
-                ...node,
-                position: {
-                    x: startX + (col * gridSpacing),
-                    y: startY + (row * gridSpacing)
-                }
-            };
-        });
-
-        setSanitizedNodes(newNodes);
-
-        // Center the view to show the aligned nodes
-        setTimeout(() => {
-            if (reactFlowInstance && reactFlowInstance.fitView) {
-                reactFlowInstance.fitView({ padding: 0.1, duration: 800 });
-            }
-        }, 50);
-
-        setUnsavedChanges();
-    }, [nodes, setSanitizedNodes, dispatch, reactFlowInstance]);
+    }, [nodes, setNodes, reactFlowInstance, dispatch, handleNodeUpdate, handleAlignHorizontal]);
 
     const value = useMemo(() => ({
         nodes,
@@ -2263,7 +1350,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         attachedCluster,
         setAttachedCluster,
         attachCluster,
-        detachCluster
+        detachCluster,
+        pipelines,
+        setPipelines
     }), [
         nodes,
         setSanitizedNodes,
@@ -2382,7 +1471,22 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         attachedCluster,
         setAttachedCluster,
         attachCluster,
-        detachCluster
+        detachCluster,
+        // Functions from usePipelineOperations hook
+        handleAlignHorizontal,
+        handleAlignVertical,
+        handleAlignTopLeft,
+        handleKeyDown,
+        handleCut,
+        handleRedo,
+        handleUndo,
+        handlePaste,
+        handleCopy,
+        handleCenter,
+        handleZoomIn,
+        handleZoomOut,
+        pipelines,
+        setPipelines
     ]);
 
     return (

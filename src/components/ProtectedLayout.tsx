@@ -18,7 +18,7 @@ const MainContentInternal = () => {
       <div className="flex-shrink-0 mt-12"> 
         <Header />
       </div>
-      <main className="flex-1 relative overflow-auto h-[calc(100vh-64px)] "> 
+      <main className="flex-1 relative overflow-auto h-full w-full "> 
         {/* Key forces remount when location changes and fixes stale DOM issues */}
         <Outlet key={location.pathname} />
       </main>
@@ -34,7 +34,8 @@ const LayoutWrapper = () => {
     rightAsideTitle,
     rightAsideWidth,
     bottomDrawerContent,
-    bottomDrawerTitle
+    bottomDrawerTitle,
+    isExpanded
   } = useSidebar();
 
   const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
@@ -53,7 +54,14 @@ const LayoutWrapper = () => {
         style={{ zIndex: 1, width: isRightAsideOpen ? `calc(100% - ${rightAsidePercentage}%)` : undefined }}>
         <MainContentInternal /> 
         {isBottomDrawerOpen && bottomDrawerContent && (
-          <div className="flex-shrink-0 pl-[1%]">
+          <div 
+            id="bottom-drawer-container"
+            className={cn(
+              "flex-shrink-0 transition-all duration-300",
+              isExpanded ? "pl-[9%]" : "pl-[0.5%]",
+              "w-full" // Ensure full width
+            )}
+          >
             <BottomDrawer title={bottomDrawerTitle}>
               {bottomDrawerContent}
             </BottomDrawer>

@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { FormField } from './FormField';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Node, Edge } from 'reactflow';
 import { useDispatch, useSelector } from 'react-redux';
 // import { generatePipelineAgent } from '@/store/slices/buildPipeLine/BuildPipeLineSlice';
@@ -12,6 +10,9 @@ import { generateInitialValues } from './get-initial-form';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Schema } from '../../types/formTypes';
+import { LookupDataTable } from './LookupDataTable';
+import { LookupColumnsTable } from './LookupColumnsTable';
+import { SourceSelector } from './SourceSelector';
 
 import {
   Select,
@@ -41,7 +42,6 @@ interface FormValues extends Record<string, any> {
   repartition_expression?: Array<{
     expression: string;
     sort_order: string;
-    order: string;
   }>;
   column_list?: Array<{
     name: string;
@@ -55,6 +55,7 @@ interface CreateFormProps {
   initialValues?: any;
   nodes: Node[];
   sourceColumns: SourceColumn[];
+  formId?: string;
   onClose?: () => void;
   pipelineDtl?: any;
   currentNodeId: string;
@@ -68,8 +69,115 @@ interface SourceColumn {
 }
 const safeArray = (value: any) => Array.isArray(value) ? value : [];
 
+// PySpark transformation template
+const PYSPARK_TEMPLATE = `# =============================================================================
+# 🧩 CUSTOM PYSPARK TRANSFORMATION TEMPLATE
+# =============================================================================
+# 💡 INSTRUCTIONS :
+# - Input DataFrames are auto-injected and named using their transformation names.
+# - You must return at least one DataFrame named \`result\` or \`result_<suffix>\`.
+# - Returned DataFrames will be made available for downstream transformations.
+#     • result         → <transformation_name>
+#     • result_clean   → <transformation_name>_clean
+#     • result_summary → <transformation_name>_summary
+# =============================================================================
 
-const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, currentNodeId, edges }) => {
+# Your Code Starts Here 
+
+# =============================================================================
+# 📦 IMPORTS
+# =============================================================================
+# Add required imports below
+# Example:
+# from pyspark.sql.functions import col, lit, when, avg, count
+# from pyspark.sql.types import StringType, IntegerType, DoubleType
+
+# --- Your Imports Here ---
+
+
+
+
+
+
+
+# =============================================================================
+# 📥 INPUT DATAFRAMES
+# =============================================================================
+# Input DataFrames are available as variables named after their source transformations.
+# For example:
+# input_df = read_input_data      # If a previous transformation is named "read_input_data"
+
+# --- Initialize or reference your input DataFrame(s) ---
+# Dynamically get input DataFrames (excluding built-in variables)
+
+
+
+
+
+
+
+
+
+# =============================================================================
+# ✨ YOUR TRANSFORMATION LOGIC
+# =============================================================================
+# Write your PySpark code here.
+# ✅ At least one DataFrame must be assigned to a variable starting with "result"
+#    Examples:
+#    result = input_df.withColumn("flag", lit("Y"))
+#    result_main = input_df.filter(col("status") == "active")
+#    result_summary = result_main.groupBy("category").agg(count("*").alias("cnt"))
+
+# --- Begin Custom Logic ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# --- End Custom Logic ---
+
+# =============================================================================
+# 📤 OUTPUT DATAFRAMES
+# =============================================================================
+# 🚨 At least one result DataFrame is required!
+#    - Use \`result\` for single-output transformations.
+#    - Use \`result_<suffix>\` for multiple outputs.
+#
+# These outputs will be wired for downstream transformations as:
+#    • result → <transformation_name>
+#    • result_<suffix> → <transformation_name>_<suffix>
+#
+# ✅ Example:
+# result = input_df.withColumn("processed", lit("yes"))
+# result_agg = result.groupBy("type").agg(count("*").alias("cnt"))
+
+# --- Save or define your result DataFrame(s) ---
+
+
+
+
+
+
+
+
+
+
+# Your Code Ends Here `;
+
+
+const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initialValues, nodes, sourceColumns, onClose, currentNodeId, edges, formId }) => {
+  // Debug: Log form initialization
+  console.log(`🎯 CreateFormFormik initialized with formId: ${formId}, currentNodeId: ${currentNodeId}, schema: ${schema?.title}`);
+  
   const initialFormValues:any = useMemo(() => {
     const values = generateInitialValues(schema, initialValues,currentNodeId);
     
@@ -89,7 +197,10 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         repartition_type: 'repartition',
         repartition_value: '',
         override_partition: '',
-        repartition_expression: initialValues?.repartition_expression || [],
+        repartition_expression: initialValues?.repartition_expression || [{
+          expression: '',
+          sort_order: 'asc'
+        }],
         limit: '',
         ...values
       };
@@ -110,6 +221,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
         dependent_on: initialValues?.dependent_on || [],
         ...values
       };
+      
+      // Ensure rename_columns is properly initialized
+      if (!schemaFormValues.rename_columns) {
+        schemaFormValues.rename_columns = {};
+      }
       
       console.log("Final SchemaTransformation form values:", schemaFormValues);
       return schemaFormValues;
@@ -176,31 +292,11 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
             header: true
           }
         },
-        lookup_data: initialValues?.lookup_data || [
-          { id: 1, department: 'Engineering' },
-          { id: 2, department: 'Medical' },
-          { id: 3, department: 'Arts' },
-          { id: 4, department: 'Commerce' },
-          { id: 5, department: 'Science' },
-          { id: 6, department: 'Mathematics' },
-          { id: 7, department: 'Physics' },
-          { id: 8, department: 'Chemistry' },
-          { id: 9, department: 'Biology' },
-          { id: 10, department: 'Geography' }
-        ],
-        lookup_columns: initialValues?.lookup_columns || [
-          { column: 'id', out_column_name: 'id' },
-          { column: 'name', out_column_name: 'name' },
-          { column: 'department', out_column_name: 'department' },
-          { column: 'city', out_column_name: 'city' },
-          { column: 'state', out_column_name: 'state' },
-          { column: 'zip', out_column_name: 'zip' },
-          { column: 'address', out_column_name: 'address' },
-          { column: 'age', out_column_name: 'age' }
-        ],
+        lookup_data: initialValues?.lookup_data || [],
+        lookup_columns: initialValues?.lookup_columns,
         lookup_conditions: initialValues?.lookup_conditions || {
-          column_name: 'id',
-          lookup_with: 'id'
+          column_name: '',
+          lookup_with: ''
         },
         keep: initialValues?.keep || 'First',
         ...values
@@ -210,7 +306,39 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     // Add specific initialization for CustomPySpark form
     if (schema?.title === 'CustomPySpark') {
       return {
-        user_code: initialValues?.user_code || '',
+        user_code: initialValues?.user_code || PYSPARK_TEMPLATE,
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+    }
+    
+    // Add specific initialization for SequenceGenerator form
+    if (schema?.title === 'SequenceGenerator') {
+      return {
+        transformation: 'sequence_generator', // Required field
+        for_column_name: initialValues?.for_column_name || '',
+        order_by: initialValues?.order_by || [{ column: '', order: 'asc' }],
+        start_with: initialValues?.start_with || 1,
+        step: initialValues?.step || 1,
+        ...values
+      };
+    }
+    
+    // Add specific initialization for DQCheck form
+    if (schema?.title === 'DQCheck') {
+      return {
+        transformation: initialValues?.transformation || 'dq_check',
+        name: initialValues?.name || '',
+        limit: initialValues?.limit || undefined,
+        dq_rules: initialValues?.dq_rules || [{
+          rule_name: '',
+          column: '',
+          column_type: 'string',
+          rule_type: '',
+          value: '',
+          value2: undefined,
+          action: 'warning'
+        }],
         dependent_on: initialValues?.dependent_on || [],
         ...values
       };
@@ -235,9 +363,13 @@ console.log(initialFormValues,"initialFormValues")
   // Add debounce state and ref
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedFields, setGeneratedFields] = useState<Set<string>>(new Set());
+  const [loadingFields, setLoadingFields] = useState<Set<string>>(new Set());
 
   // Add state to track if AI has been attempted for this field
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
+  
+  // Add state for column suggestions
+  const [columnSuggestions, setColumnSuggestions] = useState<string[]>([]);
 
   // Update handleExpressionClick to only generate once per field
   const handleExpressionClick = useCallback(async (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => {
@@ -250,6 +382,7 @@ console.log(initialFormValues,"initialFormValues")
     }
 
     setIsGenerating(true);
+    setLoadingFields(prev => new Set(prev).add(fieldName));
     try {
       if (schema?.title === 'Aggregator') {
         const match = fieldName.match(/aggregations\.(\d+)\.expression/);
@@ -551,6 +684,11 @@ console.log(initialFormValues,"initialFormValues")
       }
     } finally {
       setIsGenerating(false);
+      setLoadingFields(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fieldName);
+        return newSet;
+      });
     }
   }, [schema?.title, sourceColumns, setValue, dispatch, watch, isGenerating, currentNodeId, nodes, edges]);
 
@@ -567,6 +705,23 @@ console.log(initialFormValues,"initialFormValues")
       setAiAttempted(new Set());
     };
   }, []);
+
+  // Fetch column suggestions when component mounts or dependencies change
+  useEffect(() => {
+    const fetchColumnSuggestions = async () => {
+      try {
+        const suggestions = await getColumnSuggestions(currentNodeId, nodes, edges, pipelineDtl);
+        setColumnSuggestions(suggestions);
+      } catch (error) {
+        console.error('Error fetching column suggestions:', error);
+        setColumnSuggestions([]);
+      }
+    };
+
+    if (currentNodeId && nodes && edges) {
+      fetchColumnSuggestions();
+    }
+  }, [currentNodeId, nodes, edges, pipelineDtl]);
 
   // Update onSubmitForm to properly handle nested form values
   const onSubmitForm = (values: FormValues) => {
@@ -660,13 +815,21 @@ console.log(initialFormValues,"initialFormValues")
       
       // Special handling for SchemaTransformation rename_columns
       if (key === 'rename_columns' && value !== null && typeof value === 'object' && schema.title === 'SchemaTransformation') {
-        // Keep the object even if empty, but clean out empty values
+        console.log('Processing rename_columns:', value);
+        
+        // Keep the object even if empty, but clean out empty key-value pairs
         const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
-          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
-            objAcc[objKey] = objValue;
+          // Only include entries where both key and value are non-empty strings
+          if (objKey && objKey.trim() !== '' && 
+              objValue && String(objValue).trim() !== '') {
+            objAcc[objKey.trim()] = String(objValue).trim();
           }
           return objAcc;
         }, {} as Record<string, any>);
+        
+        console.log('Cleaned rename_columns:', cleanObj);
+        
+        // Always include the rename_columns field, even if empty
         acc[key] = cleanObj;
         return acc;
       }
@@ -760,13 +923,38 @@ console.log(initialFormValues,"initialFormValues")
       if (key === 'repartition_expression' && Array.isArray(value) && schema.title === 'Repartition') {
         // Filter out items where expression is empty
         const cleanedExpressions = value.filter(item => 
-          item.expression?.trim() && item.sort_order?.trim() && (item.order === 'asc' || item.order === 'desc')
+          item.expression?.trim() && item.sort_order?.trim()
         );
         
         if (cleanedExpressions.length > 0) {
           acc[key] = cleanedExpressions;
         }
         return acc;
+      }
+      
+      // Special handling for SequenceGenerator numeric fields
+      if (schema.title === 'SequenceGenerator') {
+        if (key === 'start_with' || key === 'step') {
+          // Convert string to number for numeric fields
+          const numValue = parseFloat(value as string);
+          if (!isNaN(numValue)) {
+            acc[key] = numValue;
+          }
+          return acc;
+        }
+        
+        // Special handling for order_by in SequenceGenerator
+        if (key === 'order_by' && Array.isArray(value)) {
+          // Filter out items where column is empty
+          const cleanedOrderBy = value.filter(item => 
+            item.column?.trim()
+          );
+          
+          if (cleanedOrderBy.length > 0) {
+            acc[key] = cleanedOrderBy;
+          }
+          return acc;
+        }
       }
       
       // Handle other array fields
@@ -833,10 +1021,16 @@ console.log(initialFormValues,"initialFormValues")
 
     // Update SchemaTransformation validation
     if (schema.title === 'SchemaTransformation') {
+      // Check if name is required and provided
+      if (!cleanValues.name || cleanValues.name.trim() === '') {
+        alert('SchemaTransformation requires a name. Please provide a name for the transformation.');
+        return;
+      }
+      
       // Only require derived_fields if it's specified as required in the schema
       const isDerivedFieldsRequired = schema && Array.isArray(schema.required) && schema.required.includes('derived_fields');
       if (isDerivedFieldsRequired && (!cleanValues.derived_fields || !cleanValues.derived_fields.length)) {
-        console.error('SchemaTransformation requires at least one valid derived field');
+        alert('SchemaTransformation requires at least one valid derived field.');
         return;
       }
     }
@@ -944,7 +1138,7 @@ console.log(initialFormValues,"initialFormValues")
  
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 max-w-full">
       {/* {schema.title === 'Deduplicator' && renderDeduplicatorFields(control)} */}
       <FormContent
         control={control}
@@ -956,12 +1150,17 @@ console.log(initialFormValues,"initialFormValues")
         nodes={nodes}
         edges={edges}
         watch={watch}
+        initialFormValues={initialFormValues}
+        aiAttempted={aiAttempted}
+        isGenerating={isGenerating}
+        loadingFields={loadingFields}
+        setValue={setValue}
       />
       
       <div className="mt-4">
         <Button
           type="submit"
-          className="w-full py-2 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
+          className="px-6 py-2 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
         >
           Save
         </Button>
@@ -970,13 +1169,81 @@ console.log(initialFormValues,"initialFormValues")
   );
 };
 
+// Helper function to get rule type options based on column type
+const getRuleTypeOptions = (columnType: string): string[] => {
+  switch (columnType) {
+    case 'string':
+      return [
+        'equals', 'not_equals', 'minlength', 'maxlength', 'lengthequals',
+        'equalsignorecase', 'matches', 'startswith', 'endswith', 'beginswith', 'contains',
+        'not_null', 'isempty', 'belongsto', 'lowercase', 'uppercase'
+      ];
+    case 'number':
+      return [
+        'equals', 'not_equals', 'greaterthan', 'lessthan', 'greaterthanorequals', 
+        'lessthanorequals', 'not_null', 'between'
+      ];
+    case 'boolean':
+      return ['istrue', 'isfalse', 'not_null'];
+    case 'timestamp':
+      return [
+        'timestampequals', 'timestampbefore', 'timestampafter', 'timestampwithin', 
+        'timestampnotnull', 'timestampisempty'
+      ];
+    case 'date':
+      return [
+        'dateequals', 'datebefore', 'dateafter', 'datewithin', 
+        'datenotnull', 'dateisempty'
+      ];
+    default:
+      return [
+        'equals', 'not_equals', 'minlength', 'maxlength', 'lengthequals',
+        'equalsignorecase', 'matches', 'startswith', 'endswith', 'beginswith', 'contains',
+        'not_null', 'isempty', 'belongsto', 'lowercase', 'uppercase'
+      ];
+  }
+};
+
+// Helper function to check if a field requires a value based on column type and rule type
+const requiresValue = (columnType: string, ruleType: string): boolean => {
+  const noValueRules = ['is_null', 'not_null', 'is_true', 'is_false'];
+  return !noValueRules.includes(ruleType);
+};
+
+// Helper function to check if a field requires value2 (for between operations)
+const requiresValue2 = (columnType: string, ruleType: string): boolean => {
+  return columnType === 'number' && ruleType === 'between';
+};
+
+// Helper function to get appropriate value type for field
+const getValueType = (columnType: string, ruleType: string): string => {
+  if (!requiresValue(columnType, ruleType)) {
+    return 'hidden';
+  }
+  
+  switch (columnType) {
+    case 'number':
+      return 'number';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    default:
+      return 'string';
+  }
+};
+
 const renderArrayFields = (
   arraySchema: ArraySchema,
   control: any,
   section: string,
   onExpressionClick: (targetColumn: string, setFieldValue: (field: string, value: any) => void, fieldName: string) => void,
   sourceColumns: SourceColumn[],
-  columnSuggestions: string[]
+  columnSuggestions: string[],
+  aiAttempted: Set<string>,
+  isGenerating: boolean,
+  setValue?: any,
+  watch?: any
 ) => {
   console.log(`Rendering array fields for section: ${section}`, {
     arraySchema,
@@ -1040,13 +1307,7 @@ const renderArrayFields = (
                     options={columnSuggestions}
                     value={field.value || ''}
                     onChange={field.onChange}
-                    renderInput={(params) => (
-                      <Input
-                        {...params}
-                        placeholder="Select column"
-                        required={arraySchema.minItems && arraySchema.minItems > 0}
-                      />
-                    )}
+                    placeholder="Select column"
                     className=""
                     required={arraySchema.minItems && arraySchema.minItems > 0}
                   />
@@ -1071,7 +1332,7 @@ const renderArrayFields = (
             append({ column_list: '' });
           }}
           variant="outline"
-          className="w-full"
+          className="px-6 py-2"
         >
           <span className="text-green-600">+ Add Column</span>
         </Button>
@@ -1102,7 +1363,8 @@ const renderArrayFields = (
         (acc, key) => ({
           ...acc,
           [key]: itemProperties[key].enum ? 
-            (itemProperties[key].default || itemProperties[key].enum[0]) : ''
+            (itemProperties[key].default || itemProperties[key].enum[0]) : 
+            (key === 'column_type' ? 'string' : '')
         }),
         {}
       );
@@ -1140,6 +1402,249 @@ const renderArrayFields = (
     return <div>Error processing array item properties</div>;
   }
 
+  // Special handling for DQCheck rules
+  if (section === 'dq_rules') {
+    return (
+      <div className="space-y-4">
+        {fields.map((field, index) => (
+          <div key={field.id} className="border rounded-lg p-4 bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Rule Name */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.rule_name`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="rule_name"
+                      fieldSchema={{ type: 'string' }}
+                      name={`${section}.${index}.rule_name`}
+                      value={field.value}
+                      onChange={field.onChange}
+                      required={true}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Column */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.column`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="column"
+                      fieldSchema={{ type: 'autocomplete' }}
+                      name={`${section}.${index}.column`}
+                      value={field.value}
+                      onChange={field.onChange}
+                      sourceColumns={columnSuggestions.map(colName => ({
+                        name: colName,
+                        dataType: 'string'
+                      }))}
+                      required={true}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Column Type */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.column_type`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="column_type"
+                      fieldSchema={{ 
+                        type: 'select',
+                        enum: ['string', 'number', 'boolean', 'array']
+                      }}
+                      name={`${section}.${index}.column_type`}
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        // Reset rule_type when column_type changes
+                        setValue && setValue(`${section}.${index}.rule_type`, '');
+                        setValue && setValue(`${section}.${index}.value`, '');
+                        setValue && setValue(`${section}.${index}.value2`, '');
+                      }}
+                      required={true}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Rule Type (conditional based on column type) */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.rule_type`}
+                  control={control}
+                  render={({ field }) => {
+                    const formValues = watch ? watch() : {};
+                    const columnType = formValues[section]?.[index]?.column_type || 'string';
+                    return (
+                      <FormField
+                        fieldKey="rule_type"
+                        fieldSchema={{ 
+                          type: 'select',
+                          enum: getRuleTypeOptions(columnType)
+                        }}
+                        name={`${section}.${index}.rule_type`}
+                        value={field.value}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          // Reset values when rule_type changes
+                          setValue && setValue(`${section}.${index}.value`, '');
+                          setValue && setValue(`${section}.${index}.value2`, '');
+                        }}
+                        required={true}
+                      />
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Value (conditional based on column type and rule type) */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.value`}
+                  control={control}
+                  render={({ field }) => {
+                    const formValues = watch ? watch() : {};
+                    const columnType = formValues[section]?.[index]?.column_type || 'string';
+                    const ruleType = formValues[section]?.[index]?.rule_type || '';
+                    const valueType = getValueType(columnType, ruleType);
+                    
+                    if (valueType === 'hidden') {
+                      return null;
+                    }
+
+                    if (valueType === 'array') {
+                      return (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Values
+                            <span className="text-red-500 ml-1">*</span>
+                          </label>
+                          <Input
+                            value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
+                            onChange={(e) => {
+                              const values = e.target.value.split(',').map(v => v.trim()).filter(v => v);
+                              field.onChange(values);
+                            }}
+                            placeholder="Enter values separated by commas"
+                            required={requiresValue(columnType, ruleType)}
+                          />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <FormField
+                        fieldKey="value"
+                        fieldSchema={{ 
+                          type: valueType === 'boolean' ? 'boolean' : 
+                                valueType === 'number' ? 'number' : 'string'
+                        }}
+                        name={`${section}.${index}.value`}
+                        value={field.value}
+                        onChange={field.onChange}
+                        required={requiresValue(columnType, ruleType)}
+                      />
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Value2 (for between operations) */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.value2`}
+                  control={control}
+                  render={({ field }) => {
+                    const formValues = watch ? watch() : {};
+                    const columnType = formValues[section]?.[index]?.column_type || 'string';
+                    const ruleType = formValues[section]?.[index]?.rule_type || '';
+                    
+                    if (!requiresValue2(columnType, ruleType)) {
+                      return null;
+                    }
+
+                    return (
+                      <FormField
+                        fieldKey="value2"
+                        fieldSchema={{ type: 'number' }}
+                        name={`${section}.${index}.value2`}
+                        value={field.value}
+                        onChange={field.onChange}
+                        required={true}
+                      />
+                    );
+                  }}
+                />
+              </div>
+
+              {/* Action */}
+              <div>
+                <Controller
+                  name={`${section}.${index}.action`}
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      fieldKey="action"
+                      fieldSchema={{ 
+                        type: 'select',
+                        enum: ['error', 'warning']
+                      }}
+                      name={`${section}.${index}.action`}
+                      value={field.value}
+                      onChange={field.onChange}
+                      required={false}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Remove Button */}
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                disabled={fields.length <= (arraySchema.minItems || 1)}
+                className="flex items-center justify-center px-3 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200 disabled:opacity-50"
+              >
+                Remove Rule
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* Add Button */}
+        <Button
+          type="button"
+          onClick={() => {
+            append({
+              rule_name: '',
+              column: '',
+              column_type: 'string',
+              rule_type: '',
+              value: '',
+              value2: '',
+              action: 'warning'
+            });
+          }}
+          variant="outline"
+          className="px-6 py-2 mt-4"
+        >
+          <span className="text-green-600">+ Add Rule</span>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* <label className="block font-medium mb-1">
@@ -1149,25 +1654,11 @@ const renderArrayFields = (
         {arraySchema.minItems && arraySchema.minItems > 0 && <span className="text-red-500">*</span>}
       </label> */}
       
-      {/* Headers */}
-      <div className="flex justify-between gap-2">
-        {itemPropertiesEntries.map(([fieldKey, fieldSchema]: [string, any]) => (
-          <div key={fieldKey}>
-            <div className="font-medium text-sm text-gray-700">
-              {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' ')}
-              {requiredFields.includes(fieldKey) && 
-                <span className="text-red-500 ml-1">*</span>}
-            </div>
-          </div>
-        ))}
-        <div /> {/* Spacer for remove button */}
-      </div>
+      {/* Headers are now handled by individual FormField components */}
 
       {/* Form Fields */}
       {fields.map((field, index) => (
-        <div key={field.id} className="flex justify-between gap-2">
+        <div key={field.id} className={`grid gap-2 mb-4 items-start`} style={{gridTemplateColumns: `repeat(${itemPropertiesEntries.length}, 1fr) auto`}}>
           {itemPropertiesEntries.map(([itemKey, itemSchema]: [string, any]) => {
             const isExpression = itemSchema.type === 'expression' || 
                                itemSchema['ui-hint'] === 'expression';
@@ -1176,6 +1667,12 @@ const renderArrayFields = (
             if (itemSchema.type === 'autocomplete') {
               return (
                 <div key={`${section}.${index}.${itemKey}`} className="w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {itemKey.replace(/_/g, ' ').split(' ').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                    {requiredFields.includes(itemKey) && <span className="text-red-500 ml-1">*</span>}
+                  </label>
                   <Controller
                     name={`${section}.${index}.${itemKey}`}
                     control={control}
@@ -1184,13 +1681,7 @@ const renderArrayFields = (
                         options={columnSuggestions}
                         value={field.value || ''}
                         onChange={field.onChange}
-                        renderInput={(params) => (
-                          <Input
-                            {...params}
-                            placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
-                            required={requiredFields.includes(itemKey)}
-                          />
-                        )}
+                        placeholder={`Enter ${itemKey.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`}
                         className=""
                         required={requiredFields.includes(itemKey)}
                       />
@@ -1223,7 +1714,9 @@ const renderArrayFields = (
                         dataType: 'string'
                       }))}
                       required={requiredFields.includes(itemKey)}
-                      onExpressionClick={isExpression ? () => {
+                      isAiEnabled={aiAttempted.has(`${section}.${index}.${itemKey}`)}
+                      isLoading={isGenerating}
+                      onHammerClick={isExpression ? () => {
                         onExpressionClick(
                           field.name || itemKey,
                           field.onChange,
@@ -1236,14 +1729,17 @@ const renderArrayFields = (
               </div>
             );
           })}
-          <button
-            type="button"
-            onClick={() => remove(index)}
-            disabled={fields.length <= (arraySchema.minItems || 1)}
-            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100"
-          >
-            <span className="text-gray-500 text-xl">×</span>
-          </button>
+          <div className="flex flex-col">
+            <div className="h-6 mb-1"></div> {/* Spacer to match label height */}
+            <button
+              type="button"
+              onClick={() => remove(index)}
+              disabled={fields.length <= (arraySchema.minItems || 1)}
+              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 text-red-500 hover:text-red-700"
+            >
+              <span className="text-xl">×</span>
+            </button>
+          </div>
         </div>
       ))}
 
@@ -1262,7 +1758,7 @@ const renderArrayFields = (
           append(emptyItem);
         }}
         variant="outline"
-        className="w-full mt-4"
+        className="px-6 py-2 mt-4"
       >
         <span className="text-green-600">+ Add Field</span>
       </Button>
@@ -1301,7 +1797,7 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select keep value" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{zIndex:9999}}>
                 {['any', 'first', 'last', 'distinct', 'unique_only'].map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -1346,8 +1842,8 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
           <Button
             type="button"
             onClick={() => appendDedup('')}
-            variant="default"
-            className="w-full mt-2"
+            variant="outline"
+            className="px-6 py-2 mt-2"
           >
             Add Dedup Column
           </Button>
@@ -1384,9 +1880,9 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
                     <SelectTrigger className="w-1/2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="asc">Ascending</SelectItem>
-                      <SelectItem value="desc">Descending</SelectItem>
+                    <SelectContent  style={{zIndex:9999}}>
+                      <SelectItem value="asc">Asc</SelectItem>
+                      <SelectItem value="desc">Desc</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -1403,8 +1899,8 @@ const renderDeduplicatorFields = (control: any, schema: Schema) => {
           <Button
             type="button"
             onClick={() => appendOrder({ column: '', order: 'asc' })}
-            variant="default"
-            className="w-full mt-2"
+            variant="outline"
+            className="px-6 py-2 mt-2"
           >
             Add Order By Column
           </Button>
@@ -1425,7 +1921,12 @@ const FormContent: React.FC<{
   nodes: Node[];
   edges: Edge[];
   watch: any; // Add watch function as a prop
-}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch }) => {
+  initialFormValues: any; // Add initialFormValues as a prop
+  aiAttempted: Set<string>; // Add aiAttempted as a prop
+  isGenerating: boolean; // Add isGenerating as a prop
+  loadingFields: Set<string>; // Add loadingFields as a prop
+  setValue: any; // Add setValue as a prop
+}> = ({ control, schema, onExpressionClick, sourceColumns, onClose, currentNodeId, nodes, edges, watch, initialFormValues, aiAttempted, isGenerating, loadingFields, setValue }) => {
 
   
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -1545,7 +2046,8 @@ const FormContent: React.FC<{
     fieldKey: string, 
     fieldSchema: any, 
     control: any, 
-    parentKey?: string
+    parentKey?: string,
+    columnSuggestions: string[] = []
   ) => {
     if (!fieldSchema || typeof fieldSchema !== 'object') {
       console.error(`Invalid schema for field ${fieldKey}`);
@@ -1556,17 +2058,17 @@ const FormContent: React.FC<{
     if (fieldSchema.type === 'array') {
       // Check if this is a special case with column_list structure
       if (fieldSchema.items && fieldSchema.items.column_list && fieldSchema.items.column_list.type === 'autocomplete') {
-        return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions);
+        return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch);
       }
       
       // For other array types, use the standard array rendering
-      return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions);
+      return renderArrayFields(fieldSchema, control, fieldKey, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch);
     }
 
     const isExpression = fieldSchema.type === 'expression' || 
                         fieldSchema['ui-hint'] === 'expression' ||
                         (fieldKey === 'condition' && fieldSchema.type === 'string') ||
-                        (fieldKey === 'sql' && fieldSchema.type === 'string') ||
+                        (fieldKey === 'query' && fieldSchema.type === 'string') ||
                         (fieldKey === 'join_condition' && fieldSchema.type === 'string') ||
                         (parentKey === 'conditions' && fieldKey === 'join_condition');
 
@@ -1622,7 +2124,9 @@ const FormContent: React.FC<{
               dataType: 'string'
             }))}
             required={isFieldRequired(fieldKey, fieldSchema, parentKey)}
-            onExpressionClick={() => {
+            isAiEnabled={aiAttempted.has(fieldKey)}
+            isLoading={isGenerating}
+            onHammerClick={() => {
               if (isExpression) {
                 onExpressionClick(
                   name || fieldKey,
@@ -1643,7 +2147,7 @@ const FormContent: React.FC<{
   };
 
   // Update renderFieldsInRows to handle required fields in tabs
-  const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string) => {
+  const renderFieldsInRows = (properties: Record<string, any>, control: any, parentKey?: string, columnSuggestions: string[] = []) => {
 
     
     if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
@@ -1697,14 +2201,14 @@ const FormContent: React.FC<{
           if (value.type === 'array' && value.items && value.items.column_list && value.items.column_list.type === 'autocomplete') {
             return (
               <div key={key} className="mb-2">
-                {renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions)}
+                {renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch)}
               </div>
             );
           }
           
           return (
             <div key={key} className="mb-2">
-              {renderField(key, value, control, parentKey)}
+              {renderField(key, value, control, parentKey, columnSuggestions)}
             </div>
           );
         })}
@@ -1721,7 +2225,7 @@ const FormContent: React.FC<{
   };
 
   // Render string array fields (like select_columns, drop_columns)
-  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any) => {
+  const renderStringArrayField = (fieldKey: string, fieldSchema: any, control: any, columnSuggestions: string[] = []) => {
     const { fields, append, remove } = useFieldArray({
       control,
       name: fieldKey
@@ -1744,9 +2248,15 @@ const FormContent: React.FC<{
                 <Autocomplete
                   value={field.value || ''}
                   onChange={field.onChange}
-                  options={sourceColumns.map(col => col.name)}
+                  options={columnSuggestions}
                   placeholder={`Enter column name`}
                   className="flex-1"
+                  renderInput={(params) => (
+                    <Input
+                      {...params}
+                      placeholder="Enter column name"
+                    />
+                  )}
                 />
               )}
             />
@@ -1764,7 +2274,7 @@ const FormContent: React.FC<{
           type="button"
           onClick={() => append('')}
           variant="outline"
-          size="sm"
+          className="px-6 py-2"
         >
           Add Column
         </Button>
@@ -1772,17 +2282,41 @@ const FormContent: React.FC<{
     );
   };
 
-  // Render object field (like rename_columns)
-  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any) => {
+  // ObjectField component to handle rename_columns
+  const ObjectField: React.FC<{
+    fieldKey: string;
+    fieldSchema: any;
+    control: any;
+    formInitialValues: any;
+    columnSuggestions?: string[];
+    setValue: any;
+  }> = ({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [], setValue }) => {
     const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
     const watchedValue = watch(fieldKey) || {};
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+        }
+      };
+    }, []);
 
     useEffect(() => {
+      console.log(`renderObjectField - ${fieldKey}:`, watchedValue);
       const entries = Object.entries(watchedValue).map(([key, value], index) => ({
         id: `${key}-${index}`,
         key,
         value: value as string
       }));
+      
+      // If no entries exist, add one empty entry for user to fill
+      if (entries.length === 0) {
+        entries.push({ id: `empty-${Date.now()}`, key: '', value: '' });
+      }
+      
       setObjectEntries(entries);
     }, [watchedValue]);
 
@@ -1797,13 +2331,17 @@ const FormContent: React.FC<{
       
       // Update form value
       const newObject = updatedEntries.reduce((acc, entry) => {
-        if (entry.key && entry.value) {
-          acc[entry.key] = entry.value;
+        if (entry.key.trim() && entry.value.trim()) {
+          acc[entry.key.trim()] = entry.value.trim();
         }
         return acc;
       }, {} as Record<string, string>);
       
-      setValue(fieldKey, newObject);
+      setValue(fieldKey, newObject, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
     };
 
     const updateEntry = (id: string, field: 'key' | 'value', newValue: string) => {
@@ -1812,95 +2350,252 @@ const FormContent: React.FC<{
       );
       setObjectEntries(updatedEntries);
       
-      // Update form value
-      const newObject = updatedEntries.reduce((acc, entry) => {
-        if (entry.key && entry.value) {
-          acc[entry.key] = entry.value;
-        }
-        return acc;
-      }, {} as Record<string, string>);
+      // Use debouncing to improve performance - only update form after a delay
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
       
+      updateTimeoutRef.current = setTimeout(() => {
+        // Only save entries that have BOTH key and value filled
+        const newObject = updatedEntries.reduce((acc, entry) => {
+          if (entry.key.trim() && entry.value.trim()) {
+            acc[entry.key.trim()] = entry.value.trim();
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        setValue(fieldKey, newObject, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true
+        });
+      }, 300); // 300ms debounce
     };
 
+    // Get the current form default value for this field
+    const currentDefaultValue = formInitialValues[fieldKey] || {};
+    
     return (
-      <div className="space-y-4">
-        <div className="font-medium text-sm">
-          {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ')}
-        </div>
-        
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 text-sm font-medium text-gray-600">
-            <div>Old Column Name</div>
-            <div>New Column Name</div>
-          </div>
-          
-          {objectEntries.map((entry) => (
-            <div key={entry.id} className="flex gap-2 items-center">
-              <Autocomplete
-                value={entry.key}
-                onChange={(value) => updateEntry(entry.id, 'key', value)}
-                options={sourceColumns.map(col => col.name)}
-                placeholder="Old column name"
-                className="flex-1"
-              />
-              <Input
-                value={entry.value}
-                onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
-                placeholder="New column name"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                onClick={() => removeEntry(entry.id)}
-                className="text-red-500 hover:text-red-700 p-1"
-              >
-                ×
-              </button>
+      <Controller
+        control={control}
+        name={fieldKey}
+        defaultValue={currentDefaultValue}
+        render={({ field: { onChange, value, ...field } }) => {
+          return (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">
+              {fieldKey.replace(/_/g, ' ').split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
             </div>
-          ))}
-        </div>
-        
-        <Button
-          type="button"
-          onClick={addEntry}
-          variant="outline"
-          size="sm"
-        >
-          Add Rename Rule
-        </Button>
-      </div>
+            
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600">
+                <div>Old Column Name</div>
+                <div>New Column Name</div>
+                <div className="w-10"></div> {/* Space for delete button */}
+              </div>
+              
+              {objectEntries.map((entry) => (
+                <div key={entry.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <Autocomplete 
+                    value={entry.key}
+                    onChange={(value) => updateEntry(entry.id, 'key', value)}
+                    options={columnSuggestions}
+                    placeholder="Old column name"
+                    className="w-full"
+                    renderInput={(params) => (
+                      <Input
+                        {...params}
+                        placeholder="Old column name"
+                        className="w-full"
+                      />
+                    )}
+                  />
+                  <Input
+                    value={entry.value}
+                    onChange={(e) => updateEntry(entry.id, 'value', e.target.value)}
+                    placeholder="New column name"
+                    className="w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeEntry(entry.id)}
+                    className="text-red-500 hover:text-red-700 p-2 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-red-50"
+                    title="Remove rename rule"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <Button
+              type="button"
+              onClick={addEntry}
+              variant="outline"
+              className="px-6 py-2"
+            >
+              Add Rename Rule
+            </Button>
+          </div>
+          );
+        }}
+      />
+    );
+  };
+
+  // Helper function to render ObjectField component
+  const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
+    return (
+      <ObjectField
+        fieldKey={fieldKey}
+        fieldSchema={fieldSchema}
+        control={control}
+        formInitialValues={formInitialValues}
+        columnSuggestions={columnSuggestions}
+        setValue={setValue}
+      />
     );
   };
 
   // Update renderTabContent to pass control
-  const renderTabContent = (key: string, value: any, control: any) => {
+  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
     if (!value || typeof value !== 'object') {
       console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
       return <div>Invalid field configuration for {key}</div>;
     }
     
+    // Special handling for lookup_data field
+    if (key === 'lookup_data' && value.type === 'array') {
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={key}
+            control={control}
+            render={({ field }) => (
+              <LookupDataTable
+                value={field.value || []}
+                onChange={field.onChange}
+                disabled={false}
+              />
+            )}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for lookup_columns field
+    if (key === 'lookup_columns' && value.type === 'array') {
+      // Get current form values
+      const currentLookupType = watch('lookup_type');
+      const lookupData = watch('lookup_data');
+      const lookupConfig = watch('lookup_config');
+      
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={key}
+            control={control}
+            render={({ field }) => (
+              <LookupColumnsTable
+                value={field.value || []}
+                onChange={field.onChange}
+                availableColumns={[]} // Will be fetched automatically
+                disabled={false}
+                selectedSource={lookupConfig?.source}
+                lookupType={currentLookupType}
+                lookupData={lookupData}
+              />
+            )}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for lookup_config field
+    if (key === 'lookup_config' && value.type === 'object') {
+      return (
+        <div className="space-y-4">
+          <Controller
+            name={`${key}.source`}
+            control={control}
+            render={({ field }) => (
+              <SourceSelector
+                value={field.value || {}}
+                onChange={field.onChange}
+                disabled={false}
+              />
+            )}
+          />
+          
+          {/* Other lookup config fields */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Configuration Name
+              </label>
+              <Controller
+                name={`${key}.name`}
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter configuration name"
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Has Header
+              </label>
+              <Controller
+                name={`${key}.read_options.header`}
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="header-checkbox"
+                      checked={field.value || false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="header-checkbox" className="text-sm text-gray-700">
+                      First row contains headers
+                    </label>
+                  </div>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     if (value.type === 'array') {
       // Check if it's a string array
       if (value.items && value.items.type === 'string') {
-        return renderStringArrayField(key, value, control);
+        return renderStringArrayField(key, value, control, columnSuggestions);
       }
       // Otherwise use the existing array renderer
-      return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions);
+      return renderArrayFields(value, control, key, onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch);
     } else if (value.type === 'object') {
       // Check if it's a rename_columns type object
       if (key === 'rename_columns') {
-        return renderObjectField(key, value, control);
+        return renderObjectField(key, value, control, formInitialValues, columnSuggestions, setValue);
       }
       // Ensure properties exist before passing to renderFieldsInRows
       if (!value.properties || typeof value.properties !== 'object') {
         console.warn(`Object field ${key} has no valid properties:`, value);
         return <div>Invalid object field configuration for {key}</div>;
       }
-      return renderFieldsInRows(value.properties, control, key);
+      return renderFieldsInRows(value.properties, control, key, columnSuggestions);
     } else {
-      return renderField(key, value, control, key);
+      return renderField(key, value, control, key, columnSuggestions);
     }
   };
 
@@ -1932,6 +2627,8 @@ const FormContent: React.FC<{
                   value={field.value}
                   onChange={field.onChange}
                   fieldKey="transformation"
+                  isAiEnabled={false}
+                  isLoading={false}
                 />
               )}
             />
@@ -1957,6 +2654,8 @@ const FormContent: React.FC<{
                 value={field.value}
                 onChange={field.onChange}
                 fieldKey="limit"
+                isAiEnabled={false}
+                isLoading={false}
               />
             )}
           />
@@ -1998,6 +2697,15 @@ const FormContent: React.FC<{
                         required={requiredFields.includes(key)}
                         fieldKey={key}
                         sourceColumns={sourceColumns}
+                        isAiEnabled={aiAttempted.has(`column_list.${index}.${key}`)}
+                        isLoading={isGenerating}
+                        onHammerClick={fieldSchema['ui-hint'] === 'expression' ? () => {
+                          onExpressionClick(
+                            field.name || key,
+                            field.onChange,
+                            `column_list.${index}.${key}`
+                          );
+                        } : undefined}
                       />
                     )}
                   />
@@ -2023,9 +2731,10 @@ const FormContent: React.FC<{
               }), {});
               append(defaultValues);
             }}
-            className="text-green-600 font-bold w-full"
+            variant="outline"
+            className="px-6 py-2"
           >
-            Add Column
+            <span className="text-green-600">+ Add Column</span>
           </Button>
         </div>
       </div>
@@ -2067,11 +2776,15 @@ const FormContent: React.FC<{
                     render={({ field }) => (
                       itemSchema.enum ? (
                         <div className="w-32">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {itemKey.charAt(0).toUpperCase() + itemKey.slice(1)}
+                            {schema && schema.required && schema.required.includes(fieldKey) && <span className="text-red-500"> *</span>}
+                          </label>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger>
                               <SelectValue placeholder={`Select ${itemKey}`} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent  style={{zIndex:9999}}>
                               {itemSchema.enum.map((option: string) => (
                                 <SelectItem key={option} value={option}>
                                   {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -2084,7 +2797,7 @@ const FormContent: React.FC<{
                         <FormField
                           fieldSchema={{
                             type: itemSchema.type,
-                            title: itemKey,
+                            title: itemKey.charAt(0).toUpperCase() + itemKey.slice(1),
                             properties: {}
                           }}
                           name={field.name}
@@ -2093,6 +2806,8 @@ const FormContent: React.FC<{
                           required={schema && schema.required && schema.required.includes(fieldKey)}
                           fieldKey={itemKey}
                           sourceColumns={sourceColumns}
+                          isAiEnabled={false}
+                          isLoading={false}
                         />
                       )
                     )}
@@ -2132,11 +2847,12 @@ const FormContent: React.FC<{
                 
                 append(defaultValues);
               }}
-              className="text-green-600 font-bold"
+              variant="outline"
+              className="px-6 py-2"
             >
-              Add {fieldKey.split('_').map(word => 
+              <span className="text-green-600">+ Add {fieldKey.split('_').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' ')}
+              ).join(' ')}</span>
             </Button>
           </div>
         );
@@ -2162,6 +2878,8 @@ const FormContent: React.FC<{
               required={schema && schema.required && schema.required.includes(fieldKey)}
               fieldKey={fieldKey}
               sourceColumns={sourceColumns}
+              isAiEnabled={false}
+              isLoading={false}
             />
           )}
         />
@@ -2182,12 +2900,7 @@ const FormContent: React.FC<{
   };
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between">
-        <h2 className="text-lg font-semibold">
-          {schema.title}
-        </h2>
-      </div>
+    <div className="w-full max-w-full">
 
       {schema.title === 'Dedup' || schema.title === 'Deduplicator' ? (
         renderDeduplicatorFields(control, schema)
@@ -2196,27 +2909,45 @@ const FormContent: React.FC<{
       ) : schema.title === 'SequenceGenerator' ? (
         renderSequenceGeneratorFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (
-        <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
-          <TabsList>
-            {Object.keys(schema.properties || {}).map((key, index) => (
-              <TabsTrigger key={key} value={index.toString()}>
-                {key.replace(/_/g, ' ').split(' ').map(word =>
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        (() => {
+          // Filter tabs based on lookup_type for Lookup form
+          const filteredTabs = Object.entries(schema.properties || {}).filter(([key]) => {
+            if (schema.title === 'Lookup') {
+              const currentLookupType = watch('lookup_type');
+              if (key === 'lookup_data' && currentLookupType === 'Column Based') {
+                return false; // Don't show lookup_data tab for Column Based
+              }
+              if (key === 'lookup_config' && currentLookupType === 'Literal') {
+                return false; // Don't show lookup_config tab for Literal
+              }
+            }
+            return true;
+          });
 
-          {Object.entries(schema.properties || {}).map(([key, value]: [string, any], index) => (
-            <TabsContent key={key} value={index.toString()}>
-              {renderTabContent(key, value, control)}
-            </TabsContent>
-          ))}
-        </Tabs>
+          return (
+            <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
+              <TabsList>
+                {filteredTabs.map(([key], index) => (
+                  <TabsTrigger key={key} value={index.toString()}>
+                    {key.replace(/_/g, ' ').split(' ').map(word =>
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {filteredTabs.map(([key, value]: [string, any], index) => (
+                <TabsContent key={key} value={index.toString()}>
+                  {renderTabContent(key, value, control, initialFormValues, columnSuggestions, setValue)}
+                </TabsContent>
+              ))}
+            </Tabs>
+          );
+        })()
       ) : schema.ui_type === 'array-container' ? (
         <div className="space-y-2">
           <div>
-            {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, control, 'derived_fields', onExpressionClick, sourceColumns, columnSuggestions) : renderArrayFields(schema.properties?.sort_columns, control, 'sort_columns', onExpressionClick, sourceColumns, columnSuggestions)}
+            {schema.properties?.derived_fields ? renderArrayFields(schema.properties?.derived_fields, control, 'derived_fields', onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch) : renderArrayFields(schema.properties?.sort_columns, control, 'sort_columns', onExpressionClick, sourceColumns, columnSuggestions, aiAttempted, isGenerating, setValue, watch)}
           </div>
         </div>
       ) : schema.title === 'Repartition' ? (
@@ -2263,7 +2994,7 @@ const FormContent: React.FC<{
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select repartition type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent  style={{zIndex:9999}}>
                             {schema.properties.repartition_type.enum.map((option: string) => (
                               <SelectItem key={option} value={option}>
                                 {option.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
@@ -2373,27 +3104,13 @@ const FormContent: React.FC<{
                             control={control}
                             rules={{ required: true }}
                             render={({ field }) => (
-                              <Input
-                                {...field}
-                                placeholder="Sort Order"
-                                className="w-32"
-                              />
-                            )}
-                          />
-                          
-                          {/* Order */}
-                          <Controller
-                            name={`repartition_expression.${index}.order`}
-                            control={control}
-                            rules={{ required: true }}
-                            render={({ field }) => (
                               <Select value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Order" />
+                                  <SelectValue placeholder="Sort Order" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="asc">Ascending</SelectItem>
-                                  <SelectItem value="desc">Descending</SelectItem>
+                                <SelectContent  style={{zIndex:9999}}>
+                                  <SelectItem value="asc">Asc</SelectItem>
+                                  <SelectItem value="desc">Desc</SelectItem>
                                 </SelectContent>
                               </Select>
                             )}
@@ -2416,13 +3133,12 @@ const FormContent: React.FC<{
                         type="button"
                         onClick={() => appendExpression({
                           expression: '',
-                          sort_order: '',
-                          order: 'asc'
+                          sort_order: 'asc'
                         })}
                         variant="outline"
-                        className="w-full mt-2"
+                        className="px-6 py-2 mt-2"
                       >
-                        Add Expression
+                        <span className="text-green-600">+ Add Expression</span>
                       </Button>
                     </div>
                   </div>
@@ -2433,7 +3149,7 @@ const FormContent: React.FC<{
         </div>
       ) : (
         <div className="space-y-1">
-          {renderFieldsInRows(schema.properties || {}, control)}
+          {renderFieldsInRows(schema.properties || {}, control, undefined, columnSuggestions)}
         </div>
       )}
 

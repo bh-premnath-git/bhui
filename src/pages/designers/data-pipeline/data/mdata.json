@@ -19,19 +19,19 @@
     },
     {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SQL Transformation",
+      "title": "SQLTransformation",
       "description": "",
       "type": "object",
       "ui_type": "normal",
       "properties": {
-        "sql": {
+        "query": {
           "type": "expression",
           "minLength": 1,
           "ui_type": "full-width"
         }
       },
       "required": [
-        "sql"
+        "query"
       ]
     },
     {
@@ -295,62 +295,244 @@
         "sort_columns"
       ]
     },
-    {
-      "$schema": "http://json-schema.org/draft-04/schema#",
-      "description": "",
-      "type": "object",
-      "ui_type": "object",
-      "title": "DQ Check",
-      "properties": {
-        "transformation": {
-          "type": "string",
-          "minLength": 1
+   {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  
+  "title": "DQCheck",
+  "type": "object",
+  "ui_type": "tab-container",
+  "properties": {
+    "transformation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limit": {
+      "type": "number"
+    },
+    "dq_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_name": { "type": "string", "minLength": 1 },
+          "column": { "type": "string", "minLength": 1 },
+          "column_type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean", "timestamp", "date"]
+          },
+          "action": {
+            "type": "string",
+            "enum": ["error", "warning"],
+            "default": "warning"
+          }
         },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "limit": {
-          "type": "number"
-        },
-        "dq_rules": {
-          "type": "array",
-          "uniqueItems": true,
-          "minItems": 1,
-          "items": {
-            "required": [
-              "rule_name",
-              "column",
-              "rule_type",
-              "value"
-            ],
-            "properties": {
-              "rule_name": {
-                "type": "string",
-                "minLength": 1
+        "required": ["rule_name", "column", "column_type"],
+        "allOf": [
+          {
+            "if": { "properties": { "column_type": { "const": "string" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": [
+                    "equals", "not_equals", "minlength", "maxlength", "lengthequals",
+                    "equalsignorecase", "matches", "startswith", "endswith", "beginswith", "contains",
+                    "not_null", "isempty", "belongsto", "lowercase", "uppercase"
+                  ]
+                }
               },
-              "column": {
-                "type": "string",
-                "minLength": 1
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "const": "belongsto" } } },
+                  "then": {
+                    "properties": {
+                      "value": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "minItems": 1
+                      }
+                    },
+                    "required": ["value"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["not_null", "isempty", "lowercase", "uppercase", "belongsto"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["not_null", "isempty", "lowercase", "uppercase"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "number" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": [
+                    "equals", "not_equals", "greaterthan", "lessthan", "greaterthanorequals", "lessthanorequals", "not_null", "between"
+                  ]
+                }
               },
-              "rule_type": {
-                "type": "string",
-                "minLength": 1
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["not_null"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "const": "between" } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "number" },
+                      "value2": { "type": "number" }
+                    },
+                    "required": ["value", "value2"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["not_null", "between"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "number" }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "boolean" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": ["istrue", "isfalse", "not_null"]
+                }
               },
-              "value": {
-                "type": "string",
-                "minLength": 1
-              }
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["not_null"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["istrue", "isfalse"] } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "boolean" }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "timestamp" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": ["timestampequals", "timestampbefore", "timestampafter", "timestampwithin", "timestampnotnull", "timestampisempty"]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["timestampnotnull", "timestampisempty"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "const": "timestampwithin" } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 },
+                      "value2": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value", "value2"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["timestampnotnull", "timestampisempty", "timestampwithin"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "date" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": ["dateequals", "datebefore", "dateafter", "datewithin", "datenotnull", "dateisempty"]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["datenotnull", "dateisempty"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "const": "datewithin" } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 },
+                      "value2": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value", "value2"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["datenotnull", "dateisempty", "datewithin"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
             }
           }
-        }
-      },
-      "required": [
-        "transformation",
-        "name",
-        "dq_rules"
-      ]
-    },
+        ]
+      }
+    }
+  },
+  "required": ["transformation", "name", "dq_rules"]
+}   ,
+  
     {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "description": "",
@@ -383,7 +565,7 @@
             "type": "object",
             "properties": {
               "column": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               },
               "order": {
@@ -395,8 +577,8 @@
               }
             },
             "required": [
-              "order_column",
-              "sort"
+              "column",
+              "order"
             ]
           }
         }
@@ -466,8 +648,7 @@
           "items": {
             "required": [
               "expression",
-              "sort_order",
-              "order"
+              "sort_order"
             ],
             "properties": {
               "expression": {
@@ -476,10 +657,6 @@
                 "ui-hint": "expression"
               },
               "sort_order": {
-                "type": "string",
-                "minLength": 1
-              },
-              "order": {
                 "type": "string",
                 "enum": [
                   "asc",
@@ -992,7 +1169,7 @@
             "required": [],
             "properties": {
               "column": {
-                "type": "string",
+                "type": "autocomplete",
                 "minLength": 1
               },
               "order": {

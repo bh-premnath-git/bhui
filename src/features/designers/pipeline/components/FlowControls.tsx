@@ -40,7 +40,7 @@ interface FlowControlsProps {
   proplesLogs?: Log[]
   onAlignHorizontal: () => void
   onAlignVertical: () => void
-  onAlignTopLeft: () => void
+  onAlignTopLeft?: () => void
 }
 
 export const FlowControls: React.FC<FlowControlsProps> = ({
@@ -101,7 +101,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
         pipelineName={pipelineDtl?.pipeline_name}
         activeTabOnOpen="terminal"
       />,
-      `Terminal - ${pipelineDtl?.pipeline_name || 'Pipeline'}`
+      // `Terminal - ${pipelineDtl?.pipeline_name || 'Pipeline'}`
     );
   }
 

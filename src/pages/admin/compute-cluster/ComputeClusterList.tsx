@@ -14,11 +14,21 @@ export default function ComputeClusterListPage() {
   const { handleNavigation } = useNavigation();
 
   const { data: paginatedResponse, isLoading, isError, error, refetch }:any = useComputeClusterList({ limit: pageSize, offset });
-
-  const clusters = paginatedResponse?.data || [];
-  const total = paginatedResponse?.total || 0;
-  const next = paginatedResponse?.next || false;
-  const prev = paginatedResponse?.prev || false;
+  console.log(paginatedResponse)
+  
+  // Handle both paginated response object and plain array response
+  const clusters = Array.isArray(paginatedResponse) 
+    ? paginatedResponse 
+    : paginatedResponse?.data || [];
+  const total = Array.isArray(paginatedResponse) 
+    ? paginatedResponse.length 
+    : paginatedResponse?.total || 0;
+  const next = Array.isArray(paginatedResponse) 
+    ? false // For plain array, we don't have pagination info
+    : paginatedResponse?.next || false;
+  const prev = Array.isArray(paginatedResponse) 
+    ? false // For plain array, we don't have pagination info
+    : paginatedResponse?.prev || false;
 
   const pageIndex = Math.floor(offset / pageSize);
 
@@ -80,7 +90,7 @@ export default function ComputeClusterListPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Compute Configs Found</h3>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">No Compute Configs Found</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 No compute configs have been configured yet.
               </p>
@@ -94,7 +104,7 @@ export default function ComputeClusterListPage() {
                 className="mr-2"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create Config
+                Create Compute
               </Button>
             </div>
           </div>

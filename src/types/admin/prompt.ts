@@ -4,6 +4,7 @@ export interface Prompt{
     module_id: number;
     module_name: string;
     prompt: string;
+    created_at: string;
 }
 
 export interface PromptModule{

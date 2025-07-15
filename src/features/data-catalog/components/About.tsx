@@ -601,7 +601,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
 
   const handleUpdateConnection = async () => {
     try {
-      let connectionConfig=connectionConfigList.data.find((item:any)=>item.id===parseInt(selectedConnection!,10));
+      let connectionConfig=connectionConfigList.find((item:any)=>item.id===parseInt(selectedConnection!,10));
       await apiService.patch({
         url: `/data_source/${selectedSource.data_src_id}`,
         baseUrl: CATALOG_REMOTE_API_URL,
@@ -670,7 +670,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
                 <SelectValue placeholder="Select a connection" />
               </SelectTrigger>
               <SelectContent>
-                {connectionConfigList?.data?.map((config: any) => (
+                {connectionConfigList?.map((config: any) => (
                   <SelectItem key={config.id} value={config.id.toString()}>
                                 {config.connection_config_name} ({config.custom_metadata?.type})
                                 </SelectItem>
@@ -684,7 +684,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         </CardContent>
       </Card>
 
-      <Card className="h-fit">
+      {/* <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">
           <h3 className="text-lg font-semibold">Links</h3>
           <Button
@@ -700,7 +700,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         <CardContent className="pt-0 max-h-[200px] overflow-y-auto">
           <LinksSection links={links} onRemoveLink={handleRemoveLink} />
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Card className="h-fit">
         <CardHeader className="flex flex-row justify-between items-center pb-2">

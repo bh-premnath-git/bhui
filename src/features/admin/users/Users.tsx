@@ -33,7 +33,7 @@ export function UsersList({
 
   const onRowClickHandler = useCallback((row: Row<User>) => {
     usrMgntSrv.selectedUser(row.original);
-    handleNavigation(ROUTES.ADMIN.USERS.EDIT(row.original.username));
+    handleNavigation(ROUTES.ADMIN.USERS.EDIT(row.original.email));
   }, [usrMgntSrv, handleNavigation]);
 
   return (

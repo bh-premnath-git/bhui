@@ -3,12 +3,13 @@ import { apiService } from "@/lib/api/api-service";
 import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { User } from '@/types/admin/user';
 import { Project } from "@/types/admin/project";
-
+import { Environment } from "@/types/admin/environment";
 
 interface UsersState {
   users: User[];
   selectedUser: User | null;
   projects: Project[];
+  environments: Environment[];
   loading: boolean;
   error: string | null;
   isLoading: boolean;
@@ -18,6 +19,7 @@ const initialState: UsersState = {
   users: [],
   selectedUser: null,
   projects: [],
+  environments: [],
   loading: false,
   error: null,
   isLoading: false,
@@ -33,6 +35,22 @@ export const fetchProjects = createAsyncThunk(
       method: 'GET',
       metadata: {
         errorMessage: 'Failed to fetch projects'
+      }
+    });
+    return response;
+  }
+);
+
+export const fetchEnvironments = createAsyncThunk(
+  "users/fetchEnvironments",
+  async () => {
+    const response = await apiService.get<Environment[]>({
+      baseUrl: CATALOG_REMOTE_API_URL,
+      url: '/environment/environment/list/',
+      usePrefix: true,
+      method: 'GET',
+      metadata: {
+        errorMessage: 'Failed to fetch environments'
       }
     });
     return response;
@@ -70,6 +88,19 @@ const usersSlice = createSlice({
       .addCase(fetchProjects.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to fetch projects';
+      })
+      .addCase(fetchEnvironments.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchEnvironments.fulfilled, (state, action: PayloadAction<Environment[]>) => {
+        state.isLoading = false;
+        state.environments = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchEnvironments.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch environments';
       });
   },
 });

@@ -3,50 +3,51 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { Loader2, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { userFormSchema } from "./userFormSchema";
+import { userFormSchema, userCreateSchema, type UserCreateValues, type UserFormValues } from "./userFormSchema";
 import {
   NameFields,
   EmailField,
   StatusField,
-  ProjectsAndRolesFields,
+  ProjectsAndEnvironmentsFields,
 } from "./FormFields";
-import type { UserMutationData, User } from "@/types/admin/user";
+import type { UserMutationData } from "@/types/admin/user";
 
 interface UserFormProps {
   initialData?: Partial<UserMutationData>;
   onSubmit: (data: UserMutationData) => Promise<void>;
-  onNameChange?: (firstName: string, lastName: string) => void;
-  onClearSearch?: () => void;
   mode: "create" | "edit";
   isSubmitting: boolean;
   error: string | null;
-  searchedUser?: User | null;
-  searchLoading?: boolean;
-  userNotFound?: boolean;
 }
 
 export function UserForm({
   initialData,
   onSubmit,
-  onNameChange,
-  onClearSearch,
   mode,
   isSubmitting,
   error,
-  searchedUser,
-  searchLoading,
-  userNotFound,
 }: UserFormProps) {
   const [formState, setFormState] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const isEditMode = mode === "edit";
 
-  const form = useForm<UserMutationData>({
+  // Create mode form
+  const createForm = useForm<UserCreateValues>({
+    resolver: zodResolver(userCreateSchema),
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      ...initialData,
+    },
+  });
+
+  // Edit mode form  
+  const editForm = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       first_name: '',
@@ -54,12 +55,13 @@ export function UserForm({
       email: '',
       enabled: true,
       projects: [],
-      realm_roles: [],
+      environments: [],
       ...initialData,
     },
   });
 
-  const isEditMode = mode === "edit";
+  // Use the appropriate form based on mode
+  const form = isEditMode ? editForm : createForm;
 
   useEffect(() => {
     if (isSubmitting) {
@@ -73,31 +75,6 @@ export function UserForm({
     }
   }, [isSubmitting, error, formState]);
 
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (onNameChange && (name === 'first_name' || name === 'last_name')) {
-        const firstName = value.first_name?.trim() || '';
-        const lastName = value.last_name?.trim() || '';
-        onNameChange(firstName, lastName);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [form, onNameChange]);
-
-  useEffect(() => {
-    if (searchedUser && searchedUser.username !== form.getValues('username')) {
-      setDialogOpen(true);
-    }
-  }, [searchedUser, form]);
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    if (onClearSearch) {
-      onClearSearch();
-    }
-  };
-
   const handleSubmit = async (data: UserMutationData) => {
     const firstName = data.first_name?.trim();
     const lastName = data.last_name?.trim();
@@ -108,13 +85,7 @@ export function UserForm({
       return;
     }
 
-    if (searchedUser && searchedUser.username !== form.getValues('username')) {
-      setDialogOpen(true);
-      return;
-    }
-
-    const username = `${firstName.toLowerCase()}-${lastName.toLowerCase()}`;
-    await onSubmit({ ...data, username });
+    await onSubmit(data);
   };
 
   const getButtonStyles = () => {
@@ -130,53 +101,6 @@ export function UserForm({
     }
   };
 
-  const renderUsernameStatus = () => {
-    const firstName = form.getValues('first_name')?.trim() || '';
-    const lastName = form.getValues('last_name')?.trim() || '';
-    const currentUsername = firstName && lastName ? `${firstName.toLowerCase()}${lastName.toLowerCase()}` : '';
-    const originalUsername = initialData?.username;
-
-    if (isEditMode && currentUsername === originalUsername) {
-      return null;
-    }
-
-    if (!firstName || !lastName) {
-      return null;
-    }
-
-    if (searchLoading) {
-      return (
-        <Alert className="mt-4">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          <AlertDescription>Checking username format...</AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (searchedUser && searchedUser.username !== originalUsername) {
-      return (
-        <Alert variant="destructive" className="mt-4">
-          <XCircle className="h-4 w-4 mr-2" />
-          <AlertDescription>This username is already taken</AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (
-      (mode === 'create' && userNotFound && currentUsername) || 
-      (mode === 'edit' && userNotFound && currentUsername && currentUsername !== originalUsername)
-    ) {
-      return (
-        <Alert className="mt-4 bg-green-50 text-green-700 border-green-200">
-          <CheckCircle2 className="h-4 w-4 mr-2" />
-          <AlertDescription>Username Available</AlertDescription>
-        </Alert>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <div className="w-full max-w-8xl mx-auto">
       <div>
@@ -184,10 +108,13 @@ export function UserForm({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="space-y-6">
               <NameFields form={form} disabled={isEditMode} />
-              {renderUsernameStatus()}
               <EmailField form={form} />
-              <StatusField form={form} />
-              <ProjectsAndRolesFields form={form} />
+              {isEditMode && (
+                <>
+                  <StatusField form={form} />
+                  <ProjectsAndEnvironmentsFields form={form} />
+                </>
+              )}
             </div>
 
             <div className="flex flex-col items-center pt-6 border-t">
@@ -220,30 +147,6 @@ export function UserForm({
           </form>
         </Form>
       </div>
-
-      {!isEditMode && (
-        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center text-red-500">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                Username Already Exists
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p className="text-gray-600">
-                The username "{form.getValues('first_name')?.toLowerCase()}{form.getValues('last_name')?.toLowerCase()}"
-                is already taken. Please try a different combination of first and last name.
-              </p>
-            </div>
-            <DialogFooter>
-              <Button variant="secondary" onClick={handleDialogClose}>
-                OK, I'll Change It
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

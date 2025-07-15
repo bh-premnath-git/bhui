@@ -5,7 +5,7 @@ import { ROUTES } from '@/config/routes';
 import { useNavigation } from '@/hooks/useNavigation';
 import { PlusIcon, Settings2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/date-format";
+import { formatTimestamp } from "@/lib/date-format";
 
 const columnHelper = createColumnHelper<Environment>()
 
@@ -22,8 +22,7 @@ const columns: ColumnDefWithFilters<Environment>[] = [
     header: 'Created On',
     cell: ({ row }) => {
       const date = row.getValue('created_at') as string | null;
-      const formattedDate = date ? formatDate(date) : formatDate(new Date(), 'yyyy-MM-dd');
-      return <div>{formattedDate}</div>;
+      return <div>{formatTimestamp(date)}</div>;
     },
     enableColumnFilter: false,
   }),

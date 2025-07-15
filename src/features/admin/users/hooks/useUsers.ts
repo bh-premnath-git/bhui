@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
-import { debounce } from 'lodash';
 import type { User, UserMutationData } from '@/types/admin/user';
 import { toast } from 'sonner';
 import { KEYCLOAK_API_REMOTE_URL } from '@/config/platformenv';
@@ -18,6 +17,7 @@ export interface ApiUsersResponse {
 interface UseUsersOptions {
   shouldFetch?: boolean;
   userId?: string;
+  email?: string;
   limit?: number;
   offset?: number;
 }
@@ -43,14 +43,14 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
   const { getOne: getUser, getAll: getAllUsers } = useResource<User>(
     'users',
     KEYCLOAK_API_REMOTE_URL,
-    false
+    true
   );
 
   // For mutations - accepts UserMutationData
   const { create: createUser, update: updateUser, remove: removeUser } = useResource<UserMutationData>(
     'users',
     KEYCLOAK_API_REMOTE_URL,
-    false
+    true
   );
 
   const queryParams = useMemo(() => ({
@@ -58,26 +58,26 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
     offset: options.offset ?? 0,
   }), [options.limit, options.offset]);
 
-  // List users with pagination
+  // List users with pagination - only when not fetching a specific user
   const { data: usersResponse, isLoading, isFetching, isError } = getAllUsers<ApiUsersResponse>({
     url: '/bh-user/get-tenant-users/',
     queryOptions: {
-      enabled: options.shouldFetch,
+      enabled: options.shouldFetch && !options.email, // Don't fetch list when fetching single user
       retry: 2
     },
     params: queryParams
   });
 
-  // Get single user
+  // Get single user by email
   const {
     data: user,
     isLoading: isUserLoading,
     isFetching: isUserFetching,
     isError: isUserError
-  } = options.userId ? getUser({
-    url: `/users/${options.userId}`,
+  } = options.email ? getUser({
+    url: `/bh-user/get-tenant-user-details/${options.email}`,
     queryOptions: {
-      enabled: !!options.userId,
+      enabled: !!options.email,
       retry: 2
     }
   }) : {
@@ -89,7 +89,7 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
 
   // Create user mutation
   const createUserMutation = createUser({
-    url: '/users',
+    url: '/bh-user/create-tenant-user',
     mutationOptions: {
       onSuccess: () => toast.success('User created successfully'),
       onError: (error) => {
@@ -161,43 +161,3 @@ export const useUsers = (options: UseUsersOptions = { shouldFetch: true }) => {
     handleDeleteUser
   };
 };
-
-export function useUserSearch() {
-  const { getOne: searchUsers } = useResource<User[]>(
-    'users',
-    KEYCLOAK_API_REMOTE_URL,
-    false
-  );
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const { data: searchResults, isLoading, error } = searchUsers({
-    url: '/users/search',
-    params: { username: searchQuery },
-    queryOptions: {
-      enabled: !!searchQuery,
-      retry: 2
-    }
-  });
-
-  const userFound = searchResults && searchResults.length > 0;
-  const userNotFound = searchResults && searchResults.length === 0;
-
-  const debounceSearchUser = useMemo(
-    () => debounce((query: string) => setSearchQuery(query), 800),
-    []
-  );
-
-  useEffect(() => {
-    return () => debounceSearchUser.cancel();
-  }, [debounceSearchUser]);
-
-  return {
-    searchedUser: userFound ? searchResults[0] : null,
-    userFound,
-    userNotFound,
-    isLoading,
-    error,
-    debounceSearchUser,
-  };
-}

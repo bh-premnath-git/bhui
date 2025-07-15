@@ -3,7 +3,7 @@ import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "@/comp
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
-import { getProjectOptions, realmRoleOptions } from "./userFormSchema"
+import { getProjectOptions, getEnvironmentOptions } from "./userFormSchema"
 import { useAppSelector } from "@/hooks/useRedux"
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
@@ -81,9 +81,11 @@ export const StatusField = ({ form }: { form: any }) => (
   </div>
 )
 
-export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
+export const ProjectsAndEnvironmentsFields = ({ form }: { form: any }) => {
   const projects = useAppSelector((state) => state.users.projects);
-  const projectOptions = getProjectOptions(projects);  
+  const environments = useAppSelector((state) => state.users.environments);
+  const projectOptions = getProjectOptions(projects);
+  const environmentOptions = getEnvironmentOptions(environments);
   return (
     <div className="grid grid-cols-2 gap-6">
       <MultiSelect
@@ -95,10 +97,10 @@ export const ProjectsAndRolesFields = ({ form }: { form: any }) => {
       />
       <MultiSelect
         form={form}
-        name="realm_roles"
-        label="Roles"
-        placeholder="Select roles"
-        options={realmRoleOptions}
+        name="environments"
+        label="Environments"
+        placeholder="Select environments"
+        options={environmentOptions}
       />
     </div>
   )

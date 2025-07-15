@@ -1,8 +1,9 @@
 export interface Pagination {
-  first: number;
-  max_results: number;
-  has_next: boolean;
-  has_previous: boolean;
+  total: number;
+  next: boolean;
+  prev: boolean;
+  offset: number;
+  limit: number;
 }
 
 // Update BaseUser to match API requirements
@@ -13,21 +14,11 @@ export interface BaseUser {
   email: string;
   enabled: boolean;
   emailVerified: boolean;
-  realm_roles: string[];
-  projects: string[];
-
-  // Add optional fields for user creation/update
-  credentials?: Array<{
-    type: string;
-    value: string;
-    temporary: boolean;
-  }>;
 }
 
 // Complete User type with all API properties
 export interface User extends BaseUser {
   id: string;
-  createdTimestamp: number;
   totp: boolean;
   disableableCredentialTypes: string[];
   requiredActions: string[];
@@ -39,18 +30,16 @@ export interface User extends BaseUser {
     impersonate: boolean;
     manage: boolean;
   };
-
-  // Add missing API fields
-  attributes?: Record<string, any>;
-  groups?: string[];
-  clientRoles?: Record<string, string[]>;
 }
 
 // Add proper response types
 export interface UsersPaginatedResponse {
-  users: User[];
   total: number;
-  pagination: Pagination;
+  next: boolean;
+  prev: boolean;
+  offset: number;
+  limit: number;
+  data: User[];
 }
 
 export interface UserResponse {
@@ -58,15 +47,21 @@ export interface UserResponse {
   message?: string;
 }
 
-// Update mutation type to handle different operations
-export type UserMutationData = Omit<BaseUser, 'firstName' | 'lastName'> & {
-  firstName?: string;
-  lastName?: string;
-  first_name?: string;  // Form field name
-  last_name?: string;   // Form field name
-  credentials?: Array<{
-    type: string;
-    value: string;
-    temporary: boolean;
-  }>;
+// Create separate mutation types for different operations
+export type UserCreateData = {
+  email: string;
+  first_name: string;
+  last_name: string;
 };
+
+export type UserUpdateData = {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  enabled?: boolean;
+  emailVerified?: boolean;
+};
+
+// Keep UserMutationData as a union for backward compatibility
+export type UserMutationData = UserCreateData | UserUpdateData;

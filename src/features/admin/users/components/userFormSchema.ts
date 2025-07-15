@@ -1,17 +1,30 @@
 import { z } from "zod";
 import type { Project } from "@/types/admin/project";
+import type { Environment } from "@/types/admin/environment";
 
-export const userFormSchema = z.object({
+// Create mode schema - minimal fields only
+export const userCreateSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email address'),
+});
+
+// Edit mode schema - all fields
+export const userEditSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
   enabled: z.boolean(),
-  projects: z.array(z.string()),
-  realm_roles: z.array(z.string()),
+  projects: z.array(z.string()).optional(),
+  environments: z.array(z.string()).optional(),
   username: z.string().optional(),
 });
 
+// Combined schema for backward compatibility
+export const userFormSchema = userEditSchema;
+
 export type UserFormValues = z.infer<typeof userFormSchema>
+export type UserCreateValues = z.infer<typeof userCreateSchema>
 
 export interface SelectOption {
   label: string
@@ -19,15 +32,28 @@ export interface SelectOption {
 }
 
 export const getProjectOptions = (projects: Project[]) => {
+  if (!projects || !Array.isArray(projects)) {
+    return [];
+  }
   return projects.map(project => ({
     label: project.bh_project_name,
     value: project.bh_project_id.toString()
   }));
 };
 
-export const realmRoleOptions = [
-  { label: 'admin-user', value: 'admin-user' },
-  { label: 'ops-user', value: 'ops-user' },
-  { label: 'designer-user', value: 'designer-user' },
-  // default-roles-bighammer-realm
+export const getEnvironmentOptions = (environments: Environment[]) => {
+  if (!environments || !Array.isArray(environments)) {
+    return [];
+  }
+  return environments.map(environment => ({
+    label: environment.bh_env_name,
+    value: environment.bh_env_id?.toString()
+  }));
+};
+
+// Static fallback options (kept for backward compatibility)
+export const environmentOptions = [
+  { label: 'Development', value: 'development' },
+  { label: 'Staging', value: 'staging' },
+  { label: 'Production', value: 'production' },
 ]

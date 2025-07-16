@@ -162,8 +162,8 @@ console.log(initialValues,"initialValues")
         lookup_data: initialValues?.lookup_data || [],
         lookup_columns: Array.isArray(initialValues?.lookup_columns) ? initialValues.lookup_columns : [],
         lookup_conditions: initialValues?.lookup_conditions || {
-          column_name: 'id',
-          lookup_with: 'id'
+          column_name: '',
+          lookup_with: ''
         },
         keep: initialValues?.keep || 'First'
       };
@@ -235,23 +235,29 @@ console.log(initialValues,"initialValues")
     case 'DQCheck':
       return {
         ...baseValues,
+        transformation: initialValues?.transformation || 'DQCheck',
+        name: initialValues?.name || '',
+        limit: initialValues?.limit || undefined,
         dq_rules: Array.isArray(initialValues?.dq_rules) && initialValues.dq_rules.length > 0
           ? initialValues.dq_rules.map(rule => ({
               rule_name: rule.rule_name || '',
               column: rule.column || '',
+              column_type: rule.column_type || 'string',
               rule_type: rule.rule_type || '',
               value: rule.value || '',
-              value2: rule.value2 || '',
+              value2: rule.value2 || undefined,
               action: rule.action || 'warning'
             }))
           : [{
               rule_name: '',
               column: '',
+              column_type: 'string',
               rule_type: '',
               value: '',
-              value2: '',
+              value2: undefined,
               action: 'warning'
-            }]
+            }],
+        dependent_on: initialValues?.dependent_on || []
       };
 
     default:

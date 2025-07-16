@@ -341,7 +341,7 @@
                   "enum": [
                     "equals", "not_equals", "minlength", "maxlength", "lengthequals",
                     "equalsignorecase", "matches", "startswith", "endswith", "beginswith", "contains",
-                    "not_null", "isempty", "belongsto", "lowercase", "uppercase"
+                    "notnull", "isempty", "belongsto", "lowercase", "uppercase"
                   ]
                 }
               },
@@ -361,7 +361,7 @@
                   }
                 },
                 {
-                  "if": { "properties": { "rule_type": { "not": { "enum": ["not_null", "isempty", "lowercase", "uppercase", "belongsto"] } } } },
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["notnull", "isempty", "lowercase", "uppercase", "belongsto"] } } } },
                   "then": {
                     "properties": {
                       "value": { "type": "string", "minLength": 1 }
@@ -370,7 +370,7 @@
                   }
                 },
                 {
-                  "if": { "properties": { "rule_type": { "enum": ["not_null", "isempty", "lowercase", "uppercase"] } } },
+                  "if": { "properties": { "rule_type": { "enum": ["notnull", "isempty", "lowercase", "uppercase"] } } },
                   "then": {
                     "not": { "required": ["value"] }
                   }
@@ -385,14 +385,14 @@
                 "rule_type": {
                   "type": "string",
                   "enum": [
-                    "equals", "not_equals", "greaterthan", "lessthan", "greaterthanorequals", "lessthanorequals", "not_null", "between"
+                    "equals", "not_equals", "greaterthan", "lessthan", "greaterthanorequals", "lessthanorequals", "notnull", "between"
                   ]
                 }
               },
               "required": ["rule_type"],
               "allOf": [
                 {
-                  "if": { "properties": { "rule_type": { "enum": ["not_null"] } } },
+                  "if": { "properties": { "rule_type": { "enum": ["notnull"] } } },
                   "then": {
                     "not": { "required": ["value"] }
                   }
@@ -408,7 +408,7 @@
                   }
                 },
                 {
-                  "if": { "properties": { "rule_type": { "not": { "enum": ["not_null", "between"] } } } },
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["notnull", "between"] } } } },
                   "then": {
                     "properties": {
                       "value": { "type": "number" }
@@ -425,13 +425,13 @@
               "properties": {
                 "rule_type": {
                   "type": "string",
-                  "enum": ["istrue", "isfalse", "not_null"]
+                  "enum": ["istrue", "isfalse", "notnull"]
                 }
               },
               "required": ["rule_type"],
               "allOf": [
                 {
-                  "if": { "properties": { "rule_type": { "enum": ["not_null"] } } },
+                  "if": { "properties": { "rule_type": { "enum": ["notnull"] } } },
                   "then": {
                     "not": { "required": ["value"] }
                   }

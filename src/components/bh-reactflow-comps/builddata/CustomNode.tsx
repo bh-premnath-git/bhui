@@ -85,16 +85,9 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         const nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
         const isSource = data.label?.toLowerCase()?.includes("source");
         
-        // Set initial title from data.label if it exists
-        if (data.title) {
+        // Set initial title from data.label if it exists (but not when editing)
+        if (data.title && data.title !== titleValue && !isEditingTitle) {
             setTitleValue(data.title);
-            setNodes((nodes: any[]) =>
-                nodes.map(node =>
-                    node.id === id
-                        ? { ...node, data: { ...node.data, title: data.title } }
-                        : node
-                )
-            );
         }
 
         // Validation logic
@@ -143,7 +136,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }
         }
 
-    }, [formStates, id, data.label, data.source, setNodes, formHasBeenOpened]);
+    }, [formStates, id, data.label, data.source, setNodes, formHasBeenOpened, isEditingTitle]);
 
     // Add effect to track form state
     useEffect(() => {
@@ -151,22 +144,13 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         setIsSelected(isNodeSelected);
     }, [formStates, id, selectedSchema]);
     
-    // Add effect to update title when node data changes
+    // Add effect to update title when node data changes (but not when editing)
     useEffect(() => {
-        if (data.title) {
+        if (data.title && data.title !== titleValue && !isEditingTitle) {
             setTitleValue(data.title);
             console.log(`CustomNode: Updating title for node ${id} to ${data.title}`);
-            
-            // Also update the node data to ensure the title is displayed correctly
-            setNodes((nodes: any[]) =>
-                nodes.map(node =>
-                    node.id === id
-                        ? { ...node, data: { ...node.data, title: data.title } }
-                        : node
-                )
-            );
         }
-    }, [data.title]);
+    }, [data.title, titleValue, id, isEditingTitle]);
 
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -231,7 +215,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
 
     const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
-        // Optional: Add additional validation here if needed
+        console.log('Title changing to:', newValue);
         setTitleValue(newValue);
     }, []);
 
@@ -245,6 +229,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     }, [reactFlowInstance]);
 
     const handleTitleBlur = useCallback(() => {
+        console.log('Title blur triggered, current value:', titleValue);
         setIsEditingTitle(false);
         setTitleError(null);
 
@@ -262,14 +247,21 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             return;
         }
 
-        setNodes((nodes: any[]) =>
-            nodes.map(node =>
+        // Only update if the title has actually changed
+        if (titleValue !== data.title) {
+            // Update nodes using pipeline context to ensure proper state management and persistence
+            const updatedNodes = nodes.map(node =>
                 node.id === id
                     ? { ...node, data: { ...node.data, title: titleValue } }
                     : node
-            )
-        );
-    }, [id, setNodes, titleValue, data.label, data.title, isTitleDuplicate]);
+            );
+            
+            // Use a small timeout to ensure the editing state is properly set before updating
+            setTimeout(() => {
+                updateSetNode(updatedNodes, edgesInFlow);
+            }, 0);
+        }
+    }, [id, nodes, edgesInFlow, updateSetNode, titleValue, data.label, data.title, isTitleDuplicate]);
 
     const handleRefresh = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -349,23 +341,22 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 setFormHasBeenOpened(true);
 
                 // Update the node title immediately when target configuration is updated
-                setNodes((nodes: any[]) =>
-                    nodes.map(node =>
-                        node.id === id
-                            ? {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    title: targetData.source.name || targetData.source.title || "Target",
-                                    source: targetData.source
-                                }
+                const updatedNodes = nodes.map(node =>
+                    node.id === id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                title: targetData.source.name || targetData.source.title || "Target",
+                                source: targetData.source
                             }
-                            : node
-                    )
+                        }
+                        : node
                 );
+                updateSetNode(updatedNodes, edgesInFlow);
             }
         }
-    }, [data, id, formStates, setSelectedSchema, setFormStates, setIsFormOpen, handleSearchResultClick, setNodes]);
+    }, [data, id, formStates, setSelectedSchema, setFormStates, setIsFormOpen, handleSearchResultClick, nodes, edgesInFlow, updateSetNode]);
 
 
 

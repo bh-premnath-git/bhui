@@ -16,6 +16,7 @@ import { useParams } from 'react-router-dom';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
 import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from '@/store';
+import { ErrorBanner } from '@/components/ui/error-banner';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
@@ -72,7 +73,9 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     hasUnsavedChanges,
     setLastSaved,
     lastSaved,
-    fetchPipelineDetails
+    fetchPipelineDetails,
+    errorBanner,
+    setErrorBanner
   } = usePipelineContext();
 
   // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
@@ -239,8 +242,20 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   return (
     <>
       {pipelineType?.toLowerCase() == "design" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+        
+        {/* Error Banner */}
+        {errorBanner && (
+          <div className="fixed top-0 left-0 right-0 z-50 p-4">
+            <ErrorBanner
+              title={errorBanner.title}
+              description={errorBanner.description}
+              onClose={() => setErrorBanner(null)}
+            />
+          </div>
+        )}
+        
         <div
-          className={`flex-1 relative p-1 transition-all duration-300`}
+          className={`flex-1 relative p-1 transition-all duration-300 ${errorBanner ? 'mt-24' : ''}`}
           style={getMainContentStyle()}>
 
           {/* Main Canvas */}

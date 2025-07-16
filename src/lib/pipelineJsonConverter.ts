@@ -161,7 +161,21 @@ const normalizeTransformationData = (transform: any, type: string): any => {
         case 'DQCheck':
             return {
                 ...normalizedData,
-                dq_rules: Array.isArray(transform.dq_rules) ? transform.dq_rules : []
+                transformation: transform.transformation || 'DQCheck',
+                name: transform.name || '',
+                limit: transform.limit || undefined,
+                dq_rules: Array.isArray(transform.dq_rules) 
+                    ? transform.dq_rules.map(rule => ({
+                        rule_name: rule.rule_name || '',
+                        column: rule.column || '',
+                        column_type: rule.column_type || 'string',
+                        rule_type: rule.rule_type || '',
+                        value: rule.value || '',
+                        value2: rule.value2 || undefined,
+                        action: rule.action || 'warning'
+                    }))
+                    : [],
+                dependent_on: Array.isArray(transform.dependent_on) ? transform.dependent_on : []
             };
         
         case 'Lookup':

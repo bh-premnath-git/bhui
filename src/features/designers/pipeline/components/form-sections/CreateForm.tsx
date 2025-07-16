@@ -260,7 +260,8 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       return {
         conditions: initialValues?.conditions || [{ 
           join_type: 'inner', 
-          join_condition: '' 
+          join_condition: '',
+          join_input: ''
         }],
         dependent_on: initialValues?.dependent_on || [],
         expressions: initialValues?.expressions || [{ 
@@ -327,7 +328,7 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
     // Add specific initialization for DQCheck form
     if (schema?.title === 'DQCheck') {
       return {
-        transformation: initialValues?.transformation || 'dq_check',
+        transformation: initialValues?.transformation || 'DQCheck',
         name: initialValues?.name || '',
         limit: initialValues?.limit || undefined,
         dq_rules: initialValues?.dq_rules || [{
@@ -544,12 +545,13 @@ console.log(initialFormValues,"initialFormValues")
               console.log(expressionValue, "expressionValue");
               console.log(joinType, "joinType");
               
-              // Update the specific condition in the conditions array with both join_condition and join_type
+              // Update the specific condition in the conditions array with join_condition, join_type, and join_input
               const updatedConditions = [...(watch('conditions') || [])];
               updatedConditions[index] = {
                 ...updatedConditions[index],
                 join_condition: expressionValue,
-                join_type: joinType
+                join_type: joinType,
+                join_input: joinPayload.params.dataset1_name
               };
               
               // Set the updated conditions array
@@ -976,15 +978,20 @@ console.log(initialFormValues,"initialFormValues")
       }
       // Handle object fields
       else if (value !== null && typeof value === 'object') {
-        const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
-          if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
-            objAcc[objKey] = objValue;
+        // Special handling for lookup_conditions - always preserve the structure
+        if (key === 'lookup_conditions') {
+          acc[key] = value;
+        } else {
+          const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
+            if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
+              objAcc[objKey] = objValue;
+            }
+            return objAcc;
+          }, {} as Record<string, any>);
+          
+          if (Object.keys(cleanObj).length > 0) {
+            acc[key] = cleanObj;
           }
-          return objAcc;
-        }, {} as Record<string, any>);
-        
-        if (Object.keys(cleanObj).length > 0) {
-          acc[key] = cleanObj;
         }
       }
       // Handle primitive values
@@ -999,6 +1006,13 @@ console.log(initialFormValues,"initialFormValues")
     if (schema && Array.isArray(schema.required) && schema.required.length > 0) {
       // Check if all required fields are present in cleanValues
       const missingRequiredFields = schema.required.filter(field => {
+        // Special handling for lookup_conditions
+        if (field === 'lookup_conditions') {
+          const conditions = cleanValues[field];
+          if (!conditions) return true;
+          // Check if both column_name and lookup_with have values
+          return !conditions.column_name || !conditions.lookup_with;
+        }
         // For array fields, check if they have at least one valid item
         if (Array.isArray(cleanValues[field])) {
           return cleanValues[field].length === 0;
@@ -1176,15 +1190,15 @@ const getRuleTypeOptions = (columnType: string): string[] => {
       return [
         'equals', 'not_equals', 'minlength', 'maxlength', 'lengthequals',
         'equalsignorecase', 'matches', 'startswith', 'endswith', 'beginswith', 'contains',
-        'not_null', 'isempty', 'belongsto', 'lowercase', 'uppercase'
+        'notnull', 'isempty', 'belongsto', 'lowercase', 'uppercase'
       ];
     case 'number':
       return [
         'equals', 'not_equals', 'greaterthan', 'lessthan', 'greaterthanorequals', 
-        'lessthanorequals', 'not_null', 'between'
+        'lessthanorequals', 'notnull', 'between'
       ];
     case 'boolean':
-      return ['istrue', 'isfalse', 'not_null'];
+      return ['istrue', 'isfalse', 'notnull'];
     case 'timestamp':
       return [
         'timestampequals', 'timestampbefore', 'timestampafter', 'timestampwithin', 
@@ -1199,14 +1213,14 @@ const getRuleTypeOptions = (columnType: string): string[] => {
       return [
         'equals', 'not_equals', 'minlength', 'maxlength', 'lengthequals',
         'equalsignorecase', 'matches', 'startswith', 'endswith', 'beginswith', 'contains',
-        'not_null', 'isempty', 'belongsto', 'lowercase', 'uppercase'
+        'notnull', 'isempty', 'belongsto', 'lowercase', 'uppercase'
       ];
   }
 };
 
 // Helper function to check if a field requires a value based on column type and rule type
 const requiresValue = (columnType: string, ruleType: string): boolean => {
-  const noValueRules = ['is_null', 'not_null', 'is_true', 'is_false'];
+  const noValueRules = ['is_null', 'notnull', 'is_true', 'is_false'];
   return !noValueRules.includes(ruleType);
 };
 
@@ -1445,10 +1459,10 @@ const renderArrayFields = (
                       }))}
                       required={true}
                     />
-                  )}
+                  )} 
                 />
               </div>
-
+ 
               {/* Column Type */}
               <div>
                 <Controller
@@ -2290,10 +2304,12 @@ const FormContent: React.FC<{
     formInitialValues: any;
     columnSuggestions?: string[];
     setValue: any;
-  }> = ({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [], setValue }) => {
+  }> = React.memo(({ fieldKey, fieldSchema, control, formInitialValues, columnSuggestions = [], setValue }) => {
     const [objectEntries, setObjectEntries] = useState<Array<{id: string, key: string, value: string}>>([]);
     const watchedValue = watch(fieldKey) || {};
     const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const prevWatchedValueRef = useRef<any>(null);
+    const idCounterRef = useRef(0);
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -2304,28 +2320,34 @@ const FormContent: React.FC<{
       };
     }, []);
 
+    // Only update when watchedValue actually changes (deep comparison)
     useEffect(() => {
-      console.log(`renderObjectField - ${fieldKey}:`, watchedValue);
-      const entries = Object.entries(watchedValue).map(([key, value], index) => ({
-        id: `${key}-${index}`,
-        key,
-        value: value as string
-      }));
+      const hasChanged = JSON.stringify(prevWatchedValueRef.current) !== JSON.stringify(watchedValue);
       
-      // If no entries exist, add one empty entry for user to fill
-      if (entries.length === 0) {
-        entries.push({ id: `empty-${Date.now()}`, key: '', value: '' });
+      if (hasChanged) {
+        console.log(`renderObjectField - ${fieldKey}:`, watchedValue);
+        const entries = Object.entries(watchedValue).map(([key, value], index) => ({
+          id: `existing-${key}-${index}`,
+          key,
+          value: value as string
+        }));
+        
+        // If no entries exist, add one empty entry for user to fill
+        if (entries.length === 0) {
+          entries.push({ id: `entry-${++idCounterRef.current}`, key: '', value: '' });
+        }
+        
+        setObjectEntries(entries);
+        prevWatchedValueRef.current = watchedValue;
       }
-      
-      setObjectEntries(entries);
-    }, [watchedValue]);
+    }, [watchedValue, fieldKey]);
 
-    const addEntry = () => {
-      const newEntry = { id: `new-${Date.now()}`, key: '', value: '' };
-      setObjectEntries([...objectEntries, newEntry]);
-    };
+    const addEntry = useCallback(() => {
+      const newEntry = { id: `entry-${++idCounterRef.current}`, key: '', value: '' };
+      setObjectEntries(prev => [...prev, newEntry]);
+    }, []);
 
-    const removeEntry = (id: string) => {
+    const removeEntry = useCallback((id: string) => {
       const updatedEntries = objectEntries.filter(entry => entry.id !== id);
       setObjectEntries(updatedEntries);
       
@@ -2342,13 +2364,13 @@ const FormContent: React.FC<{
         shouldDirty: true,
         shouldTouch: true
       });
-    };
+    }, [objectEntries, fieldKey, setValue]);
 
-    const updateEntry = (id: string, field: 'key' | 'value', newValue: string) => {
-      const updatedEntries = objectEntries.map(entry => 
+    const updateEntry = useCallback((id: string, field: 'key' | 'value', newValue: string) => {
+      // Update the local state immediately to prevent focus loss
+      setObjectEntries(prev => prev.map(entry => 
         entry.id === id ? { ...entry, [field]: newValue } : entry
-      );
-      setObjectEntries(updatedEntries);
+      ));
       
       // Use debouncing to improve performance - only update form after a delay
       if (updateTimeoutRef.current) {
@@ -2356,21 +2378,25 @@ const FormContent: React.FC<{
       }
       
       updateTimeoutRef.current = setTimeout(() => {
-        // Only save entries that have BOTH key and value filled
-        const newObject = updatedEntries.reduce((acc, entry) => {
-          if (entry.key.trim() && entry.value.trim()) {
-            acc[entry.key.trim()] = entry.value.trim();
-          }
-          return acc;
-        }, {} as Record<string, string>);
-        
-        setValue(fieldKey, newObject, {
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true
+        setObjectEntries(currentEntries => {
+          // Only save entries that have BOTH key and value filled
+          const newObject = currentEntries.reduce((acc, entry) => {
+            if (entry.key.trim() && entry.value.trim()) {
+              acc[entry.key.trim()] = entry.value.trim();
+            }
+            return acc;
+          }, {} as Record<string, string>);
+          
+          setValue(fieldKey, newObject, {
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true
+          });
+          
+          return currentEntries;
         });
       }, 300); // 300ms debounce
-    };
+    }, [fieldKey, setValue]);
 
     // Get the current form default value for this field
     const currentDefaultValue = formInitialValues[fieldKey] || {};
@@ -2396,7 +2422,7 @@ const FormContent: React.FC<{
                 <div className="w-10"></div> {/* Space for delete button */}
               </div>
               
-              {objectEntries.map((entry) => (
+              {objectEntries.map((entry, index) => (
                 <div key={entry.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                   <Autocomplete 
                     value={entry.key}
@@ -2443,7 +2469,10 @@ const FormContent: React.FC<{
         }}
       />
     );
-  };
+  });
+
+  // Add display name for debugging
+  ObjectField.displayName = 'ObjectField';
 
   // Helper function to render ObjectField component
   const renderObjectField = (fieldKey: string, fieldSchema: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
@@ -2459,8 +2488,8 @@ const FormContent: React.FC<{
     );
   };
 
-  // Update renderTabContent to pass control
-  const renderTabContent = (key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
+  // Update renderTabContent to pass control - memoized to prevent unnecessary re-renders
+  const renderTabContent = useCallback((key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {
     if (!value || typeof value !== 'object') {
       console.warn(`renderTabContent: Invalid value for key ${key}:`, value);
       return <div>Invalid field configuration for {key}</div>;
@@ -2597,7 +2626,7 @@ const FormContent: React.FC<{
     } else {
       return renderField(key, value, control, key, columnSuggestions);
     }
-  };
+  }, []);
 
   // Add specific handling for Select node type
   const renderSelectFields = (control: any, sourceColumns: SourceColumn[], schema: Schema) => {
@@ -2910,19 +2939,21 @@ const FormContent: React.FC<{
         renderSequenceGeneratorFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (
         (() => {
-          // Filter tabs based on lookup_type for Lookup form
-          const filteredTabs = Object.entries(schema.properties || {}).filter(([key]) => {
-            if (schema.title === 'Lookup') {
-              const currentLookupType = watch('lookup_type');
-              if (key === 'lookup_data' && currentLookupType === 'Column Based') {
-                return false; // Don't show lookup_data tab for Column Based
+          // Filter tabs based on lookup_type for Lookup form - memoized to prevent unnecessary re-renders
+          const filteredTabs = useMemo(() => {
+            return Object.entries(schema.properties || {}).filter(([key]) => {
+              if (schema.title === 'Lookup') {
+                const currentLookupType = watch('lookup_type');
+                if (key === 'lookup_data' && currentLookupType === 'Column Based') {
+                  return false; // Don't show lookup_data tab for Column Based
+                }
+                if (key === 'lookup_config' && currentLookupType === 'Literal') {
+                  return false; // Don't show lookup_config tab for Literal
+                }
               }
-              if (key === 'lookup_config' && currentLookupType === 'Literal') {
-                return false; // Don't show lookup_config tab for Literal
-              }
-            }
-            return true;
-          });
+              return true;
+            });
+          }, [schema.properties, schema.title, watch('lookup_type')]);
 
           return (
             <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>

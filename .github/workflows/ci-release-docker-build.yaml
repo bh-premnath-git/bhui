@@ -90,7 +90,7 @@ jobs:
       - name: Set IMAGE_TAG for Main Branch
         if: github.event_name == 'push'
         run: |
-          echo "IMAGE_TAG=${{ env.CURRENT_APP_VER }}-${{ github.run_number }}-rc" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ env.CURRENT_APP_VER }}-${{ github.run_number }}" >> $GITHUB_ENV
           echo "GIT_HASH=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
 
       - name: Build Docker Image for Main Branch

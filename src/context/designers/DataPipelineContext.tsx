@@ -98,6 +98,8 @@ interface bnPipelineContextProps {
     setTerminalLogs: React.Dispatch<React.SetStateAction<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>>;
     showLogs: boolean;
     setShowLogs: React.Dispatch<React.SetStateAction<boolean>>;
+    errorBanner: { title: string; description: string } | null;
+    setErrorBanner: React.Dispatch<React.SetStateAction<{ title: string; description: string } | null>>;
     handleSearch: (term: string) => void;
     handleSearchResultClick: (nodeId: string) => void;
     handleNodeUpdate: (nodeId: string, updatedData: any) => void;
@@ -210,6 +212,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [conversionLogs, setConversionLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [terminalLogs, setTerminalLogs] = useState<Array<{ timestamp: string; message: string; level: 'info' | 'error' | 'warning' }>>([]);
     const [showLogs, setShowLogs] = useState(false);
+    const [errorBanner, setErrorBanner] = useState<{ title: string; description: string } | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const { pipelineDtl, isFlow,selectedMode } = useSelector((state: RootState) => state.buildPipeline)
     const [isNodeFormOpen, setIsNodeFormOpen] = useState(false);
@@ -422,7 +425,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setFormStates,
         selectedPipeline,
         // For handleSourceUpdate
-        setUnsavedChanges
+        setUnsavedChanges,
+        // For showing logs
+        setShowLogs,
+        // For showing error banner
+        setErrorBanner
     });
 
     // Update the auto-save effect
@@ -1273,6 +1280,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTerminalLogs,
         showLogs,
         setShowLogs,
+        errorBanner,
+        setErrorBanner,
         handleSearch,
         handleSearchResultClick,
         handleNodeUpdate,

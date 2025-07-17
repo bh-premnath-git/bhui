@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, getEnvironmentOptions } from "./userFormSchema"
+import { AVAILABLE_ROLES } from "@/types/admin/roles"
 import { Button } from "@/components/ui/button"
 import { useFieldArray } from "react-hook-form"
 import {
@@ -134,11 +135,13 @@ export const TenantAdminField = ({ form }: { form: any }) => (
 )
 
 export const RolesField = ({ form }: { form: any }) => {
-  const roleOptions = [
-    { label: 'Designer', value: 'designer' },
-    { label: 'Ops User', value: 'ops_user' },
-    { label: 'Admin', value: 'admin' },
-  ]
+  const roleOptions = AVAILABLE_ROLES.map(role => ({
+    label: role
+      .split('_')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' '),
+    value: role
+  }))
 
   return (
     <MultiSelect
@@ -156,11 +159,13 @@ export const RoleAssignmentsField = ({ form }: { form: any }) => {
   const environments = useAppSelector((state) => state.users.environments)
   const projectOptions = getProjectOptions(projects)
   const environmentOptions = getEnvironmentOptions(environments)
-  const roleOptions = [
-    { label: 'Designer', value: 'designer' },
-    { label: 'Ops User', value: 'ops_user' },
-    { label: 'Admin', value: 'admin' },
-  ]
+  const roleOptions = AVAILABLE_ROLES.map(role => ({
+    label: role
+      .split('_')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' '),
+    value: role
+  }))
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'assignments'

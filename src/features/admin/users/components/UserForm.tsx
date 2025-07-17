@@ -42,6 +42,8 @@ export function UserForm({
       first_name: '',
       last_name: '',
       email: '',
+      assignments: [],
+      is_tenant_admin: false,
       ...initialData,
     },
   });
@@ -112,12 +114,8 @@ export function UserForm({
             <div className="space-y-6">
               <NameFields form={form} disabled={isEditMode} />
               <EmailField form={form} />
-              {isEditMode && (
-                <>
-                  <TenantAdminField form={form} />
-                  <RoleAssignmentsField form={form} />
-                </>
-              )}
+              <TenantAdminField form={form} />
+              <RoleAssignmentsField form={form} />
             </div>
 
             <div className="flex flex-col items-center pt-6 border-t">

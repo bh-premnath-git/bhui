@@ -7,6 +7,16 @@ export const userCreateSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
+  assignments: z
+    .array(
+      z.object({
+        project: z.string().min(1, 'Project is required'),
+        environment: z.string().min(1, 'Environment is required'),
+        role: z.string().min(1, 'Role is required'),
+      })
+    )
+    .optional(),
+  is_tenant_admin: z.boolean().optional(),
 });
 
 // Edit mode schema - all fields

@@ -12,7 +12,7 @@ import {
   TenantAdminField,
   RoleAssignmentsField,
 } from "./FormFields";
-import type { UserMutationData } from "@/types/admin/user";
+import type { UserMutationData, User } from "@/types/admin/user";
 
 interface UserFormProps {
   initialData?: Partial<UserMutationData>;
@@ -20,6 +20,7 @@ interface UserFormProps {
   mode: "create" | "edit";
   isSubmitting: boolean;
   error: string | null;
+  user?: User;
 }
 
 export function UserForm({
@@ -28,6 +29,7 @@ export function UserForm({
   mode,
   isSubmitting,
   error,
+  user,
 }: UserFormProps) {
   const [formState, setFormState] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -114,8 +116,8 @@ export function UserForm({
               <EmailField form={form} />
               {isEditMode && (
                 <>
-                  <TenantAdminField form={form} />
-                  <RoleAssignmentsField form={form} />
+                  <TenantAdminField form={form} user={user} />
+                  <RoleAssignmentsField form={form} user={user} />
                 </>
               )}
             </div>

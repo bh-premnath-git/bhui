@@ -14,6 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAppSelector } from "@/hooks/useRedux"
+import type { User } from "@/types/admin/user"
+
+// Helper function to check if user has admin access
+const isUserAdmin = (user?: User): boolean => {
+  if (!user?.access) return false;
+  const { manageGroupMembership, view, mapRoles, impersonate, manage } = user.access;
+  return manageGroupMembership && view && mapRoles && impersonate && manage;
+};
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">
@@ -22,7 +30,7 @@ export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) =
   </FormLabel>
 )
 
-export const NameFields = ({ form, disabled }: { form: any; disabled?: boolean }) => (
+export const NameFields = ({ form, disabled, user }: { form: any; disabled?: boolean; user?: User }) => (
   <div className="grid grid-cols-2 gap-6">
     <FormField
       control={form.control}
@@ -53,7 +61,7 @@ export const NameFields = ({ form, disabled }: { form: any; disabled?: boolean }
   </div>
 )
 
-export const EmailField = ({ form }: { form: any }) => (
+export const EmailField = ({ form, user }: { form: any; user?: User }) => (
   <div className="grid grid-cols-3 gap-4">
     <FormField
       control={form.control}
@@ -71,7 +79,7 @@ export const EmailField = ({ form }: { form: any }) => (
   </div>
 )
 
-export const StatusField = ({ form }: { form: any }) => (
+export const StatusField = ({ form, user }: { form: any; user?: User }) => (
   <div>
     <FormField
       control={form.control}
@@ -90,7 +98,7 @@ export const StatusField = ({ form }: { form: any }) => (
   </div>
 )
 
-export const ProjectsAndEnvironmentsFields = ({ form }: { form: any }) => {
+export const ProjectsAndEnvironmentsFields = ({ form, user }: { form: any; user?: User }) => {
   const projects = useAppSelector((state) => state.users.projects);
   const environments = useAppSelector((state) => state.users.environments);
   const projectOptions = getProjectOptions(projects);
@@ -115,25 +123,43 @@ export const ProjectsAndEnvironmentsFields = ({ form }: { form: any }) => {
   )
 }
 
-export const TenantAdminField = ({ form }: { form: any }) => (
-  <div>
-    <FormField
-      control={form.control}
-      name="is_tenant_admin"
-      render={({ field }) => (
-        <FormItem className="flex flex-row items-center gap-2">
-          <FormLabel>Tenant Admin</FormLabel>
-          <FormControl>
-            <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
-          </FormControl>
-          <span className="text-sm text-muted-foreground">{field.value ? 'Yes' : 'No'}</span>
-        </FormItem>
+export const TenantAdminField = ({ form, user }: { form: any; user?: User }) => {
+  const canManageAdmin = isUserAdmin(user);
+  
+  return (
+    <div>
+      <FormField
+        control={form.control}
+        name="is_tenant_admin"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center gap-2">
+            <FormLabel className={canManageAdmin ? "text-green-700 font-medium" : ""}>
+              Tenant Admin
+            </FormLabel>
+            <FormControl>
+              <Switch 
+                checked={field.value ?? false} 
+                onCheckedChange={field.onChange}
+                disabled={!canManageAdmin}
+                className={field.value && canManageAdmin ? "data-[state=checked]:bg-green-600" : ""}
+              />
+            </FormControl>
+            <span className={`text-sm ${field.value && canManageAdmin ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
+              {field.value ? 'Yes' : 'No'}
+            </span>
+          </FormItem>
+        )}
+      />
+      {!canManageAdmin && (
+        <p className="text-xs text-muted-foreground mt-1 text-yellow-600">
+          Admin privileges required to modify this setting
+        </p>
       )}
-    />
-  </div>
-)
+    </div>
+  )
+}
 
-export const RolesField = ({ form }: { form: any }) => {
+export const RolesField = ({ form, user }: { form: any; user?: User }) => {
   const roleOptions = [
     { label: 'Designer', value: 'designer' },
     { label: 'Ops User', value: 'ops_user' },
@@ -151,7 +177,7 @@ export const RolesField = ({ form }: { form: any }) => {
   )
 }
 
-export const RoleAssignmentsField = ({ form }: { form: any }) => {
+export const RoleAssignmentsField = ({ form, user }: { form: any; user?: User }) => {
   const projects = useAppSelector((state) => state.users.projects)
   const environments = useAppSelector((state) => state.users.environments)
   const projectOptions = getProjectOptions(projects)

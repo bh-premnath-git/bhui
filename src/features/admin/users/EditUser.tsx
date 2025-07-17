@@ -43,7 +43,7 @@ export function EditUser() {
     email: user.email,
     enabled: user.enabled,
     assignments: [],
-    is_tenant_admin: false
+    is_tenant_admin: user.access?.manage && user.access?.manageGroupMembership && user.access?.view && user.access?.mapRoles && user.access?.impersonate
   };
 
   return (
@@ -58,6 +58,7 @@ export function EditUser() {
             onSubmit={onSubmit}
             isSubmitting={isSubmitting}
             error={error}
+            user={user}
           />
         </div>
       </div>

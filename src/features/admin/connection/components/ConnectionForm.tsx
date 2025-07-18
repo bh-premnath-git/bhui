@@ -347,7 +347,7 @@ export function ConnectionForm({
         return {
           name: connectionConfigName,
           connection_type: "MySQL",
-          schema: data.db_schema || null,
+          schema: data.db_schema || "null",
           database: data?.database || null,
           secret_name: `bh-mysql-${cleanedName}`
         };

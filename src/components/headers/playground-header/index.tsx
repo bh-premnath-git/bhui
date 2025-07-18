@@ -241,6 +241,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               isValid={isPipelineValid}
               validationErrors={pipelineValidationErrors}
               validationWarnings={pipelineValidationWarnings}
+              
             />
           )}
 

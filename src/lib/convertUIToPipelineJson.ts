@@ -340,6 +340,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                                 return sourceNode?.data?.title || '';
                             }),
                         transformation: "DQCheck",
+                        limit: node.data.transformationData?.limit || undefined,
                         dq_rules: node.data.transformationData?.dq_rules || []
                     };
                 case 'Deduplicator':

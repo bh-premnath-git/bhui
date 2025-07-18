@@ -38,6 +38,17 @@ export interface DataSourceLayout {
   data_src_lyt_key: string;
   layout_fields: LayoutField[]; 
 }
+export interface ConnectionConfig {
+  id: number;
+  connection_name: string;
+  connection_config_name: string;
+  connection_type: string;
+  connection_status: string;
+  data_residency: string;
+  secret_name: string;
+  bh_env_id: number;
+  custom_metadata?: Record<string, any>;
+}
 
 export interface DataSource {
   created_at: string;
@@ -64,6 +75,7 @@ export interface DataSource {
   total_records: number;
   total_customer: number;
   data_source_layout: DataSourceLayout[];
+  connection_config?: ConnectionConfig;
 }
 
 export interface DataSourcePaginatedResponse {

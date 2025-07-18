@@ -17,16 +17,65 @@ interface ColumnsProps {
   onDelete?: (datasource: DataSource) => void;
 }
 
+const connectionImages = {
+  "mysql": "/assets/buildPipeline/connection/mysql.svg",
+  "postgres": "/assets/buildPipeline/connection/postgres.svg",
+  "oracle": "/assets/buildPipeline/connection/oracle.svg",
+  "snowflake": "/assets/buildPipeline/connection/snowflake.svg",
+  "bigquery": "/assets/buildPipeline/connection/bigquery.svg",
+  "redshift": "/assets/buildPipeline/connection/redshift.svg",
+  "local": "/assets/buildPipeline/connection/local.png",
+  "gcs": "/assets/buildPipeline/connection/gcs.svg",
+  "s3": "/assets/buildPipeline/connection/s3.svg",
+  "databricks_lakehouse": "/assets/buildPipeline/connection/databricks.svg",
+  "ms_sql_server": "/assets/buildPipeline/connection/ms_sql_server.svg",
+  "mongodb": "/assets/buildPipeline/connection/mongodb.svg",
+  "clickhouse": "/assets/buildPipeline/connection/clickhouse.svg",
+  "pinecone": "/assets/buildPipeline/connection/pinecone.svg",
+  "redis": "/assets/buildPipeline/connection/redis.svg",
+  "salesforce": "/assets/buildPipeline/connection/salesforce.svg",
+  "weaviate": "/assets/buildPipeline/connection/weaviate.svg",
+  "apache_iceberg": "/assets/buildPipeline/connection/apache_iceberg.svg",
+  "azure_blob_storage": "/assets/buildPipeline/connection/azure_blob_storage.svg",
+  "duckdb": "/assets/buildPipeline/connection/duckdb.svg",
+  "elasticsearch": "/assets/buildPipeline/connection/elasticsearch.svg",
+  "google_sheets": "/assets/buildPipeline/connection/google_sheets.svg",
+  "google_pubsub": "/assets/buildPipeline/connection/google_pubsub.svg",
+  "kafka": "/assets/buildPipeline/connection/kafka.svg",
+  "dynamodb": "/assets/buildPipeline/connection/dynamodb.svg",
+  "starburst_galaxy": "/assets/buildPipeline/connection/starburst.svg",
+  "google_firestore": "/assets/buildPipeline/connection/google_firestore.svg",
+  "ibm_db2": "/assets/buildPipeline/connection/ibm_db2.svg",
+  "ibm_idms": "/assets/buildPipeline/connection/idms.png",
+  "teradata": "/assets/buildPipeline/connection/teradata.svg",
+};
+
 const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<DataSource>[] => [
   columnHelper.accessor('data_src_name', {
     header: 'Name',
     cell: (info) => {
       const value = info.getValue();
       const rowData = info.row.original;
+      const connName = rowData.connection_config?.connection_name
+        ?.toLowerCase()
+        .replace(/\s+/g, "") || '';
+
+
       return (
         <div className="flex items-center gap-4 min-w-[250px]">
-          <div className="flex items-center justify-center bg-muted rounded-md p-2">
-            <Database className="w-5 h-5 text-green-500" />
+          <div className="flex items-center justify-center bg-muted rounded-md p-2 w-10 h-10">
+            {connectionImages[connName] ? (
+              <img
+                src={connectionImages[connName]}
+                alt={rowData.connection_config?.connection_name || 'connection'}
+                className="w-6 h-6 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            ) : (
+              <Database className="w-6 h-6 text-green-500" />
+            )}
           </div>
           <div>
             <p className="text-base font-medium text-foreground mb-1">
@@ -38,15 +87,19 @@ const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<DataSource>[]
           </div>
         </div>
       );
-    },
+    }
+    ,
     enableColumnFilter: true,
   }),
   columnHelper.accessor('bh_project_name', {
     header: 'Project',
     enableColumnFilter: true,
   }),
-
- 
+  columnHelper.accessor((row) => row.connection_config?.connection_name ?? "-", {
+    id: 'connection_name',
+    header: 'Connection',
+    enableColumnFilter: true,
+  }),
   columnHelper.accessor('updated_at', {
     header: 'Last Updated',
     cell: (info) => formatDate(info.getValue()),

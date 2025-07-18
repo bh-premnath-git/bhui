@@ -25,7 +25,7 @@ export const OpsHubSlideWrapper = ({
         className="!w-[65vw]"
       >
         <SheetHeader>
-          <SheetTitle>{selectedRow?.flow_name}</SheetTitle>
+          <SheetTitle>WorkFlow</SheetTitle>
         </SheetHeader>
          <DataOpsHubSchema jobId={selectedRow?.job_id} />
       </SheetContent>

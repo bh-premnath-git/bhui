@@ -30,6 +30,8 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
   if (!schema || !schema.properties) {
     return null;
   }
+  
+  
   // Group fields by category if defined in schema
   const fieldsByCategory: Record<string, { key: string, field: any }[]> = {
     'General': []
@@ -43,12 +45,20 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
     fieldsByCategory[category].push({ key, field });
   });
 
-  // Add a helper function to determine if a field should be masked
+  // Helper function to determine if a field is a password field (should have toggle)
+  const isPasswordField = (key: string, field: any): boolean => {
+    // Only treat as password field if explicitly marked as password
+    return field.format === 'password' || 
+           field.type === 'password' ||
+           key.toLowerCase().includes('password');
+  };
+
+  // Helper function to determine if a field should be masked (but not necessarily have toggle)
   const isSensitiveField = (key: string, field: any): boolean => {
     // Check field key names that typically contain sensitive data
     const sensitiveKeys = [
-      'password', 'credentials', 'secret', 'key', 'token', 'auth',
-      'host', 'port', 'username', 'bucket', 'schema' // Add connection fields
+      'credentials', 'secret', 'key', 'token', 'auth',
+      'host', 'port', 'username', 'bucket', 'schema'
     ];
     
     // Check if any of the sensitive keys are present in the field key
@@ -56,30 +66,25 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
       sensitiveKey => key.toLowerCase().includes(sensitiveKey)
     );
     
-    // Check if the field is specifically a password field
-    const isPasswordField = field.format === 'password' || 
-                           (field.type === 'string' && field.airbyte_secret === true);
+    // Check if the field is specifically marked as secret
+    const isSecretField = field.airbyte_secret === true;
     
-    return keyContainsSensitive || isPasswordField;
+    return keyContainsSensitive || isSecretField;
   };
   
   // Helper function to determine if a field should prevent autocomplete
   const shouldPreventAutocomplete = (key: string): boolean => {
-    // List of fields that should prevent autocomplete
     const preventAutocompleteFields = [
       'access_key', 'secret_key', 'password', 'token', 'secret', 'credentials',
       'api_key', 'auth_token', 'private_key'
     ];
     
-    // Exact match fields that should definitely prevent autocomplete
     const exactMatchFields = ['access_key', 'secret_key'];
     
-    // Check for exact match first
     if (exactMatchFields.includes(key.toLowerCase())) {
       return true;
     }
     
-    // Then check for partial matches
     return preventAutocompleteFields.some(field => 
       key.toLowerCase().includes(field)
     );
@@ -87,16 +92,16 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
 
   // Function to generate masked value
   const getMaskedValue = (value: string | undefined, isMasked: boolean): string => {
-    // Only mask values in edit mode
     if (!isMasked || mode !== 'edit') return value || '';
-    // Return a masked string only in edit mode
-    return 'xxxxxxxxxx';
+    return value && value.length > 0 ? '•'.repeat(Math.min(value.length, 12)) : '';
   };
 
+  // Enhanced password field renderer with proper toggle
   const renderPasswordField = (key: string, field: any, fieldKey: string, formField: any, isRequired: boolean) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showDescription, setShowDescription] = useState(false);
     
+    // Handle enum fields that are also sensitive
     if (field.enum) {
       return (
         <FormItem className="w-full">
@@ -108,7 +113,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
             {field.description && (
               <button
                 type="button"
-                className="ml-1 text-muted-foreground"
+                className="ml-1 text-muted-foreground hover:text-foreground"
                 onClick={() => setShowDescription(!showDescription)}
               >
                 <HelpCircle size={16} />
@@ -129,7 +134,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
             </FormControl>
             <SelectContent>
               {field.enum
-                .filter((option: string) => option !== "") // Filter out empty strings
+                .filter((option: string) => option !== "")
                 .map((option: string) => (
                   <SelectItem key={option} value={option}>
                     {option}
@@ -142,7 +147,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
       );
     }
     
-    // Add this return statement for standard password fields
+    // Standard password field with toggle
     return (
       <FormItem className="w-full">
         <div className="flex items-center">
@@ -153,7 +158,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
           {field.description && (
             <button
               type="button"
-              className="ml-1 text-muted-foreground"
+              className="ml-1 text-muted-foreground hover:text-foreground"
               onClick={() => setShowDescription(!showDescription)}
             >
               <HelpCircle size={16} />
@@ -186,15 +191,16 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
               <Input
                 {...formField}
                 type={showPassword ? "text" : "password"}
+                required={isRequired} // required
                 className="pr-10"
                 autoComplete="off"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck="false"
                 data-form-type="password"
-                // Add a random name attribute to prevent browser from recognizing the field
                 name={`pwd_${Math.random().toString(36).substring(2, 10)}`}
-                // Override the onChange to ensure the random name doesn't break functionality
+                placeholder={field.examples?.[0] || field.default || ''}
+                value={showPassword ? formField.value || '' : getMaskedValue(formField.value, mode === 'edit')}
                 onChange={(e) => {
                   formField.onChange(e.target.value);
                 }}
@@ -203,8 +209,9 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
           </FormControl>
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? (
               <EyeOff size={16} />
@@ -218,19 +225,16 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
     );
   };
 
-  // Check if the field should take a full row (like textareas or complex fields)
+  // Check if the field should take a full row
   const shouldUseFullWidth = (field: any) => {
-    // Special fields that should take full width
     if (field.format === 'textarea' || field.type === 'object') {
       return true;
     }
     
-    // Any field with a long description might be better as full width
     if (field.description && field.description.length > 100) {
       return true;
     }
     
-    // Special known fields that should be full width
     const fullWidthFields = ['credentials_json', 'file_path_prefix', 'jdbc_url_params'];
     return fullWidthFields.includes(field.name);
   };
@@ -262,7 +266,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                 {field.description && (
                   <button
                     type="button"
-                    className="ml-1 text-muted-foreground"
+                    className="ml-1 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowDescription(!showDescription)}
                   >
                     <HelpCircle size={16} />
@@ -276,6 +280,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                 <Textarea
                   {...formField}
                   className="font-mono h-48 resize-y"
+                  placeholder={field.examples?.[0] || field.default || ''}
                 />
               </FormControl>
               <FormMessage />
@@ -285,24 +290,32 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
       );
     }
 
+    // Handle nested objects
     if (field.type === 'object' && field.properties) {
       return (
         <div key={fieldKey} className="space-y-4 col-span-2 w-full">
-          <h3 className="text-lg font-semibold">{field.title || key}</h3>
-          <div className="p-4 rounded-lg">
-            <FormFields schema={field} form={form} parentKey={fieldKey} twoColumnLayout={twoColumnLayout} />
+          <h3 className="text-lg font-semibold">
+            {field.title || key}
+            {isRequired && <span className="text-destructive ml-1">*</span>}
+          </h3>
+          <div className="p-4 rounded-lg border">
+            <FormFields schema={field} form={form} parentKey={fieldKey} twoColumnLayout={twoColumnLayout} mode={mode} />
           </div>
         </div>
       );
     }
 
-    // For regular form fields (not objects)
+    // Check if this should be treated as a password field (with toggle)
+    const shouldShowPasswordToggle = isPasswordField(key, field);
+
+    // For regular form fields
     return (
       <FormField
         key={fieldKey}
         control={form.control}
         name={fieldKey}
         render={({ field: formField }) => {
+          // Boolean fields
           if (field.type === 'boolean') {
             return (
               <FormItem className={shouldUseFullWidth(field) ? "col-span-2 w-full" : "w-full"}>
@@ -328,7 +341,13 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
             );
           }
 
+          // Enum fields
           if (field.enum) {
+            // If it's a password enum field, render with toggle
+            if (shouldShowPasswordToggle) {
+              return renderPasswordField(key, field, fieldKey, formField, isRequired);
+            }
+            
             return (
               <FormItem className={shouldUseFullWidth(field) ? "col-span-2 w-full" : "w-full"}>
                 <div className="flex items-center">
@@ -339,7 +358,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                   {field.description && (
                     <button
                       type="button"
-                      className="ml-1 text-muted-foreground"
+                      className="ml-1 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowDescription(!showDescription)}
                     >
                       <HelpCircle size={16} />
@@ -360,7 +379,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                   </FormControl>
                   <SelectContent>
                     {field.enum
-                      .filter((option: string) => option !== "") // Filter out empty strings
+                      .filter((option: string) => option !== "")
                       .map((option: string) => (
                         <SelectItem key={option} value={option}>
                           {option}
@@ -373,6 +392,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
             );
           }
 
+          // Textarea fields
           if (field.format === 'textarea') {
             return (
               <FormItem className="col-span-2 w-full">
@@ -384,7 +404,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                   {field.description && (
                     <button
                       type="button"
-                      className="ml-1 text-muted-foreground"
+                      className="ml-1 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowDescription(!showDescription)}
                     >
                       <HelpCircle size={16} />
@@ -405,10 +425,12 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
             );
           }
 
-          if (field.format === 'password') {
+          // Password fields - render with toggle
+          if (shouldShowPasswordToggle) {
             return renderPasswordField(key, field, fieldKey, formField, isRequired);
           }
           
+          // Regular input fields
           return (
             <FormItem className={shouldUseFullWidth(field) ? "col-span-2 w-full" : "w-full"}>
               <div className="flex items-center">
@@ -419,7 +441,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                 {field.description && (
                   <button
                     type="button"
-                    className="ml-1 text-muted-foreground"
+                    className="ml-1 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowDescription(!showDescription)}
                   >
                     <HelpCircle size={16} />
@@ -452,27 +474,26 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                     <Input
                       {...formField}
                       type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
-                      placeholder={field.examples?.[0] || field.default || ''}
                       value={isSensitiveField(key, field) ? getMaskedValue(formField.value, true) : formField.value}
+                      placeholder={field.examples?.[0] || field.default || ''}
                       autoComplete="off"
                       autoCapitalize="off"
                       autoCorrect="off"
                       spellCheck="false"
                       data-form-type="other"
-                      // Add a random name attribute to prevent browser from recognizing the field
                       name={`field_${Math.random().toString(36).substring(2, 10)}`}
-                      // Override the onChange to ensure the random name doesn't break functionality
                       onChange={(e) => {
                         formField.onChange(e.target.value);
                       }}
                     />
                   </div>
-                ) : (
+                ) : ( //
                   <Input
                     {...formField}
                     type={field.type === 'integer' || field.type === 'number' ? 'number' : 'text'}
-                    placeholder={field.examples?.[0] || field.default || ''}
                     value={isSensitiveField(key, field) ? getMaskedValue(formField.value, true) : formField.value}
+                    required
+                    placeholder={field.examples?.[0] || field.default || ''}
                     autoComplete="off"
                   />
                 )}

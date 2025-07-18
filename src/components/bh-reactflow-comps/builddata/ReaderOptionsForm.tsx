@@ -84,6 +84,11 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     console.log(connectionConfigList)
     console.log(initialData, "initialData")
 
+    // Fetch connection list on component mount
+    useEffect(() => {
+        dispatch(getConnectionConfigList());
+    }, [dispatch]);
+
     useEffect(() => {
         if (initialData) {
             console.log('ReaderOptionsForm: Looking for connection with name:', initialData.source?.connection?.name);

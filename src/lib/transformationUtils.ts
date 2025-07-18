@@ -76,8 +76,8 @@ export const getInitialFormState = (
                 lookup_data: transformation.lookup_data ,
                 lookup_columns: transformation.lookup_columns ,
                 lookup_conditions: transformation.lookup_conditions || {
-                    column_name: 'id',
-                    lookup_with: 'id'
+                    column_name: '',
+                    lookup_with: ''
                 },
                 keep: transformation.keep || 'First'
             };

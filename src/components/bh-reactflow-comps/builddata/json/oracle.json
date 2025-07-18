@@ -5,10 +5,9 @@
       "title": "Oracle Source Spec",
       "type": "object",
       "required": [
-        "host",
-        "port",
-        "username",
-        "password"
+        "service_name",
+        "password",
+        "db_schema"
       ],
       "properties": {
         "host": {

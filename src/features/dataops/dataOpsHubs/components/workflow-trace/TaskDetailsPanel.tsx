@@ -69,7 +69,7 @@ export function TaskDetailsPanel({ selectedTask, activeTab, onTabChange, jobId }
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-small"
           >
             <ExternalLink className="w-4 h-4" />
             {getUrlTitle(key)}
@@ -200,7 +200,7 @@ export function TaskDetailsPanel({ selectedTask, activeTab, onTabChange, jobId }
                   {selectedTask.task_metadata?.task_log_url && (
                     <button
                       onClick={() => window.open(selectedTask.task_metadata.task_log_url, "_blank")}
-                      className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-400 transition-colors font-small text-sm"
                     >
                       <Eye className="w-4 h-4" />
                       View Full Logs

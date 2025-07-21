@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { Project } from "@/types/admin/project";
 import type { Environment } from "@/types/admin/environment";
+import { AVAILABLE_ROLES } from "@/types/admin/roles";
+import type { AppRoles } from "@/types/admin/roles";
 
 // Create mode schema - minimal fields only
 export const userCreateSchema = z.object({
@@ -12,7 +14,7 @@ export const userCreateSchema = z.object({
       z.object({
         project: z.string().min(1, 'Project is required'),
         environment: z.string().min(1, 'Environment is required'),
-        role: z.string().min(1, 'Role is required'),
+        role: z.enum(AVAILABLE_ROLES, { invalid_type_error: 'Role is required' }),
       })
     )
     .optional(),
@@ -27,13 +29,13 @@ export const userEditSchema = z.object({
   enabled: z.boolean(),
   projects: z.array(z.string()).optional(),
   environments: z.array(z.string()).optional(),
-  roles: z.array(z.string()).optional(),
+  roles: z.array(z.enum(AVAILABLE_ROLES)).optional(),
   assignments: z
     .array(
       z.object({
         project: z.string().min(1, 'Project is required'),
         environment: z.string().min(1, 'Environment is required'),
-        role: z.string().min(1, 'Role is required'),
+        role: z.enum(AVAILABLE_ROLES, { invalid_type_error: 'Role is required' }),
       })
     )
     .optional(),
@@ -55,7 +57,7 @@ export interface SelectOption {
 export interface RoleAssignment {
   project: string
   environment: string
-  role: string
+  role: AppRoles
 }
 
 export const getProjectOptions = (projects: Project[]) => {

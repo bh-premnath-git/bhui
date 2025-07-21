@@ -669,7 +669,7 @@ console.log(props.gitProjectList)
                                                         </SelectItem>
                                                     ))
                                                 ) : (
-                                                    <SelectItem value="" disabled>
+                                                    <SelectItem value="no-projects-available" disabled>
                                                         No projects available
                                                     </SelectItem>
                                                 )}
@@ -693,7 +693,7 @@ console.log(props.gitProjectList)
                                                         </SelectItem>
                                                     ))
                                                 ) : (
-                                                    <SelectItem value="" disabled>
+                                                    <SelectItem value="no-connections-available" disabled>
                                                         No connections available
                                                     </SelectItem>
                                                 )}

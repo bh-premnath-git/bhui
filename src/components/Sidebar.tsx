@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft } from "lucide-react";
+import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft,Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,6 @@ import { useNavigation } from "@/hooks/useNavigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
-import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ROUTES } from "@/config/routes";
 import { useCreateDashboard, useListDashboards, useUpdateDashboard, useDeleteDashboard } from "@/hooks/ueDashboard";
@@ -57,6 +56,14 @@ export function Sidebar() {
 
   const navItems = useMemo(() => {
     const items = [];
+      items.push({
+    title: "Home",
+    path: ROUTES.INDEX,
+    icon: Home,
+    showIcon: true,
+    isParent: true,
+  });
+
     dynamicBaseItems.forEach(item => {
       const showIconForParent = item.title === "Data Catalog" || item.title === "Data Xplorer";
       items.push({
@@ -162,12 +169,11 @@ export function Sidebar() {
   const userName = userInfo?.name || userInfo?.username || "John Doe";
 
   return (
-    <div
-      className={cn(
-        "h-screen fixed left-0 top-0 z-[100] flex flex-col",
-        "bg-gray-50 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
-        "transition-[width] duration-300 ease-in-out will-change-[width]",
-        isExpanded ? "w-64" : "w-14"
+    <div className={cn(
+          "h-screen fixed left-0 top-0 z-[100] flex flex-col",
+          "bg-gray-50 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
+          "transition-[width] duration-300 ease-in-out will-change-[width]",
+          isExpanded ? "w-64" : "w-16"
       )}
     >
       {/* Header */}
@@ -175,9 +181,9 @@ export function Sidebar() {
         {isExpanded ? (
           <div className="flex items-center justify-between w-full">
             <div className="cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap">
-                BigHammer.ai
-              </h2>
+              <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap ml-3">
+                Bighammer.ai 
+              </h1>
             </div>
             <Button
               variant="ghost"
@@ -555,6 +561,49 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div
+  className={cn(
+    "pl-5 pt-3",
+    isExpanded ? "flex justify-between items-center" : "justify-center"
+  )}
+>
+  {/* Theme toggle with tooltip */}
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          onClick={toggleTheme}
+          className="flex items-center gap-2 cursor-pointer mb-1"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Moon className="h-5 w-5 text-blue-400" />
+              {isExpanded && (
+                <span className="text-sm font-medium text-gray-100 flex items-center">
+                  Dark
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <Sun className="h-5 w-5 text-amber-500" />
+              {isExpanded && (
+                <span className="text-sm font-medium text-amber-600 flex items-center">
+                  Light
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="right">
+        <p>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</div>
+
+
         <div className={cn(
           "p-3 flex items-center",
           isExpanded ? "justify-between" : "justify-center"
@@ -566,8 +615,8 @@ export function Sidebar() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
-                        <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-600">
+                      <Button variant="ghost" className="h-7 w-7 p-0 transition-transform duration-200 hover:scale-110">
+                        <Avatar className="h-7 w-7 border border-gray-200 dark:border-gray-600">
                           <AvatarImage src={userInfo?.avatarUrl || ""} alt={userName} />
                           <AvatarFallback className="bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium text-sm">{userName.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -590,7 +639,7 @@ export function Sidebar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center flex-1">
+            <div className="flex items-center flex-1 ml-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0 transition-transform duration-200 hover:scale-110">
@@ -617,64 +666,6 @@ export function Sidebar() {
               </div>
             </div>
           )}
-        </div>
-        <div className={cn(
-          "px-3 pb-3",
-          isExpanded ? "flex justify-between items-center" : "justify-center"
-        )}>
-          {/* Theme toggle with tooltip */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 relative">
-                  <div className="relative">
-                    <Switch
-                      checked={theme === 'dark'}
-                      onCheckedChange={toggleTheme}
-                      className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input scale-75 h-4 w-8"
-                    />
-
-                    {/* Custom thumb with icon */}
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 pointer-events-none",
-                        "h-5 w-10 flex items-center",
-                        "transition-all duration-300"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "h-[18px] w-[18px] rounded-full flex items-center justify-center",
-                          "transition-all duration-300 transform shadow-sm",
-                          theme === 'dark'
-                            ? "translate-x-[18px] bg-primary/90"
-                            : "translate-x-[2px] bg-amber-50"
-                        )}
-                      >
-                        {theme === 'dark' ? (
-                          <Moon className="h-3 w-3 text-white drop-shadow-[0_0_1px_rgba(255,255,255,0.5)]" />
-                        ) : (
-                          <Sun className="h-3 w-3 text-amber-600 drop-shadow-[0_0_1px_rgba(180,83,9,0.3)]" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <span className={cn(
-                      "text-sm ml-1 font-medium",
-                      theme === 'dark' ? "text-gray-100" : "text-amber-600"
-                    )}>
-                      {theme === 'dark' ? 'Dark' : 'Light'}
-                    </span>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </div>
     </div>

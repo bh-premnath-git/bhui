@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
+import { showErrorToast } from '@/components/ui/error-toast';
 import { 
     getTransformationCount, 
     runNextCheckpoint, 
@@ -41,6 +42,10 @@ interface UsePipelineActionsProps {
     selectedPipeline?: any;
     // For handleSourceUpdate
     setUnsavedChanges: () => void;
+    // For showing logs
+    setShowLogs?: (show: boolean) => void;
+    // For showing error banner
+    setErrorBanner?: (banner: { title: string; description: string } | null) => void;
 }
 
 export const usePipelineActions = ({
@@ -69,9 +74,93 @@ export const usePipelineActions = ({
     setFormStates,
     selectedPipeline,
     // For handleSourceUpdate
-    setUnsavedChanges
+    setUnsavedChanges,
+    // For showing logs
+    setShowLogs,
+    // For showing error banner
+    setErrorBanner
 }: UsePipelineActionsProps) => {
     const dispatch = useDispatch<AppDispatch>();
+
+    // Helper function to extract detailed error information
+    const extractErrorDetails = useCallback((error: any) => {
+        const errorDetail = error.response?.data?.detail || '';
+        const errorMessage = error.message || '';
+        
+        let detailedErrorInfo = '';
+        let formattedErrorInfo = '';
+        
+        if (errorDetail) {
+            try {
+                // Try to extract the meaningful error from the detail field
+                if (errorDetail.includes('_InactiveRpcError')) {
+                    // Extract the actual error message from the RPC error
+                    const detailsMatch = errorDetail.match(/details = "([^"]+)"/);
+                    if (detailsMatch && detailsMatch[1]) {
+                        const cleanedDetails = detailsMatch[1]
+                            .replace(/\\n/g, '\n')
+                            .replace(/\\'/g, "'")
+                            .replace(/\\"/g, '"');
+                        detailedErrorInfo = cleanedDetails;
+                        
+                        // Format the error for better readability
+                        if (cleanedDetails.includes('Failed validating')) {
+                            const lines = cleanedDetails.split('\n');
+                            const mainError = lines[0];
+                            const instanceMatch = cleanedDetails.match(/On instance\['[^']+'\]\['([^']+)'\]:/);
+                            const instanceName = instanceMatch ? instanceMatch[1] : 'unknown';
+                            
+                            // Create a more user-friendly error message
+                            formattedErrorInfo = `🔴 Validation Error on '${instanceName}'\n\n`;
+                            formattedErrorInfo += `❌ Issue: ${mainError}\n\n`;
+                            
+                            // Extract required fields if available
+                            const requiredMatch = cleanedDetails.match(/required.*:\s*\[(.*?)\]/);
+                            if (requiredMatch) {
+                                const requiredFields = requiredMatch[1].split(',').map(field => field.trim().replace(/'/g, ''));
+                                formattedErrorInfo += `📋 Required fields: ${requiredFields.join(', ')}\n\n`;
+                            }
+                            
+                            // Add instance details if available
+                            const instanceDataMatch = cleanedDetails.match(/On instance\['[^']+'\]\['[^']+'\]:\s*({.*})/s);
+                            if (instanceDataMatch) {
+                                try {
+                                    const instanceData = instanceDataMatch[1];
+                                    formattedErrorInfo += `📊 Current configuration:\n${instanceData}\n\n`;
+                                } catch (e) {
+                                    // If parsing fails, just add the raw data
+                                    formattedErrorInfo += `📊 Current configuration:\n${instanceDataMatch[1]}\n\n`;
+                                }
+                            }
+                            
+                            // Add suggestion based on error type
+                            if (mainError.includes('required property')) {
+                                const missingField = mainError.match(/'([^']+)' is a required property/);
+                                if (missingField) {
+                                    formattedErrorInfo += `💡 Solution: Please add the missing '${missingField[1]}' field to your configuration.`;
+                                }
+                            }
+                        } else {
+                            formattedErrorInfo = cleanedDetails;
+                        }
+                    }
+                } else {
+                    detailedErrorInfo = errorDetail;
+                    formattedErrorInfo = errorDetail;
+                }
+            } catch (parseError) {
+                detailedErrorInfo = errorDetail;
+                formattedErrorInfo = errorDetail;
+            }
+        }
+
+        return {
+            errorMessage,
+            detailedErrorInfo,
+            formattedErrorInfo,
+            errorDetail
+        };
+    }, []);
 
     // Add type safety for the getInitialFormState function
     const getInitialFormState = useCallback((transformation: any, nodeId: string) => {
@@ -152,6 +241,11 @@ export const usePipelineActions = ({
             setIsPipelineRunning(true);
             // setShowLogs(true);
 
+            // Clear any existing error banner
+            if (typeof setErrorBanner === 'function') {
+                setErrorBanner(null);
+            }
+
             setConversionLogs([{
                 timestamp: new Date().toISOString(),
                 message: 'Starting pipeline validation...',
@@ -221,19 +315,42 @@ export const usePipelineActions = ({
         } catch (error: any) {
             console.error('Error starting pipeline:', error);
 
+            // Extract detailed error information using helper function
+            const { errorMessage, formattedErrorInfo, errorDetail } = extractErrorDetails(error);
+
+            // Add the main error message
             setTerminalLogs(prevLogs => [...prevLogs, {
                 timestamp: new Date().toISOString(),
-                message: `Error: ${error.message}`,
+                message: `Error: ${errorMessage}`,
                 level: 'error'
             }]);
+
+            // Add detailed error information if available
+            if (formattedErrorInfo) {
+                setTerminalLogs(prevLogs => [...prevLogs, {
+                    timestamp: new Date().toISOString(),
+                    message: `Detailed Error: ${formattedErrorInfo}`,
+                    level: 'error'
+                }]);
+            }
+
+            // Auto-open terminal to show errors
+            if (typeof setShowLogs === 'function') {
+                setShowLogs(true);
+            }
+
+            // Show error banner at the top of the screen
+            if (typeof setErrorBanner === 'function') {
+                setErrorBanner({
+                    title: 'Pipeline Error',
+                    description: formattedErrorInfo || errorMessage
+                });
+            }
 
             if (error.message.includes('Pipeline is incomplete or broken:')) {
                 // const errorMessages = error.message.split('\n').slice(1);
                 // setValidationErrors(errorMessages);
             }
-
-            const errorDetail = error.response?.data?.detail || '';
-            const errorMessage = error.message || '';
             
             if (
                 errorMessage.includes('already exist') || 
@@ -264,7 +381,7 @@ export const usePipelineActions = ({
                 return;
             }
 
-            setSaveError(error.message);
+            setSaveError(formattedErrorInfo || errorMessage);
             setIsPipelineRunning(false);
         } finally {
             setIsCanvasLoading(false);
@@ -284,7 +401,10 @@ export const usePipelineActions = ({
         setConversionLogs,
         setTerminalLogs,
         setTransformationCounts,
-        setSaveError
+        setSaveError,
+        extractErrorDetails,
+        setShowLogs,
+        setErrorBanner
     ]);
 
     const handleStop = useCallback(async () => {
@@ -318,6 +438,11 @@ export const usePipelineActions = ({
 
     const handleNext = useCallback(async () => {
         try {
+            // Clear any existing error banner
+            if (typeof setErrorBanner === 'function') {
+                setErrorBanner(null);
+            }
+            
             const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
             const host = attachedCluster?.master_ip || 'host.docker.internal';
             
@@ -343,9 +468,40 @@ export const usePipelineActions = ({
             } else {
                 throw new Error(result.error || 'Failed to run next checkpoint');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error in handleNext:', error);
-            // Handle error appropriately (e.g., show error message to user)
+            
+            // Extract detailed error information using helper function
+            const { errorMessage, formattedErrorInfo } = extractErrorDetails(error);
+
+            // Add the main error message to terminal logs
+            setTerminalLogs(prevLogs => [...prevLogs, {
+                timestamp: new Date().toISOString(),
+                message: `Error in Next Checkpoint: ${errorMessage}`,
+                level: 'error'
+            }]);
+
+            // Add detailed error information if available
+            if (formattedErrorInfo) {
+                setTerminalLogs(prevLogs => [...prevLogs, {
+                    timestamp: new Date().toISOString(),
+                    message: `Detailed Error: ${formattedErrorInfo}`,
+                    level: 'error'
+                }]);
+            }
+
+            // Auto-open terminal to show errors
+            if (typeof setShowLogs === 'function') {
+                setShowLogs(true);
+            }
+
+            // Show error banner at the top of the screen
+            if (typeof setErrorBanner === 'function') {
+                setErrorBanner({
+                    title: 'Next Checkpoint Error',
+                    description: formattedErrorInfo || errorMessage
+                });
+            }
         }
     }, [
         pipelineDtl?.pipeline_name, 
@@ -353,7 +509,11 @@ export const usePipelineActions = ({
         pipelineName,
         attachedCluster?.master_ip, 
         dispatch,
-        setTransformationCounts
+        setTransformationCounts,
+        setTerminalLogs,
+        extractErrorDetails,
+        setShowLogs,
+        setErrorBanner
     ]);
 
     const handleRefreshNode = useCallback(async (nodeId: string) => {

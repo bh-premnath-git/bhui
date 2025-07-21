@@ -77,7 +77,13 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
   const handleSubmit = async (data: T) => {
     try {
       setFormState("submitting");
-      await onSubmit(data);
+      const payload: any = { ...data };
+      if (payload.is_tenant_admin) {
+        delete payload.assignments;
+        delete payload.project_assignments;
+        delete payload.environment_assignments;
+      }
+      await onSubmit(payload as T);
       setFormState("success");
     } catch (err) {
       setFormState("error");
@@ -231,7 +237,8 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
           </Card>
 
           {/* Role Assignments Section */}
-          <Accordion type="single" collapsible className="w-full">
+          {!form.watch("is_tenant_admin" as Path<T>) && (
+            <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="role-assignments" className="border rounded-lg border-l-4 border-l-green-500">
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2">
@@ -282,6 +289,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          )}
 
           <Separator />
 

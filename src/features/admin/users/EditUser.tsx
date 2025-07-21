@@ -8,6 +8,7 @@ import { useUserUpdateMutation } from "./hooks/useUserUpdateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserFormValues } from "./components/userFormSchema";
 import type { UserUpdateData } from "@/types/admin/user";
+import type { Role } from "@/types/admin/roles";
 
 export function EditUser() {
   const navigate = useNavigate();
@@ -21,7 +22,11 @@ export function EditUser() {
 
     try {
       setError(null);
-      await handleUpdateUser(id, data as unknown as UserUpdateData);
+      const payload = { ...data } as UserUpdateData;
+      if (payload.is_tenant_admin) {
+        delete (payload as any).assignments;
+      }
+      await handleUpdateUser(id, payload);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
@@ -37,6 +42,10 @@ export function EditUser() {
   }
 
   // Transform user data for form initialization
+  const isTenantAdmin = (user.roles as Role[] | undefined)?.some(
+    (r) => r.module_name === 'tenant_admin' && r.module_type === 'admin'
+  ) ?? false
+
   const formInitialData: UserFormValues = {
     first_name: user.firstName,
     last_name: user.lastName,
@@ -44,11 +53,7 @@ export function EditUser() {
     username: user.username,
     enabled: user.enabled,
     emailVerified: user.emailVerified,
-    is_tenant_admin: user.access?.manage && 
-                     user.access?.manageGroupMembership && 
-                     user.access?.view && 
-                     user.access?.mapRoles && 
-                     user.access?.impersonate,
+    is_tenant_admin: isTenantAdmin,
     // Add any role assignments if available
     assignments: [], // Populate from user.assignments if available
   };

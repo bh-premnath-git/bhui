@@ -1,4 +1,4 @@
-import type { AppRoles } from "./roles";
+import type { AppRoles, Role } from "./roles";
 
 export interface Pagination {
   total: number;
@@ -30,6 +30,7 @@ export interface User extends BaseUser {
     impersonate: boolean;
     manage: boolean;
   };
+  roles?: Role[];
 }
 
 export interface UsersPaginatedResponse extends Pagination {

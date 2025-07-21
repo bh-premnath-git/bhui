@@ -1,4 +1,5 @@
 import type { AppRoles } from "./roles";
+
 export interface Pagination {
   total: number;
   next: boolean;
@@ -7,7 +8,6 @@ export interface Pagination {
   limit: number;
 }
 
-// Update BaseUser to match API requirements
 export interface BaseUser {
   username: string;
   firstName: string;
@@ -17,7 +17,6 @@ export interface BaseUser {
   emailVerified: boolean;
 }
 
-// Complete User type with all API properties
 export interface User extends BaseUser {
   id: string;
   totp: boolean;
@@ -33,13 +32,7 @@ export interface User extends BaseUser {
   };
 }
 
-// Add proper response types
-export interface UsersPaginatedResponse {
-  total: number;
-  next: boolean;
-  prev: boolean;
-  offset: number;
-  limit: number;
+export interface UsersPaginatedResponse extends Pagination {
   data: User[];
 }
 
@@ -49,36 +42,37 @@ export interface UserResponse {
 }
 
 export interface RoleAssignment {
-  project: string;
-  environment: string;
+  project: string | "*";
+  environment: string | "*";
   role: AppRoles;
 }
 
-// Create separate mutation types for different operations
-export type UserCreateData = {
-  email: string;
+// Base form data type with common fields
+interface BaseUserFormData {
   first_name: string;
   last_name: string;
-  roles?: AppRoles[];
-  projects?: string[];
-  environments?: string[];
-  assignments?: RoleAssignment[];
+  email: string;
   is_tenant_admin?: boolean;
-};
+  assignments?: RoleAssignment[];
+}
 
-export type UserUpdateData = {
-  email?: string;
-  first_name?: string;
-  last_name?: string;
+// Create-specific form data
+export interface UserCreateData extends BaseUserFormData {
+  // No additional fields for create, just using the base
+}
+
+// Update-specific form data
+export interface UserUpdateData extends BaseUserFormData {
   username?: string;
   enabled?: boolean;
   emailVerified?: boolean;
-  roles?: AppRoles[];
-  projects?: string[];
-  environments?: string[];
-  assignments?: RoleAssignment[];
-  is_tenant_admin?: boolean;
-};
+}
 
-// Keep UserMutationData as a union for backward compatibility
+// Type guard to check if form data is for update
+export function isUpdateData(data: UserCreateData | UserUpdateData): data is UserUpdateData {
+  return 'enabled' in data || 'emailVerified' in data;
+}
+
+// Legacy type for backward compatibility (mark as deprecated)
+/** @deprecated Use UserCreateData or UserUpdateData instead */
 export type UserMutationData = UserCreateData | UserUpdateData;

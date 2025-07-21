@@ -62,6 +62,11 @@ export const TaskIdSelector: React.FC<TaskIdSelectorProps> = ({
   const handleValueChange = (selectedValue: string) => {
     console.log("TaskIdSelector - Selected value:", selectedValue);
     
+    // Ignore the disabled placeholder option
+    if (selectedValue === "no-tasks-available") {
+      return;
+    }
+    
     // Check for duplicates - make sure no other node is using this cluster_task_id
     const isDuplicate = nodes.some(node =>
       node.data?.formData?.cluster_task_id === selectedValue && 
@@ -100,7 +105,7 @@ export const TaskIdSelector: React.FC<TaskIdSelectorProps> = ({
               </SelectItem>
             ))
           ) : (
-            <SelectItem value="" disabled>
+            <SelectItem value="no-tasks-available" disabled>
               No nodes with task IDs found. Please create nodes first.
             </SelectItem>
           )}

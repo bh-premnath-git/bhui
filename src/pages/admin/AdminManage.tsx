@@ -1,5 +1,5 @@
 
-import { Users, FolderGit2, Settings2, ArrowRight, Cable, BookMarked } from 'lucide-react';
+import { Users, FolderGit2, Settings2, ArrowRight, Cable, BookMarked, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ROUTES } from '@/config/routes';
@@ -50,6 +50,15 @@ const adminOptions = [
     buttonText: 'Manage Prompt',
     link: ROUTES.ADMIN.PROMPT.INDEX.toString(),
     gradient: "from-purple-500/20 via-violet-300/20 to-indigo-500/20"
+  },
+  {
+    id: 6,
+    icon: <ShieldCheck className="w-6 h-6 text-foreground" />,
+    title: "Manage PII",
+    desc: "Configure and manage Personal Identifiable Information (PII) recognizers and patterns.",
+    buttonText: 'Manage PII',
+    link: ROUTES.ADMIN.PII.INDEX.toString(),
+    gradient: "from-cyan-500/20 via-teal-300/20 to-blue-500/20"
   }
 ];
 

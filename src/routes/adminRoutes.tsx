@@ -25,6 +25,8 @@ const PromtEdit = lazy(() => import("@/pages/admin/prompt/PromptEdit"));
 const ComputeClusterList = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterList"));
 const ComputeClusterAdd = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterAdd"));
 const ComputeClusterEdit = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterEdit"));
+//PII
+const ManagePII = lazy(() => import("@/pages/admin/pii/ManagePII"));
 
 export const AdminRoutes = (
   <>
@@ -178,6 +180,14 @@ export const AdminRoutes = (
       element={
         <Suspense fallback={<LoadingFallback />}>
           <ComputeClusterEdit />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={ROUTES.ADMIN.PII.INDEX} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <ManagePII />
         </Suspense>
       } 
     />

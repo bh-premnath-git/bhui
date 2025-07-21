@@ -6,6 +6,7 @@ import { UserForm } from "./components/UserForm";
 import { useUsersQuery } from "./hooks/useUsersQuery";
 import { useUserUpdateMutation } from "./hooks/useUserUpdateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
+import type { UserFormValues } from "./components/userFormSchema";
 import type { UserUpdateData } from "@/types/admin/user";
 
 export function EditUser() {
@@ -15,12 +16,12 @@ export function EditUser() {
   const { handleUpdateUser, isUpdating, updateError } = useUserUpdateMutation();
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = async (data: UserUpdateData) => {
+  const onSubmit = async (data: UserFormValues) => {
     if (!id) return;
 
     try {
       setError(null);
-      await handleUpdateUser(id, data);
+      await handleUpdateUser(id, data as unknown as UserUpdateData);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
@@ -36,25 +37,30 @@ export function EditUser() {
   }
 
   // Transform user data for form initialization
-  const formInitialData: Partial<UserUpdateData> = {
+  const formInitialData: UserFormValues = {
     first_name: user.firstName,
     last_name: user.lastName,
     email: user.email,
+    username: user.username,
     enabled: user.enabled,
-    assignments: [],
-    is_tenant_admin: user.access?.manage && user.access?.manageGroupMembership && user.access?.view && user.access?.mapRoles && user.access?.impersonate
+    emailVerified: user.emailVerified,
+    is_tenant_admin: user.access?.manage && 
+                     user.access?.manageGroupMembership && 
+                     user.access?.view && 
+                     user.access?.mapRoles && 
+                     user.access?.impersonate,
+    // Add any role assignments if available
+    assignments: [], // Populate from user.assignments if available
   };
 
   return (
-    <UserPageLayout
-      description="Update user information and permissions"
-    >
-      <div className="p-1 mt-6">
+    <UserPageLayout description="Update user information and permissions">
+      <div className="p-6">
         <div className="max-w-5xl mx-auto">
-          <UserForm
-            mode="edit"
+          <UserForm<UserFormValues>
             initialData={formInitialData}
             onSubmit={onSubmit}
+            mode="edit"
             isSubmitting={isUpdating}
             error={error || (updateError ? String(updateError) : null)}
             user={user}

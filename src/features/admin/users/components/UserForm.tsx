@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn, DefaultValues, Path } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, CheckCircle2, AlertCircle, Shield, User, UserPlus, Settings } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Shield, User as UserIcon, UserPlus, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Accordion,
@@ -16,103 +16,79 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { userFormSchema, userCreateSchema, type UserCreateValues, type UserFormValues } from "./userFormSchema";
-import { RoleAssignmentsField, ProjectRolesField, EnvironmentRolesField } from "./FormFields";
-import type { UserCreateData, UserUpdateData, User as UserType } from "@/types/admin/user";
+import { userEditSchema, userCreateSchema, type UserCreateValues, type UserFormValues } from "./userFormSchema";
+import type { User } from "@/types/admin/user";
+import { EnvironmentRolesField, ProjectRolesField } from "./FormFields";
 
-interface UserFormProps {
-  initialData?: Partial<UserCreateData | UserUpdateData>;
-  onSubmit: (data: UserCreateData | UserUpdateData) => Promise<void>;
+// Base fields present in both create and edit forms
+interface BaseUserFields {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  is_tenant_admin?: boolean;
+}
+
+// Generic form props that work with both create and update
+// Ensure that T always contains the base required fields so FormField names compile
+type UserFormProps<T extends BaseUserFields = AnyUserFormValues> = {
+  initialData?: Partial<T>;
+  onSubmit: (data: T) => Promise<void>;
   mode: "create" | "edit";
   isSubmitting: boolean;
   error: string | null;
-  user?: UserType;
+  user?: User;
+};
+
+// Create a union of all possible form values
+type AnyUserFormValues = UserCreateValues | UserFormValues;
+
+// Type guard to narrow down form values
+export function isEditFormValues(values: AnyUserFormValues): values is UserFormValues {
+  return 'enabled' in values;
 }
 
-export function UserForm({
-  initialData,
+export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
+  initialData = {},
   onSubmit,
   mode,
   isSubmitting,
   error,
   user,
-}: UserFormProps) {
-  const [formState, setFormState] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
+}: UserFormProps<T>) {
+  const isEdit = mode === "edit";
+  const schema = isEdit ? userEditSchema : userCreateSchema;
+  
+  // Helper function to get default values with proper typing
+  const getDefaultValues = <T extends AnyUserFormValues>(_: boolean, initialData: Partial<T>): T => {
+    // Just use provided initial data; leave other fields undefined so they show up empty in the form.
+    // Zod will handle required-field validation on submit.
+    return { ...initialData } as T;
+  };
 
-  const isEditMode = mode === "edit";
-
-  // Create mode form
-  const createForm = useForm<UserCreateValues>({
-    resolver: zodResolver(userCreateSchema),
-    defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: '',
-      assignments: [],
-      is_tenant_admin: false,
-      ...initialData,
-    },
+  const defaultValues = getDefaultValues(isEdit, initialData);
+  
+  const form = useForm<T>({
+    resolver: zodResolver(schema),
+    defaultValues: defaultValues as DefaultValues<T>,
   });
 
-  // Edit mode form  
-  const editForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: '',
-      enabled: true,
-      projects: [],
-      environments: [],
-      roles: [],
-      assignments: [],
-      is_tenant_admin: false,
-      ...initialData,
-    },
-  });
+  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
-  // Use the appropriate form based on mode
-  const form = isEditMode ? editForm : createForm;
+  const handleSubmit = async (data: T) => {
+    try {
+      setFormState("submitting");
+      await onSubmit(data);
+      setFormState("success");
+    } catch (err) {
+      setFormState("error");
+    }
+  };
 
   useEffect(() => {
-    if (isSubmitting) {
-      setFormState("submitting");
-    } else if (error) {
+    if (error) {
       setFormState("error");
-    } else if (!isSubmitting && formState === "submitting") {
-      setFormState("success");
-      const timer = setTimeout(() => setFormState("idle"), 2000);
-      return () => clearTimeout(timer);
     }
-  }, [isSubmitting, error, formState]);
-
-  const handleSubmit = async (data: UserCreateData | UserUpdateData) => {
-    const firstName = data.first_name?.trim();
-    const lastName = data.last_name?.trim();
-
-    if (!firstName || !lastName) {
-      form.setError('first_name', { message: 'First and last name are required' });
-      form.setError('last_name', { message: 'First and last name are required' });
-      return;
-    }
-
-    await onSubmit(data);
-  };
-
-  const getButtonStyles = () => {
-    switch (formState) {
-      case "submitting":
-        return "bg-blue-500 hover:bg-blue-600";
-      case "success":
-        return "bg-green-500 hover:bg-green-600";
-      case "error":
-        return "bg-red-500 hover:bg-red-600";
-      default:
-        return "bg-primary hover:bg-primary/90";
-    }
-  };
+  }, [error]);
 
   return (
     <div className="w-full">
@@ -123,7 +99,7 @@ export function UserForm({
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <UserIcon className="h-5 w-5" />
                 User Information
               </CardTitle>
             </CardHeader>
@@ -131,7 +107,7 @@ export function UserForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="first_name"
+                  name={"first_name" as Path<T>}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
@@ -139,7 +115,8 @@ export function UserForm({
                         <Input 
                           placeholder="Enter first name..." 
                           {...field} 
-                          disabled={isEditMode}
+                          value={field.value as string}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormMessage />
@@ -149,7 +126,7 @@ export function UserForm({
                 
                 <FormField
                   control={form.control}
-                  name="last_name"
+                  name={"last_name" as Path<T>}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
@@ -157,7 +134,8 @@ export function UserForm({
                         <Input 
                           placeholder="Enter last name..." 
                           {...field} 
-                          disabled={isEditMode}
+                          value={field.value as string}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormMessage />
@@ -168,7 +146,7 @@ export function UserForm({
 
               <FormField
                 control={form.control}
-                name="email"
+                name={"email" as Path<T>}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
@@ -177,6 +155,8 @@ export function UserForm({
                         type="email"
                         placeholder="Enter email address..." 
                         {...field} 
+                        value={field.value as string}
+                        disabled={isSubmitting || isEdit}
                       />
                     </FormControl>
                     <FormMessage />
@@ -184,10 +164,10 @@ export function UserForm({
                 )}
               />
 
-              {isEditMode && (
+              {isEdit && (
                 <FormField
-                  control={editForm.control}
-                  name="enabled"
+                  control={form.control}
+                  name={"enabled" as Path<T>}
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-0.5">
@@ -198,8 +178,9 @@ export function UserForm({
                       </div>
                       <FormControl>
                         <Switch
-                          checked={Boolean((field as any).value)}
-                          onCheckedChange={(field as any).onChange}
+                          checked={field.value as boolean}
+                          onCheckedChange={field.onChange}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                     </FormItem>
@@ -220,7 +201,7 @@ export function UserForm({
             <CardContent>
               <FormField
                 control={form.control}
-                name="is_tenant_admin"
+                name={"is_tenant_admin" as Path<T>}
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
@@ -233,15 +214,15 @@ export function UserForm({
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value ?? false}
+                        checked={field.value as boolean}
                         onCheckedChange={field.onChange}
-                        className={field.value ? "data-[state=checked]:bg-orange-600" : ""}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
-              {(isEditMode ? editForm.watch("is_tenant_admin") : createForm.watch("is_tenant_admin")) && (
+              {form.watch("is_tenant_admin" as Path<T>) && (
                 <Badge variant="destructive" className="w-fit mt-2">
                   Admin Access Enabled
                 </Badge>
@@ -278,7 +259,7 @@ export function UserForm({
                     <p className="text-sm text-muted-foreground">
                       Grant access to entire projects (includes all environments)
                     </p>
-                    <ProjectRolesField form={form} user={user} />
+                    <ProjectRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
                   </div>
 
                   <Separator />
@@ -293,7 +274,7 @@ export function UserForm({
                       Assign roles for specific environments
                     </p>
                     <div className="border rounded-lg p-4">
-                      <EnvironmentRolesField form={form} user={user} />
+                      <EnvironmentRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
                     </div>
                   </div>
 
@@ -308,22 +289,22 @@ export function UserForm({
           <div className="flex flex-col items-center pt-6 space-y-4">
             <Button
               type="submit"
-              className={`px-8 w-48 ${getButtonStyles()}`}
+              className={`px-8 w-48 ${formState === "submitting" ? "bg-blue-500 hover:bg-blue-600" : formState === "success" ? "bg-green-500 hover:bg-green-600" : formState === "error" ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"}`}
               disabled={formState === "submitting"}
             >
               {formState === "submitting" ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  {isEditMode ? "Updating..." : "Creating..."}
+                  {isEdit ? "Updating..." : "Creating..."}
                 </>
               ) : formState === "success" ? (
                 <>
                   <CheckCircle2 className="mr-2 h-5 w-5" />
-                  {isEditMode ? "Updated!" : "Created!"}
+                  {isEdit ? "Updated!" : "Created!"}
                 </>
               ) : (
                 <>
-                  {isEditMode ? (
+                  {isEdit ? (
                     <>
                       <Settings className="mr-2 h-4 w-4" />
                       Update User

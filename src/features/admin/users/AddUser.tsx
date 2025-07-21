@@ -5,16 +5,17 @@ import { UserForm } from "./components/UserForm";
 import { useUserCreateMutation } from "./hooks/useUserCreateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserCreateData } from "@/types/admin/user";
+import type { UserCreateValues } from "./components/userFormSchema";
 
 export function AddUser() {
   const navigate = useNavigate();
   const { handleCreateUser, isCreating, createError } = useUserCreateMutation();
   const [error, setError] = useState<string | null>(null);
   
-  const onSubmit = async (data: UserCreateData) => {
+  const onSubmit = async (data: UserCreateValues) => {
     try {
       setError(null);
-      await handleCreateUser(data);
+      await handleCreateUser(data as unknown as UserCreateData);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create user');
@@ -25,7 +26,7 @@ export function AddUser() {
     <UserPageLayout description="Create a new user and assign their permissions">
       <div className="p-6">
         <div className="max-w-5xl mx-auto">
-          <UserForm
+          <UserForm<UserCreateValues>
             onSubmit={onSubmit}
             mode="create"
             isSubmitting={isCreating}

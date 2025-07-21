@@ -23,7 +23,7 @@ export const MultiSelect = ({ form, name, label, placeholder, options }: MultiSe
     name={name}
     render={({ field }) => (
       <FormItem className="flex flex-col">
-        <RequiredFormLabel>{label}</RequiredFormLabel>
+        {label && <RequiredFormLabel>{label}</RequiredFormLabel>}
         <Popover>
           <PopoverTrigger asChild>
             <FormControl>

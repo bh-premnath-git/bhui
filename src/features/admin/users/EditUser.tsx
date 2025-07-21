@@ -3,28 +3,27 @@ import { useNavigate, useParams } from "react-router-dom";
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ROUTES } from "@/config/routes";
 import { UserForm } from "./components/UserForm";
-import { useUsers } from "./hooks/useUsers";
+import { useUsersQuery } from "./hooks/useUsersQuery";
+import { useUserUpdateMutation } from "./hooks/useUserUpdateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
-import type { UserMutationData } from "@/types/admin/user";
+import type { UserUpdateData } from "@/types/admin/user";
 
 export function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams(); // id is actually the email from the URL
-  const { handleUpdateUser, user, isUserLoading } = useUsers({ shouldFetch: true, email: id });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, isUserLoading } = useUsersQuery({ shouldFetch: true, email: id });
+  const { handleUpdateUser, isUpdating, updateError } = useUserUpdateMutation();
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = async (data: UserMutationData) => {
+  const onSubmit = async (data: UserUpdateData) => {
     if (!id) return;
 
     try {
-      setIsSubmitting(true);
       setError(null);
+     // await handleUpdateUser(id, data);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -37,7 +36,7 @@ export function EditUser() {
   }
 
   // Transform user data for form initialization
-  const formInitialData: Partial<UserMutationData> = {
+  const formInitialData: Partial<UserUpdateData> = {
     first_name: user.firstName,
     last_name: user.lastName,
     email: user.email,
@@ -56,8 +55,8 @@ export function EditUser() {
             mode="edit"
             initialData={formInitialData}
             onSubmit={onSubmit}
-            isSubmitting={isSubmitting}
-            error={error}
+            isSubmitting={isUpdating}
+            error={error || (updateError ? String(updateError) : null)}
             user={user}
           />
         </div>

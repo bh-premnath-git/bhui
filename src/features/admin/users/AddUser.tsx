@@ -2,26 +2,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
 import { UserForm } from "./components/UserForm";
-import { useUsers } from "./hooks/useUsers";
+import { useUserCreateMutation } from "./hooks/useUserCreateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
-import type { UserMutationData } from "@/types/admin/user";
+import type { UserCreateData } from "@/types/admin/user";
 
 export function AddUser() {
   const navigate = useNavigate();
-  const { handleCreateUser } = useUsers();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { handleCreateUser, isCreating, createError } = useUserCreateMutation();
   const [error, setError] = useState<string | null>(null);
   
-  const onSubmit = async (data: UserMutationData) => {
+  const onSubmit = async (data: UserCreateData) => {
     try {
-      setIsSubmitting(true);
       setError(null);
       await handleCreateUser(data);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create user');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -32,8 +28,8 @@ export function AddUser() {
           <UserForm
             onSubmit={onSubmit}
             mode="create"
-            isSubmitting={isSubmitting}
-            error={error}
+            isSubmitting={isCreating}
+            error={error || (createError ? String(createError) : null)}
           />
         </div>
       </div>

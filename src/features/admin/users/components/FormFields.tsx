@@ -23,13 +23,16 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useAppSelector } from "@/hooks/useRedux"
 import type { User } from "@/types/admin/user"
+import type { Role } from "@/types/admin/roles"
 
-// Helper function to check if user has admin access
-const isUserAdmin = (user?: User): boolean => {
-  if (!user?.access) return false;
-  const { manageGroupMembership, view, mapRoles, impersonate, manage } = user.access;
-  return manageGroupMembership && view && mapRoles && impersonate && manage;
-};
+// Helper function to check if user has admin access based on roles
+const isUserAdmin = (user?: User & { roles?: Role[] }): boolean => {
+  return (
+    user?.roles?.some(
+      (r) => r.module_name === 'tenant_admin' && r.module_type === 'admin'
+    ) ?? false
+  )
+}
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">

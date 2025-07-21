@@ -15,7 +15,11 @@ export function AddUser() {
   const onSubmit = async (data: UserCreateValues) => {
     try {
       setError(null);
-      await handleCreateUser(data as unknown as UserCreateData);
+      const payload = { ...data } as UserCreateData;
+      if (payload.is_tenant_admin) {
+        delete (payload as any).assignments;
+      }
+      await handleCreateUser(payload);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create user');

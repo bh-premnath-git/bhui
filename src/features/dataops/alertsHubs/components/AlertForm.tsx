@@ -156,8 +156,8 @@ export function FlexibleDialog({
  
   const userList =
     alertHub?.length > 0
-      ? [...new Set(alertHub.map((alert) => alert.project_name))].map((user) => ({
-          project_name: user,
+      ? [...new Set(alertHub.map((alert) => alert.created_by))].map((user) => ({
+          created_by: user,
         }))
       : [];
  
@@ -176,7 +176,7 @@ export function FlexibleDialog({
  
  
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50  dark:text-black" >
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
@@ -214,8 +214,8 @@ export function FlexibleDialog({
           >
             <option value="">Select a user</option>
             {userList.map((u, index) => (
-              <option key={index} value={u.project_name}>
-                {u.project_name}
+              <option key={index} value={u.created_by}>
+                {u.created_by}
               </option>
             ))}
           </select>
@@ -265,12 +265,10 @@ export function FlexibleDialog({
               {updateAlert.isPending
                 ? "Submitting..."
                 : mode === "assign"
-                ? <>
+                ?
                     <User size={16} />
-                  </>
-                : <>
+                :
                     <Save size={16} />
-                  </>
               }
             </button>
           </div>

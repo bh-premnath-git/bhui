@@ -4,7 +4,7 @@ import { withPageErrorBoundary } from '@/components/withPageErrorBoundary';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { useUsers } from '@/features/admin/users/hooks/useUsers';
+import { useUsersQuery } from '@/features/admin/users/hooks/useUsersQuery';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { UsersList } from '@/features/admin/users/Users';
 import { useUserManagementService } from '@/features/admin/users/services/userMgtSrv';
@@ -24,7 +24,7 @@ function UsersListPage() {
     isError, 
     next, 
     prev 
-  } = useUsers({
+  } = useUsersQuery({
     shouldFetch: true,
     limit: limit,
     offset: offset,

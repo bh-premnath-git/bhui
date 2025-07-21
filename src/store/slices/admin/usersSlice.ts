@@ -5,6 +5,16 @@ import { User } from '@/types/admin/user';
 import { Project } from "@/types/admin/project";
 import { Environment } from "@/types/admin/environment";
 
+// Define paginated response types
+interface PaginatedResponse<T> {
+  total: number;
+  next: boolean;
+  prev: boolean;
+  offset: number;
+  limit: number;
+  data: T[];
+}
+
 interface UsersState {
   users: User[];
   selectedUser: User | null;
@@ -28,7 +38,7 @@ const initialState: UsersState = {
 export const fetchProjects = createAsyncThunk(
   "users/fetchProjects",
   async () => {
-    const response = await apiService.get<Project[]>({
+    const response = await apiService.get<PaginatedResponse<Project>>({
       baseUrl: CATALOG_REMOTE_API_URL,
       url: '/bh_project/list/',
       usePrefix: true,
@@ -37,14 +47,14 @@ export const fetchProjects = createAsyncThunk(
         errorMessage: 'Failed to fetch projects'
       }
     });
-    return response;
+    return response.data; // Extract the data array from paginated response
   }
 );
 
 export const fetchEnvironments = createAsyncThunk(
   "users/fetchEnvironments",
   async () => {
-    const response = await apiService.get<Environment[]>({
+    const response = await apiService.get<PaginatedResponse<Environment>>({
       baseUrl: CATALOG_REMOTE_API_URL,
       url: '/environment/environment/list/',
       usePrefix: true,
@@ -53,7 +63,7 @@ export const fetchEnvironments = createAsyncThunk(
         errorMessage: 'Failed to fetch environments'
       }
     });
-    return response;
+    return response.data; // Extract the data array from paginated response
   }
 );
 

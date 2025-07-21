@@ -1,3 +1,4 @@
+import type { AppRoles } from "./roles";
 export interface Pagination {
   total: number;
   next: boolean;
@@ -47,11 +48,22 @@ export interface UserResponse {
   message?: string;
 }
 
+export interface RoleAssignment {
+  project: string;
+  environment: string;
+  role: AppRoles;
+}
+
 // Create separate mutation types for different operations
 export type UserCreateData = {
   email: string;
   first_name: string;
   last_name: string;
+  roles?: AppRoles[];
+  projects?: string[];
+  environments?: string[];
+  assignments?: RoleAssignment[];
+  is_tenant_admin?: boolean;
 };
 
 export type UserUpdateData = {
@@ -61,14 +73,10 @@ export type UserUpdateData = {
   username?: string;
   enabled?: boolean;
   emailVerified?: boolean;
-  roles?: string[];
+  roles?: AppRoles[];
   projects?: string[];
   environments?: string[];
-  assignments?: {
-    project: string;
-    environment: string;
-    role: string;
-  }[];
+  assignments?: RoleAssignment[];
   is_tenant_admin?: boolean;
 };
 

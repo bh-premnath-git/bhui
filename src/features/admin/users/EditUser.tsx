@@ -20,7 +20,7 @@ export function EditUser() {
 
     try {
       setError(null);
-     // await handleUpdateUser(id, data);
+      await handleUpdateUser(id, data);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');

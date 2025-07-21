@@ -13,7 +13,7 @@ import type { Role } from "@/types/admin/roles";
 export function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams(); // id is actually the email from the URL
-  const { user, isUserLoading } = useUsersQuery({ shouldFetch: true, email: id });
+  const { user, isUserLoading, isUserFetching } = useUsersQuery({ shouldFetch: true, email: id });
   const { handleUpdateUser, isUpdating, updateError } = useUserUpdateMutation();
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +33,7 @@ export function EditUser() {
     }
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || (isUserFetching && (!user || user.email !== id))) {
     return <LoadingState className="h-40 w-40" />;
   }
 

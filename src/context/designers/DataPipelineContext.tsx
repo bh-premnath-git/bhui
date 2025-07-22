@@ -249,6 +249,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             let allErrors: ValidationIssue[] = [];
             let allWarnings: ValidationIssue[] = [];
 
+            // Add null check to prevent error when nodes is undefined
+            if (!nodes || !Array.isArray(nodes)) {
+                console.warn('validatePipeline: nodes is undefined or not an array:', nodes);
+                return;
+            }
+
             // Validate pipeline structure (connections)
             if (nodes.length > 0) {
                 // Filter nodes to ensure they have the required 'type' property for UINode
@@ -852,6 +858,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, []);
 
     const handleNodeForm = useCallback((targetNodeId: string) => {
+        // Add null check to prevent error when nodes is undefined
+        if (!nodes || !Array.isArray(nodes)) {
+            console.warn('handleNodeForm: nodes is undefined or not an array:', nodes);
+            return;
+        }
+        
         const targetNode = nodes.find(node => node.id === targetNodeId);
         if (targetNode) {
             const moduleName = targetNode.data.label.split(' ')[0];
@@ -912,11 +924,23 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
 
+        // Add null check to prevent error when nodes is undefined
+        if (!nodes || !Array.isArray(nodes)) {
+            console.warn('onConnect: nodes is undefined or not an array:', nodes);
+            return;
+        }
+
         // Get source and target nodes
         const sourceNode = nodes.find(n => n.id === connection.source);
         const targetNode = nodes.find(n => n.id === connection.target);
 
         if (!sourceNode || !targetNode) return;
+
+        // Add null check for edges array
+        if (!edges || !Array.isArray(edges)) {
+            console.warn('onConnect: edges is undefined or not an array:', edges);
+            return;
+        }
 
         // Check input limits
         const targetInputs = edges.filter(e => e.target === connection.target).length;
@@ -995,6 +1019,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const fetchSourceColumns = useCallback(async (nodes: any) => {
         try {
+            // Add null check to prevent error when nodes is undefined
+            if (!nodes || !Array.isArray(nodes)) {
+                console.warn('fetchSourceColumns: nodes is undefined or not an array:', nodes);
+                return;
+            }
+            
             // Get only source nodes that have a data_src_id and haven't been fetched yet
             const sourceNodes = nodes.filter(node => {
                 const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
@@ -1147,8 +1177,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const updatedSelectedNodeId = useCallback(
         (nodeId: string, selectedType: string) => {
-            setNodes((prevNodes) =>
-                prevNodes.map((node) => {
+            setNodes((prevNodes) => {
+                // Add null check to prevent error when prevNodes is undefined
+                if (!prevNodes || !Array.isArray(prevNodes)) {
+                    console.warn('updatedSelectedNodeId: prevNodes is undefined or not an array:', prevNodes);
+                    return prevNodes || [];
+                }
+                
+                return prevNodes.map((node) => {
                     const selectionId = node.id === nodeId;
                     return selectionId
                         ? {
@@ -1160,8 +1196,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                             },
                         }
                         : node;
-                })
-            );
+                });
+            });
         },
         []
     );

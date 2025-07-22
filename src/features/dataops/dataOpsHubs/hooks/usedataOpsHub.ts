@@ -70,7 +70,7 @@ export const useDataOpsHub = (options: UseDataOpsHubOptions = { shouldFetch: tru
   // Fetch single job by ID
   const fetchJobById = (jobId: string, enabled = true) =>
     getJob({
-      url: `/job_details/${jobId}/`,
+      url: `/job_details/${jobId}`,
       queryOptions: {
         enabled,
         retry: 2

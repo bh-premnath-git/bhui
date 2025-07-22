@@ -64,6 +64,17 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         updateAllNodeDependencies
     } = usePipelineContext();
 
+    // Early return if critical context values are not available
+    if (!updatedSelectedNodeId || nodes === undefined || !formStates || !setFormStates) {
+        console.warn('NodeForm: Critical context values are not available:', {
+            updatedSelectedNodeId: !!updatedSelectedNodeId,
+            nodes: nodes !== undefined,
+            formStates: !!formStates,
+            setFormStates: !!setFormStates
+        });
+        return <div>Loading node form...</div>;
+    }
+
     const dispatch = useAppDispatch();
     const { selectedFlow, currentFlow } = useAppSelector((s: RootState) => s.flow);
     const { edges } = usePipelineContext();
@@ -75,6 +86,11 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         // First check if the node has a type in formStates
         if (nodeFormState.type) {
             return nodeFormState.type;
+        }
+        // Add null check for nodes array
+        if (!nodes || !Array.isArray(nodes)) {
+            console.warn('initialNodeType: nodes is undefined or not an array:', nodes);
+            return "";
         }
         // Then check if the node has a selectedData property
         const node = nodes.find(n => n.id === id);
@@ -119,6 +135,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     // If selectedNode is not available, try to find it in the nodes array
     if (!selectedNode) {
         console.log("NodeForm: No selected node found for id:", id);
+        
+        // Add null check for nodes array
+        if (!nodes || !Array.isArray(nodes)) {
+            console.warn('NodeForm: nodes is undefined or not an array:', nodes);
+            return <div>Error: Unable to load node data</div>;
+        }
         
         // Try to find the node in the nodes array
         const nodeFromId = nodes.find(n => n.id === id);
@@ -286,12 +308,19 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const currentFormData = useMemo(() => {
         const existingFormData = nodeFormData.find((i) => i.nodeId === selectedNode.id)?.formData || {};
         
+        // Merge data from both Flow context (nodeFormData) and Pipeline context (nodeFormState)
+        // Pipeline context (nodeFormState) takes precedence as it contains the most recent saved data
+        const mergedFormData = {
+            ...existingFormData,
+            ...nodeFormState
+        };
+        
         // Ensure task_id is always present
         return {
-            ...existingFormData,
-            task_id: existingFormData.task_id || taskID
+            ...mergedFormData,
+            task_id: mergedFormData.task_id || taskID
         };
-    }, [nodeFormData, selectedNode.id, taskID]);
+    }, [nodeFormData, selectedNode.id, taskID, nodeFormState]);
 
     const depends_on = useMemo(
         () => prevNodeFn(selectedNode.id) ?? [],
@@ -427,7 +456,7 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
 
     /* ------------------------------ Save --------------------------------- */
     const { isSaveDisabled, validateForm } = useFormValidation(
-        selectedNode.id,
+        selectedNode?.id || '',
         requiredFieldsState,
         getNodeFormData
     );
@@ -856,8 +885,20 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     const handleTabChange = useCallback((t: TabType) => setActiveTab(t), []);
     const handleValueChange = useCallback(
         (val: string) => {
+            // Add null check for selectedNode
+            if (!selectedNode || !selectedNode.data) {
+                console.warn('handleValueChange: selectedNode or its data is undefined:', selectedNode);
+                return;
+            }
+            
+            console.log('handleValueChange: selectedNode.data:', selectedNode.data);
+            console.log('handleValueChange: selectedNode.data.requiredFields:', selectedNode.data.requiredFields);
+            
             setSelectedValue(val);
-            const req = selectedNode.data.requiredFields.find(
+            
+            // Handle case where requiredFields might be undefined
+            const requiredFields = selectedNode.data.requiredFields || [];
+            const req = requiredFields.find(
                 (i: any) => Object.keys(i)[0] === val
             );
             const fields = req?.[val] || [];
@@ -923,6 +964,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             );
 
             // Update the node data in the Pipeline context
+            // Additional null check for nodes array
+            if (!nodes || !Array.isArray(nodes)) {
+                console.warn('handleValueChange: nodes is undefined or not an array during update:', nodes);
+                return;
+            }
+            
             const updatedNodes = nodes.map(node => {
                 if (node.id === selectedNode.id) {
                     return {
@@ -945,7 +992,12 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
             // Use updateSetNode to update nodes
             updateSetNode(updatedNodes, edges);
 
-            updatedSelectedNodeId(selectedNode.id, val);
+            // Add null check for selectedNode
+            if (selectedNode && selectedNode.id) {
+                updatedSelectedNodeId(selectedNode.id, val);
+            } else {
+                console.warn('selectedNode is undefined or missing id:', selectedNode);
+            }
 
             // When EmrAddStepsOperator is selected, initialize with pipeline parameters
             if (val === 'EmrAddStepsOperator' && pipelineData?.pipeline_parameters?.length) {
@@ -1018,8 +1070,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
         if (initialNodeType) {
             setSelectedValue(initialNodeType);
 
-            if (selectedNode && selectedNode.id) {
-                const req = selectedNode.data.requiredFields.find(
+            if (selectedNode && selectedNode.id && selectedNode.data) {
+                // Handle case where requiredFields might be undefined
+                const requiredFields = selectedNode.data.requiredFields || [];
+                const req = requiredFields.find(
                     (i: any) => Object.keys(i)[0] === initialNodeType
                 );
                 const fields = req?.[initialNodeType] || [];
@@ -1031,7 +1085,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
                     { type: initialNodeType },
                     { type: initialNodeType, requiredFields: fields }
                 );
-                updatedSelectedNodeId(selectedNode.id, initialNodeType);
+                // Add null check before calling updatedSelectedNodeId
+                if (selectedNode && selectedNode.id) {
+                    updatedSelectedNodeId(selectedNode.id, initialNodeType);
+                }
             }
         } else if (selectedNode?.data?.selectedData) {
             setSelectedValue(selectedNode.data.selectedData);
@@ -1039,9 +1096,10 @@ export const NodeForm: React.FC<NodeFormProps> = ({ closeTap, id }) => {
     }, [selectedNode, initialNodeType, updateNodeMeta, updatedSelectedNodeId]);
 
     useEffect(() => {
-        // Check if selectedNode.data.requiredFields exists before setting it
-        if (selectedNode?.data?.requiredFields) {
-            setRequiredFieldsState(selectedNode.data.requiredFields);
+        // Handle case where requiredFields might be undefined
+        if (selectedNode?.data) {
+            const requiredFields = selectedNode.data.requiredFields || [];
+            setRequiredFieldsState(requiredFields);
         }
     }, [selectedNode?.data?.requiredFields]);
 

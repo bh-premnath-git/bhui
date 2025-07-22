@@ -5,10 +5,8 @@
       "title": "MySQL Source Spec",
       "type": "object",
       "required": [
-        "host",
-        "port",
-        "username",
-        "password"
+        "password",
+        "db_schema"
       ],
       "properties": {
         "host": {

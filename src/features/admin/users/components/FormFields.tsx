@@ -1,7 +1,5 @@
 import type React from "react"
-import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
+import { FormLabel } from "@/components/ui/form"
 import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, getEnvironmentOptions } from "./userFormSchema"
 import { AVAILABLE_ROLES } from "@/types/admin/roles"
@@ -33,34 +31,6 @@ export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) =
     <span className="text-destructive">*</span>
   </FormLabel>
 )
-
-export const TenantAdminField = ({ form, user }: { form: any; user?: User }) => {
-  return (
-    <div>
-      <FormField
-        control={form.control}
-        name="is_tenant_admin"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center gap-2">
-            <FormLabel className="text-green-700 font-medium">
-              Tenant Admin
-            </FormLabel>
-            <FormControl>
-              <Switch 
-                checked={field.value ?? false} 
-                onCheckedChange={field.onChange}
-                className={field.value ? "data-[state=checked]:bg-green-600" : ""}
-              />
-            </FormControl>
-            <span className={`text-sm ${field.value ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
-              {field.value ? 'Yes' : 'No'}
-            </span>
-          </FormItem>
-        )}
-      />
-    </div>
-  )
-}
 
 export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) => {
   // Watch current project selections to trigger role-matrix API call

@@ -6,7 +6,7 @@ import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, getEnvironmentOptions } from "./userFormSchema"
 import { AVAILABLE_ROLES } from "@/types/admin/roles"
 import { Button } from "@/components/ui/button"
-import { useFieldArray } from "react-hook-form"
+import { useFieldArray, useWatch } from "react-hook-form"
 import {
   Select,
   SelectContent,
@@ -24,15 +24,9 @@ import { Badge } from "@/components/ui/badge"
 import { useAppSelector } from "@/hooks/useRedux"
 import type { User } from "@/types/admin/user"
 import type { Role } from "@/types/admin/roles"
+import { useRoleMatrixQuery } from "../hooks/useRoleMatrixQuery"
 
-// Helper function to check if user has admin access based on roles
-const isUserAdmin = (user?: User & { roles?: Role[] }): boolean => {
-  return (
-    user?.roles?.some(
-      (r) => r.module_name === 'tenant_admin' && r.module_type === 'admin'
-    ) ?? false
-  )
-}
+
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">
@@ -183,6 +177,11 @@ export const RolesField = ({ form }: { form: any }) => {
 }
 
 export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) => {
+  // Watch current project selections to trigger role-matrix API call
+  const projectAssignments = useWatch({ control: form.control, name: 'project_assignments' }) as { project?: string }[] | undefined
+  const firstProjectId = projectAssignments?.[0]?.project
+  // Fire API call (result currently unused until we decide how to merge)
+  useRoleMatrixQuery({ projectId: firstProjectId, enabled: Boolean(firstProjectId) })
   const projects = useAppSelector((state) => state.users.projects)
   const projectOptions = getProjectOptions(projects)
   const roleOptions = AVAILABLE_ROLES.map(role => ({
@@ -199,15 +198,16 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
   })
 
   const getAssignmentSummary = (index: number) => {
-    const projects = form.watch(`project_assignments.${index}.projects`) || []
-    const role = form.watch(`project_assignments.${index}.role`)
+    const project = form.watch(`project_assignments.${index}.project`) || ''
+    const roles: string[] = form.watch(`project_assignments.${index}.roles`) || []
     
-    if (projects.length === 0 || !role) {
+    if (!project || roles.length === 0) {
       return "Configure assignment"
     }
     
-    const roleLabel = roleOptions.find(r => r.value === role)?.label
-    return `${projects.length} project${projects.length !== 1 ? 's' : ''} → ${roleLabel}`
+    const projectLabel = projectOptions.find(p=>p.value===project)?.label
+    const roleLabels = roles.map(r=>roleOptions.find(ro=>ro.value===r)?.label).filter(Boolean).join(', ')
+    return `${projectLabel} → ${roleLabels}`
   }
 
   return (
@@ -217,7 +217,7 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => append({ projects: [], role: '' })}
+          onClick={() => append({ project: '', roles: [] })}
           className="ml-auto"
         >
           + Add Project Assignment
@@ -271,15 +271,23 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
                   {/* Project Selection */}
                   <div className="space-y-2">
                     <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Select Projects
+                      Select Project
                     </FormLabel>
-                    <MultiSelect
-                      form={form}
-                      name={`project_assignments.${index}.projects`}
-                      label=""
-                      placeholder="Choose projects"
-                      options={projectOptions}
-                    />
+                    <Select
+                      value={form.watch(`project_assignments.${index}.project`) || ''}
+                      onValueChange={(val) => form.setValue(`project_assignments.${index}.project`, val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
                       Access to all environments in these projects
                     </p>
@@ -288,25 +296,17 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
                   {/* Role Selection */}
                   <div className="space-y-2">
                     <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Project Role
+                      Project Roles
                     </FormLabel>
-                    <Select
-                      value={form.watch(`project_assignments.${index}.role`) || ''}
-                      onValueChange={(val) => form.setValue(`project_assignments.${index}.role`, val)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role for projects" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roleOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <MultiSelect
+                      form={form}
+                      name={`project_assignments.${index}.roles`}
+                      label=""
+                      placeholder="Select roles"
+                      options={roleOptions}
+                    />
                     <p className="text-xs text-muted-foreground">
-                      This role applies to all selected projects
+                      These roles apply to the selected project
                     </p>
                   </div>
                 </div>
@@ -320,6 +320,10 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
 }
 
 export const EnvironmentRolesField = ({ form, user }: { form: any; user?: User }) => {
+  // Watch environment selection to trigger role matrix call
+  const envAssignments = useWatch({ control: form.control, name: 'environment_assignments' }) as { environment?: string }[] | undefined
+  const firstEnvId = envAssignments?.[0]?.environment
+  useRoleMatrixQuery({ environmentId: firstEnvId, enabled: Boolean(firstEnvId) })
   const environments = useAppSelector((state) => state.users.environments)
   const environmentOptions = getEnvironmentOptions(environments)
   const roleOptions = AVAILABLE_ROLES.map(role => ({
@@ -336,15 +340,16 @@ export const EnvironmentRolesField = ({ form, user }: { form: any; user?: User }
   })
 
   const getAssignmentSummary = (index: number) => {
-    const environments = form.watch(`environment_assignments.${index}.environments`) || []
-    const role = form.watch(`environment_assignments.${index}.role`)
+    const environment = form.watch(`environment_assignments.${index}.environment`) || ''
+    const roles: string[] = form.watch(`environment_assignments.${index}.roles`) || []
     
-    if (environments.length === 0 || !role) {
+    if (!environment || roles.length === 0) {
       return "Configure assignment"
     }
     
-    const roleLabel = roleOptions.find(r => r.value === role)?.label
-    return `${environments.length} environment${environments.length !== 1 ? 's' : ''} → ${roleLabel}`
+    const envLabel = environmentOptions.find(e => e.value === environment)?.label
+    const roleLabels = roles.map(r=>roleOptions.find(ro=>ro.value===r)?.label).filter(Boolean).join(', ')
+    return `${envLabel} → ${roleLabels}`
   }
 
   return (
@@ -354,7 +359,7 @@ export const EnvironmentRolesField = ({ form, user }: { form: any; user?: User }
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => append({ environments: [], role: '' })}
+          onClick={() => append({ environment: '', roles: [] })}
           className="ml-auto"
         >
           + Add Environment Assignment
@@ -408,40 +413,40 @@ export const EnvironmentRolesField = ({ form, user }: { form: any; user?: User }
                   {/* Environment Selection */}
                   <div className="space-y-2">
                     <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Select Environments
-                    </FormLabel>
-                    <MultiSelect
-                      form={form}
-                      name={`environment_assignments.${index}.environments`}
-                      label=""
-                      placeholder="Choose specific environments"
-                      options={environmentOptions}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Direct access to specific environments
-                    </p>
-                  </div>
-                  
-                  {/* Role Selection for Environments */}
-                  <div className="space-y-2">
-                    <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Environment Role
+                      Select Environment
                     </FormLabel>
                     <Select
-                      value={form.watch(`environment_assignments.${index}.role`) || ''}
-                      onValueChange={(val) => form.setValue(`environment_assignments.${index}.role`, val)}
+                      value={form.watch(`environment_assignments.${index}.environment`) || ''}
+                      onValueChange={(val) => form.setValue(`environment_assignments.${index}.environment`, val)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select role for environments" />
+                        <SelectValue placeholder="Choose environment" />
                       </SelectTrigger>
                       <SelectContent>
-                        {roleOptions.map((opt) => (
+                        {environmentOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Direct access to this environment
+                    </p>
+                  </div>
+                  
+                  {/* Roles Selection */}
+                  <div className="space-y-2">
+                    <FormLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Environment Roles
+                    </FormLabel>
+                    <MultiSelect
+                      form={form}
+                      name={`environment_assignments.${index}.roles`}
+                      label=""
+                      placeholder="Select roles"
+                      options={roleOptions}
+                    />
                     <p className="text-xs text-muted-foreground">
                       This role applies to all selected environments
                     </p>

@@ -28,3 +28,13 @@ export interface Role {
   bh_edit: boolean;
   bh_delete: boolean;
 }
+
+// API responses for role matrix include audit fields – keep them in a separate type
+export interface RoleMatrixEntry extends Role {
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+  is_deleted: boolean | null;
+  deleted_by: string | null;
+}

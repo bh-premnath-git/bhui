@@ -23,7 +23,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useAppSelector } from "@/hooks/useRedux"
 import type { User } from "@/types/admin/user"
-import type { Role } from "@/types/admin/roles"
 import { useRoleMatrixQuery } from "../hooks/useRoleMatrixQuery"
 
 
@@ -180,11 +179,17 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
   // Watch current project selections to trigger role-matrix API call
   const projectAssignments = useWatch({ control: form.control, name: 'project_assignments' }) as { project?: string }[] | undefined
   const firstProjectId = projectAssignments?.[0]?.project
-  // Fire API call (result currently unused until we decide how to merge)
-  useRoleMatrixQuery({ projectId: firstProjectId, enabled: Boolean(firstProjectId) })
+  // Fetch roles for selected project
+  const { roles: fetchedRoles } = useRoleMatrixQuery({ projectId: firstProjectId, enabled: Boolean(firstProjectId) })
   const projects = useAppSelector((state) => state.users.projects)
   const projectOptions = getProjectOptions(projects)
-  const roleOptions = AVAILABLE_ROLES.map(role => ({
+  
+  // Use fetched roles if available, otherwise fall back to static roles
+  const projectRoleNames = fetchedRoles && fetchedRoles.length > 0
+    ? Array.from(new Set(fetchedRoles.map(r => r.role_name)))
+    : AVAILABLE_ROLES
+    
+  const roleOptions = projectRoleNames.map(role => ({
     label: role
       .split('_')
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
@@ -323,10 +328,16 @@ export const EnvironmentRolesField = ({ form, user }: { form: any; user?: User }
   // Watch environment selection to trigger role matrix call
   const envAssignments = useWatch({ control: form.control, name: 'environment_assignments' }) as { environment?: string }[] | undefined
   const firstEnvId = envAssignments?.[0]?.environment
-  useRoleMatrixQuery({ environmentId: firstEnvId, enabled: Boolean(firstEnvId) })
+  const { roles: fetchedEnvRoles } = useRoleMatrixQuery({ environmentId: firstEnvId, enabled: Boolean(firstEnvId) })
   const environments = useAppSelector((state) => state.users.environments)
   const environmentOptions = getEnvironmentOptions(environments)
-  const roleOptions = AVAILABLE_ROLES.map(role => ({
+  
+  // Use fetched environment roles if available, otherwise fall back to static roles
+  const environmentRoleNames = fetchedEnvRoles && fetchedEnvRoles.length > 0
+    ? Array.from(new Set(fetchedEnvRoles.map(r => r.role_name)))
+    : AVAILABLE_ROLES
+    
+  const roleOptions = environmentRoleNames.map(role => ({
     label: role
       .split('_')
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))

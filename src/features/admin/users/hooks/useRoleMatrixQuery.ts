@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useResource } from "@/hooks/api/useResource";
-import type { Role } from "@/types/admin/roles";
+import type { RoleMatrixEntry } from "@/types/admin/roles";
 import { KEYCLOAK_API_REMOTE_URL } from "@/config/platformenv";
 
 interface UseRoleMatrixQueryOptions {
@@ -19,7 +19,7 @@ export interface ApiRoleMatrixResponse {
   prev: boolean;
   offset: number;
   limit: number;
-  data: Role[];
+  data: RoleMatrixEntry[];
 }
 
 /**
@@ -39,7 +39,7 @@ export const useRoleMatrixQuery = (
     enabled = true,
   } = options;
 
-  const { getAll } = useResource<Role>(
+  const { getAll } = useResource<RoleMatrixEntry>(
     "role-matrix",
     KEYCLOAK_API_REMOTE_URL,
     true,

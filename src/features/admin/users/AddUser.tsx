@@ -16,9 +16,42 @@ export function AddUser() {
     try {
       setError(null);
       const payload = { ...data } as UserCreateData;
-      if (payload.is_tenant_admin) {
-        delete (payload as any).assignments;
+      
+      // Handle regular users with role assignments
+      if (!payload.is_tenant_admin) {
+        // Extract role matrix IDs from project and environment assignments
+        const roleMatrixIds: string[] = [];
+        
+        // Process project assignments if they exist
+        if (data.project_assignments?.length) {
+          data.project_assignments.forEach(assignment => {
+            if (assignment.roles?.length) {
+              roleMatrixIds.push(...assignment.roles);
+            }
+          });
+        }
+        
+        // Process environment assignments if they exist
+        if (data.environment_assignments?.length) {
+          data.environment_assignments.forEach(assignment => {
+            if (assignment.roles?.length) {
+              roleMatrixIds.push(...assignment.roles);
+            }
+          });
+        }
+        
+        // Add deduplicated role IDs to payload
+        if (roleMatrixIds.length > 0) {
+          (payload as any).bh_role_matrix_ids = [...new Set(roleMatrixIds)];
+        }
       }
+      // For tenant admins, bh_role_matrix_ids will be set by UserForm
+      
+      // Remove form-specific fields that aren't part of the API payload
+      delete (payload as any).project_assignments;
+      delete (payload as any).environment_assignments;
+      
+      console.log('User creation payload:', payload);
       await handleCreateUser(payload);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {

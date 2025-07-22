@@ -2,7 +2,6 @@ import type React from "react"
 import { FormLabel } from "@/components/ui/form"
 import { MultiSelect } from "./MultiSelect"
 import { getProjectOptions, getEnvironmentOptions } from "./userFormSchema"
-import { AVAILABLE_ROLES } from "@/types/admin/roles"
 import { Button } from "@/components/ui/button"
 import { useFieldArray, useWatch } from "react-hook-form"
 import {
@@ -41,18 +40,17 @@ export const ProjectRolesField = ({ form, user }: { form: any; user?: User }) =>
   const projects = useAppSelector((state) => state.users.projects)
   const projectOptions = getProjectOptions(projects)
   
-  // Use fetched roles if available, otherwise fall back to static roles
-  const projectRoleNames = fetchedRoles && fetchedRoles.length > 0
-    ? Array.from(new Set(fetchedRoles.map(r => r.role_name)))
-    : AVAILABLE_ROLES
-    
-  const roleOptions = projectRoleNames.map(role => ({
-    label: role
-      .split('_')
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' '),
-    value: role
-  }))
+  // Use fetched roles if available, otherwise don't show options
+  // This prevents undefined roles in the payload
+  const roleOptions = fetchedRoles && fetchedRoles.length > 0
+    ? fetchedRoles.map(role => ({
+        label: role.role_name
+          .split('_')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' '),
+        value: String(role.id) // Use role ID as string value
+      }))
+    : [] // Don't provide options if no roles are fetched
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -189,18 +187,17 @@ export const EnvironmentRolesField = ({ form, user }: { form: any; user?: User }
   const environments = useAppSelector((state) => state.users.environments)
   const environmentOptions = getEnvironmentOptions(environments)
   
-  // Use fetched environment roles if available, otherwise fall back to static roles
-  const environmentRoleNames = fetchedEnvRoles && fetchedEnvRoles.length > 0
-    ? Array.from(new Set(fetchedEnvRoles.map(r => r.role_name)))
-    : AVAILABLE_ROLES
-    
-  const roleOptions = environmentRoleNames.map(role => ({
-    label: role
-      .split('_')
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' '),
-    value: role
-  }))
+  // Use fetched environment roles if available, otherwise don't show options
+  // This prevents undefined roles in the payload
+  const roleOptions = fetchedEnvRoles && fetchedEnvRoles.length > 0
+    ? fetchedEnvRoles.map(role => ({
+        label: role.role_name
+          .split('_')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' '),
+        value: String(role.id) // Use role ID as string value
+      }))
+    : [] // Don't provide options if no roles are fetched
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

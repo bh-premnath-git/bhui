@@ -46,6 +46,59 @@ export function EditUser() {
     (r) => r.module_name === 'tenant_admin' && r.module_type === 'admin'
   ) ?? false
 
+  // Map roles to project and environment assignments
+  const projectAssignments: { project: string, roles: string[] }[] = [];
+  const environmentAssignments: { environment: string, roles: string[] }[] = [];
+
+  // Group roles by project_id and environment_id
+  const roles = user.roles || [];
+  const projectRoles = new Map<string, string[]>();
+  const environmentRoles = new Map<string, string[]>();
+
+  // Process roles and organize by project/environment
+  roles.forEach(role => {
+    // Skip tenant_admin roles, they're handled separately
+    if (role.module_name === 'tenant_admin' && role.module_type === 'admin') {
+      return;
+    }
+
+    // For project-specific roles
+    if (role.project_id && role.project_id !== '*') {
+      if (!projectRoles.has(role.project_id)) {
+        projectRoles.set(role.project_id, []);
+      }
+      // Use role.id as the role identifier for consistency
+      projectRoles.get(role.project_id)?.push(String(role.id));
+    }
+    
+    // For environment-specific roles
+    if (role.environment_id && role.environment_id !== '*') {
+      if (!environmentRoles.has(role.environment_id)) {
+        environmentRoles.set(role.environment_id, []);
+      }
+      // Use role.id as the role identifier for consistency
+      environmentRoles.get(role.environment_id)?.push(String(role.id));
+    }
+  });
+
+  // Convert maps to arrays for form data
+  projectRoles.forEach((roles, projectId) => {
+    projectAssignments.push({
+      project: projectId,
+      roles: roles
+    });
+  });
+
+  environmentRoles.forEach((roles, environmentId) => {
+    environmentAssignments.push({
+      environment: environmentId,
+      roles: roles
+    });
+  });
+
+  console.log('Mapped project assignments:', projectAssignments);
+  console.log('Mapped environment assignments:', environmentAssignments);
+
   const formInitialData: UserFormValues = {
     first_name: user.firstName,
     last_name: user.lastName,
@@ -54,8 +107,11 @@ export function EditUser() {
     enabled: user.enabled,
     emailVerified: user.emailVerified,
     is_tenant_admin: isTenantAdmin,
-    // Add any role assignments if available
-    assignments: [], // Populate from user.assignments if available
+    // Add role assignments mapped from user.roles
+    project_assignments: projectAssignments,
+    environment_assignments: environmentAssignments,
+    // Keeping legacy assignments field for backward compatibility
+    assignments: [],
   };
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, UseFormReturn, DefaultValues, Path } from "react-hook-form";
+import { useForm, UseFormReturn, DefaultValues, Path, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
 import { userEditSchema, userCreateSchema, type UserCreateValues, type UserFormValues } from "./userFormSchema";
 import type { User } from "@/types/admin/user";
 import { EnvironmentRolesField, ProjectRolesField } from "./FormFields";
+import { useRoleMatrixQuery } from "../hooks/useRoleMatrixQuery";
 
 // Base fields present in both create and edit forms
 interface BaseUserFields {
@@ -74,15 +75,31 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
 
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
+  // Watch tenant admin status to conditionally fetch all roles
+  const isTenantAdmin = Boolean(form.watch('is_tenant_admin' as Path<T>));
+  
+  // Fetch all roles when tenant admin is enabled
+  const { roles: allRoles = [], isLoading: isLoadingRoles } = useRoleMatrixQuery({
+    fetchAll: isTenantAdmin,
+    enabled: isTenantAdmin
+  });
+
   const handleSubmit = async (data: T) => {
     try {
       setFormState("submitting");
       const payload: any = { ...data };
+      
       if (payload.is_tenant_admin) {
+        // For tenant admin, include ALL role matrix IDs
+        if (allRoles.length > 0) {
+          // Add bh_role_matrix_ids field to payload for tenant admin
+          payload.bh_role_matrix_ids = allRoles.map(role => role.id);
+        }
         delete payload.assignments;
         delete payload.project_assignments;
         delete payload.environment_assignments;
       }
+      
       await onSubmit(payload as T);
       setFormState("success");
     } catch (err) {
@@ -169,30 +186,6 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                   </FormItem>
                 )}
               />
-
-              {isEdit && (
-                <FormField
-                  control={form.control}
-                  name={"enabled" as Path<T>}
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">User Status</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Enable or disable user account access
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value as boolean}
-                          onCheckedChange={field.onChange}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              )}
             </CardContent>
           </Card>
 
@@ -228,16 +221,28 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                   </FormItem>
                 )}
               />
-              {form.watch("is_tenant_admin" as Path<T>) && (
-                <Badge variant="destructive" className="w-fit mt-2">
-                  Admin Access Enabled
-                </Badge>
+              {isTenantAdmin && (
+                <div className="space-y-2 mt-4">
+                  <Badge variant="destructive" className="w-fit">
+                    Admin Access Enabled
+                  </Badge>
+                  {isLoadingRoles ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading all available roles...
+                    </div>
+                  ) : allRoles.length > 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {allRoles.length} roles available across all projects and environments
+                    </p>
+                  ) : null}
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Role Assignments Section */}
-          {!form.watch("is_tenant_admin" as Path<T>) && (
+          {!isTenantAdmin && (
             <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="role-assignments" className="border rounded-lg border-l-4 border-l-green-500">
               <AccordionTrigger className="px-6 py-4 hover:no-underline">

@@ -3,6 +3,10 @@ import { ReactFlowInstance, Node, Edge } from 'reactflow';
 import { LocalStorageService } from '@/lib/localStorageServices';
 import { CustomNodeData, NodeFormData } from '@/types/designer/flow';
 
+const isValidFlowId = (flowId: string | null | undefined): flowId is string => {
+  return typeof flowId === 'string' && flowId.trim().length > 0;
+};
+
 export function useFlowOperations(
   reactFlowInstance: ReactFlowInstance | null,
   nodes: Node<CustomNodeData>[],
@@ -32,8 +36,8 @@ export function useFlowOperations(
   }, [reactFlowInstance]);
 
   const saveFlow = useCallback(async () => {
-    if (!selectedFlowId) {
-      console.warn("No flow selected. Cannot save.");
+    if (!isValidFlowId(selectedFlowId)) {
+      console.warn("Invalid or missing flow ID. Cannot save.", { selectedFlowId });
       return;
     }
     
@@ -80,13 +84,24 @@ export function useFlowOperations(
     }
   }, [nodes, edges, nodeFormData, selectedFlowId, setIsSaving, setIsSaved]);
 
-  const loadFlow = useCallback((flowId: string) => {
+  const loadFlow = useCallback((flowId: string | null | undefined) => {
+    // Validate flowId before attempting to load
+    if (!isValidFlowId(flowId)) {
+      console.warn("Invalid or missing flow ID. Cannot load flow.", { flowId });
+      return null;
+    }
+
     // Log the flow being loaded to help with debugging
     console.log(`Loading flow with ID: ${flowId}`);
     
-    // Ensure we're using the explicitly passed flowId, not the closure value
-    const savedFlow = LocalStorageService.getItem(`flow-${flowId}`);
-    return savedFlow;
+    try {
+      // Ensure we're using the explicitly passed flowId, not the closure value
+      const savedFlow = LocalStorageService.getItem(`flow-${flowId}`);
+      return savedFlow;
+    } catch (error) {
+      console.error("Error loading flow from localStorage:", { flowId, error });
+      return null;
+    }
   }, []);
 
   return {

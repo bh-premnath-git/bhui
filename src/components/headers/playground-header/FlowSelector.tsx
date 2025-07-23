@@ -38,6 +38,17 @@ import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlo
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useDeleteFlow } from '@/hooks/useDeleteFlow';
 
+const isValidFlowId = (flowId: number | string | null | undefined): boolean => {
+  if (typeof flowId === 'number') {
+    return flowId > 0;
+  }
+  if (typeof flowId === 'string') {
+    const numId = parseInt(flowId, 10);
+    return !isNaN(numId) && numId > 0;
+  }
+  return false;
+};
+
 interface Flow {
   flow_id: number;
   flow_name: string;
@@ -164,14 +175,14 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
   };
 
   const handleDeleteConfirm = () => {
-    if (flowToDelete) {
+    if (flowToDelete && isValidFlowId(flowToDelete.flow_id)) {
       deleteFlowMutation.mutate(flowToDelete.flow_id, {
         onSuccess: () => {
           setDeleteDialogOpen(false);
           setFlowToDelete(null);
           
           // Check if we're deleting the currently selected flow
-          if (id === flowToDelete.flow_id.toString()) {
+          if (isValidFlowId(id) && id === flowToDelete.flow_id.toString()) {
             // Navigate to dashboard
             navigate(ROUTES.DASHBOARD);
           }
@@ -184,6 +195,10 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
           // Dialog stays open on error so user can try again
         }
       });
+    } else if (flowToDelete && !isValidFlowId(flowToDelete.flow_id)) {
+      console.error('FlowSelector: Cannot delete flow with invalid ID', { flowId: flowToDelete.flow_id });
+      setDeleteDialogOpen(false);
+      setFlowToDelete(null);
     }
   };
 
@@ -194,6 +209,13 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
 
   // Handle flow selection
   const handleFlowSelect = async (flow: Flow) => {
+    // Validate flow ID before proceeding
+    if (!isValidFlowId(flow.flow_id)) {
+      console.error('FlowSelector: Cannot select flow with invalid ID', { flowId: flow.flow_id });
+      setOpen(false);
+      return;
+    }
+
     const flowIdStr = flow.flow_id.toString();
     
     // Don't do anything if we're already on this flow or if navigation is in progress

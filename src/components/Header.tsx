@@ -8,13 +8,14 @@ import { AIChatButton } from "@/components/shared/ai-chat-button";
 import { useDispatch } from "react-redux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { useEffect, useState } from "react";
-
+import {pipelineSchema} from "@bh-ai/schemas"
 export const Header = () => {
   const { isExpanded, isRightAsideOpen } = useSidebar();
   const location = useLocation();
   const dispatch = useDispatch();
   const [forceUpdate, setForceUpdate] = useState(0);
-  
+  const dataPipelineSchema = pipelineSchema
+  console.log(dataPipelineSchema)
   // Listen for resize events to update the header when the RightAside panel is resized
   useEffect(() => {
     const handleResize = () => {

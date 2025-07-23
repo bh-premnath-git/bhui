@@ -23,10 +23,17 @@ const proOptions = { hideAttribution: true };
 const snapGrid: [number, number] = [15, 15];
 const defaultViewport = { x: 0, y: 0, zoom: 1.8 };
  
+const isValidFlowId = (flowId: string | null | undefined): flowId is string => {
+  return typeof flowId === 'string' && flowId.trim().length > 0;
+};
+
 export const FlowCanvas = () => {
   const { id } = useParams();
   const { useFetchFlowById } = useFlowApi();
-  const { data: flow, isLoading, isError } = useFetchFlowById(id || '');
+  
+  // Only fetch flow if we have a valid ID
+  const shouldFetchFlow = isValidFlowId(id);
+  const { data: flow, isLoading, isError } = useFetchFlowById(id, shouldFetchFlow);
   const dispatch = useAppDispatch();
  
   const {
@@ -179,14 +186,16 @@ export const FlowCanvas = () => {
   }, [nodes.length, fitView]);
  
   useEffect(() => {
-    if (flow) {
+    if (flow && isValidFlowId(id)) {
       dispatch(setSelectedFlow(flow));
       const flowdeployment = flow;
       if (flowdeployment.flow_deployment?.[0]?.bh_env_id) {
         dispatch(setSelectedEnv(Number(flowdeployment.flow_deployment[0].bh_env_id)));
       }
+    } else if (id && !isValidFlowId(id)) {
+      console.warn('FlowCanvas: Invalid flow ID provided, skipping flow setup', { id });
     }
-  }, [flow, dispatch]);
+  }, [flow, dispatch, id]);
  
   if (isLoading) {
     return (
@@ -198,6 +207,16 @@ export const FlowCanvas = () => {
  
   if (isError) {
     return <ErrorState title="Error loading flow" description="Please try again later" />;
+  }
+
+  // Handle invalid flow ID case
+  if (id && !isValidFlowId(id)) {
+    return <ErrorState title="Invalid Flow ID" description="The provided flow ID is not valid. Please check the URL and try again." />;
+  }
+
+  // Handle case where no flow ID is provided
+  if (!id) {
+    return <ErrorState title="No Flow Selected" description="Please select a flow to view." />;
   }
  
   return (

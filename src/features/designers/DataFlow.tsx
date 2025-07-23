@@ -9,7 +9,7 @@ import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
 import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, GitBranch } from 'lucide-react';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { useFlow } from '@/context/designers/FlowContext';
@@ -24,8 +24,10 @@ import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSli
 import { useFlowOperations } from '@/hooks/useFlowOperations';
 import { convertFlowJsonToReactFlow } from '@/lib/pipelineJsonConverter';
 import { useModules } from '@/hooks/useModules';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';
 
-
+ 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
     const { selectNode, revertOrSaveData, setSelectedFlowId, reactFlowInstance, selectedFlowId, setIsSaving, setIsSaved, prevNodeFn, setNodeFormData } = useFlow();
@@ -89,12 +91,21 @@ const BuildPlayGround: React.FC = () => {
         // console.log('Flow Error:', id);
     }, []);
     const [moduleTypes] = useModules();
+    const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);
 
     const dispatch = useAppDispatch();
     const { id } = useParams();
     const { useFetchFlowById, fetchFlowsList } = useFlowApi();
     const { data: flowList, isLoading: isFlowListLoading }:any = fetchFlowsList(1, 1000, true);
-    const { data: flow, isLoading: isFlowLoading, isError, refetch } = useFetchFlowById(id || '');
+    
+    // Validate flowId before making API call
+    const isValidFlowId = (flowId: string | null | undefined): flowId is string => {
+        return typeof flowId === 'string' && flowId.trim().length > 0;
+    };
+    
+    // Only fetch flow if we have a valid ID
+    const shouldFetchFlow = isValidFlowId(id);
+    const { data: flow, isLoading: isFlowLoading, isError, refetch } = useFetchFlowById(id, shouldFetchFlow);
     
     const isLoading = isFlowLoading || isFlowListLoading;
     
@@ -109,12 +120,14 @@ const BuildPlayGround: React.FC = () => {
     
     // Force refetch when ID changes
     useEffect(() => {
-        if (id) {
+        if (isValidFlowId(id)) {
             console.log(`DataFlow: ID changed to ${id}, forcing refetch of flow data`);
             // Force a refetch of the flow data
             refetch();
+        } else if (id) {
+            console.warn(`DataFlow: Invalid flow ID provided: ${id}, skipping refetch`);
         }
-    }, [id, refetch]);
+    }, [id, refetch, isValidFlowId]);
     
     // Listen for custom flow selection events
     useEffect(() => {
@@ -207,17 +220,22 @@ const BuildPlayGround: React.FC = () => {
     
     // Load flow data when flow changes
     useEffect(() => {
-        // Only update the selected flow ID if it's different
-        if (id && id !== selectedFlowId) { 
+        // Only update the selected flow ID if it's different and valid
+        if (isValidFlowId(id) && id !== selectedFlowId) { 
             console.log(`DataFlow: Setting selected flow ID to ${id}`);
             setSelectedFlowId(id);
+        } else if (id && !isValidFlowId(id)) {
+            console.warn(`DataFlow: Invalid flow ID provided, not setting selected flow: ${id}`);
         }
-    }, [id, selectedFlowId, setSelectedFlowId]);
+    }, [id, selectedFlowId, setSelectedFlowId, isValidFlowId]);
     
     // Separate effect for handling flow data changes
     useEffect(() => {
-        // Skip if no flow data or no ID
-        if (!flow || !id) {
+        // Skip if no flow data or invalid ID
+        if (!flow || !isValidFlowId(id)) {
+            if (id && !isValidFlowId(id)) {
+                console.warn(`DataFlow: Skipping flow data processing due to invalid flow ID: ${id}`);
+            }
             return;
         }
         
@@ -422,6 +440,22 @@ const BuildPlayGround: React.FC = () => {
                                 <p className="mt-4 text-sm text-muted-foreground">Loading flow data...</p>
                             </div>
                         </div>
+                    ) : !isLoading && flowList && Array.isArray(flowList.data) && flowList.data.length === 0 ? (
+                        <div className="w-full h-full flex items-center justify-center bg-background">
+                            <EmptyState
+                                Icon={GitBranch}
+                                title="No Flow Found"
+                                description="Get started by creating a new flow."
+                                action={
+                                    <Button 
+                                        onClick={() => setCreateFlowDialogOpen(true)}
+                                        className="mt-4"
+                                    >
+                                        Create Flow
+                                    </Button>
+                                }
+                            />
+                        </div>
                     ) : (
                         <ReactFlow
                             key={`flow-${id}-${forceRender}`} // Add key to force re-render
@@ -552,6 +586,12 @@ const BuildPlayGround: React.FC = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Create Flow Dialog */}
+                <CreateFlowDialog
+                    open={createFlowDialogOpen}
+                    onOpenChange={setCreateFlowDialogOpen}
+                />
             </div>
         </div>
     );

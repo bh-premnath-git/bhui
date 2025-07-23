@@ -177,7 +177,7 @@ export function Sidebar() {
       )}
     >
       {/* Header */}
-      <div className="h-12 flex items-center">
+      <div className="h-16 flex items-center px-4 border-b border-gray-100 dark:border-gray-800">
         {isExpanded ? (
           <div className="flex items-center justify-between w-full">
             <div className="cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>

@@ -1,11 +1,13 @@
+import type { AppRoles, Role } from "./roles";
+
 export interface Pagination {
-  first: number;
-  max_results: number;
-  has_next: boolean;
-  has_previous: boolean;
+  total: number;
+  next: boolean;
+  prev: boolean;
+  offset: number;
+  limit: number;
 }
 
-// Update BaseUser to match API requirements
 export interface BaseUser {
   username: string;
   firstName: string;
@@ -13,22 +15,10 @@ export interface BaseUser {
   email: string;
   enabled: boolean;
   emailVerified: boolean;
-  realm_roles: string[];
-  projects: string[];
-
-  // Add optional fields for user creation/update
-  credentials?: Array<{
-    type: string;
-    value: string;
-    temporary: boolean;
-  }>;
 }
 
-// Complete User type with all API properties
 export interface User extends BaseUser {
-  fullName: any;
   id: string;
-  createdTimestamp: number;
   totp: boolean;
   disableableCredentialTypes: string[];
   requiredActions: string[];
@@ -40,18 +30,11 @@ export interface User extends BaseUser {
     impersonate: boolean;
     manage: boolean;
   };
-
-  // Add missing API fields
-  attributes?: Record<string, any>;
-  groups?: string[];
-  clientRoles?: Record<string, string[]>;
+  roles?: Role[];
 }
 
-// Add proper response types
-export interface UsersPaginatedResponse {
-  users: User[];
-  total: number;
-  pagination: Pagination;
+export interface UsersPaginatedResponse extends Pagination {
+  data: User[];
 }
 
 export interface UserResponse {
@@ -59,15 +42,38 @@ export interface UserResponse {
   message?: string;
 }
 
-// Update mutation type to handle different operations
-export type UserMutationData = Omit<BaseUser, 'firstName' | 'lastName'> & {
-  firstName?: string;
-  lastName?: string;
-  first_name?: string;  // Form field name
-  last_name?: string;   // Form field name
-  credentials?: Array<{
-    type: string;
-    value: string;
-    temporary: boolean;
-  }>;
-};
+export interface RoleAssignment {
+  project: string | "*";
+  environment: string | "*";
+  role: AppRoles;
+}
+
+// Base form data type with common fields
+interface BaseUserFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_tenant_admin?: boolean;
+  assignments?: RoleAssignment[];
+}
+
+// Create-specific form data
+export interface UserCreateData extends BaseUserFormData {
+  // No additional fields for create, just using the base
+}
+
+// Update-specific form data
+export interface UserUpdateData extends BaseUserFormData {
+  username?: string;
+  enabled?: boolean;
+  emailVerified?: boolean;
+}
+
+// Type guard to check if form data is for update
+export function isUpdateData(data: UserCreateData | UserUpdateData): data is UserUpdateData {
+  return 'enabled' in data || 'emailVerified' in data;
+}
+
+// Legacy type for backward compatibility (mark as deprecated)
+/** @deprecated Use UserCreateData or UserUpdateData instead */
+export type UserMutationData = UserCreateData | UserUpdateData;

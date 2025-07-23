@@ -47,6 +47,14 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
     const initKeycloak = async () => {
       try {
         if (!mounted) return;        
+        
+        console.log('🔐 Starting Keycloak initialization...');
+        console.log('🔐 Keycloak config:', {
+          url: keycloak.authServerUrl,
+          realm: keycloak.realm,
+          clientId: keycloak.clientId
+        });
+        
         const authenticated = await keycloak.init({
           onLoad: 'check-sso',
           silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
@@ -55,11 +63,16 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
           checkLoginIframe: false
         });
 
+        console.log('🔐 Keycloak init completed, authenticated:', authenticated);
+        console.log('🔐 Keycloak token present:', !!keycloak.token);
+        console.log('🔐 Keycloak refresh token present:', !!keycloak.refreshToken);
+
         if (!mounted) return;
         setInitialized(true);
         setAuthenticated(authenticated);
         
         if (authenticated) {
+          console.log('🔐 User is authenticated, setting up tokens...');
           setToken(keycloak.token);
           setRefreshToken(keycloak.refreshToken);
           
@@ -91,11 +104,19 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
               logout();
             });
           };
+        } else {
+          console.log('🔐 User is not authenticated after init');
         }
       } catch (error) {
         if (!mounted) return;
         
-        console.error('Keycloak initialization error:', error);
+        console.error('🔐 Keycloak initialization error:', error);
+        console.error('🔐 Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        
         // Show a more user-friendly error
         toast.error('Authentication service initialization failed. Please try again later.');
       }

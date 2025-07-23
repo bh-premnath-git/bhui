@@ -60,7 +60,7 @@ export function EnvironmentForm({ initialData, onSubmit, ...props }: Environment
   
   // Watch platform type to conditionally show fields
   const platformType = form.watch("platform.type");
-  const isAwsSelected = platformType === "101"; // AWS platform value
+  const isAwsSelected = platformType === "AWS"; // AWS platform value
   
   // Watch all form values to check if required fields are filled
   const formValues = form.watch();

@@ -1,7 +1,6 @@
 import type { ColumnDef, FilterFn, Table } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
 
-
 interface DropdownItem {
   label: React.ReactNode;
   icon?: LucideIcon;
@@ -9,6 +8,7 @@ interface DropdownItem {
   disabled?: boolean;
   className?: string;
 }
+
 // Button configuration for toolbar
 interface ToolbarButtonConfig {
   label: React.ReactNode;
@@ -29,10 +29,20 @@ export interface TToolbarConfig<T = any> {
   className?: string;
 }
 
+// Header button configuration for column headers
+interface HeaderButtonConfig {
+  icon: LucideIcon;
+  onClick: () => void;
+  tooltip?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
 // Generic column definition with filtering capabilities
 export type ColumnDefWithFilters<T> = ColumnDef<T> & {
   enableColumnFilter?: boolean;
   filterFn?: FilterFn<T> | string;
+  headerButton?: HeaderButtonConfig;
 }
 
 export interface TopSectionProps<TData> {

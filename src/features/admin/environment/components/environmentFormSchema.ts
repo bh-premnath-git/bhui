@@ -20,6 +20,7 @@ export const environmentFormSchema = z.object({
     airflowName: z.string().optional(),
     airflowBucketName: z.string().optional(),
     airflowBucketUrl: z.string().optional(),
+    airflowEnvType: z.string().optional(),
   }),
   tags: z
     .array(
@@ -88,36 +89,35 @@ export const environmentFormSchema = z.object({
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>
 
 export const environments = [
-  { label: "Development", value: "301" },
-  { label: "Staging", value: "304" },
-  { label: "Production", value: "305" },
+  { label: "Development", value: "development" },
+  { label: "Staging", value: "staging" },
+  { label: "Production", value: "production" },
 ] as const
 
 export const platforms = [
-  { label: "AWS", value: "101", image: "/assets/environments/aws.svg" },
-  { label: "GCP", value: "102", image: "/assets/environments/google.svg" },
+  { label: "AWS", value: "AWS", image: "/assets/environments/aws.svg" },
+  { label: "GCP", value: "GCP", image: "/assets/environments/google.svg" },
 ] as const
 
 export const regions = [
-  { label: "us-east-1", value: "2" },
-  { label: "us-west-1", value: "3" },
-  { label: "eu-central-1", value: "18" },
+  { label: "us-east-1", value: "us-east-1" },
+  { label: "us-west-1", value: "us-west-1" },
+  { label: "eu-central-1", value: "eu-central-1" },
 ] as const
 
 export const transforFormToAPiData = (formData: EnvironmentFormValues ): FormData => {
-  const regionLabel = regions.find(r => r.value === formData.platform.region)?.label ?? ''
   const apiData: EnvironmentMutationData = {
     bh_env_name: formData.environmentName,
-    bh_env_provider: Number(formData.environment),
-    cloud_provider_cd: Number(formData.platform.type),
-    cloud_region_cd: Number(formData.platform.region),
-    location: regionLabel,
+    bh_env_type: formData.environment,
+    cloud_provider: formData.platform.type,
+    cloud_region: formData.platform.region,
     access_key: formData.credentials.accessKey,
     secret_access_key: formData.credentials.secretKey,
     project_id: formData.credentials.publicId,
     pvt_key: formData.credentials.pvtKey,
     init_vector: formData.credentials.init_vector,
-    airflow_url: formData.advancedSettings.airflowBucketUrl,
+    airflow_env_type: "AWSMWAA",
+    airflow_env_url: formData.advancedSettings.airflowBucketUrl,
     airflow_bucket_name: formData.advancedSettings.airflowBucketName,
     airflow_env_name: formData.advancedSettings.airflowName,
     status: formData.status,
@@ -142,10 +142,10 @@ export const transforFormToAPiData = (formData: EnvironmentFormValues ): FormDat
 export const transformApiDataToForm = (apiData: EnvironmentMutationData): EnvironmentFormValues => {
   const formData: Partial<EnvironmentFormValues> = {
     environmentName: apiData.bh_env_name,
-    environment: apiData.bh_env_provider.toString(),
+    environment: apiData.bh_env_type,
     platform: {
-      type: apiData.cloud_provider_cd.toString(),
-      region: apiData.cloud_region_cd.toString(),
+      type: apiData.cloud_provider,
+      region: apiData.cloud_region,
     },
     credentials: {
       publicId: apiData.project_id,
@@ -156,7 +156,8 @@ export const transformApiDataToForm = (apiData: EnvironmentMutationData): Enviro
     advancedSettings:{
       airflowName: apiData.airflow_env_name,
       airflowBucketName: apiData.airflow_bucket_name,
-      airflowBucketUrl: apiData.airflow_url,
+      airflowBucketUrl: apiData.airflow_env_url,
+      airflowEnvType: apiData.airflow_env_type,
     },
     status: apiData.status || 'active',
   }

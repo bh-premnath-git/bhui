@@ -20,10 +20,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ParameterModal } from '../build-playground-header/ParameterModal';
 import { AIButton } from './AIChatButton';
 import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
-import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
 import { useModules } from '@/hooks/useModules';
+import { usePipelineModules } from '@/hooks/usePipelineModules';
 import { useSidebar } from '@/context/SidebarContext';
 import { EngineSelector } from './EngineSelector';
 import { ModeSelector } from './ModeSelector';
@@ -37,7 +37,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const dispatch = useAppDispatch();
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
-  const { pipelineDtl,pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
+  const { pipelineDtl, pipelineType, selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
   const autoSaveStatus = 'saved';
   const lastSavedTime = new Date().toISOString();
   const toggleAutoSave = () => { };
@@ -46,9 +46,46 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
   const [createPipelineDialogOpen, setCreatePipelineDialogOpen] = useState(false);
   const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);
-  const filteredNodes = useMemo(() => nodeData.nodes, []);
-  const [moduleTypes] = useModules();
-  console.log(pipelineDtl)
+  
+  // Use dynamic modules based on engine type for pipeline, static for flow
+  const [flowModuleTypes] = useModules(); // For flow
+  const pipelineModuleTypes = usePipelineModules(selectedEngineType); // For pipeline
+  console.log(pipelineModuleTypes)
+  // Choose the appropriate module types based on context
+  const moduleTypes = isFlow ? flowModuleTypes : pipelineModuleTypes;
+  
+  const filteredNodes = useMemo(() => {
+    // Generate dynamic nodes from moduleTypes
+    return moduleTypes.map((type, index) => ({
+      ui_properties: {
+        module_name: type.label,
+        color: type.color,
+        icon: type.icon,
+        id: type.id,
+        ports: type.ports || {
+          inputs: 1,
+          outputs: 1,
+          maxInputs: 1
+        },
+        meta: {
+          type: type?.type,
+          moduleInfo: {
+            color: type?.color,
+            icon: type?.icon,
+            label: type?.label,
+          },
+          properties: type.operators?.map((op: any) => op.properties) || [],
+          description: type?.description,
+          fullyOptimized: false,
+        }
+      }
+    }));
+  }, [moduleTypes]);
+
+  console.log('Selected Engine Type:', selectedEngineType);
+  console.log('Module Types:', moduleTypes);
+  console.log('Filtered Nodes:', filteredNodes);
+
   let flowNodes = moduleTypes.map((type) => {
     return {
       "ui_properties": {
@@ -220,15 +257,15 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
 
         {/* Middle section - Node controls */}
         {pipelineType?.toLowerCase() != "requirement" &&
-         (<div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
-          <NodeDropList
-            filteredNodes={isFlow ? flowNodes : filteredNodes}
-            handleNodeClick={handleNodeClick}
-            addNodeToHistory={addNodeToHistory}
-          />
+          (<div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
+            <NodeDropList
+              filteredNodes={isFlow ? flowNodes : filteredNodes}
+              handleNodeClick={handleNodeClick}
+              addNodeToHistory={addNodeToHistory}
+            />
 
-        </div>)}
-         
+          </div>)}
+
 
         {/* Right section - Pipeline controls and AI button */}
         <div className="flex items-center justify-end space-x-4 w-full sm:w-auto">
@@ -241,7 +278,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
               isValid={isPipelineValid}
               validationErrors={pipelineValidationErrors}
               validationWarnings={pipelineValidationWarnings}
-              
+
             />
           )}
 

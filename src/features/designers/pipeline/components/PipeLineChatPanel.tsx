@@ -14,7 +14,7 @@ import { apiService } from '@/lib/api/api-service';
 import { toast } from 'sonner';
 import { ReaderOptionsForm } from '@/components/bh-reactflow-comps/builddata/ReaderOptionsForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
-import nodeDisplayData from '@/pages/designers/data-pipeline/data/node_display.json';
+import { usePipelineModules } from '@/hooks/usePipelineModules';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
@@ -339,6 +339,58 @@ const MultiSourceSelectForm: React.FC<{
 const PipeLineChatPanel = () => {
   const dispatch = useAppDispatch();
   const { id } = useParams<{ id: string }>();
+  
+  // Get pipeline modules from the hook
+  const pipelineModules = usePipelineModules('pyspark');
+  
+  // Convert pipeline modules to the format expected by existing code
+  const nodeDisplayData = React.useMemo(() => {
+    const nodes = [];
+    
+    // Add Reader node (hardcoded as it's not in the schema)
+    nodes.push({
+      ui_properties: {
+        module_name: "Reader",
+        color: "#f7a01f",
+        icon: "/assets/buildPipeline/6.svg",
+        ports: {
+          inputs: 0,
+          outputs: 1,
+          maxInputs: 0
+        }
+      }
+    });
+    
+    // Add Target node (hardcoded as it's not in the schema)
+    nodes.push({
+      ui_properties: {
+        module_name: "Target",
+        color: "#07a260",
+        icon: "/assets/buildPipeline/7.svg",
+        ports: {
+          inputs: 1,
+          outputs: 0,
+          maxInputs: 1
+        }
+      }
+    });
+    
+    // Add transformation nodes from pipeline modules
+    pipelineModules.forEach(module => {
+      module.operators.forEach(operator => {
+        nodes.push({
+          ui_properties: {
+            module_name: module.label,
+            color: module.color,
+            icon: module.icon,
+            ports: module.ports
+          }
+        });
+      });
+    });
+    
+    return { nodes };
+  }, [pipelineModules]);
 
 
   // Helper function to get avatar initials
@@ -525,7 +577,7 @@ const PipeLineChatPanel = () => {
   };
   // Initialize the Reader node from node_display.json and load connection configs
   useEffect(() => {
-    // Find the Reader node from the node_display.json file
+    // Find the Reader node from the isplay.json file
     const reader = nodeDisplayData.nodes.find(node => node.ui_properties.module_name === "Reader");
     if (reader) {
       setReaderNode(reader);

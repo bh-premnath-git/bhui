@@ -16,10 +16,7 @@ import { apiService } from "@/lib/api/api-service";
 import { validatePipelineConnections } from "@/lib/validatePipelineConnections";
 import { validateFormData } from "@/components/bh-reactflow-comps/builddata/validation";
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
-import nodeDisplayData from '@/pages/designers/data-pipeline/data/node_display.json';
-import readerSchema from '@/components/bh-reactflow-comps/builddata/json/Reader.json';
-import targetSchema from '@/components/bh-reactflow-comps/builddata/json/Target.json';
-import writerSchema from '@/components/bh-reactflow-comps/builddata/json/Writer.json';
+import { usePipelineModules } from '@/hooks/usePipelineModules';
 
 export interface Log {
   timestamp: string
@@ -50,10 +47,56 @@ interface TerminalProps {
 }
 
 // Helper function to get node display configuration
-const getNodeDisplayConfig = (moduleName: string) => {
-  return nodeDisplayData.nodes.find(node => 
+const getNodeDisplayConfig = (moduleName: string, pipelineModules: any[]) => {
+  // First check hardcoded nodes (Reader and Target)
+  const hardcodedNodes = [
+    {
+      ui_properties: {
+        module_name: "Reader",
+        color: "#f7a01f",
+        icon: "/assets/buildPipeline/6.svg",
+        ports: {
+          inputs: 0,
+          outputs: 1,
+          maxInputs: 0
+        }
+      }
+    },
+    {
+      ui_properties: {
+        module_name: "Target",
+        color: "#07a260",
+        icon: "/assets/buildPipeline/7.svg",
+        ports: {
+          inputs: 1,
+          outputs: 0,
+          maxInputs: 1
+        }
+      }
+    }
+  ];
+  
+  const hardcodedNode = hardcodedNodes.find(node => 
     node.ui_properties.module_name === moduleName
-  )?.ui_properties;
+  );
+  
+  if (hardcodedNode) {
+    return hardcodedNode.ui_properties;
+  }
+  
+  // Then check pipeline modules
+  for (const module of pipelineModules) {
+    if (module.label === moduleName) {
+      return {
+        module_name: module.label,
+        color: module.color,
+        icon: module.icon,
+        ports: module.ports
+      };
+    }
+  }
+  
+  return null;
 };
 
 // Helper function to validate Reader/Source form data
@@ -190,7 +233,7 @@ const validateTargetFormData = (formData: any, sourceData: any): { isValid: bool
 };
 
 // Helper function to validate node connections based on port configuration
-const validateNodeConnections = (node: any, edges: any[], nodes: any[]): { isValid: boolean; errors: string[] } => {
+const validateNodeConnections = (node: any, edges: any[], nodes: any[], pipelineModules: any[]): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
   const nodeTitle = node.data?.title || node.data?.label || node.id;
   const moduleName = node.data?.module_name;
@@ -199,7 +242,7 @@ const validateNodeConnections = (node: any, edges: any[], nodes: any[]): { isVal
     return { isValid: false, errors: [`${nodeTitle}: Module name not found`] };
   }
 
-  const displayConfig = getNodeDisplayConfig(moduleName);
+  const displayConfig = getNodeDisplayConfig(moduleName, pipelineModules);
   if (!displayConfig) {
     return { isValid: false, errors: [`${nodeTitle}: Display configuration not found for module ${moduleName}`] };
   }
@@ -207,7 +250,7 @@ const validateNodeConnections = (node: any, edges: any[], nodes: any[]): { isVal
   const ports = displayConfig.ports;
   
   // Count actual connections
-  const incomingEdges = edges.filter(edge => edge.target === node.id);
+  const incomingEdges:any = edges.filter(edge => edge.target === node.id);
   const outgoingEdges = edges.filter(edge => edge.source === node.id);
   
   // Validate input connections
@@ -244,6 +287,9 @@ export const Terminal: React.FC<TerminalProps> = ({
   const [isMinimized, setIsMinimized] = React.useState(false)
   const [isMaximized, setIsMaximized] = React.useState(false)
   const { isFlow } = useAppSelector((state: RootState) => state.buildPipeline);
+  
+  // Get pipeline modules from the hook
+  const pipelineModules = usePipelineModules('pyspark');
 
   // For flow context, default to "terminal" tab regardless of activeTabOnOpen
   const [activeTab, setActiveTab] = React.useState<"terminal" | "proples" | "preview">(
@@ -549,7 +595,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           
           // Validate node connections based on port configuration (only if we have module name)
           if (moduleName) {
-            const connectionValidation = validateNodeConnections(node, edges, nodes);
+            const connectionValidation = validateNodeConnections(node, edges, nodes, pipelineModules);
             connectionValidation.errors.forEach(error => {
               const connectionLog: Log = {
                 timestamp: new Date().toISOString(),
@@ -802,7 +848,7 @@ export const Terminal: React.FC<TerminalProps> = ({
       const taskParam = selectedTaskId ? `?task_id=${selectedTaskId}` : '';
       return `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/flow/stream-logs/${actualName}${taskParam}`;
     } else {
-      return `${CATALOG_REMOTE_API_URL}/${API_PREFIX_URL}/pipeline/stream-logs/${actualName}`;
+      return `${CATALOG_REMOTE_API_URL}${API_PREFIX_URL}/pipeline/stream-logs/${actualName}`;
     }
   }, [isFlow, actualName, selectedTaskId]);
 

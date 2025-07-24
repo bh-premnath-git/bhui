@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { KeyValueEditor } from './KeyValueEditor';
+import { ArrayField } from './ArrayField';
 
 interface FieldRendererProps {
   fieldKey: string;
@@ -34,6 +35,35 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       <FieldRenderer
         fieldKey={fieldKey}
         field={firstSchema}
+        form={form}
+        isRequired={isRequired}
+        parentPath={parentPath}
+      />
+    );
+  }
+
+  // Handle allOf patterns - merge all schemas
+  if (field.allOf) {
+    // For allOf, merge all properties and render as a single field
+    // This is a simplified approach for basic allOf patterns
+    let mergedField = { ...field };
+    
+    field.allOf.forEach((subSchema: any) => {
+      if (subSchema.properties) {
+        mergedField.properties = { ...mergedField.properties, ...subSchema.properties };
+      }
+      if (subSchema.type && !mergedField.type) {
+        mergedField.type = subSchema.type;
+      }
+      if (subSchema.enum && !mergedField.enum) {
+        mergedField.enum = subSchema.enum;
+      }
+    });
+
+    return (
+      <FieldRenderer
+        fieldKey={fieldKey}
+        field={mergedField}
         form={form}
         isRequired={isRequired}
         parentPath={parentPath}
@@ -100,6 +130,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 className={`text-sm resize-none ${fieldKey === 'expression' ? 'font-mono' : ''}`}
               />
             ) : field.type === 'array' ? (
+              // Handle array fields with simple textarea for now
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">
                   Array field: {fieldTitle}

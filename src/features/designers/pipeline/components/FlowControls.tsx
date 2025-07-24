@@ -8,13 +8,15 @@ import {
   MdTerminal,
   MdAlignHorizontalCenter,
   MdAlignVerticalCenter,
-  MdVerticalAlignTop
+  MdVerticalAlignTop,
+  MdAdd
 } from 'react-icons/md'
 
 // shadcn/ui imports (adjust import paths to match your project setup)
 import { Button } from '@/components/ui/button'
 
 import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
+import { PipelineForm } from './PipelineForm';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext'
 import { useEventStream } from '@/features/admin/connection/hooks/useEventStream'
 import { useSidebar } from '@/context/SidebarContext'
@@ -56,6 +58,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   onAlignTopLeft,
 }) => {
   const [isLogsOpen, setIsLogsOpen] = useState(false)
+  const [isPipelineFormOpen, setIsPipelineFormOpen] = useState(false)
   const { 
     pipelineDtl, 
     pipelineName, 
@@ -107,6 +110,14 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
 
   const handleCloseLogs = () => {
     closeBottomDrawer();
+  }
+
+  const handleAddNodeClick = () => {
+    setIsPipelineFormOpen(true);
+  }
+
+  const handleClosePipelineForm = () => {
+    setIsPipelineFormOpen(false);
   }
 
   
@@ -534,6 +545,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   };
 
   const actions = [
+    { key: 'add-node', icon: MdAdd, handler: handleAddNodeClick },
     { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
     { key: 'zoom-out', icon: BiZoomOut, handler: handleZoomOutClick },
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
@@ -634,6 +646,12 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
         terminalLogs={logs}
         proplesLogs={proplesLogs}
         pipelineName={pipelineConfig?.pipeline_name}
+      />
+
+      {/* Pipeline Form */}
+      <PipelineForm
+        isOpen={isPipelineFormOpen}
+        onClose={handleClosePipelineForm}
       />
     </>
   )

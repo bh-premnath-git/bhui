@@ -7,7 +7,6 @@ import { CustomNode } from '@/components/bh-reactflow-comps/builddata/CustomNode
 import { CustomEdge } from '@/components/bh-reactflow-comps/builddata/customEdge';
 import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
-import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { LoaderCircle, GitBranch } from 'lucide-react';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';

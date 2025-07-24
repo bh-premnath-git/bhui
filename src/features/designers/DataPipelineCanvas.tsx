@@ -7,7 +7,7 @@ import { CustomNode } from '@/components/bh-reactflow-comps/builddata/CustomNode
 import { CustomEdge } from '@/components/bh-reactflow-comps/builddata/customEdge';
 import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
-import nodeData from '@/pages/designers/data-pipeline/data/node_display.json';
+import { usePipelineModules } from '@/hooks/usePipelineModules';
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { LoaderCircle } from 'lucide-react';
 // import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
@@ -19,6 +19,10 @@ import CreateFormFormik from './pipeline/components/form-sections/CreateForm';
 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
+    
+    // Get pipeline modules from the hook
+    const pipelineModules = usePipelineModules('pyspark');
+    
     const { conversionLogs,
         terminalLogs, pipelineDtl,
         handleRun,
@@ -42,7 +46,54 @@ const BuildPlayGround: React.FC = () => {
         // console.log('Flow Error:', id);
     }, []);
 
-    const filteredNodes = useMemo(() => nodeData.nodes, []);
+    // Convert pipeline modules to the format expected by existing code
+    const filteredNodes = useMemo(() => {
+        const nodes = [];
+        
+        // Add Reader node (hardcoded as it's not in the schema)
+        nodes.push({
+            ui_properties: {
+                module_name: "Reader",
+                color: "#f7a01f",
+                icon: "/assets/buildPipeline/6.svg",
+                ports: {
+                    inputs: 0,
+                    outputs: 1,
+                    maxInputs: 0
+                }
+            }
+        });
+        
+        // Add Target node (hardcoded as it's not in the schema)
+        nodes.push({
+            ui_properties: {
+                module_name: "Target",
+                color: "#07a260",
+                icon: "/assets/buildPipeline/7.svg",
+                ports: {
+                    inputs: 1,
+                    outputs: 0,
+                    maxInputs: 1
+                }
+            }
+        });
+        
+        // Add transformation nodes from pipeline modules
+        pipelineModules.forEach(module => {
+            module.operators.forEach(operator => {
+                nodes.push({
+                    ui_properties: {
+                        module_name: module.label,
+                        color: module.color,
+                        icon: module.icon,
+                        ports: module.ports
+                    }
+                });
+            });
+        });
+        
+        return nodes;
+    }, [pipelineModules]);
     // Create a Set from the array for .has() functionality
     const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 // console.log(selectedSchema)

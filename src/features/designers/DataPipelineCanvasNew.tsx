@@ -383,7 +383,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
 
         </div>
       </div>) : (<>
-        <RequirementForm /> </>)}
+        <RequirementForm  />
+         </>)}
     </>
   );
 };

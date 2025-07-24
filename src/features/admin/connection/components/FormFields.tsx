@@ -132,7 +132,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                 <SelectValue />
               </SelectTrigger>
             </FormControl>
-            <SelectContent>
+            <SelectContent style={{ zIndex: 99999 }} >
               {field.enum
                 .filter((option: string) => option !== "")
                 .map((option: string) => (
@@ -377,7 +377,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent style={{ zIndex: 99999 }} > 
                     {field.enum
                       .filter((option: string) => option !== "")
                       .map((option: string) => (

@@ -13,6 +13,9 @@ export interface SchemaProperty {
   anyOf?: SchemaProperty[];
   allOf?: SchemaProperty[];
   oneOf?: SchemaProperty[];
+  if?: SchemaProperty;
+  then?: SchemaProperty;
+  const?: any;
 }
 
 export interface ExtractedProperties {
@@ -96,15 +99,150 @@ export function getDefaultValueForField(field: SchemaProperty): any {
 }
 
 /**
- * Generate initial values for a schema
+ * Generate initial values for a schema, handling conditional fields properly
  */
 export function generateInitialValues(schema: SchemaProperty): Record<string, any> {
-  const { properties } = extractPropertiesFromSchema(schema);
   const initialValues: Record<string, any> = {};
 
-  Object.entries(properties).forEach(([key, field]) => {
-    initialValues[key] = getDefaultValueForField(field);
-  });
+  // First, set values for base properties
+  if (schema.properties) {
+    Object.entries(schema.properties).forEach(([key, field]) => {
+      initialValues[key] = getDefaultValueForField(field);
+    });
+  }
+
+  // For conditional schemas, we need to ensure trigger fields have proper defaults
+  // so that conditional fields can be shown
+  if (schema.allOf) {
+    schema.allOf.forEach((subSchema) => {
+      if (subSchema.if && subSchema.then) {
+        // Extract the condition field and its expected value
+        const condition = extractConditionFromIf(subSchema.if);
+        if (condition) {
+          // If the condition field doesn't have a value yet, and the condition value
+          // matches a default or enum value, set it
+          if (initialValues[condition.field] === undefined || initialValues[condition.field] === '') {
+            // Check if the condition value is a valid enum option for this field
+            const conditionField = schema.properties?.[condition.field];
+            if (conditionField?.enum?.includes(condition.value)) {
+              // Only set if it's the first enum value or matches the default
+              if (conditionField.default === condition.value || 
+                  (conditionField.default === undefined && conditionField.enum[0] === condition.value)) {
+                initialValues[condition.field] = condition.value;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
 
   return initialValues;
+}
+
+/**
+ * Extract conditional fields from allOf patterns
+ */
+export function extractConditionalFields(schema: SchemaProperty): {
+  baseFields: Record<string, SchemaProperty>;
+  conditionalFields: Array<{
+    condition: { field: string; value: any };
+    schema: SchemaProperty;
+  }>;
+  baseRequired: string[];
+} {
+  const baseFields: Record<string, SchemaProperty> = {};
+  const conditionalFields: Array<{
+    condition: { field: string; value: any };
+    schema: SchemaProperty;
+  }> = [];
+  let baseRequired: string[] = [];
+
+  // Add direct properties as base fields
+  if (schema.properties) {
+    Object.assign(baseFields, schema.properties);
+  }
+
+  // Add direct required fields
+  if (schema.required) {
+    baseRequired = [...baseRequired, ...schema.required];
+  }
+
+  // Process allOf patterns
+  if (schema.allOf) {
+    schema.allOf.forEach((subSchema) => {
+      if (subSchema.if && subSchema.then) {
+        // This is a conditional schema
+        const condition = extractConditionFromIf(subSchema.if);
+        if (condition) {
+          conditionalFields.push({
+            condition,
+            schema: subSchema.then,
+          });
+        }
+      } else {
+        // This is a base schema to be merged
+        const extracted = extractPropertiesFromSchema(subSchema);
+        Object.assign(baseFields, extracted.properties);
+        baseRequired = [...baseRequired, ...extracted.required];
+      }
+    });
+  }
+
+  // Remove duplicates from required array
+  baseRequired = [...new Set(baseRequired)];
+
+  return { baseFields, conditionalFields, baseRequired };
+}
+
+/**
+ * Extracts condition from an 'if' schema
+ */
+export function extractConditionFromIf(ifSchema: SchemaProperty): { field: string; value: any } | null {
+  if (ifSchema.properties) {
+    // Find the first property with a const value
+    for (const [fieldName, fieldSchema] of Object.entries(ifSchema.properties)) {
+      if (typeof fieldSchema === 'object' && 'const' in fieldSchema) {
+        return {
+          field: fieldName,
+          value: fieldSchema.const,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Get active fields based on current form values and conditional logic
+ */
+export function getActiveFields(
+  schema: SchemaProperty,
+  formValues: Record<string, any>
+): {
+  fields: Record<string, SchemaProperty>;
+  required: string[];
+} {
+  const { baseFields, conditionalFields, baseRequired } = extractConditionalFields(schema);
+
+  // Determine which conditional fields should be active
+  const activeConditionalFields = conditionalFields.filter((conditionalField) => {
+    const fieldValue = formValues[conditionalField.condition.field];
+    return fieldValue === conditionalField.condition.value;
+  });
+
+  // Merge active conditional fields with base fields
+  let mergedFields = { ...baseFields };
+  let mergedRequired = [...baseRequired];
+
+  activeConditionalFields.forEach((conditionalField) => {
+    const extracted = extractPropertiesFromSchema(conditionalField.schema);
+    mergedFields = { ...mergedFields, ...extracted.properties };
+    mergedRequired = [...mergedRequired, ...extracted.required];
+  });
+
+  // Remove duplicates from required array
+  mergedRequired = [...new Set(mergedRequired)];
+
+  return { fields: mergedFields, required: mergedRequired };
 }

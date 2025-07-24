@@ -17,96 +17,28 @@ import { pipelineSchema } from "@bh-ai/schemas";
 import { FormFields } from '@/features/admin/connection/components/FormFields';
 import { ArrayField } from './ArrayField';
 import { FieldRenderer } from './FieldRenderer';
+import { ConditionalSchemaRenderer } from './ConditionalSchemaRenderer';
 import { generateInitialValues } from './schemaUtils';
+import { generateDynamicZodSchema, generateStaticZodSchema } from './dynamicZodSchema';
 
 interface PipelineFormProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// Generate form schema based on transformation schema
+// Generate form schema based on transformation schema (legacy - kept for compatibility)
 const generateTransformationFormSchema = (transformationSchema: any) => {
-  if (!transformationSchema?.properties) {
+  if (!transformationSchema) {
     return z.object({});
   }
 
-  const schemaMap: { [key: string]: any } = {};
-
-  Object.entries(transformationSchema.properties).forEach(([key, field]: [string, any]) => {
-    // Skip internal fields
-    if (key === 'type' || key === 'task_id') {
-      return;
-    }
-
-    if (field.type === 'number' || field.type === 'integer') {
-      let numberSchema = z.number({
-        required_error: `${field.title || key} is required`,
-        invalid_type_error: `${field.title || key} must be a number`,
-      }).optional();
-      
-      if (field.default !== undefined) {
-        numberSchema = numberSchema.default(field.default);
-      }
-      
-      schemaMap[key] = numberSchema;
-    } else if (field.type === 'string') {
-      let stringSchema = z.string({
-        required_error: `${field.title || key} is required`,
-      }).optional();
-      
-      if (field.default !== undefined) {
-        stringSchema = stringSchema.default(field.default);
-      }
-      
-      schemaMap[key] = stringSchema;
-    } else if (field.type === 'boolean') {
-      let booleanSchema = z.boolean().optional();
-      
-      if (field.default !== undefined) {
-        booleanSchema = booleanSchema.default(field.default);
-      }
-      
-      schemaMap[key] = booleanSchema;
-    } else if (field.type === 'array') {
-      // Handle different array item types
-      if (field.items?.type === 'string') {
-        schemaMap[key] = z.array(z.string()).optional();
-      } else if (field.items?.type === 'number' || field.items?.type === 'integer') {
-        schemaMap[key] = z.array(z.number()).optional();
-      } else if (field.items?.type === 'boolean') {
-        schemaMap[key] = z.array(z.boolean()).optional();
-      } else if (field.items?.type === 'object') {
-        // For object arrays, create a schema based on the object properties
-        if (field.items?.properties) {
-          const objectSchema = generateTransformationFormSchema(field.items);
-          schemaMap[key] = z.array(objectSchema).optional();
-        } else {
-          schemaMap[key] = z.array(z.record(z.any())).optional();
-        }
-      } else {
-        schemaMap[key] = z.array(z.any()).optional();
-      }
-      
-      // Set default value if provided
-      if (field.default !== undefined) {
-        schemaMap[key] = schemaMap[key].default(field.default);
-      }
-    } else if (field.type === 'object') {
-      if (field.properties) {
-        const objectSchema = generateTransformationFormSchema(field);
-        schemaMap[key] = objectSchema.optional();
-      } else {
-        schemaMap[key] = z.record(z.any()).optional();
-      }
-      
-      // Set default value if provided
-      if (field.default !== undefined) {
-        schemaMap[key] = schemaMap[key].default(field.default);
-      }
-    }
-  });
-
-  return z.object(schemaMap);
+  // Use the new dynamic schema generator
+  try {
+    return generateStaticZodSchema(transformationSchema);
+  } catch (error) {
+    console.error('Error generating schema:', error);
+    return z.object({});
+  }
 };
 
 // Initial form schema for transformation and engine selection

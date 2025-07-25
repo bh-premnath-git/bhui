@@ -74,10 +74,34 @@
                 "properties": {
                     "file_name": {
                         "type": "string",
+                        "description": "Name of the output file",
                         "minLength": 1
+                    },
+                    "format": {
+                        "type": "string",
+                        "description": "File format",
+                        "enum": [
+                            "CSV",
+                            "JSON",
+                            "Parquet",
+                            "ORC",
+                            "Avro",
+                            "Excel",
+                            "XML",
+                            "FixedWidth"
+                        ],
+                        "default": "CSV"
+                    },
+                    "partition_by": {
+                        "type": "array",
+                        "description": "Columns to partition the data by",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": []
                     }
                 },
-                "required": ["file_name"]
+                "required": ["file_name", "format"]
             }
         }
     ]

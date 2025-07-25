@@ -1,4 +1,11 @@
 // Interface for role checking commands
+type Role = string;
+type ScopeType = "global" | "project" | "environment";
+
+type ScopedRoles = {
+  [scopeName: string]: Role[];
+};
+
 interface RoleCommand {
   hasRole: (role: string) => boolean;
   execute: (callback: () => void) => void;

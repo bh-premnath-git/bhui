@@ -26,21 +26,6 @@ interface PipelineFormProps {
   onClose: () => void;
 }
 
-// Generate form schema based on transformation schema (legacy - kept for compatibility)
-const generateTransformationFormSchema = (transformationSchema: any) => {
-  if (!transformationSchema) {
-    return z.object({});
-  }
-
-  // Use the new dynamic schema generator
-  try {
-    return generateStaticZodSchema(transformationSchema);
-  } catch (error) {
-    console.error('Error generating schema:', error);
-    return z.object({});
-  }
-};
-
 // Initial form schema for transformation and engine selection
 const initialFormSchema = z.object({
   transformationName: z.string().min(1, 'Transformation name is required'),

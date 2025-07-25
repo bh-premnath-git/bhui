@@ -11,7 +11,6 @@ const ManageFlow = lazy(() => import("@/pages/designers/ManageFlow"));
 const FlowCanvas = lazy(() => import("@/pages/designers/FlowCanvas"));
 const DataFlowCanvas = lazy(() => import("@/pages/designers/DataFlowCanva"));
 const NotebookEditor = lazy(() => import("@/pages/data-catalog/Notebook"));
-const ConditionalFormTestPage = lazy(() => import("@/pages/test/ConditionalFormTest").then(module => ({ default: module.ConditionalFormTestPage })));
 
 export const DesignerRoutes = (
   <>
@@ -79,14 +78,7 @@ export const DesignerRoutes = (
         </Suspense>
       } 
     />
-    <Route 
-      path="/designers/test-conditional-form" 
-      element={
-        <Suspense fallback={<LoadingFallback />}>
-          <ConditionalFormTestPage />
-        </Suspense>
-      } 
-    />
+   
   </>
 );
 

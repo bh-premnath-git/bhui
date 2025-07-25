@@ -1,195 +1,186 @@
-# Product Requirements Document: Data Platform
+File Hierarchy and Dependencies
 
-## 1. Introduction
+src/pages/dataops/DataopsHub.tsx is a very small file that simply wraps the DataOpsHub feature component with the context provider and error boundary:
 
-### 1.1 Purpose
+1  import { withPageErrorBoundary } from '@/components/withPageErrorBoundary';
+2  import { DataOpsProvider } from "@/context/dataops/DataOpsContext"
+3  import { DataOpsHub } from '@/features/dataops/DataOpsHub';
+4  function DataOpsHubPage() {
+5      return (
+6          <DataOpsProvider>
+7              <DataOpsHub />
+8          </DataOpsProvider>
+9      )
+10 }
+11
+12 export default withPageErrorBoundary(DataOpsHubPage, 'DataOpsHub');
 
-This document defines the requirements for the Data Platform application.
+1. Context and State Management
+DataOpsHubPage relies on DataOpsProvider from src/context/dataops/DataOpsContext.tsx.
+This provider initializes state via DataOpsReducer and exposes both synchronous and asynchronous dispatch methods:
 
-### 1.2 Goals
+41 export const DataOpsProvider = ({ children }: { children: ReactNode }) => {
+42   const [state, dispatch] = useReducer(dataOpsReducer, initialState);
+...
+58   return (
+59     <DataOpsContext.Provider value={{ state, dispatch, dispatchAsync }}>
+60       {children}
+61     </DataOpsContext.Provider>
+62   );
+63 };
 
-* (What problems does the application solve?)
-* (What are the desired outcomes for users?)
+The reducer (DataOpsReducer.tsx) handles actions like SET_DASHBOARDS, ADD_WIDGET, and REMOVE_WIDGET to keep dashboards and widgets in sync:
 
-### 1.3 Target Audience
+76 export const dataOpsReducer = (state: DataOpsState, action: any): DataOpsState => {
+77   switch (action.type) {
+78     case "SET_DASHBOARDS":
+79       return {
+80         ...state,
+81         dashboards: action.payload,
+82         selectedDashboard: action.payload.length > 0 ? action.payload[0] : null
+83       };
+...
+90     case "ADD_WIDGET":
+91       const updatedWidgets = [...state.widgets, action.payload];
+...
+114         };
+115         updatedDashboards = state.dashboards.map(dashboard => {
+116           if (dashboard.dashboard_id === state.selectedDashboard?.dashboard_id) {
+117             const updatedDashboard = {
+118               ...dashboard,
+119               dashboard_layout: [...(dashboard.dashboard_layout || []), newLayoutEntry]
+120             };
 
-* (Who are the primary users of the application?)
-* (What are their needs and pain points?)
+2. Feature Component (DataOpsHub)
+The main logic lives in src/features/dataops/DataOpsHub.tsx. It:
 
-## 2. Features
+Fetches dashboards and widgets using custom hooks (useDataOpsDashboards, useDataOpsWidgets).
 
-### 2.1 Data Catalog
+Updates context state with fetched data.
 
-* **2.1.1 Feature Description:** Allows users to browse, search, and manage data sources.
-* **2.1.2 User Stories:**
-    * As a data analyst, I want to be able to search for datasets by keyword so that I can quickly find the data I need.
-    * As a data engineer, I want to be able to add metadata to datasets so that others can understand their content and usage.
-* **2.1.3 Requirements:**
-    * (Functional requirements: search functionality, metadata management, data source listing)
-    * (Non-functional requirements:  performance, scalability, security)
+Handles loading and error reporting through the context.
 
-### 2.2 Data Pipeline Designer
+Listens for custom events (chart-added-to-dashboard and widget-removed-from-dashboard) to dynamically add or remove widgets.
 
-* **2.2.1 Feature Description:** Provides a visual interface for creating and managing data pipelines.
-* **2.2.2 User Stories:**
-    * As a data engineer, I want to be able to design data pipelines using a drag-and-drop interface so that I can easily define data transformations.
-    * As a data scientist, I want to be able to schedule data pipelines so that data is processed automatically.
-* **2.2.3 Requirements:**
-    * (Functional requirements: node-based editor, transformation operators, scheduling, version control)
-    * (Non-functional requirements:  reliability, usability, extensibility)
+Example sections:
 
-### 2.3 DataOps Hub
+ 9 export function DataOpsHub() {
+10   const { state, dispatch, dispatchAsync } = useDataOps();
+...
+21   const {
+22     widgets,
+23     isLoading: isWidgetsLoading,
+...
+27   } = useDataOpsWidgets({
+28     shouldFetch: widgetIds.length > 0,
+29     widgetIds: widgetIds
+30   });
 
-* **2.3.1 Feature Description:** Provides tools for monitoring and managing data processing jobs and releases.
-* **2.3.2 User Stories:**
-    * As a data operations engineer, I want to be able to monitor the status of data pipelines so that I can quickly identify and resolve issues.
-    * As a release manager, I want to be able to manage the deployment of new pipeline versions so that I can ensure a smooth release process.
-* **2.3.3 Requirements:**
-    * (Functional requirements: job monitoring, logging, alerting, release management, deployment tools)
-    * (Non-functional requirements:  real-time monitoring, scalability, auditability)
+Further down, event listener setup manages widget removal:
 
-### 2.4 Admin Console
+91   const handleWidgetRemoved = (event: CustomEvent) => {
+92     if (!event.detail) { ... }
+...
+103     dispatch({ type: "REMOVE_WIDGET", payload: widgetId });
+104     deleteWidget(widgetId);
+105   };
+107   document.addEventListener(WIDGET_REMOVED_EVENT, handleWidgetRemoved as EventListener);
+...
+110   return () => {
+111     document.removeEventListener(WIDGET_REMOVED_EVENT, handleWidgetRemoved as EventListener);
+112   };
 
-* **2.4.1 Feature Description:** Provides administrative tools for managing users, projects, and environments.
-* **2.4.2 User Stories:**
-    * As an administrator, I want to be able to add and remove users so that I can control access to the application.
-    * As a project manager, I want to be able to create and manage projects so that I can organize data workflows.
-    * As an operations engineer, I want to be able to configure environments so that I can deploy the application to different stages.
-* **2.4.3 Requirements:**
-    * (Functional requirements: user management, role-based access control, project management, environment configuration)
-    * (Non-functional requirements: security, maintainability)
+Chart additions from the chat UI are handled similarly:
 
-## 3.  UI/UX Design
+121   const handleChartAdded = (event: CustomEvent) => {
+...
+130     dispatchAsync({ type: "ADD_WIDGET", payload: chartDataFromEvent }).then(() => {
+131       const payloadForCreateWidget = {
+132         dashboard_id: state.selectedDashboard.dashboard_id ?? 101,
+133         name: restOfChartData.name,
+134         widget_type: restOfChartData.widget_type,
+...
+139       };
+140       createWidget(payloadForCreateWidget);
+141     });
+142   };
+144   document.addEventListener(CHART_ADDED_EVENT, handleChartAdded as EventListener);
 
-* (Describe the overall design of the application, including wireframes or mockups)
+3. Rendering
+DataOpsHub ultimately renders a dashboard layout:
 
-## 4.  Technical Requirements
+158   if (state.isLoading) {
+159     return <LoadingState fullScreen />;
+160   }
+...
+172   return (<div className="absolute inset-0"><Dashboard /></div>);
 
-* (Specify technologies, frameworks, databases, etc.)
+Dashboard (in src/features/dataops/dashboard/index.tsx) provides header and grid layout for widgets.
 
-## 5.  Release Planning
+4. Supporting Utilities and Components
+Event names originate from src/components/shared/GenericChatUI.tsx (CHART_ADDED_EVENT and WIDGET_REMOVED_EVENT).
 
-* (Outline the planned releases and their features)
+Data compression/decompression uses src/lib/decompress.ts.
 
-## 6.  Open Issues
+Loading and error states rely on LoadingState and ErrorState components.
 
-* (List any known issues or limitations)
+Overall Flow
+Routing points /dataops-hub to DataOpsHubPage.
 
-# Project Architecture Design
+Context provider wraps the feature, offering state and dispatch methods.
 
-This document outlines the architecture of the Data Platform application.
+Feature component fetches dashboards/widgets, listens for events from the chat UI, and updates state accordingly.
 
-## 1. Overview
+Dashboard subcomponents render widgets in a responsive grid, allow filtering, and handle interactions (refresh, remove, edit).
 
-The Data Platform is designed as a modular web application with a clear separation of concerns. It follows a layered architecture to ensure scalability, maintainability, and flexibility.
+Error and loading states are shown while fetching or when operations fail.
 
-## 2. Architecture Layers
+The dependencies thus span context files, dashboard widgets, hooks for fetching data, UI components for user interaction, and generic chat events for dynamic widget updates. The page itself mainly serves as the entry point, delegating the heavy logic to the provider and feature modules. This allows the rest of the app (headers, routes, etc.) to treat /dataops-hub as a self-contained module.
 
-The application is structured into the following layers:
+5  export async function updateWidgetLayout(
+6      dashboards: Dashboard[],
+7      dashboardId: number,
+...
+15      await delay(20);
+...
+37      dashboards[dashboardIndex] = dashboard;
+38
+39      return dashboard;
 
-### 2.1 Presentation Layer (Frontend)
+A “layout persistence” hook writes layout changes to localStorage:
 
-* **Technology:** React, TypeScript, Tailwind CSS
-* **Purpose:** Responsible for rendering the user interface, handling user interactions, and displaying data.
-* **Components:**
-    * **UI Components:** Reusable components for displaying data (tables, charts), forms, navigation, and other UI elements (e.g., `src/components/ui/`).
-    * **Pages:** Components representing different application pages (e.g., data catalog, pipeline designer) (e.g., `src/pages/`).
-    * **Layouts:** Components that define the overall structure of pages.
-    * **Routing:** React Router for managing navigation between pages (`src/config/routes.ts`).
-    * **State Management:** Redux Toolkit for managing application state (`src/store/`).
-    * **Data Fetching:** Custom hooks and the `apiService` for interacting with the API layer.
-    * **User Authentication:** Keycloak integration for handling user authentication.
+javascript
+Copy
+11  export const useLayoutPersistence = ({ storageKey, dashboard, defaultDimensions }: LayoutConfig) => {
+12    const [layouts, setLayouts] = useState<Layouts>(() => {
+13      const savedLayout = localStorage.getItem(storageKey);
+14      if (savedLayout) {
+15        try {
+16          return JSON.parse(savedLayout);
+...
+45      setLayouts(allLayouts);
+46      localStorage.setItem(storageKey, JSON.stringify(allLayouts));
 
-### 2.2 Application Layer (Backend - potentially part of Frontend in this code)
+DashboardLayout calls handleLayoutChange from this hook to save positions but ignores the stored layout when rendering, always defaulting to a fresh initialLayout:
 
-* **Technology:** (Largely TypeScript within the frontend project, but would ideally be a separate backend service)
-* **Purpose:** Contains the application's business logic and orchestrates interactions between the presentation and data access layers.
-* **Components:**
-    * **Features:** Modules that implement specific application functionality (e.g., data catalog features, pipeline designer features) (`src/features/`).
-    * **Hooks:** Custom React hooks that encapsulate complex logic or interactions (e.g., data fetching, form handling, state management) (`src/hooks/`).
-    * **State Management (Redux):** Redux Toolkit slices define how the application state is managed and updated (`src/store/slices/`).
-    * **API Services:** The `apiService` handles communication with the API layer, abstracting away the details of HTTP requests (`src/lib/api/api-service.ts`).
-    * **Data Transformation:** Logic for processing and transforming data, especially within the pipeline designer (e.g., `src/lib/convertUIToPipelineJson.ts`, `src/lib/transformationUtils.ts`).
+python-repl
+Copy
+31    const { handleLayoutChange } = useLayoutPersistence({
+...
+112   const initialLayout = renderableWidgets.map((widget, index) => ({
+      i: widget.id.toString(),
+      x: (index % 2) * DEFAULT_WIDGET_WIDTH,
+      y: Math.floor(index / 2) * DEFAULT_WIDGET_HEIGHT,
+...
+129        layouts={{
+130          lg: initialLayout,
+131          md: initialLayout,
+...
 
-### 2.3 API Layer (Backend)
+Because the stored layout isn’t reapplied, refreshing the page resets widget positions and sizes.
 
-* **Technology:** (Not explicitly defined in the provided code, but would typically be a backend framework like Node.js with Express, Python with Flask/Django, or Java with Spring)
-* **Purpose:** Provides an interface for the frontend to access data and perform operations.  It handles requests, processes data, and interacts with the data storage layer.
-* **Endpoints:**
-    * Data Catalog API:  For managing and retrieving data source information.
-    * Pipeline API:  For creating, retrieving, updating, and deleting data pipelines.
-    * DataOps API:  For monitoring and managing data processing jobs.
-    * Admin API:  For user, project, and environment management.
-    * Agent API:  For AI-powered features (if present).
-* **Authentication and Authorization:** Keycloak integration is used to secure API endpoints.
+To keep layout changes across refreshes you could:
 
-### 2.4 Data Storage Layer
+Use the layouts returned by useLayoutPersistence when rendering <ResponsiveGridLayout>—falling back to initialLayout only if no saved layout exists.
 
-* **Technology:** (Not explicitly defined, but could include databases like PostgreSQL, MySQL, cloud storage like AWS S3 or Google Cloud Storage)
-* **Purpose:** Responsible for storing and retrieving the application's data.
-* **Components:**
-    * Databases: For structured data (e.g., user accounts, metadata).
-    * File Storage: For storing files (e.g., data files, pipeline definitions).
-
-## 3. Component Diagram (Example - Focus on Data Pipeline Designer)
-
-[UI Component: PipelineDesignerPage]
-|
-+-----> [Hook: useFlowOperations]  (Manages flow interactions)
-|         |
-|         +-----> [Hook: useNodeOperations] (Manages node operations)
-|         |
-|         +-----> [Service: LocalStorageService] (Saves/loads flows)
-|
-+-----> [Component: NodeForm]  (Displays node properties)
-|         |
-|         +-----> [Hook: useFormValidation] (Validates form input)
-|         |
-|         +-----> [Utility: updateFlowDefinitionOnServer] (Updates flow definition)
-|
-+-----> [Utility: convertUIToPipelineJson] (Converts UI to pipeline JSON)
-+-----> [Utility: validatePipelineConnections] (Validates pipeline connections)
-+-----> [API Service: apiService] (For API calls)
-
-
-## 4. Technology Stack
-
-* **Frontend:**
-    * React
-    * TypeScript
-    * Redux Toolkit
-    * React Router
-    * Tailwind CSS
-    * d3-interpolate (for color interpolation)
-    * lucide-react (for icons)
-    * reactflow (for flow designer)
-    * sonner (for toast notifications)
-* **Backend:** (Inferred - needs clarification)
-    * (Potentially Node.js with Express, Python with Flask/Django, or Java with Spring)
-* **Database:** (Inferred - needs clarification)
-    * (Potentially PostgreSQL, MySQL, etc.)
-* **Authentication:**
-    * Keycloak
-
-## 5. Deployment
-
-* (Details about deployment environment, infrastructure, and process would go here.)
-
-## 6. Key Design Principles
-
-* **Modularity:** The application is divided into modules (features) to promote code organization and reusability.
-* **Separation of Concerns:** Each layer has a specific responsibility, making the code easier to understand and maintain.
-* **Component-Based Architecture:** The UI is built using reusable React components.
-* **API-Driven:** The frontend interacts with the backend through well-defined APIs.
-* **State Management:** Redux Toolkit is used to manage application state in a predictable way.
-
-## 7. Future Considerations
-
-* (Potential improvements or extensions to the architecture)
-
-**Important Notes:**
-
-* **Backend Clarification:** The provided code mainly focuses on the frontend. A complete architecture document would need to specify the backend technology and architecture in detail.
-* **Database Details:** The database schema and technology should be documented.
-* **Diagrams:** More detailed diagrams (e.g., deployment diagrams, sequence diagrams) would enhance this document.
-* **Scalability and Performance:** Considerations for scalability and performance should be explicitly addressed.
+Optionally persist the updated layout to the backend (e.g., by extending updateWidgetLayout to make an API call) if cross‑device persistence is needed.

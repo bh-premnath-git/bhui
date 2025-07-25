@@ -39,6 +39,19 @@ export const AppRoutes = () => {
       />
       <Route path={ROUTES.LOGIN} element={<Login />} />
 
+      {/* Tenant-specific route - shows same content as root but allows tenant extraction */}
+      <Route
+        path="/tenant/:tenantId"
+        element={
+          <>
+            <Navbar />
+            <div className="flex-1">
+              <Index />
+            </div>
+          </>
+        }
+      />
+
       {/* Protected Routes */}
       <Route
         element={

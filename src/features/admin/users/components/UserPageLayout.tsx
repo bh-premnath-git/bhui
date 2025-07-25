@@ -12,7 +12,7 @@ export function UserPageLayout({ description, children }: UserPageLayoutProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-4xl mx-auto p-2 m-4">
+    <div className="max-w-6xl mx-auto p-2 m-4">
       <div className="flex justify-between items-start mb-2">
         <div>
           <p className="text-muted-foreground mt-5">{description}</p>

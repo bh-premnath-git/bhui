@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { MONITOR_REMOTE_URL } from "@/config/platformenv";
 import { X, Eye, Edit2, User, Save } from "lucide-react";
- 
+
 type DialogProps = {
   open: boolean;
   mode: "assign" | "resolve";
@@ -15,7 +15,7 @@ type DialogProps = {
   currentResolution?: string[] | any;
   alertId?: string;
 };
- 
+
 export function FlexibleDialog({
   open,
   mode,
@@ -30,17 +30,17 @@ export function FlexibleDialog({
   const [correctionPlan, setCorrectionPlan] = useState("");
   const [preventionPlan, setPreventionPlan] = useState("");
   const [isViewMode, setIsViewMode] = useState(false);
- 
+
   const { alertHub, updateAlert } = useAlertHub();
   const queryClient = useQueryClient();
- 
+
   useEffect(() => {
     setUser(currentUser);
- 
+
     if (currentResolution) {
       try {
         let resolutionData: any;
- 
+
         if (Array.isArray(currentResolution) && currentResolution.length > 0) {
           const firstItem = currentResolution[0];
           if (typeof firstItem === "string") {
@@ -61,7 +61,7 @@ export function FlexibleDialog({
         } else {
           resolutionData = currentResolution;
         }
- 
+
         setCorrectionPlan(resolutionData.correction_plan || "");
         setPreventionPlan(resolutionData.prevention_plan || "");
         setIsViewMode(true);
@@ -76,25 +76,25 @@ export function FlexibleDialog({
       setIsViewMode(false);
     }
   }, [open, currentUser, currentResolution]);
- 
+
   if (!open) return null;
- 
+
   const handleSubmit = async () => {
     if (mode === "assign") {
       if (!user || !onAssign) return;
- 
+
       try {
         if (alertId) {
           await updateAlert.mutateAsync({
             alert_Id: alertId,
             assigned_to: user,
           });
- 
+
           toast.success("Alert assigned successfully!");
           await queryClient.invalidateQueries({
             queryKey: ["alert", "list"],
           });
- 
+
           onAssign(user);
           onClose();
         }
@@ -107,14 +107,14 @@ export function FlexibleDialog({
         toast.error("Please enter both correction plan and prevention plan.");
         return;
       }
-     
+
       const existing =
         typeof currentResolution === "string"
           ? JSON.parse(currentResolution)
           : Array.isArray(currentResolution)
-          ? currentResolution[0]
-          : currentResolution;
- 
+            ? currentResolution[0]
+            : currentResolution;
+
       if (
         correctionPlan.trim() === (existing?.correction_plan ?? "").trim() &&
         preventionPlan.trim() === (existing?.prevention_plan ?? "").trim()
@@ -122,24 +122,23 @@ export function FlexibleDialog({
         toast.warning("No changes detected in resolution.");
         return;
       }
- 
+
       try {
         if (alertId) {
-          const resolutionData = {
-            correction_plan: correctionPlan,
-            prevention_plan: preventionPlan,
-          };
- 
+
           await updateAlert.mutateAsync({
             alert_Id: alertId,
-            resolution_reason: resolutionData,
+            resolution_reason: {
+              "correction_plan": correctionPlan,
+              "prevention_plan": preventionPlan,
+            },
           } as any);
- 
+
           toast.success("Alert resolved successfully!");
           await queryClient.invalidateQueries({
             queryKey: ["alert", "list"],
           });
- 
+
           onResolve?.(correctionPlan, preventionPlan);
           onClose();
         }
@@ -149,42 +148,42 @@ export function FlexibleDialog({
       }
     }
   };
- 
+
   const toggleEditMode = () => {
     setIsViewMode(!isViewMode);
   };
- 
+
   const userList =
     alertHub?.length > 0
       ? [...new Set(alertHub.map((alert) => alert.created_by))].map((user) => ({
-          created_by: user,
-        }))
+        created_by: user,
+      }))
       : [];
- 
-     
+
+
   const isAssignDisabled = mode === "assign" && (!user || user === currentUser);
   const isResolveDisabled =
     mode === "resolve" &&
-    (!correctionPlan.trim() || !preventionPlan.trim() ||(correctionPlan.trim() ===
-        (typeof currentResolution === "string"
-          ? JSON.parse(currentResolution)?.correction_plan?.trim()
-          : currentResolution?.[0]?.correction_plan?.trim() || currentResolution?.correction_plan?.trim()) &&
-        preventionPlan.trim() ===
-          (typeof currentResolution === "string"
-            ? JSON.parse(currentResolution)?.prevention_plan?.trim()
-            : currentResolution?.[0]?.prevention_plan?.trim() || currentResolution?.prevention_plan?.trim())));
- 
- 
+    (!correctionPlan.trim() || !preventionPlan.trim() || (correctionPlan.trim() ===
+      (typeof currentResolution === "string"
+        ? JSON.parse(currentResolution)?.correction_plan?.trim()
+        : currentResolution?.[0]?.correction_plan?.trim() || currentResolution?.correction_plan?.trim()) &&
+      preventionPlan.trim() ===
+      (typeof currentResolution === "string"
+        ? JSON.parse(currentResolution)?.prevention_plan?.trim()
+        : currentResolution?.[0]?.prevention_plan?.trim() || currentResolution?.prevention_plan?.trim())));
+
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50  dark:text-black" >
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-lg font-semibold mt-1">
-            {mode === "assign"? "Assign To": isViewMode? "View Resolution"
+            {mode === "assign" ? "Assign To" : isViewMode ? "View Resolution"
               : "Add Resolution"}
           </h2>
- 
+
           <div className="flex gap-2">
             {mode === "resolve" && currentResolution && (
               <button
@@ -204,7 +203,7 @@ export function FlexibleDialog({
             </button>
           </div>
         </div>
- 
+
         {/* Assign dropdown */}
         {mode === "assign" && (
           <select
@@ -220,7 +219,7 @@ export function FlexibleDialog({
             ))}
           </select>
         )}
- 
+
         {/* Resolve fields */}
         {mode === "resolve" && (
           <>
@@ -248,27 +247,26 @@ export function FlexibleDialog({
             </div>
           </>
         )}
- 
+
         {/* Submit / Assign button */}
         {!isViewMode && (
           <div className="flex justify-end gap-2">
             <button
               onClick={handleSubmit}
               disabled={updateAlert.isPending || isAssignDisabled || isResolveDisabled}
-              className={`flex items-center gap-2 px-4 py-2 text-white rounded transition ${
-                updateAlert.isPending || isAssignDisabled || isResolveDisabled
+              className={`flex items-center gap-2 px-4 py-2 text-white rounded transition ${updateAlert.isPending || isAssignDisabled || isResolveDisabled
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-black hover:bg-gray-800"
-              }`}
+                }`}
               aria-label={mode === "assign" ? "Assign" : "Submit"}
             >
               {updateAlert.isPending
                 ? "Submitting..."
                 : mode === "assign"
-                ?
-                    <User size={16} />
-                :
-                    <Save size={16} />
+                  ?
+                  <User size={16} />
+                  :
+                  <Save size={16} />
               }
             </button>
           </div>

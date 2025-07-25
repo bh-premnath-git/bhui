@@ -30,7 +30,7 @@ export interface Environment {
   airflow_env_name: string | null;
   access_key: string | null;
   bh_project_id: string | null;
-  bh_env_provider_name: string;
+  cloud_provider: string;
   cloud_provider_name: string;
   secret_access_key: string | null;
   cloud_provider_alias: string | null;
@@ -51,15 +51,15 @@ export function isValidEnvironmentType(type: string): type is EnvironmentType {
 
 export interface EnvironmentMutationData {
   bh_env_name: string;
-  bh_env_provider: number;
-  cloud_provider_cd: number;
-  location: string;
-  cloud_region_cd: number;
+  bh_env_type: string;
+  cloud_provider: string;
+  cloud_region: string;
   project_id: string;
   access_key: string;
   secret_access_key: string;
   pvt_key: string;
-  airflow_url: string;
+  airflow_env_url: string;
+  airflow_env_type: string;
   airflow_bucket_name: string;
   airflow_env_name: string;
   status: "active" | "inactive";

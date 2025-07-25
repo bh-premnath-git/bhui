@@ -1,3 +1,4 @@
+import { USE_SECURE } from "@/config/platformenv";
 import { useRef, useCallback } from "react";
 
 type UseEventStreamProps = {
@@ -20,14 +21,22 @@ export function useEventStream({ url, token, onMessage }: UseEventStreamProps) {
     controllerRef.current = controller;
 
     try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "text/event-stream",
-        },
-        signal: controller.signal,
-      });
+    const params: Record<string, string> = {
+  use_secure: USE_SECURE,
+};
+
+const queryString = new URLSearchParams(params).toString();
+const fullUrl = `${url}?${queryString}`; // 👈 Append query string here
+
+const res = await fetch(fullUrl, {
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    Accept: "text/event-stream",
+  },
+  signal: controller.signal,
+});
+
 
       if (!res.ok || !res.body) {
         throw new Error(`Failed to connect: ${res.statusText}`);

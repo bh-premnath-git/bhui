@@ -87,11 +87,6 @@ export function DataCatalog({
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setDatasourceToDelete(null);
-  }; 
-
   // Refetch data when sheet is closed
   useEffect(() => {
     if (!isSheetOpen && onRefetch) {

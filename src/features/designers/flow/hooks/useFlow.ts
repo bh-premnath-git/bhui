@@ -14,6 +14,10 @@ interface ApiErrorOptions {
   silent?: boolean;
 }
 
+const isValidFlowId = (flowId: string | null | undefined): flowId is string => {
+  return typeof flowId === 'string' && flowId.trim().length > 0;
+};
+
 const handleApiError = (error: unknown, options: ApiErrorOptions) => {
   const { action, context = 'flow', silent = false } = options;
   const errorMessage = `Failed to ${action} ${context}`;
@@ -56,14 +60,27 @@ export const useFlow = () => {
     });
 
   // If you want to fetch a single flow by ID:
-  const useFetchFlowById = (flowId: string, enabled = true) =>
-    getFlow({
+  const useFetchFlowById = (flowId: string | null | undefined, enabled = true) => {
+    // Validate flowId before making API call
+    if (!isValidFlowId(flowId)) {
+      console.warn('useFetchFlowById: Invalid or missing flowId, skipping API call', { flowId });
+      return getFlow({
+        url: '/flow/invalid', // This will never be called due to enabled: false
+        queryOptions: {
+          enabled: false, // Disable the query
+          retry: 0
+        }
+      });
+    }
+
+    return getFlow({
       url: `/flow/${flowId}`,
       queryOptions: {
-        enabled,
+        enabled: enabled && isValidFlowId(flowId),
         retry: 2
       }
     });
+  };
 
   // Create Flow Mutation
   const createFlowMutation = createFlow({
@@ -106,17 +123,43 @@ export const useFlow = () => {
   });
 
   // Type-safe mutation handlers
-  const handleUpdateFlow = useCallback(async (flowId: string, data: FlowMutationData) => {
-    await updateFlowMutation.mutateAsync({
-      data,
-      url: `/flow/${flowId}/`
-    });
+  const handleUpdateFlow = useCallback(async (flowId: string | null | undefined, data: FlowMutationData) => {
+    // Validate flowId before making API call
+    if (!isValidFlowId(flowId)) {
+      const error = new Error(`Invalid flowId provided for update: ${flowId}`);
+      console.error('handleUpdateFlow: Invalid or missing flowId', { flowId });
+      toast.error('Cannot update flow: Invalid flow ID');
+      throw error;
+    }
+
+    try {
+      await updateFlowMutation.mutateAsync({
+        data,
+        url: `/flow/${flowId}/`
+      });
+    } catch (error) {
+      console.error('handleUpdateFlow: API call failed', { flowId, error });
+      throw error;
+    }
   }, [updateFlowMutation]);
 
-  const handleDeleteFlow = useCallback(async (flowId: string) => {
-    await deleteFlowMutation.mutateAsync({
-      params: { flowId }
-    });
+  const handleDeleteFlow = useCallback(async (flowId: string | null | undefined) => {
+    // Validate flowId before making API call
+    if (!isValidFlowId(flowId)) {
+      const error = new Error(`Invalid flowId provided for deletion: ${flowId}`);
+      console.error('handleDeleteFlow: Invalid or missing flowId', { flowId });
+      toast.error('Cannot delete flow: Invalid flow ID');
+      throw error;
+    }
+
+    try {
+      await deleteFlowMutation.mutateAsync({
+        url: `/flow/${flowId}/`
+      });
+    } catch (error) {
+      console.error('handleDeleteFlow: API call failed', { flowId, error });
+      throw error;
+    }
   }, [deleteFlowMutation]);
 
   return {
@@ -133,17 +176,25 @@ export const useFlowSearch = () => {
   const { getOne } = useResource<Flow[]>('flows', CATALOG_REMOTE_API_URL, true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const searchFlow = (query: string, enabled = true) =>
-    getOne({
+  const searchFlow = (query: string, enabled = true) => {
+    // Validate search query before making API call
+    const isValidQuery = typeof query === 'string' && query.trim().length > 0;
+    
+    if (!isValidQuery && enabled) {
+      console.warn('searchFlow: Invalid or empty search query, skipping API call', { query });
+    }
+
+    return getOne({
       url: '/flow/flow/search',
       params: { flow_name: query },
       queryOptions: {
-        enabled,
+        enabled: enabled && isValidQuery,
         retry: 2
       },
     });
+  };
 
-  const { data: searchResults, isLoading } = searchFlow(searchQuery, !!searchQuery);
+  const { data: searchResults, isLoading } = searchFlow(searchQuery, !!searchQuery && searchQuery.trim().length > 0);
 
   const flowFound = searchResults && searchResults.length > 0;
   const flowNotFound = searchResults && searchResults.length === 0;

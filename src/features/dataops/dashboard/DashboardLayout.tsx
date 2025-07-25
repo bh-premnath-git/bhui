@@ -28,7 +28,7 @@ const GridLayout = () => {
     setMeasurementKey(prev => prev + 1);
   }, [isRightAsideOpen]);
   
-  const { handleLayoutChange } = useLayoutPersistence({
+  const { layouts, handleLayoutChange } = useLayoutPersistence({
     storageKey: LAYOUT_STORAGE_KEY,
     dashboard: selectedDashboard,
     defaultDimensions: {
@@ -90,6 +90,22 @@ const GridLayout = () => {
     }
   };
 
+  const initialLayout = renderableWidgets.map((widget, index) => ({
+    i: widget.id.toString(),
+    x: (index % 2) * DEFAULT_WIDGET_WIDTH,
+    y: Math.floor(index / 2) * DEFAULT_WIDGET_HEIGHT,
+    w: DEFAULT_WIDGET_WIDTH,
+    h: DEFAULT_WIDGET_HEIGHT,
+    minW: 3,
+    minH: 3,
+    maxW: 12,
+    maxH: 8
+  }));
+
+  const finalLayouts = useMemo(() => {
+    return layouts && layouts.lg?.length ? layouts : { lg: initialLayout };
+  }, [layouts, initialLayout]);
+
   if (renderableWidgets.length === 0) {
     return (
       <div className="min-h-[300px] flex flex-col items-center justify-center bg-card border rounded-lg">
@@ -108,30 +124,12 @@ const GridLayout = () => {
     );
   }
 
-  const initialLayout = renderableWidgets.map((widget, index) => ({
-    i: widget.id.toString(),
-    x: (index % 2) * DEFAULT_WIDGET_WIDTH,
-    y: Math.floor(index / 2) * DEFAULT_WIDGET_HEIGHT,
-    w: DEFAULT_WIDGET_WIDTH,
-    h: DEFAULT_WIDGET_HEIGHT,
-    minW: 3,
-    minH: 3,
-    maxW: 12,
-    maxH: 8
-  }));
-
   return (
     <div className="mt-1">
     <ResponsiveGridLayout
       className="layout bg-muted/70 dark:bg-muted/45 p-1 rounded-md"
       key={measurementKey} 
-      layouts={{
-        lg: initialLayout,
-        md: initialLayout,
-        sm: initialLayout,
-        xs: initialLayout,
-        xxs: initialLayout
-      }}
+      layouts={finalLayouts}
       breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
       cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
       rowHeight={65}

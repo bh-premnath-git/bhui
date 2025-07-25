@@ -15,6 +15,17 @@ import { Loader, Trash2 } from "lucide-react";
 import { useFlow } from '@/features/designers/flow/hooks/useFlow';
 import type { Flow } from "@/types/designer/flow";
 
+const isValidFlowId = (flowId: number | string | null | undefined): boolean => {
+    if (typeof flowId === 'number') {
+        return flowId > 0;
+    }
+    if (typeof flowId === 'string') {
+        const numId = parseInt(flowId, 10);
+        return !isNaN(numId) && numId > 0;
+    }
+    return false;
+};
+
 type DeleteFlowDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -29,12 +40,25 @@ export function DeleteFlowDialog({ open, onOpenChange, onSuccess }: DeleteFlowDi
 
 
     const handleDelete = async () => {
-        if (!selectedFlow) return;
+        if (!selectedFlow) {
+            console.warn('DeleteFlowDialog: No flow selected for deletion');
+            return;
+        }
+
+        // Validate flow ID before attempting deletion
+        if (!isValidFlowId(selectedFlow.flow_id)) {
+            console.error('DeleteFlowDialog: Cannot delete flow with invalid ID', { flowId: selectedFlow.flow_id });
+            onOpenChange(false);
+            return;
+        }
+
         setIsDeleting(true);
         try {
             await handleDeleteFlow(selectedFlow.flow_id.toString());
             onOpenChange(false);
             onSuccess?.();
+        } catch (error) {
+            console.error('DeleteFlowDialog: Failed to delete flow', { flowId: selectedFlow.flow_id, error });
         } finally {
             setIsDeleting(false);
         }

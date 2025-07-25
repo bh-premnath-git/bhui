@@ -8,7 +8,7 @@ import { Toaster } from 'sonner';
 export function Xplorer() {
   const { messages, isStreaming, handleSubmitQuestion, handleSuggestedQuestion } = useAnalytics();
   const { questions: suggestedQuestions } = useSuggestedDataopsQuestions();
-  const suggestedQuestionsArray = suggestedQuestions.map(q => q.text);
+  const suggestedQuestionsArray = suggestedQuestions?.map(q => q.text) || [];
 
   return (
     <>

@@ -27,6 +27,10 @@ import { parseStringifiedJson } from '@/lib/object';
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
+const isValidFlowId = (flowId: string | null | undefined): flowId is string => {
+  return typeof flowId === 'string' && flowId.trim().length > 0;
+};
+
 const NODE_SPACING = 120;
 const INITIAL_POSITION = { x: 50, y: 140 };
 
@@ -147,9 +151,12 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   // Update the hasFlowConfig effect to use flowConfigMap
   useEffect(() => {
-    // Skip this effect if there's no selectedFlowId
-    if (!selectedFlowId) {
+    // Skip this effect if there's no valid selectedFlowId
+    if (!isValidFlowId(selectedFlowId)) {
       setHasFlowConfig(false);
+      if (selectedFlowId) {
+        console.warn('FlowContext: Invalid flow ID provided for config check', { selectedFlowId });
+      }
       return;
     }
     
@@ -180,7 +187,12 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   const prevNodeFn = useCallback(
     (nodeId: string): string[] | undefined => {
-      if (!selectedFlowId) return undefined;
+      if (!isValidFlowId(selectedFlowId)) {
+        if (selectedFlowId) {
+          console.warn('FlowContext: Invalid flow ID in prevNodeFn', { selectedFlowId, nodeId });
+        }
+        return undefined;
+      }
       
       const incomingEdges = edges.filter((edge) => edge.target === nodeId);
       if (incomingEdges.length === 0) return undefined;

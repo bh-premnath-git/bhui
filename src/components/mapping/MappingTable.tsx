@@ -201,7 +201,7 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-connection-selected" disabled>
                           Select connection first
                         </SelectItem>
                       )}
@@ -225,7 +225,7 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-table-selected" disabled>
                           Select table first
                         </SelectItem>
                       )}
@@ -249,7 +249,7 @@ const MappingTable: React.FC<MappingTableProps> = ({ mappings, setMappings }) =>
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-source-connection-selected" disabled>
                           Select connection first
                         </SelectItem>
                       )}

@@ -8,6 +8,8 @@ import { ChatChartView } from '@/components/shared/chat-components/ChatChartView
 import { ChatTableView } from '@/components/shared/chat-components/ChatTableView';
 import { DashboardSelect } from './DashboardSelect';
 import { useDashboardSelector } from '@/hooks/useDashboardSelector';
+import { ChartToolbar } from './ChartToolbar';
+import { COLOR_THEMES } from '@/components/bh-charts/ChartTypes';
 
 // Chart Data Interfaces
 interface ChartRecommendation {
@@ -56,6 +58,8 @@ interface ChartData {
   graph_config: GraphConfig;
   graph_data: GraphDataPoint[];
   metadata: Metadata;
+  layout?: any;
+  data?: any[];
 }
 
 interface AIDataVisualizerProps {
@@ -78,6 +82,8 @@ export function AIDataVisualizer({
   const [activeTab, setActiveTab] = useState<'chart' | 'sql' |'table' | 'explanation'>('chart');
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
+  const [chartType, setChartType] = useState('bar');
+  const [colorTheme, setColorTheme] = useState('default');
   
   // Explorer-specific states
   const [selectedDashboardId, setSelectedDashboardId] = useState<string>("102");
@@ -96,36 +102,64 @@ export function AIDataVisualizer({
   }), [chart, sql, data]);
 
   useEffect(() => {
-    if (chart?.content) {
-      try {
-        // Check if it's a string with JSON inside markdown code blocks
-        if (typeof chart.content === 'object' && Array.isArray(chart.content.data) && chart.content.layout) {
-          const parsed = chart.content
-          setChartMetadata(parsed);
-        } 
-      } catch (error) {
-        console.error("Error parsing chart data:", error);
-      }
+    if (chart && chart.chart_metadata) {
+      setChartMetadata(chart.chart_metadata);
+      setChartType(chart.chart_metadata.chart_type || 'bar');
     }
-  }, [chart]);
+    if (data && data.table_data) {
+      setFormattedTableData(data.table_data);
+    }
+  }, [sql, data, chart]);
 
-  // Format table data from column-based to row-based objects
-  useEffect(() => {
-    if (data?.content?.column_names && data?.content?.column_values) {
-      const columnNames = data.content.column_names;
-      const rows = data.content.column_values;
-
-      const formatted = rows.map((row: any[]) => {
-        const rowObj: Record<string, any> = {};
-        columnNames.forEach((colName: string, index: number) => {
-          rowObj[colName] = row[index];
-        });
-        return rowObj;
+  const handleAddToDashboardClick = () => {
+    if (variant === 'explorer') {
+      setShowDashboardSelect(!showDashboardSelect);
+    } else if (onAddToDashboard && chartMetadata) {
+      onAddToDashboard({
+        sql: sql?.sql_query,
+        chartMetadata: chartMetadata,
+        data: formattedTableData,
       });
-
-      setFormattedTableData(formatted);
     }
-  }, [data]);
+  };
+
+  const handleDashboardSelected = (dashboardId: string) => {
+    if (onAddToDashboard && chartMetadata) {
+      onAddToDashboard({
+        sql: sql?.sql_query,
+        chartMetadata: chartMetadata,
+        data: formattedTableData,
+        dashboardId: dashboardId
+      });
+    }
+    setShowDashboardSelect(false);
+  };
+
+  const dynamicChartData = useMemo(() => {
+    if (!chartMetadata) return null;
+
+    const themeColors = COLOR_THEMES[colorTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES.default;
+
+    return {
+      ...chartMetadata,
+      layout: {
+        ...chartMetadata.layout,
+        colorway: themeColors,
+      },
+      data: chartMetadata.data.map((trace: any) => ({
+        ...trace,
+        type: chartType,
+      })),
+    };
+  }, [chartMetadata, chartType, colorTheme]);
+
+  const availableTabs = useMemo(() => {
+    const tabs = [];
+    if (chart) tabs.push({ value: 'chart', label: 'Chart', icon: BarChart4 });
+    if (sql) tabs.push({ value: 'sql', label: 'SQL', icon: Code });
+    if (data) tabs.push({ value: 'table', label: 'Table', icon: TableIcon });
+    return tabs;
+  }, [chart, sql, data]);
 
   if (!sql && !data && !chart) return null;
 
@@ -141,24 +175,12 @@ export function AIDataVisualizer({
           <h4 className="font-medium text-sm">{title}</h4>
           <div className="flex items-center space-x-2">
             <TabsList className="h-8 p-1">
-              {chart && (
-                <TabsTrigger value="chart" className="h-6 px-2 text-xs">
-                  <BarChart4 className="h-3.5 w-3.5 mr-1" />
-                  Chart
+              {availableTabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="h-6 px-2 text-xs">
+                  <tab.icon className="h-3.5 w-3.5 mr-1" />
+                  {tab.label}
                 </TabsTrigger>
-              )}
-              {sql && (
-                <TabsTrigger value="sql" className="h-6 px-2 text-xs">
-                  <Code className="h-3.5 w-3.5 mr-1" />
-                  SQL
-                </TabsTrigger>
-              )}
-              {data && (
-                <TabsTrigger value="table" className="h-6 px-2 text-xs">
-                  <TableIcon className="h-3.5 w-3.5 mr-1" />
-                  Table
-                </TabsTrigger>
-              )}
+              ))}
             </TabsList>
 
             {onAddToDashboard && chartMetadata && variant === 'explorer' ? (
@@ -207,8 +229,8 @@ export function AIDataVisualizer({
                         onClick={() => {
                           onAddToDashboard({
                             chartMetadata, 
-                            sql: sql?.content, 
-                            data: data?.content,
+                            sql: sql?.sql_query, 
+                            data: data?.table_data,
                             dashboardId: selectedDashboardId
                           });
                           
@@ -234,7 +256,7 @@ export function AIDataVisualizer({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onAddToDashboard({ chartMetadata, sql: sql.content, data: data.content })}
+                onClick={() => onAddToDashboard({ chartMetadata, sql: sql.sql_query, data: data.table_data })}
                 className="h-8 text-xs"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
@@ -245,7 +267,7 @@ export function AIDataVisualizer({
         </div>
 
         <AnimatePresence mode="wait">
-        {chart && (
+          {chart && (
             <TabsContent value="chart" className="p-4">
               <motion.div
                 key={tabIds.chart}
@@ -254,11 +276,20 @@ export function AIDataVisualizer({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {chartMetadata && <ChatChartView data={chartMetadata} />}
+                {chartMetadata && (
+                  <>
+                    <ChartToolbar 
+                      currentChartType={chartType}
+                      onChartTypeChange={setChartType}
+                      selectedTheme={colorTheme}
+                      onColorThemeChange={setColorTheme}
+                    />
+                    <ChatChartView data={dynamicChartData} />
+                  </>
+                )}
               </motion.div>
             </TabsContent>
           )}
-
           {sql && (
             <TabsContent value="sql" className="p-4">
               <motion.div
@@ -268,7 +299,7 @@ export function AIDataVisualizer({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChatSQLView sql={sql.content} />
+                <ChatSQLView sql={sql.sql_query} />
               </motion.div>
             </TabsContent>
           )}

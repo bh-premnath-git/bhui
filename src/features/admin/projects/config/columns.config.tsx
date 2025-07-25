@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ROUTES } from '@/config/routes';
 import { useNavigation } from '@/hooks/useNavigation';
 import { PlusIcon, FolderGit2 } from 'lucide-react';
+import { formatTimestamp } from '@/lib/date-format';
 
 const columnHelper = createColumnHelper<Project>();
 
@@ -29,6 +30,14 @@ const columns: ColumnDefWithFilters<Project>[] = [
       );
     },
     enableColumnFilter: true,
+  }),
+  columnHelper.accessor('created_at', {
+    header: 'Created On',
+    cell: ({ row }) => {
+      const timestamp = row.getValue('created_at') as string;
+      return formatTimestamp(timestamp);
+    },
+    enableColumnFilter: false,
   }),
 ];
 

@@ -13,6 +13,17 @@ import { useFlow as useFlowCtx } from '@/context/designers/FlowContext'
 import { setCurrentFlow, setSelectedFlow } from '@/store/slices/designer/flowSlice';
 import { useDispatch } from 'react-redux';
 
+const isValidFlowId = (flowId: number | string | null | undefined): boolean => {
+  if (typeof flowId === 'number') {
+    return flowId > 0;
+  }
+  if (typeof flowId === 'string') {
+    const numId = parseInt(flowId, 10);
+    return !isNaN(numId) && numId > 0;
+  }
+  return false;
+};
+
 export function FlowList({ flows, onFlowsRefresh }: { flows: Flow[], onFlowsRefresh?: () => void }) {
   const { setSelectedFlowId } = useFlowCtx();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -49,12 +60,21 @@ export function FlowList({ flows, onFlowsRefresh }: { flows: Flow[], onFlowsRefr
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const onRowClickHandler = (row: Row<Flow>) => {
-    flowSrv.selectedFlow(row.original);
-    console.log(row)
-    dispatch(setCurrentFlow(row.original));
+    const flow = row.original;
+    
+    // Validate flow ID before proceeding
+    if (!isValidFlowId(flow.flow_id)) {
+      console.error('ManageFlow: Cannot navigate to flow with invalid ID', { flowId: flow.flow_id });
+      return;
+    }
 
-    setSelectedFlowId(row.original.flow_id.toString());
-    handleNavigation(ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(row.original.flow_id.toString()));
+    flowSrv.selectedFlow(flow);
+    console.log(row);
+    dispatch(setCurrentFlow(flow));
+
+    const flowIdStr = flow.flow_id.toString();
+    setSelectedFlowId(flowIdStr);
+    handleNavigation(ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(flowIdStr));
   }
   
   // Handle page change

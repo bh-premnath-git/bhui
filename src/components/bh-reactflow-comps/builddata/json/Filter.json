@@ -4121,6 +4121,7 @@
                                                     "description": "List of column names to select from the dataset",
                                                     "items": {
                                                         "type": "string",
+                                                        "ui-hint": "auto-complete",
                                                         "minLength": 1
                                                     },
                                                     "uniqueItems": true
@@ -4130,6 +4131,7 @@
                                                     "description": "List of column names to drop from the dataset",
                                                     "items": {
                                                         "type": "string",
+                                                        "ui-hint": "auto-complete",
                                                         "minLength": 1
                                                     },
                                                     "uniqueItems": true
@@ -4215,7 +4217,8 @@
                                                         "type": "object",
                                                         "properties": {
                                                             "column": {
-                                                                "type": "string"
+                                                                "type": "string",
+                                                                "ui-hint": "auto-complete"
                                                             },
                                                             "order": {
                                                                 "type": "string",
@@ -4267,27 +4270,29 @@
                                                     "uniqueItems": true,
                                                     "minItems": 1,
                                                     "items": {
-                                                        "join_input": {
-                                                            "type": "string",
-                                                            "minLength": 1,
-                                                            "description": "The name of input dataframe to join"
-                                                        },
-                                                        "join_condition": {
-                                                            "type": "string",
-                                                            "minLength": 1,
-                                                            "ui-hint": "expression"
-                                                        },
-                                                        "join_type": {
-                                                            "type": "string",
-                                                            "minLength": 1,
-                                                            "enum": [
-                                                                "inner",
-                                                                "left",
-                                                                "right",
-                                                                "full",
-                                                                "left_semi",
-                                                                "left_anti"
-                                                            ]
+                                                        "properties": {
+                                                            "join_input": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "description": "The name of input dataframe to join"
+                                                            },
+                                                            "join_condition": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "ui-hint": "expression"
+                                                            },
+                                                            "join_type": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "enum": [
+                                                                    "inner",
+                                                                    "left",
+                                                                    "right",
+                                                                    "full",
+                                                                    "left_semi",
+                                                                    "left_anti"
+                                                                ]
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -4296,14 +4301,17 @@
                                                     "uniqueItems": true,
                                                     "minItems": 1,
                                                     "items": {
-                                                        "target_column": {
-                                                            "type": "string",
-                                                            "minLength": 1
-                                                        },
-                                                        "expression": {
-                                                            "type": "string",
-                                                            "minLength": 1,
-                                                            "ui-hint": "expression"
+                                                        "properties": {
+                                                            "target_column": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "ui-hint": "auto-complete"
+                                                            },
+                                                            "expression": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "ui-hint": "expression"
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -4375,6 +4383,7 @@
                                                         "properties": {
                                                             "target_column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "minLength": 1
                                                             },
                                                             "expression": {
@@ -4398,6 +4407,7 @@
                                                         "properties": {
                                                             "pivot_column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "minLength": 1
                                                             },
                                                             "pivot_values": {
@@ -4645,6 +4655,7 @@
                                                         "properties": {
                                                             "column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "description": "The column to select."
                                                             },
                                                             "out_column_name": {
@@ -4887,6 +4898,7 @@
                                                         "properties": {
                                                             "column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "minLength": 1
                                                             },
                                                             "order": {
@@ -4986,6 +4998,7 @@
                                                             },
                                                             "column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "minLength": 1
                                                             },
                                                             "column_type": {
@@ -5537,6 +5550,7 @@
                                                         "properties": {
                                                             "column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "minLength": 1
                                                             },
                                                             "order": {
@@ -5649,6 +5663,7 @@
                                                             },
                                                             "column": {
                                                                 "type": "string",
+                                                                "ui-hint": "auto-complete",
                                                                 "minLength": 1
                                                             },
                                                             "column_type": {
@@ -6169,6 +6184,16 @@
                                         "then": {
                                             "$schema": "http://json-schema.org/draft-04/schema#",
                                             "type": "object",
+                                            "ui_properties": {
+                                                "module_name": "Target",
+                                                "color": "#07a260",
+                                                "icon": "/assets/buildPipeline/7.svg",
+                                                "ports": {
+                                                    "inputs": 1,
+                                                    "outputs": 0,
+                                                    "maxInputs": 1
+                                                }
+                                            },
                                             "properties": {
                                                 "name": {
                                                     "type": "string",
@@ -7320,6 +7345,7 @@
                                             "properties": {
                                                 "user_code": {
                                                     "type": "python_editor",
+                                                    "ui-hint": "python_editor",
                                                     "minLength": 1,
                                                     "description": "The Python code to execute for the custom transformation."
                                                 }
@@ -8361,7 +8387,8 @@
                                             "Router",
                                             "SchemaTransformation",
                                             "Writer",
-                                            "Aggregator"
+                                            "Aggregator",
+                                            "Lookup"
                                         ]
                                     },
                                     "limit": {
@@ -12074,6 +12101,187 @@
                                                     }
                                                 }
                                             ]
+                                        }
+                                    },
+                                    {
+                                        "if": {
+                                            "properties": {
+                                                "transformation": {
+                                                    "const": "Lookup"
+                                                }
+                                            }
+                                        },
+                                        "then": {
+                                            "$schema": "https://json-schema.org/draft-07/schema#",
+                                            "description": "Schema for Lookup transformation (PyFlink)",
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "The name of the transformation."
+                                                },
+                                                "dependent_on": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": "List of transformations this transformation depends on."
+                                                },
+                                                "transformation": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "Lookup"
+                                                    ],
+                                                    "description": "The type of transformation."
+                                                },
+                                                "lookup_type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "Column Based",
+                                                        "Literal"
+                                                    ],
+                                                    "description": "The type of lookup to perform."
+                                                },
+                                                "lookup_config": {
+                                                    "type": "object",
+                                                    "description": "Configuration for reading the lookup data (only for Column Based lookup).",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "description": "The name of the lookup configuration."
+                                                        },
+                                                        "source": {
+                                                            "type": "object",
+                                                            "description": "Reference to the source of the lookup data."
+                                                        },
+                                                        "read_options": {
+                                                            "type": "object",
+                                                            "description": "Options for reading the lookup data.",
+                                                            "properties": {
+                                                                "header": {
+                                                                    "type": "boolean",
+                                                                    "default": true,
+                                                                    "description": "Whether the lookup data has a header row."
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "source"
+                                                    ]
+                                                },
+                                                "lookup_data": {
+                                                    "type": "array",
+                                                    "description": "Literal data for lookup (only for Literal lookup).",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "description": "A row of literal data."
+                                                    }
+                                                },
+                                                "lookup_conditions": {
+                                                    "description": "Conditions for joining the main Table with the lookup Table.",
+                                                    "oneOf": [
+                                                        {
+                                                            "type": "array",
+                                                            "description": "Conditions for Column Based lookup.",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "column_name": {
+                                                                        "type": "string",
+                                                                        "description": "The column in the main Table to join on."
+                                                                    },
+                                                                    "lookup_with": {
+                                                                        "type": "string",
+                                                                        "description": "The column in the lookup Table to join with."
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "column_name",
+                                                                    "lookup_with"
+                                                                ]
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "description": "Condition for Literal lookup.",
+                                                            "properties": {
+                                                                "column_name": {
+                                                                    "type": "string",
+                                                                    "description": "The column in the main Table to join on."
+                                                                },
+                                                                "lookup_with": {
+                                                                    "type": "string",
+                                                                    "description": "The column in the literal data to join with."
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "column_name",
+                                                                "lookup_with"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "lookup_columns": {
+                                                    "type": "array",
+                                                    "description": "Columns to select and rename after the lookup.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "column": {
+                                                                "type": "string",
+                                                                "description": "The column to select."
+                                                            },
+                                                            "out_column_name": {
+                                                                "type": "string",
+                                                                "description": "The name of the output column."
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "column",
+                                                            "out_column_name"
+                                                        ]
+                                                    }
+                                                },
+                                                "keep": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "First",
+                                                        "Last",
+                                                        "All"
+                                                    ],
+                                                    "description": "(Optional) Specifies which rows to keep when there are multiple matches in the lookup. Only supported for batch mode or upsert sinks."
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "dependent_on",
+                                                "transformation",
+                                                "lookup_columns",
+                                                "lookup_type",
+                                                "lookup_conditions"
+                                            ],
+                                            "additionalProperties": false,
+                                            "if": {
+                                                "properties": {
+                                                    "lookup_type": {
+                                                        "const": "Column Based"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "required": [
+                                                    "lookup_config",
+                                                    "lookup_conditions"
+                                                ]
+                                            },
+                                            "else": {
+                                                "required": [
+                                                    "lookup_data",
+                                                    "lookup_conditions"
+                                                ]
+                                            }
                                         }
                                     }
                                 ]

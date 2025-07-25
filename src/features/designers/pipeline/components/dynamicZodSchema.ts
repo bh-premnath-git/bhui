@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { SchemaProperty, getActiveFields } from './schemaUtils';
+import { SchemaProperty, getActiveFields, getNestedValue } from './schemaUtils';
 
 /**
  * Generate a Zod schema from a JSON schema property
@@ -91,13 +91,13 @@ export function generateDynamicZodSchema(schema: SchemaProperty) {
       }
 
       const isRequired = required.includes(fieldKey);
-      const fieldValue = data[fieldKey];
+      const fieldValue = getNestedValue(data, fieldKey);
 
       // Check if required field is missing
       if (isRequired && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: [fieldKey],
+          path: fieldKey.includes('.') ? fieldKey.split('.') : [fieldKey],
           message: `${field.title || fieldKey} is required`,
         });
         return;
@@ -117,7 +117,7 @@ export function generateDynamicZodSchema(schema: SchemaProperty) {
           error.issues.forEach((issue) => {
             ctx.addIssue({
               ...issue,
-              path: [fieldKey, ...issue.path],
+              path: fieldKey.includes('.') ? [...fieldKey.split('.'), ...issue.path] : [fieldKey, ...issue.path],
             });
           });
         }

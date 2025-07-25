@@ -56,14 +56,14 @@ function DataCatalogPage() {
       const handleOpenImportSource = () => {
         handleNavigation(`${ROUTES.DATA_CATALOG}/datasource-import`);
       };
-      
+
       const handleImportClick = () => {
         setShowImportSection(!showImportSection);
       };
-  
+
       window.addEventListener("openImportSourceDialog", handleOpenImportSource);
       window.addEventListener("openLocalImport", handleImportClick);
-  
+
       return () => {
         window.removeEventListener("openImportSourceDialog", handleOpenImportSource);
         window.removeEventListener("openLocalImport", handleImportClick);

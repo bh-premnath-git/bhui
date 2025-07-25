@@ -17,6 +17,9 @@ interface ArrayFieldProps {
   isRequired: boolean;
   title: string;
   parentPath?: string;
+  sourceColumns?: Array<{ name: string; dataType: string }>;
+  onExpressionGenerate?: (fieldName: string) => Promise<void>;
+  isGenerating?: boolean;
 }
 
 export const ArrayField: React.FC<ArrayFieldProps> = ({
@@ -26,6 +29,9 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
   isRequired,
   title,
   parentPath,
+  sourceColumns = [],
+  onExpressionGenerate,
+  isGenerating = false,
 }) => {
   const [showDescription, setShowDescription] = useState(false);
   const fullFieldKey = parentPath ? `${parentPath}.${fieldKey}` : fieldKey;
@@ -53,7 +59,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
             const newItem: any = {};
             
             if (properties) {
-              Object.entries(properties).forEach(([propKey, propField]) => {
+              Object.entries(properties).forEach(([propKey, propField]:any) => {
                 newItem[propKey] = getDefaultValueForField(propField);
               });
             }
@@ -163,6 +169,9 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                                         form={form}
                                         isRequired={required.includes(propKey)}
                                         parentPath={`${fullFieldKey}.${index}`}
+                                        sourceColumns={sourceColumns}
+                                        onExpressionGenerate={onExpressionGenerate}
+                                        isGenerating={isGenerating}
                                       />
                                     ))}
                                   </div>
@@ -200,6 +209,9 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                                         form={form}
                                         isRequired={required.includes(propKey)}
                                         parentPath={`${fullFieldKey}.${index}`}
+                                        sourceColumns={sourceColumns}
+                                        onExpressionGenerate={onExpressionGenerate}
+                                        isGenerating={isGenerating}
                                       />
                                     )}
                                   </div>
@@ -227,6 +239,9 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                         field={field.items}
                         form={form}
                         parentPath={fullFieldKey}
+                        sourceColumns={sourceColumns}
+                        onExpressionGenerate={onExpressionGenerate}
+                        isGenerating={isGenerating}
                       />
                     )}
                   </div>

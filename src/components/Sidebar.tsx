@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { shouldShowAdminNavItems } from "@/utils/roleUtils";
 import { useLocation } from "react-router-dom";
-import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft,Home } from "lucide-react";
+import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,9 +37,7 @@ export function Sidebar() {
   const userInfo = getUserInfo();
   const location = useLocation();
   const queryClient = useQueryClient();
-
   const { navigationItems: dynamicBaseItems = [], loading: navLoading } = navigation;
-
   const {
     mutateAsync: createDashboard,
     isPending: creatingReport,
@@ -53,18 +52,24 @@ export function Sidebar() {
   const [editingReportName, setEditingReportName] = useState("");
   const [xplorerSearchTerm, setXplorerSearchTerm] = useState("");
   const [isXplorerOpen, setIsXplorerOpen] = useState(true);
-
+  // Check if user has admin role
+  const showAdminNavItems = shouldShowAdminNavItems(userInfo?.roles || []);
+  
   const navItems = useMemo(() => {
     const items = [];
-      items.push({
-    title: "Home",
-    path: ROUTES.INDEX,
-    icon: Home,
-    showIcon: true,
-    isParent: true,
-  });
+    items.push({
+      title: "Home",
+      path: ROUTES.INDEX,
+      icon: Home,
+      showIcon: true,
+      isParent: true,
+    });
 
+    // Process dynamic navigation items
     dynamicBaseItems.forEach(item => {
+      if (item.path.startsWith(ROUTES.ADMIN.INDEX) && !showAdminNavItems) {
+        return;
+      }
       const showIconForParent = item.title === "Data Catalog" || item.title === "Data Xplorer";
       items.push({
         ...item,
@@ -82,8 +87,9 @@ export function Sidebar() {
         });
       }
     });
+    
     return items;
-  }, [dynamicBaseItems]);
+  }, [dynamicBaseItems, showAdminNavItems]);
 
   const dataXplorerSubItems = useMemo(() => {
     if (dashboardsLoading || !dashboards) return [];
@@ -170,11 +176,11 @@ export function Sidebar() {
 
   return (
     <div className={cn(
-          "h-screen fixed left-0 top-0 z-[100] flex flex-col",
-          "bg-gray-50 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
-          "transition-[width] duration-300 ease-in-out will-change-[width]",
-          isExpanded ? "w-64" : "w-16"
-      )}
+      "h-screen fixed left-0 top-0 z-[100] flex flex-col",
+      "bg-gray-50 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800",
+      "transition-[width] duration-300 ease-in-out will-change-[width]",
+      isExpanded ? "w-64" : "w-16"
+    )}
     >
       {/* Header */}
       <div className="h-16 flex items-center px-4 border-b border-gray-100 dark:border-gray-800">
@@ -182,7 +188,7 @@ export function Sidebar() {
           <div className="flex items-center justify-between w-full">
             <div className="cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.DATAOPS.INDEX)}>
               <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap ml-3">
-                Bighammer.ai 
+                Bighammer.ai
               </h1>
             </div>
             <Button
@@ -562,46 +568,46 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div
-  className={cn(
-    "pl-5 pt-3",
-    isExpanded ? "flex justify-between items-center" : "justify-center"
-  )}
->
-  {/* Theme toggle with tooltip */}
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          onClick={toggleTheme}
-          className="flex items-center gap-2 cursor-pointer mb-1"
-        >
-          {theme === 'dark' ? (
-            <>
-              <Moon className="h-5 w-5 text-blue-400" />
-              {isExpanded && (
-                <span className="text-sm font-medium text-gray-100 flex items-center">
-                  Dark
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <Sun className="h-5 w-5 text-amber-500" />
-              {isExpanded && (
-                <span className="text-sm font-medium text-amber-600 flex items-center">
-                  Light
-                </span>
-              )}
-            </>
+          className={cn(
+            "pl-5 pt-3",
+            isExpanded ? "flex justify-between items-center" : "justify-center"
           )}
+        >
+          {/* Theme toggle with tooltip */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  onClick={toggleTheme}
+                  className="flex items-center gap-2 cursor-pointer mb-1"
+                >
+                  {theme === 'dark' ? (
+                    <>
+                      <Moon className="h-5 w-5 text-blue-400" />
+                      {isExpanded && (
+                        <span className="text-sm font-medium text-gray-100 flex items-center">
+                          Dark
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="h-5 w-5 text-amber-500" />
+                      {isExpanded && (
+                        <span className="text-sm font-medium text-amber-600 flex items-center">
+                          Light
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-      </TooltipTrigger>
-      <TooltipContent side="right">
-        <p>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-</div>
 
 
         <div className={cn(

@@ -2,7 +2,7 @@ import { EnvironmentMutationData } from "@/types/admin/environment"
 import * as z from "zod"
 
 export const environmentFormSchema = z.object({
-  environmentName: z.string().min(2, "Environment name must be at least 2 characters."),
+  environmentName: z.string().trim().min(1, "Environment name is required."),
   environment: z.string().min(1, "Please select an environment."),
   platform: z.object({
     type: z.string().min(1, "Please select a platform."),
@@ -10,16 +10,16 @@ export const environmentFormSchema = z.object({
     zone: z.string().optional(),
   }),
   credentials: z.object({
-    publicId: z.string().optional(),
-    accessKey: z.string().optional(),
-    secretKey: z.string().optional(),
+    publicId: z.string().trim().optional(),
+    accessKey: z.string().trim().optional(),
+    secretKey: z.string().trim().optional(),
     pvtKey: z.string().optional(),
     init_vector: z.string().optional(),
   }),
   advancedSettings: z.object({
     airflowName: z.string().optional(),
-    airflowBucketName: z.string().optional(),
-    airflowBucketUrl: z.string().optional(),
+    airflowBucketName: z.string().trim().optional(),
+    airflowBucketUrl: z.string().trim().optional(),
   }),
   tags: z
     .array(
@@ -87,7 +87,7 @@ export const environmentFormSchema = z.object({
 
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>
 
-export const environments = [
+export const environmentsOptions = [
   { label: "Development", value: "301" },
   { label: "Staging", value: "304" },
   { label: "Production", value: "305" },

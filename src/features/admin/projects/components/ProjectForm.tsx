@@ -42,6 +42,7 @@ export function ProjectForm({
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
+    mode: "onChange", // Show validation errors instantly on change
     defaultValues: initialData || {
       bh_project_name: "",
       bh_github_provider: "",
@@ -107,7 +108,7 @@ export function ProjectForm({
               <div className="flex justify-center">
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !isTokenValidated}
+                  // disabled={!isTokenValidated}
                   className={isSubmitting ? "bg-blue-500 hover:bg-blue-600" : "bg-primary hover:bg-primary/90"}
                   size="lg"
                 >

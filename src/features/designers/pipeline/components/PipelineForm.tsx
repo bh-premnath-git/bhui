@@ -1,45 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Loader2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDispatch, useSelector } from 'react-redux';
 import { usePipelineModules } from '@/hooks/usePipelineModules';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { pipelineSchema } from "@bh-ai/schemas";
-import { FormFields } from '@/features/admin/connection/components/FormFields';
-import { ArrayField } from './ArrayField';
-import { FieldRenderer } from './FieldRenderer';
 import { ConditionalSchemaRenderer } from './ConditionalSchemaRenderer';
 import { generateInitialValues } from './schemaUtils';
 import { generateDynamicZodSchema, generateStaticZodSchema } from './dynamicZodSchema';
+import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
+import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { generateJoinPayload } from '@/lib/pipelineJoinPayload';
+import { AppDispatch, RootState } from '@/store';
 
 interface PipelineFormProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-// Generate form schema based on transformation schema (legacy - kept for compatibility)
-const generateTransformationFormSchema = (transformationSchema: any) => {
-  if (!transformationSchema) {
-    return z.object({});
-  }
-
-  // Use the new dynamic schema generator
-  try {
-    return generateStaticZodSchema(transformationSchema);
-  } catch (error) {
-    console.error('Error generating schema:', error);
-    return z.object({});
-  }
-};
 
 // Initial form schema for transformation and engine selection
 const initialFormSchema = z.object({
@@ -47,6 +32,25 @@ const initialFormSchema = z.object({
   engineType: z.enum(['pyspark', 'pyflink'], {
     required_error: 'Engine type is required',
   }),
+  useCustomSchema: z.boolean().default(false),
+  customSchema: z.string().optional(),
+}).refine((data) => {
+  // If useCustomSchema is true, customSchema must be provided and valid JSON
+  if (data.useCustomSchema) {
+    if (!data.customSchema || data.customSchema.trim() === '') {
+      return false;
+    }
+    try {
+      JSON.parse(data.customSchema);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: 'Custom schema must be valid JSON when enabled',
+  path: ['customSchema'],
 });
 
 export const PipelineForm: React.FC<PipelineFormProps> = ({
@@ -55,12 +59,17 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 }) => {
   const [step, setStep] = useState<'initial' | 'configuration'>('initial');
   const [selectedTransformation, setSelectedTransformation] = useState<any>(null);
-  const [selectedEngineType, setSelectedEngineType] = useState<'pyspark' | 'pyflink'>('pyspark');
+  const [selectedEngineType, setSelectedEngineType]:any = useState<'pyspark' | 'pyflink'>('pyspark');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transformationSchema, setTransformationSchema] = useState<any>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
+  const [columnSuggestions, setColumnSuggestions] = useState<Array<{ name: string; dataType: string }>>([]);
 
-  const { nodes, setNodes, setFormStates, nodeCounters, setNodeCounters } = usePipelineContext();
+  const { nodes, setNodes, setFormStates, nodeCounters, setNodeCounters, edges } = usePipelineContext();
   const pipelineModules = usePipelineModules(selectedEngineType);
+  const dispatch = useDispatch<AppDispatch>();
+  const { pipelineDtl } = useSelector((state: RootState) => state.buildPipeline);
 
   // Get available transformations from pipeline schema
   const availableTransformations = useMemo(() => {
@@ -96,12 +105,14 @@ console.log(selectedEngineType)
     defaultValues: {
       transformationName: '',
       engineType: selectedEngineType,
+      useCustomSchema: false,
+      customSchema: '',
     },
   });
 
   // Dynamic form for transformation configuration
   const configurationForm = useForm({
-    resolver: transformationSchema ? zodResolver(generateTransformationFormSchema(transformationSchema)) : undefined,
+    resolver: transformationSchema ? zodResolver(generateDynamicZodSchema(transformationSchema)) : undefined,
     defaultValues: {},
   });
 
@@ -125,6 +136,129 @@ console.log(selectedEngineType)
     });
     return () => subscription.unsubscribe();
   }, [initialForm, selectedEngineType]);
+
+  // Load column suggestions when transformation is selected
+  useEffect(() => {
+    const loadColumnSuggestions = async () => {
+      if (selectedTransformation && step === 'configuration') {
+        try {
+          // Create a temporary node ID for column suggestions
+          const tempNodeId = `temp_${selectedTransformation.name}_${Date.now()}`;
+          const suggestions = await getColumnSuggestions(tempNodeId, nodes, edges, pipelineDtl);
+          setColumnSuggestions(suggestions.map(col => ({ name: col, dataType: 'string' })));
+        } catch (error) {
+          console.error('Error loading column suggestions:', error);
+          setColumnSuggestions([]);
+        }
+      }
+    };
+
+    loadColumnSuggestions();
+  }, [selectedTransformation, step, nodes, edges, pipelineDtl]);
+
+  // Handle expression generation for AI-powered fields
+  const handleExpressionGenerate = useCallback(async (fieldName: string) => {
+    if (!selectedTransformation || isGenerating) {
+      return;
+    }
+
+    // If AI has already been attempted for this field, allow typing
+    if (aiAttempted.has(fieldName)) {
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Create a temporary node ID for expression generation
+      const tempNodeId = `temp_${selectedTransformation.name}_${Date.now()}`;
+      const suggestions = await getColumnSuggestions(tempNodeId, nodes, edges, pipelineDtl);
+      const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+
+      // Handle different transformation types
+      if (['SchemaTransformation', 'Aggregator'].includes(selectedTransformation.name)) {
+        // Extract target column from field name patterns
+        let targetColumn = '';
+        const derivedFieldMatch = fieldName.match(/derived_fields\.(\d+)\.expression/);
+        const aggregationMatch = fieldName.match(/aggregations\.(\d+)\.expression/);
+        
+        if (derivedFieldMatch) {
+          const index = parseInt(derivedFieldMatch[1]);
+          const derivedFields = configurationForm.watch('derived_fields');
+          targetColumn = derivedFields?.[index]?.name || '';
+        } else if (aggregationMatch) {
+          const index = parseInt(aggregationMatch[1]);
+          const aggregations = configurationForm.watch('aggregations');
+          targetColumn = aggregations?.[index]?.target_column || '';
+        }
+
+        if (!targetColumn) {
+          console.warn('No target column specified for expression generation');
+          return;
+        }
+
+        const response: any = await dispatch(generatePipelineAgent({ 
+          params: {
+            schema: schemaString,
+            target_column: targetColumn
+          },
+          operation_type: "spark_expression",
+          thread_id: 'spark_123'
+        })).unwrap();
+
+        if (response?.result) {
+          try {
+            const parsedResult = JSON.parse(response.result);
+            const expressionValue = parsedResult === "" ? '' : 
+              parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+            
+            // Update the form field
+            configurationForm.setValue(fieldName, expressionValue, {
+              shouldValidate: true,
+              shouldDirty: true,
+              shouldTouch: true
+            });
+
+            // Mark this field as having attempted AI generation
+            setAiAttempted(prev => new Set(prev).add(fieldName));
+          } catch (error) {
+            console.error('Error parsing AI response:', error);
+          }
+        }
+      } else if (selectedTransformation.name === 'Joiner') {
+        // Handle join condition generation
+        const joinPayload: any = await generateJoinPayload(tempNodeId, nodes, edges);
+        
+        const response: any = await dispatch(generatePipelineAgent({ 
+          params: joinPayload.params,
+          operation_type: "dataset_join",
+          thread_id: 'join_123'
+        })).unwrap();
+
+        if (response?.result) {
+          try {
+            const parsedResult = JSON.parse(response.result);
+            const expressionValue = parsedResult === "" ? '' : 
+              parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+            
+            configurationForm.setValue(fieldName, expressionValue, {
+              shouldValidate: true,
+              shouldDirty: true,
+              shouldTouch: true
+            });
+
+            setAiAttempted(prev => new Set(prev).add(fieldName));
+          } catch (error) {
+            console.error('Error parsing AI response:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating expression:', error);
+      toast.error('Failed to generate expression');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [selectedTransformation, isGenerating, aiAttempted, nodes, edges, pipelineDtl, configurationForm, dispatch]);
 
   // Handle initial form submission (transformation selection)
   const handleInitialSubmit = (data: any) => {
@@ -251,21 +385,11 @@ console.log(selectedEngineType)
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-4">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <Plus className="w-4 h-4" />
-            Add Pipeline Transformation
-          </DialogTitle>
-        </DialogHeader>
+        
 
         {step === 'initial' && (
           <div className="space-y-4">
-            <div>
-              <h3 className="font-medium text-sm mb-1">Select Transformation</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Choose the transformation type and engine for your pipeline node.
-              </p>
-            </div>
+            
             <Form {...initialForm}>
               <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -317,14 +441,6 @@ console.log(selectedEngineType)
                   />
                 </div>
 
-                {initialForm.watch('transformationName') && (
-                  <div className="p-2 bg-muted/30">
-                    <h4 className="font-medium mb-1 text-sm">Description</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {availableTransformations.find(t => t.name === initialForm.watch('transformationName'))?.description || 'No description available'}
-                    </p>
-                  </div>
-                )}
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={handleClose} size="sm">
@@ -349,207 +465,14 @@ console.log(selectedEngineType)
             </div>
             <Form {...configurationForm}>
               <form onSubmit={configurationForm.handleSubmit(handleConfigurationSubmit)} className="space-y-4">
-                {transformationSchema.properties && (() => {
-                  // Categorize fields into logical sections for tabs
-                  const fields = Object.entries(transformationSchema.properties)
-                    .filter(([key]) => key !== 'type' && key !== 'task_id');
-                  
-                  const basicFields = fields.filter(([, field]: [string, any]) => 
-                    field.type !== 'array' && field.type !== 'object'
-                  );
-                  
-                  const arrayFields = fields.filter(([, field]: [string, any]) => 
-                    field.type === 'array'
-                  );
-                  
-                  const objectFields = fields.filter(([, field]: [string, any]) => 
-                    field.type === 'object' && (field.properties || field.additionalProperties)
-                  );
-
-                  const tabs = [];
-                  
-                  // Add Basic Properties tab if there are basic fields
-                  if (basicFields.length > 0) {
-                    tabs.push({
-                      id: 'basic',
-                      label: 'Basic',
-                      fields: basicFields
-                    });
-                  }
-                  
-                  // Add Array Fields as separate tabs
-                  arrayFields.forEach(([key, field]) => {
-                    tabs.push({
-                      id: key,
-                      label: field.title || key,
-                      fields: [[key, field]]
-                    });
-                  });
-                  
-                  // Add Object Fields as separate tabs
-                  objectFields.forEach(([key, field]) => {
-                    tabs.push({
-                      id: key,
-                      label: field.title || key,
-                      fields: [[key, field]]
-                    });
-                  });
-
-                  if (tabs.length === 0) return null;
-
-                  // Render content for single tab without tabs UI
-                  if (tabs.length === 1) {
-                    const tab = tabs[0];
-                    return (
-                      <div className="w-full mt-3">
-                        <div className="space-y-3">
-                          {tab.fields.map(([key, field]: [string, any]) => {
-                            const isRequired = transformationSchema.required?.includes(key);
-                            const fieldTitle = field.title || key;
-
-                            // Handle array fields
-                            if (field.type === 'array') {
-                              return (
-                                <div key={key} className="p-2 bg-muted/20">
-                                  <ArrayField
-                                    field={field}
-                                    fieldKey={key}
-                                    form={configurationForm}
-                                    isRequired={isRequired}
-                                    title={fieldTitle}
-                                  />
-                                </div>
-                              );
-                            }
-
-                            // Handle object fields
-                            if (field.type === 'object') {
-                              if (field.properties) {
-                                // Object with structured properties
-                                return (
-                                  <div key={key} className="space-y-2">
-                                    <div className="p-2">
-                                      <FormFields 
-                                        schema={field} 
-                                        form={configurationForm}
-                                        parentKey={key}
-                                        twoColumnLayout={true}
-                                        mode="new"
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              } else if (field.additionalProperties) {
-                                // Key-value object (like rename_columns)
-                                return (
-                                  <FieldRenderer
-                                    key={key}
-                                    fieldKey={key}
-                                    field={field}
-                                    form={configurationForm}
-                                    isRequired={isRequired}
-                                  />
-                                );
-                              }
-                            }
-
-                            // For other field types, use the FieldRenderer component
-                            return (
-                              <FieldRenderer
-                                key={key}
-                                fieldKey={key}
-                                field={field}
-                                form={configurationForm}
-                                isRequired={isRequired}
-                              />
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // Render tabs UI for multiple tabs
-                  return (
-                    <Tabs defaultValue={tabs[0].id} className="w-full">
-                      <TabsList className="grid gap-0.5 h-7 p-0.5 w-fit" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, max-content))` }}>
-                        {tabs.map((tab) => (
-                          <TabsTrigger key={tab.id} value={tab.id} className="text-[12px] px-2 py-1 h-6">
-                            {tab.label}
-                          </TabsTrigger>
-                        ))}
-                      </TabsList>
-
-                      {tabs.map((tab) => (
-                        <TabsContent key={tab.id} value={tab.id} className="mt-3">
-                          <div className="space-y-3">
-                            {tab.fields.map(([key, field]: [string, any]) => {
-                              const isRequired = transformationSchema.required?.includes(key);
-                              const fieldTitle = field.title || key;
-
-                              // Handle array fields
-                              if (field.type === 'array') {
-                                return (
-                                  <div key={key} className="p-2 bg-muted/20">
-                                    <ArrayField
-                                      field={field}
-                                      fieldKey={key}
-                                      form={configurationForm}
-                                      isRequired={isRequired}
-                                      title={fieldTitle}
-                                    />
-                                  </div>
-                                );
-                              }
-
-                              // Handle object fields
-                              if (field.type === 'object') {
-                                if (field.properties) {
-                                  // Object with structured properties
-                                  return (
-                                    <div key={key} className="space-y-2">
-                                      <div className="p-2">
-                                        <FormFields 
-                                          schema={field} 
-                                          form={configurationForm}
-                                          parentKey={key}
-                                          twoColumnLayout={true}
-                                          mode="new"
-                                        />
-                                      </div>
-                                    </div>
-                                  );
-                                } else if (field.additionalProperties) {
-                                  // Key-value object (like rename_columns)
-                                  return (
-                                    <FieldRenderer
-                                      key={key}
-                                      fieldKey={key}
-                                      field={field}
-                                      form={configurationForm}
-                                      isRequired={isRequired}
-                                    />
-                                  );
-                                }
-                              }
-
-                              // For other field types, use the FieldRenderer component
-                              return (
-                                <FieldRenderer
-                                  key={key}
-                                  fieldKey={key}
-                                  field={field}
-                                  form={configurationForm}
-                                  isRequired={isRequired}
-                                />
-                              );
-                            })}
-                          </div>
-                        </TabsContent>
-                      ))}
-                    </Tabs>
-                  );
-                })()}
+                <ConditionalSchemaRenderer 
+                  schema={transformationSchema}
+                  twoColumnLayout={true}
+                  useTabs={true}
+                  sourceColumns={columnSuggestions}
+                  onExpressionGenerate={handleExpressionGenerate}
+                  isGenerating={isGenerating}
+                />
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={handleBack} size="sm">

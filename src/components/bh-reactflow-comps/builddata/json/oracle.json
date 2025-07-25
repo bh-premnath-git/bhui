@@ -7,7 +7,11 @@
       "required": [
         "service_name",
         "password",
-        "db_schema"
+        "db_schema",
+        "host",
+        "port",
+        "sid",
+        "username"
       ],
       "properties": {
         "host": {
@@ -22,7 +26,7 @@
           "type": "string",
           "minimum": 0,
           "maximum": 65536,
-          "default": 1521,
+          "examples": ["1521"],
           "order": 1
         },
         "service_name": {

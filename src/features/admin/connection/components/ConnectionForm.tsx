@@ -739,7 +739,7 @@ export function ConnectionForm({
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !form.formState.isValid}
                     className="flex-1 gap-2"
                   >
                     {isSubmitting ? (

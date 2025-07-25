@@ -3,7 +3,7 @@ import * as z from 'zod';
 // EMR Configuration Schema
 const emrConfigSchema = z.object({
   emr_version: z.string().min(1, "EMR version is required"),
-  custom_image_uri: z.string().optional(),
+  custom_image_uri: z.string().nullable().optional(),
   instance_type: z.string().min(1, "Instance type is required"),
   worker_count: z.union([z.string(), z.number()]).transform((val) => {
     if (typeof val === 'string') {
@@ -25,14 +25,14 @@ const emrConfigSchema = z.object({
     }
     return val;
   }).refine((val) => val >= 0, "Idle timeout must be non-negative"),
-  aws_logs_uri: z.string().min(1, "AWS logs URI is required"),
-  ec2_subnet_id: z.string().min(1, "EC2 subnet ID is required"),
-  emr_master_security_group: z.string().min(1, "EMR master security group is required"),
-  emr_slave_security_group: z.string().min(1, "EMR slave security group is required"),
-  service_access_security_group: z.string().min(1, "Service access security group is required"),
-  job_flow_role: z.string().min(1, "Job flow role is required"),
-  service_role: z.string().min(1, "Service role is required"),
-  ec2_key_name: z.string().min(1, "EC2 key name is required"),
+  aws_logs_uri: z.string().trim().min(1, "AWS logs URI is required"),
+  ec2_subnet_id: z.string().trim().min(1, "EC2 subnet ID is required"),
+  emr_master_security_group: z.string().trim().min(1, "EMR master security group is required"),
+  emr_slave_security_group: z.string().trim().min(1, "EMR slave security group is required"),
+  service_access_security_group: z.string().trim().min(1, "Service access security group is required"),
+  job_flow_role: z.string().trim().min(1, "Job flow role is required"),
+  service_role: z.string().trim().min(1, "Service role is required"),
+  ec2_key_name: z.string().nullable().optional(),
   applications: z.array(z.string()).min(1, "At least one application is required"),
   aws_cloud_connection: z.string().nullable().optional(),
   region: z.string().min(1, "Region is required"),
@@ -41,7 +41,7 @@ const emrConfigSchema = z.object({
 
 // Main Compute Cluster Schema
 export const computeClusterFormSchema = z.object({
-  compute_config_name: z.string().min(1, "Compute config name is required"),
+  compute_config_name: z.string().trim().min(1, "Compute config name is required"),
   compute_type: z.string().min(1, "Compute type is required"),
   bh_env_id: z.string().min(1, "Environment is required").transform((val) => parseInt(val, 10)),
   tenant_key: z.string().optional(),

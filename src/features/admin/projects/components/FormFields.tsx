@@ -54,13 +54,13 @@ export const ProjectNameField = ({ control,
         {searchedProject && !projectNotFound && !isEditMode && (
           <div className="flex items-center text-sm text-destructive">
             <X className="h-4 w-4 mr-2" />
-            Project name already taken
+            Project name already in use, Try another one.
           </div>
         )}
         {projectNotFound && !isEditMode && (
           <div className="flex items-center text-sm text-green-600">
             <Check className="h-4 w-4 mr-2" />
-            Project name available
+            Project name is available.
           </div>
         )}
         <FormMessage />

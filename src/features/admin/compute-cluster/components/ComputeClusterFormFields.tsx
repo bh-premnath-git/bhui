@@ -101,6 +101,7 @@ export function ComputeClusterFormFields({
     // Handle array of objects (like tags)
     if (field.items?.type === 'object' && field.items?.properties) {
       console.log(`Rendering array of objects field: ${key}`, field.items.properties);
+      
       const addObjectItem = () => {
         const newItem: any = {};
         Object.keys(field.items.properties).forEach(propKey => {
@@ -120,8 +121,8 @@ export function ComputeClusterFormFields({
         formField.onChange(newValue);
       };
 
-      return (
-        <FormItem className={getFieldClassName(field, key)}>
+      return ( // Tags
+        <FormItem className={getFieldClassName(field, key)}> 
           <div className="flex items-center">
             <FormLabel className="text-foreground">
               {field.title || key}
@@ -172,9 +173,9 @@ export function ComputeClusterFormFields({
               type="button"
               variant="default"
               onClick={addObjectItem}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-min bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              <Plus size={16} className="mr-2" />
+              <Plus size={16} />
               Add {key === 'bh_tags' ? 'Tag' : field.title || key}
             </Button>
           </div>
@@ -531,6 +532,7 @@ export function ComputeClusterFormFields({
                       : e.target.value;
                     formField.onChange(value);
                   }}
+                  required={isRequired}
                 />
               </FormControl>
               <FormMessage />

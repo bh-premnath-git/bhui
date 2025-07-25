@@ -3,18 +3,18 @@ import { ProjectMutationData } from "@/types/admin/project"
 
 // Form schema with validation rules
 export const projectFormSchema = z.object({
-  bh_project_name: z.string().min(2, "Project name must be at least 2 characters."),
+  bh_project_name: z.string().trim().min(1, "Project name is required."),
   bh_github_provider: z.string().min(1, "Please select a provider."),
-  bh_github_username: z.string().min(1, "GitHub username is required."),
-  bh_github_email: z.string().email("Invalid email address."),
+  bh_github_username: z.string().trim().min(1, "GitHub username is required."),
+  bh_github_email: z.string().trim().email("Invalid email address"),
   bh_default_branch: z.string().default("main"),
-  bh_github_url: z.string().url("Please enter a valid GitHub URL."),
-  bh_github_token_url: z.string().min(1, "GitHub token is required."),
+  bh_github_url: z.string().trim().url("Please enter a valid GitHub URL."),
+  bh_github_token_url: z.string().trim().min(1, "GitHub token is required."),
   tags: z
     .array(
       z.object({
-        key: z.string(),
-        value: z.string(),
+        key: z.string().trim(),
+        value: z.string().trim(),
       })
     )
     .default([]),

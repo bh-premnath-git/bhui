@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Postgres Source Spec",
       "type": "object",
-      "required": ["schemas", "password"],
+      "required": ["host","port","username","schema", "password"],
       "properties": {
         "host": {
           "title": "Host",
@@ -19,8 +19,7 @@
           "type": "string",
           "minimum": 0,
           "maximum": 65536,
-          "default": 5432,
-          "examples": ["5432"],
+           "examples": ["5432"],
           "order": 1,
           "group": "db"
         },
@@ -31,16 +30,15 @@
           "order": 2,
           "group": "db"
         },
-        "schemas": {
-          "title": "Schemas",
+        "schema": {
+          "title": "Schema",
           "description": "The list of schemas (case sensitive) to sync from. Defaults to public.",
-          "type": "array",
+          "type": "string",
           "items": {
             "type": "string"
           },
           "minItems": 0,
           "uniqueItems": true,
-          "default": ["public"],
           "order": 3,
           "group": "db"
         },

@@ -21,6 +21,8 @@ import { RowCountBadge } from './components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AiChatComponent from './AiChatComponent';
 import { alignNodesToTopLeft } from '@/utils/nodeAlignment';
+import { pipelineSchema } from "@bh-ai/schemas";
+import { usePipelineModules } from '@/hooks/usePipelineModules';
 
 interface Schema {
     title: string;
@@ -73,16 +75,84 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         setSelectedNodeId, 
         nodes,
         handleRefreshNode,transformationCounts, pipelineDtl, updateSetNode,attachedCluster } = usePipelineContext();
-    const { isFlow } = useAppSelector((state) => state.buildPipeline);
+    const { isFlow, selectedEngineType } = useAppSelector((state) => state.buildPipeline);
     const dispatch = useAppDispatch();
     const { setBottomDrawerContent, closeBottomDrawer, isBottomDrawerOpen } = useSidebar();
     const [isLoading, setIsLoading] = useState(false);
     const [isShowingInDrawer, setIsShowingInDrawer] = useState(false);
     const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+    
+    // Get dynamic pipeline modules
+    const pipelineModules = usePipelineModules(selectedEngineType || 'pyspark');
+    
+    // Helper function to find dynamic schema for a node
+    const findDynamicSchema = useCallback((nodeLabel: string) => {
+        try {
+            // First, try to find the transformation directly from the pipeline schema
+            if (pipelineSchema?.allOf) {
+                const engineType = selectedEngineType || 'pyspark';
+                const engineSchema = pipelineSchema.allOf.find((schema: any) => 
+                    schema.if?.properties?.engine_type?.const === engineType
+                );
+                
+                if (engineSchema?.then?.properties?.transformations?.items?.allOf) {
+                    const transformation = engineSchema.then.properties.transformations.items.allOf.find((t: any) => 
+                        t?.then?.ui_properties?.module_name === nodeLabel
+                    );
+                    
+                    if (transformation?.then) {
+                        console.log(`✅ Found dynamic schema for ${nodeLabel}:`, transformation.then);
+                        return {
+                            ...transformation.then,
+                            title: nodeLabel,
+                            nodeId: id // Add node ID for compatibility
+                        };
+                    }
+                }
+            }
+            
+            // Fallback: Find the module from processed pipeline modules
+            const module = pipelineModules.find(mod => mod.label === nodeLabel);
+            if (!module) {
+                console.log(`No module found for label: ${nodeLabel}`);
+                return null;
+            }
+
+            // Get the first operator (transformation) from the module
+            const operator = module.operators?.[0];
+            if (!operator) {
+                console.log(`No operator found for module: ${nodeLabel}`);
+                return null;
+            }
+
+            // Create a schema object compatible with the existing form system
+            return {
+                title: nodeLabel,
+                type: operator.type,
+                properties: operator.properties,
+                required: operator.requiredFields || [],
+                description: operator.description || '',
+                ui_properties: {
+                    module_name: module.label,
+                    color: module.color,
+                    icon: module.icon,
+                    ports: module.ports
+                }
+            };
+        } catch (error) {
+            console.error('Error finding dynamic schema:', error);
+            return null;
+        }
+    }, [pipelineModules, selectedEngineType, id]);
+    
     // Add useEffect to check validation status whenever formStates changes
     useEffect(() => {
         const formData = formStates[id];
-        const nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
+        // Try dynamic schema first, fallback to static schema
+        let nodeSchema = findDynamicSchema(data.label);
+        if (!nodeSchema) {
+            nodeSchema = schemaData.schema.find((s: any) => s.title === data.label);
+        }
         const isSource = data.label?.toLowerCase()?.includes("source");
         
         // Set initial title from data.label if it exists (but not when editing)
@@ -136,7 +206,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             }
         }
 
-    }, [formStates, id, data.label, data.source, setNodes, formHasBeenOpened, isEditingTitle]);
+    }, [formStates, id, data.label, data.source, setNodes, formHasBeenOpened, isEditingTitle, findDynamicSchema]);
 
     // Add effect to track form state
     useEffect(() => {
@@ -287,10 +357,15 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         // Don't open the NodeForm on single click, only on double click
         // The onNodeDoubleClick handler is used in handleDoubleClick
 
-        // Otherwise, use the original form opening logic
-        const schema = schemaData.schema.find(
-            (s: Schema) => s.title === data.label
-        );
+        // Try to find dynamic schema first, fallback to static schema
+        let schema = findDynamicSchema(data.label);
+        
+        // If no dynamic schema found, try the static schema as fallback
+        if (!schema) {
+            schema = schemaData.schema.find(
+                (s: Schema) => s.title === data.label
+            );
+        }
 
         if (schema) {
             // Get the existing form state for this node
@@ -356,7 +431,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                 updateSetNode(updatedNodes, edgesInFlow);
             }
         }
-    }, [data, id, formStates, setSelectedSchema, setFormStates, setIsFormOpen, handleSearchResultClick, nodes, edgesInFlow, updateSetNode]);
+    }, [data, id, formStates, setSelectedSchema, setFormStates, setIsFormOpen, handleSearchResultClick, nodes, edgesInFlow, updateSetNode, findDynamicSchema]);
 
 
 

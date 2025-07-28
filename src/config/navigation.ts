@@ -24,12 +24,16 @@ import { ROUTES } from "./routes";
 
 export const navigationItems: NavItem[] = [
   {
-    title: "Data Catalog",
+    title: "Agent Governance",
+    icon: Network,
+    path: "/",
+    subItems: [{
+    title: "Data catalog",
     icon: Database,
     path: ROUTES.DATA_CATALOG,
-  },
+  }]},
   {
-    title: "Data Xplorer",
+    title: "Agent Explore",
     icon: BarChart,
     path: `${ROUTES.DATA_CATALOG}/xplorer`,
     subItems: [],
@@ -39,18 +43,18 @@ export const navigationItems: NavItem[] = [
   },
 
   {
-    title: "Designer",
+    title: "Agent Pipeline",
     icon: Network,
     path: ROUTES.DESIGNERS.INDEX,
     subItems: [
+      // {
+      //   title: "Requirements",
+      //   icon: FileText,
+      //   path: ROUTES.DESIGNERS.REQUIREMENTS.INDEX,
+      //   parent: ROUTES.DESIGNERS.INDEX,
+      // },
       {
-        title: "Requirements",
-        icon: FileText,
-        path: ROUTES.DESIGNERS.REQUIREMENTS.INDEX,
-        parent: ROUTES.DESIGNERS.INDEX,
-      },
-      {
-        title: "Data Pipelines",
+        title: "Agent Pipeline",
         icon: Share2,
         path: ROUTES.DESIGNERS.BUILD_PIPELINE,
         parent: ROUTES.DESIGNERS.INDEX,
@@ -61,16 +65,16 @@ export const navigationItems: NavItem[] = [
         path: "/designers/data-flow-playground",
         parent: ROUTES.DESIGNERS.INDEX,
       },
-      {
-        title: "Notebooks",
-        icon: NotebookText,
-        path: ROUTES.DESIGNERS.NOTEBOOK,
-        parent: ROUTES.DESIGNERS.INDEX,
-      },
+      // {
+      //   title: "Notebooks",
+      //   icon: NotebookText,
+      //   path: ROUTES.DESIGNERS.NOTEBOOK,
+      //   parent: ROUTES.DESIGNERS.INDEX,
+      // },
     ],
   },
   {
-    title: "DataOps Hub",
+    title: "Agent Ops",
     icon: LayoutDashboard,
     path: ROUTES.DATAOPS.INDEX,
     subItems: [

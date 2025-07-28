@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { KeyValueEditor } from './KeyValueEditor';
 import { Plus, Trash2 } from 'lucide-react';
+import { formatFieldTitle } from './schemaUtils';
 
 interface NestedArrayFieldProps {
   field: any;
@@ -123,7 +124,7 @@ export const NestedArrayField: React.FC<NestedArrayFieldProps> = ({
                             render={({ field: nestedField }) => (
                               <FormItem>
                                 <FormLabel className="text-xs">
-                                  {propField.title || propKey}
+                                  {propField.title || formatFieldTitle(propKey)}
                                   {field.items.required?.includes(propKey) && (
                                     <span className="text-destructive ml-1">*</span>
                                   )}

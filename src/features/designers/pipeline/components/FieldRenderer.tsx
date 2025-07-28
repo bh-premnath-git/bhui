@@ -13,6 +13,8 @@ import * as monaco from 'monaco-editor';
 import { KeyValueEditor } from './KeyValueEditor';
 import { ArrayField } from './ArrayField';
 import { NestedObjectRenderer } from './NestedObjectRenderer';
+import { getCustomComponent } from './custom-components/componentRegistry';
+import { formatFieldTitle } from './schemaUtils';
 
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 
@@ -135,14 +137,40 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monaco | null>(null);
   const fullFieldKey = parentKey ? `${parentKey}.${fieldKey}` : fieldKey;
-  const fieldTitle = field.title || fieldKey;
+  const fieldTitle = field.title || formatFieldTitle(fieldKey);
   const isFieldTitleNumeric = !isNaN(parseInt(fieldTitle)) && isFinite(parseInt(fieldTitle));
 
   // Check for UI hints
   const uiHint = field['ui-hint'];
   const isExpressionField = uiHint === 'expression' || field.type === 'expression';
   const isPythonEditor = uiHint === 'python_editor' || field.type === 'python_editor';
-  const isAutoComplete = uiHint === 'auto-complete' || field.type === 'autocomplete';
+  const isAutoComplete = uiHint === 'auto-complete' || uiHint === 'autocomplete' || field.type === 'autocomplete';
+  const isCustomComponent = uiHint === 'custom' && field.component;
+  
+  // Debug logging for autocomplete fields
+  if (uiHint === 'auto-complete' || uiHint === 'autocomplete' || field.type === 'autocomplete') {
+    console.log('🔍 Autocomplete field detected:', {
+      fieldKey,
+      fullFieldKey,
+      uiHint,
+      fieldType: field.type,
+      isAutoComplete,
+      sourceColumns: sourceColumns?.length || 0,
+      sourceColumnsData: sourceColumns,
+      field
+    });
+  }
+
+  // Debug logging for custom components
+  if (isCustomComponent) {
+    console.log('🔧 Custom component field detected:', {
+      fieldKey,
+      fullFieldKey,
+      uiHint,
+      component: field.component,
+      field
+    });
+  }
 
   // Monaco editor setup for expression fields
   useEffect(() => {
@@ -436,15 +464,49 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   </Button>
                 )}
               </div>
+            ) : /* Handle Custom Components */
+            isCustomComponent ? (
+              (() => {
+                const CustomComponent = getCustomComponent(field.component);
+                
+                if (!CustomComponent) {
+                  console.error(`Custom component not found: ${field.component}`);
+                  return (
+                    <div className="text-red-500 text-sm">
+                      Custom component "{field.component}" not found
+                    </div>
+                  );
+                }
+
+                console.log('🔧 Rendering custom component:', field.component);
+                
+                return (
+                  <CustomComponent
+                    fieldKey={fieldKey}
+                    field={field}
+                    form={form}
+                    sourceColumns={sourceColumns}
+                    value={formField.value}
+                    onChange={formField.onChange}
+                    onExpressionGenerate={onExpressionGenerate}
+                    isGenerating={isGenerating}
+                  />
+                );
+              })()
             ) : /* Handle Auto-complete UI hint */
             isAutoComplete ? (
-              <Autocomplete
-                options={sourceColumns?.map(col => col.name) || []}
-                value={formField.value || ''}
-                onChange={formField.onChange}
-                placeholder={`Select ${fieldTitle}`}
-                className="w-full"
-              />
+              (() => {
+                console.log('🎯 Rendering Autocomplete for:', fieldKey, 'with options:', sourceColumns?.map(col => col.name) || []);
+                return (
+                  <Autocomplete
+                    options={sourceColumns?.map(col => col.name) || []}
+                    value={formField.value || ''}
+                    onChange={formField.onChange}
+                    placeholder={`Select ${fieldTitle}`}
+                    className="w-full"
+                  />
+                );
+              })()
             ) : field.type === 'boolean' ? (
               <div className="flex items-center space-x-2">
                 <Switch

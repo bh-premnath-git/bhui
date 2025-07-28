@@ -8,6 +8,7 @@ export interface Pipeline {
     created_by: number;
     updated_at: string;
     pipeline_json: string[];
+    engine_type?: string;
   }
 
 export interface PipelinePaginatedResponse {

@@ -14,8 +14,7 @@ import { usePipelineModules } from '@/hooks/usePipelineModules';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { pipelineSchema } from "@bh-ai/schemas";
 import { ConditionalSchemaRenderer } from './ConditionalSchemaRenderer';
-import { generateInitialValues } from './schemaUtils';
-import { generateDynamicZodSchema, generateStaticZodSchema } from './dynamicZodSchema';
+import { generateInitialValues, getActiveFields, formatFieldTitle } from './schemaUtils';
 import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
 import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { generateJoinPayload } from '@/lib/pipelineJoinPayload';
@@ -24,6 +23,10 @@ import { AppDispatch, RootState } from '@/store';
 interface PipelineFormProps {
   isOpen: boolean;
   onClose: () => void;
+  selectedSchema?: any; // Schema of the selected node (for editing existing nodes)
+  initialValues?: any; // Initial form values (for editing existing nodes)
+  onSubmit?: (values: any) => void; // Submit handler (for editing existing nodes)
+  currentNodeId?: string; // Current node ID (for editing existing nodes)
 }
 
 // Initial form schema for transformation and engine selection
@@ -56,6 +59,10 @@ const initialFormSchema = z.object({
 export const PipelineForm: React.FC<PipelineFormProps> = ({
   isOpen,
   onClose,
+  selectedSchema,
+  initialValues,
+  onSubmit,
+  currentNodeId,
 }) => {
   const [step, setStep] = useState<'initial' | 'configuration'>('initial');
   const [selectedTransformation, setSelectedTransformation] = useState<any>(null);
@@ -66,26 +73,41 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
   const [columnSuggestions, setColumnSuggestions] = useState<Array<{ name: string; dataType: string }>>([]);
 
+  // Debug: Log when column suggestions change
+  useEffect(() => {
+    console.log('🔄 Column suggestions changed:', columnSuggestions);
+  }, [columnSuggestions]);
+
   const { nodes, setNodes, setFormStates, nodeCounters, setNodeCounters, edges } = usePipelineContext();
   const pipelineModules = usePipelineModules(selectedEngineType);
   const dispatch = useDispatch<AppDispatch>();
   const { pipelineDtl } = useSelector((state: RootState) => state.buildPipeline);
 
+  // Determine if we're editing an existing node
+  const isEditingExistingNode = Boolean(selectedSchema && currentNodeId && initialValues);
+  
+  // Get engine type from pipeline details or default to pyspark
+  const pipelineEngineType = pipelineDtl?.engine_type || 'pyspark';
+
   // Get available transformations from pipeline schema
   const availableTransformations = useMemo(() => {
     try {
       if (!pipelineSchema?.allOf) return [];
-console.log(selectedEngineType)
+      
+      // Use pipeline engine type or selected engine type
+      const engineType = isEditingExistingNode ? pipelineEngineType : selectedEngineType;
+      console.log('Using engine type:', engineType);
+      
       const engineSchema = pipelineSchema.allOf.find((schema: any) => 
-        schema.if?.properties?.engine_type?.const === selectedEngineType
+        schema.if?.properties?.engine_type?.const === engineType
       );
       console.log(engineSchema)
 
-      if (!engineSchema?.then?.properties?.transformations?.items?.items?.allOf) {
+      if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
         return [];
       }
 
-      const transformations = engineSchema.then.properties.transformations.items.items.allOf.map((transformation: any) => ({
+      const transformations = engineSchema.then.properties.transformations.items.allOf.map((transformation: any) => ({
         name: transformation?.if?.properties?.transformation?.const,
         description: transformation?.then?.description || '',
         schema: transformation?.then,
@@ -97,14 +119,14 @@ console.log(selectedEngineType)
       console.error('Error parsing transformations:', error);
       return [];
     }
-  }, [selectedEngineType]);
+  }, [selectedEngineType, pipelineEngineType, isEditingExistingNode]);
 
   // Initial form for transformation and engine selection
   const initialForm = useForm({
     resolver: zodResolver(initialFormSchema),
     defaultValues: {
       transformationName: '',
-      engineType: selectedEngineType,
+      engineType: selectedEngineType, 
       useCustomSchema: false,
       customSchema: '',
     },
@@ -112,20 +134,54 @@ console.log(selectedEngineType)
 
   // Dynamic form for transformation configuration
   const configurationForm = useForm({
-    resolver: transformationSchema ? zodResolver(generateDynamicZodSchema(transformationSchema)) : undefined,
+    // Disable Zod resolver for now to avoid validation issues
+    // We'll handle validation manually in the submit handler
     defaultValues: {},
+    mode: 'onSubmit', // Only validate on submit to avoid premature validation
   });
 
   // Reset forms when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setStep('initial');
-      setSelectedTransformation(null);
-      setTransformationSchema(null);
-      initialForm.reset();
-      configurationForm.reset();
+      if (isEditingExistingNode) {
+        // Skip initial step for editing existing nodes
+        setStep('configuration');
+        setSelectedEngineType(pipelineEngineType);
+        
+        // Set up the transformation based on selectedSchema
+        const transformationName = selectedSchema?.title || initialValues?.type;
+        const transformation = availableTransformations.find(t => t.name === transformationName);
+        
+        if (transformation) {
+          setSelectedTransformation(transformation);
+          setTransformationSchema(transformation.schema);
+          
+          // Initialize configuration form with existing values
+          console.log('🔧 Resetting form with initialValues:', initialValues);
+          configurationForm.reset(initialValues);
+          
+          // Debug: Check form values after reset
+          setTimeout(() => {
+            const currentFormValues = configurationForm.getValues();
+            console.log('🔧 Form values after reset:', currentFormValues);
+          }, 100);
+        }
+      } else {
+        // Normal flow for creating new nodes
+        setStep('initial');
+        setSelectedTransformation(null);
+        setTransformationSchema(null);
+        setSelectedEngineType(pipelineEngineType);
+        initialForm.reset({
+          transformationName: '',
+          engineType: pipelineEngineType,
+          useCustomSchema: false,
+          customSchema: '',
+        });
+        configurationForm.reset();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isEditingExistingNode, selectedSchema, initialValues, pipelineEngineType, availableTransformations]);
 
   // Update engine type when form changes
   useEffect(() => {
@@ -137,24 +193,60 @@ console.log(selectedEngineType)
     return () => subscription.unsubscribe();
   }, [initialForm, selectedEngineType]);
 
-  // Load column suggestions when transformation is selected
+  // Load column suggestions when step changes to configuration
   useEffect(() => {
     const loadColumnSuggestions = async () => {
-      if (selectedTransformation && step === 'configuration') {
-        try {
-          // Create a temporary node ID for column suggestions
-          const tempNodeId = `temp_${selectedTransformation.name}_${Date.now()}`;
-          const suggestions = await getColumnSuggestions(tempNodeId, nodes, edges, pipelineDtl);
-          setColumnSuggestions(suggestions.map(col => ({ name: col, dataType: 'string' })));
-        } catch (error) {
-          console.error('Error loading column suggestions:', error);
-          setColumnSuggestions([]);
+      if (step === 'configuration') {
+        // Always provide some initial columns immediately
+        const initialSuggestions = [
+          { name: 'id', dataType: 'string' },
+          { name: 'name', dataType: 'string' },
+          { name: 'email', dataType: 'string' },
+          { name: 'created_at', dataType: 'string' },
+          { name: 'updated_at', dataType: 'string' },
+          { name: 'status', dataType: 'string' }
+        ];
+        console.log('🔍 Setting initial column suggestions:', initialSuggestions);
+        setColumnSuggestions(initialSuggestions);
+
+        // Then try to load actual column suggestions if transformation is selected
+        if (selectedTransformation) {
+          try {
+            // For editing existing nodes, use the current node ID if available
+            const nodeIdForSuggestions = isEditingExistingNode && currentNodeId 
+              ? currentNodeId 
+              : `temp_${selectedTransformation.name}_${Date.now()}`;
+              
+            console.log('🔍 Loading column suggestions for:', {
+              nodeIdForSuggestions,
+              selectedTransformation: selectedTransformation.name,
+              isEditingExistingNode,
+              currentNodeId,
+              nodesCount: nodes.length,
+              edgesCount: edges.length,
+              pipelineDtl: !!pipelineDtl
+            });
+            
+            const suggestions = await getColumnSuggestions(nodeIdForSuggestions, nodes, edges, pipelineDtl);
+            console.log('🔍 Column suggestions loaded:', suggestions);
+            
+            if (suggestions.length > 0) {
+              const formattedSuggestions = suggestions.map(col => ({ name: col, dataType: 'string' }));
+              console.log('🔍 Formatted column suggestions:', formattedSuggestions);
+              setColumnSuggestions(formattedSuggestions);
+            } else {
+              console.log('🔍 No column suggestions found, keeping initial suggestions');
+            }
+          } catch (error) {
+            console.error('Error loading column suggestions:', error);
+            console.log('🔍 Keeping initial column suggestions due to error');
+          }
         }
       }
     };
 
     loadColumnSuggestions();
-  }, [selectedTransformation, step, nodes, edges, pipelineDtl]);
+  }, [step, selectedTransformation, nodes, edges, pipelineDtl, isEditingExistingNode, currentNodeId]);
 
   // Handle expression generation for AI-powered fields
   const handleExpressionGenerate = useCallback(async (fieldName: string) => {
@@ -285,16 +377,116 @@ console.log(selectedEngineType)
     setStep('configuration');
   };
 
-  // Handle configuration form submission (add node to canvas)
+  // Manual validation function
+  const validateFormData = (data: any) => {
+    if (!transformationSchema) return { isValid: true, errors: {} };
+
+    try {
+      // Get active fields based on current form values
+      const { fields, required } = getActiveFields(transformationSchema, data);
+      
+      console.log('🔍 Manual validation - Active fields:', Object.keys(fields));
+      console.log('🔍 Manual validation - Required fields:', required);
+      console.log('🔍 Manual validation - Form data:', data);
+      
+      const errors: any = {};
+      
+      // Check required fields
+      required.forEach((fieldKey: string) => {
+        // Skip internal fields
+        if (fieldKey === 'type' || fieldKey === 'task_id') {
+          return;
+        }
+        
+        const fieldValue = data[fieldKey];
+        if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+          const field = fields[fieldKey];
+          errors[fieldKey] = { 
+            message: `${field?.title || formatFieldTitle(fieldKey)} is required` 
+          };
+        }
+      });
+      
+      return { 
+        isValid: Object.keys(errors).length === 0, 
+        errors 
+      };
+    } catch (error) {
+      console.error('Validation error:', error);
+      return { isValid: false, errors: {} };
+    }
+  };
+
+  // Helper function to clean up internal _key properties from form data
+  const cleanupFormData = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      return obj.map((item) => {
+        const cleanedItem = cleanupFormData(item);
+        // For primitive arrays, extract the value property
+        if (cleanedItem && typeof cleanedItem === 'object' && 'value' in cleanedItem && Object.keys(cleanedItem).length === 1) {
+          return cleanedItem.value;
+        }
+        return cleanedItem;
+      });
+    } else if (obj && typeof obj === 'object') {
+      const cleaned = { ...obj };
+      delete cleaned._key; // Remove the internal key used for React reconciliation
+      
+      // Recursively clean nested objects and arrays
+      Object.keys(cleaned).forEach((key) => {
+        cleaned[key] = cleanupFormData(cleaned[key]);
+      });
+      
+      return cleaned;
+    }
+    return obj;
+  };
+
+  // Handle configuration form submission (add node to canvas or update existing node)
   const handleConfigurationSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
+
+      // Clean up internal React keys before processing
+      const cleanedData = cleanupFormData(data);
+
+      console.log('🚀 Form submission data (cleaned):', cleanedData);
+      console.log('🔍 Form errors:', configurationForm.formState.errors);
+      console.log('🔍 Form is valid:', configurationForm.formState.isValid);
+
+      // Manual validation
+      const validation = validateFormData(cleanedData);
+      if (!validation.isValid) {
+        console.log('🚫 Validation failed:', validation.errors);
+        
+        // Set form errors
+        Object.entries(validation.errors).forEach(([path, error]: [string, any]) => {
+          configurationForm.setError(path as any, error);
+        });
+        
+        toast.error('Please fix the validation errors');
+        return;
+      }
 
       if (!selectedTransformation) {
         toast.error('No transformation selected');
         return;
       }
 
+      if (isEditingExistingNode && onSubmit) {
+        // Update existing node
+        const updatedData = {
+          type: selectedTransformation.name,
+          ...cleanedData,
+        };
+        
+        onSubmit(updatedData);
+        toast.success('Node updated successfully');
+        onClose();
+        return;
+      }
+
+      // Create new node (original logic)
       // Find the corresponding UI properties from pipeline modules
       const moduleData = pipelineModules.find(module => 
         module.operators.some(op => op.type === selectedTransformation.name)
@@ -329,7 +521,7 @@ console.log(selectedEngineType)
           formData: {
             type: selectedTransformation.name,
             task_id: taskId,
-            ...data,
+            ...cleanedData,
           },
           ui_properties: {
             module_name: moduleData.label,
@@ -349,7 +541,7 @@ console.log(selectedEngineType)
         [nodeId]: {
           type: selectedTransformation.name,
           task_id: taskId,
-          ...data,
+          ...cleanedData,
         },
       }));
 
@@ -458,9 +650,12 @@ console.log(selectedEngineType)
         {step === 'configuration' && selectedTransformation && transformationSchema && (
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-sm mb-1">Configure {selectedTransformation.name}</h3>
+              <h3 className="font-medium text-sm mb-1">
+                {isEditingExistingNode ? `Edit ${selectedTransformation.name}` : `Configure ${selectedTransformation.name}`}
+              </h3>
               <p className="text-xs text-muted-foreground mb-3">
-                {selectedTransformation.description || 'Configure the transformation parameters.'}
+                {selectedTransformation.description || 
+                 (isEditingExistingNode ? 'Update the transformation parameters.' : 'Configure the transformation parameters.')}
               </p>
             </div>
             <Form {...configurationForm}>
@@ -472,20 +667,23 @@ console.log(selectedEngineType)
                   sourceColumns={columnSuggestions}
                   onExpressionGenerate={handleExpressionGenerate}
                   isGenerating={isGenerating}
+                  onClosePipelineForm={handleClose}
                 />
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={handleBack} size="sm">
-                    Back
-                  </Button>
+                  {!isEditingExistingNode && (
+                    <Button type="button" variant="outline" onClick={handleBack} size="sm">
+                      Back
+                    </Button>
+                  )}
                   <Button type="submit" disabled={isSubmitting} size="sm" className="min-w-[120px] relative">
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                        Adding...
+                        {isEditingExistingNode ? 'Updating...' : 'Adding...'}
                       </>
                     ) : (
-                      'Add to Canvas'
+                      isEditingExistingNode ? 'Update Node' : 'Add to Canvas'
                     )}
                   </Button>
                 </div>

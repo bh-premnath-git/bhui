@@ -30,7 +30,7 @@ export function EngineSelector({ className }: EngineSelectorProps) {
   const dispatch = useAppDispatch();
   const { selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
 
-  const handleEngineSelect = (engineType: 'pyspark' | 'flink') => {
+  const handleEngineSelect = (engineType: 'pyspark' | 'pyflink') => {
     dispatch(setSelectedEngineType(engineType));
   };
 

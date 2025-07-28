@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { SchemaProperty, getActiveFields, getNestedValue } from './schemaUtils';
+import { SchemaProperty, getActiveFields, getNestedValue, formatFieldTitle } from './schemaUtils';
 
 /**
  * Generate a Zod schema from a JSON schema property
@@ -76,12 +76,75 @@ function generateZodSchemaFromProperty(field: SchemaProperty, isRequired: boolea
 }
 
 /**
+ * Generate a dynamic Zod schema factory that can be called with current form values
+ */
+export function createDynamicZodSchemaFactory(schema: SchemaProperty) {
+  return (currentFormValues: any) => {
+    return z.object({}).superRefine((data, ctx) => {
+      // Get active fields based on current form values
+      const { fields, required } = getActiveFields(schema, currentFormValues);
+
+      console.log('🔍 Dynamic validation - Active fields:', Object.keys(fields));
+      console.log('🔍 Dynamic validation - Required fields:', required);
+      console.log('🔍 Dynamic validation - Form data:', data);
+      console.log('🔍 Dynamic validation - Current form values:', currentFormValues);
+
+      // Validate each active field
+      Object.entries(fields).forEach(([fieldKey, field]) => {
+        // Skip internal fields
+        if (fieldKey === 'type' || fieldKey === 'task_id') {
+          return;
+        }
+
+        const isRequired = required.includes(fieldKey);
+        const fieldValue = getNestedValue(data, fieldKey);
+
+        // Check if required field is missing
+        if (isRequired && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: fieldKey.includes('.') ? fieldKey.split('.') : [fieldKey],
+            message: `${field.title || formatFieldTitle(fieldKey)} is required`,
+          });
+          return;
+        }
+
+        // Skip validation if field is not provided and not required
+        if (!isRequired && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
+          return;
+        }
+
+        // Validate field type
+        try {
+          const fieldSchema = generateZodSchemaFromProperty(field, isRequired);
+          fieldSchema.parse(fieldValue);
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            error.issues.forEach((issue) => {
+              ctx.addIssue({
+                ...issue,
+                path: fieldKey.includes('.') ? [...fieldKey.split('.'), ...issue.path] : [fieldKey, ...issue.path],
+              });
+            });
+          }
+        }
+      });
+    });
+  };
+}
+
+/**
  * Generate a dynamic Zod schema that validates based on current form values
+ * @deprecated Use createDynamicZodSchemaFactory instead for better form value handling
  */
 export function generateDynamicZodSchema(schema: SchemaProperty) {
   return z.object({}).superRefine((data, ctx) => {
     // Get active fields based on current form values
     const { fields, required } = getActiveFields(schema, data);
+
+    console.log('🔍 Dynamic validation - Active fields:', Object.keys(fields));
+    console.log('🔍 Dynamic validation - Required fields:', required);
+    console.log('🔍 Dynamic validation - Form data:', data);
 
     // Validate each active field
     Object.entries(fields).forEach(([fieldKey, field]) => {
@@ -98,7 +161,7 @@ export function generateDynamicZodSchema(schema: SchemaProperty) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: fieldKey.includes('.') ? fieldKey.split('.') : [fieldKey],
-          message: `${field.title || fieldKey} is required`,
+          message: `${field.title || formatFieldTitle(fieldKey)} is required`,
         });
         return;
       }

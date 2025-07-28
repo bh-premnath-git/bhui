@@ -1,5 +1,16 @@
 // Utility functions for handling complex JSON schemas
 
+/**
+ * Convert underscore-separated field names to proper display names
+ * e.g., "field_name" -> "Field Name", "some_long_field_name" -> "Some Long Field Name"
+ */
+export function formatFieldTitle(fieldKey: string): string {
+  return fieldKey
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export interface SchemaProperty {
   type: string;
   title?: string;

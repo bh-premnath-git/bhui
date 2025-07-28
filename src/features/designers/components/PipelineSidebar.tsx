@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
+import { setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 
 interface PipelineSidebarProps {
   className?: string;
@@ -143,6 +144,11 @@ const PipelineSidebar: React.FC<PipelineSidebarProps> = ({ className }) => {
     const pipelineIdStr = pipelineId.toString();
     console.log(pipeline)
     dispatch(setSelectedPipeline(pipeline))
+    
+    // Update engine type if pipeline has engine_type
+    if (pipeline.engine_type) {
+      dispatch(setSelectedEngineType(pipeline.engine_type));
+    }
     
     // Don't do anything if we're already on this pipeline
     if (selectedPipelineId === pipelineIdStr) {

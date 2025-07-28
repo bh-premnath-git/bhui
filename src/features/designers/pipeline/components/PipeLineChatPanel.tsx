@@ -453,6 +453,7 @@ const PipeLineChatPanel = () => {
   const [isLoadingChatHistory, setIsLoadingChatHistory] = useState(false);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const hasLoadedChatHistoryRef = React.useRef<string | null>(null); // Track which pipeline ID we've loaded
+  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null); // Prevent rapid saves
   const [isApiLoading, setIsApiLoading] = useState(false);
   const pipelineContext = usePipelineContext();
   const token: any = sessionStorage?.getItem("token");
@@ -497,6 +498,13 @@ const PipeLineChatPanel = () => {
 
     // Check if message is already saved
     if (message.id && savedMessageIds.has(message.id)) {
+      console.log('Message already saved, skipping:', message.id);
+      return;
+    }
+
+    // Additional validation to prevent saving non-AI agent messages
+    if (!message.role || (message.role !== 'user' && message.role !== 'assistant')) {
+      console.warn('Invalid message role for AI agent save:', message.role);
       return;
     }
 
@@ -749,16 +757,30 @@ const PipeLineChatPanel = () => {
             content: lastMessage.content?.substring(0, 100) + '...' 
           });
           
-          // Use a slight delay to allow for immediate consecutive messages
-          const timeoutId = setTimeout(() => {
-            saveAIAgentChatMessage(lastMessage);
-          }, 500);
+          // Clear any existing timeout to prevent multiple saves
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+          }
           
-          return () => clearTimeout(timeoutId);
+          // Use a slight delay to allow for immediate consecutive messages and prevent race conditions
+          saveTimeoutRef.current = setTimeout(() => {
+            // Double-check conditions before saving to prevent unnecessary calls
+            if (!savedMessageIds.has(lastMessage.id!) && !isSavingChatHistory) {
+              saveAIAgentChatMessage(lastMessage);
+            }
+            saveTimeoutRef.current = null;
+          }, 800); // Increased timeout to 800ms for better debouncing
+          
+          return () => {
+            if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
+              saveTimeoutRef.current = null;
+            }
+          };
         }
       }
     }
-  }, [messages, id, savedMessageIds, saveAIAgentChatMessage]);
+  }, [messages.length, id, savedMessageIds.size, saveAIAgentChatMessage, isSavingChatHistory]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -2901,6 +2923,16 @@ const PipeLineChatPanel = () => {
       ]);
     }, 300);
   };
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="h-full w-full flex flex-col">

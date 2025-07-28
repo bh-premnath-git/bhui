@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { ChevronDown, ChevronUp, Wrench, FileText, Zap, Activity } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wrench, FileText } from 'lucide-react';
 import { insertPipeline, setBuildPipeLineDtl, setPipeLineType, setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { Input } from '@/components/ui/input';
 import { useProjects } from '@/features/admin/projects/hooks/useProjects';
@@ -19,6 +19,8 @@ import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from '@/store';
 import { ROUTES } from '@/config/routes';
+import { useEngineTypes, useAvailableEngineTypes } from '@/hooks/useSchemaTypes';
+import { ValidEngineTypes } from '@/types/pipeline';
 
 interface CreatePipelineDialogProps {
   handleClose: () => void;
@@ -42,6 +44,10 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
   const { setPipeline_id, setPipeLineName, setProjectName,setPipelines,pipelines } =
     usePipelineContext();
   const { selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
+  
+  // Get dynamic engine types from schema
+  const engineTypes = useEngineTypes();
+  const availableEngineTypes = useAvailableEngineTypes();
 
   const [showNotes, setShowNotes] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +112,7 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
         dispatch(setPipeLineType(response.pipeline_type));
          reset();
         setShowNotes(false);
-        dispatch(setSelectedEngineType('pyspark')); // Reset to default engine type
+        dispatch(setSelectedEngineType(response.engine_type)); // Reset to default engine type
         const route = `/designers/build-playground/${response.pipeline_id}`;
         navigate(route);
       }
@@ -138,30 +144,9 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
     },
   ];
 
-  const engineTypes = [
-    {
-      id: 'pyspark',
-      icon: Zap,
-      label: 'PySpark',
-      description: 'Apache Spark with Python',
-      color: 'text-orange-600',
-      gradient: 'from-orange-50 to-orange-100',
-      border: 'border-orange-500',
-      iconBg: 'bg-orange-100',
-    },
-    {
-      id: 'flink',
-      icon: Activity,
-      label: 'Apache Flink',
-      description: 'Stream processing',
-      color: 'text-purple-600',
-      gradient: 'from-purple-50 to-purple-100',
-      border: 'border-purple-500',
-      iconBg: 'bg-purple-100',
-    },
-  ];
 
-  const handleEngineSelect = (engineType: 'pyspark' | 'flink') => {
+
+  const handleEngineSelect = (engineType: ValidEngineTypes) => {
     dispatch(setSelectedEngineType(engineType));
   };
 
@@ -276,20 +261,20 @@ const CreatePipelineDialog: React.FC<CreatePipelineDialogProps> = ({
           {/* Engine Type */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-gray-700">Engine Type</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid gap-2 ${engineTypes.length <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {engineTypes.map(({ id, icon: Icon, label, description, color, gradient, border, iconBg }, index) => (
                 <label key={id} className="relative cursor-pointer group">
                   <input
                     type="radio"
                     value={id}
                     checked={selectedEngineType === id}
-                    onChange={() => handleEngineSelect(id as 'pyspark' | 'flink')}
+                    onChange={() => handleEngineSelect(id as ValidEngineTypes)}
                     className="absolute opacity-0"
                   />
                   <div
                     className={`flex items-center p-3 border-2 rounded-xl transition-all duration-200 ${
                       selectedEngineType === id
-                        ? `${border} bg-gradient-to-${index === 0 ? 'r' : 'l'} ${gradient} shadow-sm`
+                        ? `${border} bg-gradient-to-${index % 2 === 0 ? 'r' : 'l'} ${gradient} shadow-sm`
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     }`}
                   >

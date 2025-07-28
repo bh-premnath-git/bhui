@@ -42,6 +42,7 @@ import { ROUTES } from '@/config/routes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
+import { setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useDeletePipeline } from '@/hooks/useDeletePipeline';
@@ -53,6 +54,7 @@ interface Pipeline {
   created_at?: string;
   updated_at?: string;
   status?: string;
+  engine_type?: string;
 }
 
 interface PipelineSelectorProps {
@@ -193,6 +195,11 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     
     localStorage.setItem("pipeline_id", pipelineIdStr);
     dispatch(setSelectedPipeline(pipeline));
+    
+    // Update engine type if pipeline has engine_type
+    if (pipeline.engine_type) {
+      dispatch(setSelectedEngineType(pipeline.engine_type));
+    }
 
     try {
       // Navigate to the new pipeline

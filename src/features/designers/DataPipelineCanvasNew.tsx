@@ -10,13 +10,18 @@ import { FlowControls } from '@/features/designers/pipeline/components/FlowContr
 import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
-import CreateFormFormik from '@/features/designers/pipeline/components/form-sections/CreateForm';
+import { PipelineForm } from '@/features/designers/pipeline/components/PipelineForm';
+import { GlobalCustomComponentRenderer } from '@/features/designers/pipeline/components/ConditionalSchemaRenderer';
+import LookupForm from '@/features/designers/pipeline/components/form-sections/LookupForm';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
 import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from '@/store';
 import { ErrorBanner } from '@/components/ui/error-banner';
+import OrderPopUp from '@/components/bh-reactflow-comps/builddata/OrderPopUp';
+import { Target } from 'lucide-react';
+import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
@@ -301,31 +306,58 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             />
           </div>
 
-          {/* Node Form Dialog */}
-          <Dialog
-            open={isFormOpen}
-            onOpenChange={handleDialogClose}
-            aria-modal="true"
-          >
-            <DialogContent className="max-w-[60%]">
-              {selectedSchema && (
-                <CreateFormFormik
-                  schema={selectedSchema}
-                  sourceColumns={sourceColumns}
-                  onClose={handleDialogClose}
-                  currentNodeId={selectedSchema?.nodeId || ''}
+          {/* Node Form Components */}
+          {selectedSchema && selectedSchema.title === 'Lookup' && (
+            <Dialog
+              open={isFormOpen}
+              onOpenChange={handleDialogClose}
+              aria-modal="true"
+            >
+              <DialogContent className="max-w-[60%]">
+                <LookupForm
+                  onSubmit={handleFormSubmit}
                   initialValues={{
                     ...formStates[selectedSchema?.nodeId],
                     nodeId: selectedSchema?.nodeId
                   }}
                   nodes={nodes}
+                  sourceColumns={sourceColumns}
+                  formId={selectedSchema?.nodeId}
+                  onClose={handleDialogClose}
+                  currentNodeId={selectedSchema?.nodeId || ''}
                   edges={edges}
-                  pipelineDtl={pipelineDtl}
-                  onSubmit={handleFormSubmit}
+                  isDialog={true}
                 />
-              )}
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {selectedSchema && selectedSchema.title === 'Target' && (
+            <TargetPopUp
+              isOpen={isFormOpen}
+              onClose={handleDialogClose}
+              initialData={{
+                ...formStates[selectedSchema?.nodeId],
+                nodeId: selectedSchema?.nodeId
+              }}
+              sourceColumns={sourceColumns}
+              onSubmit={handleFormSubmit}
+            />
+          )}
+
+          {selectedSchema && selectedSchema.title !== 'Lookup' && selectedSchema.title !== 'Target' && (
+            <PipelineForm
+              isOpen={isFormOpen}
+              onClose={handleDialogClose}
+              selectedSchema={selectedSchema}
+              initialValues={{
+                ...formStates[selectedSchema?.nodeId],
+                nodeId: selectedSchema?.nodeId
+              }}
+              onSubmit={handleFormSubmit}
+              currentNodeId={selectedSchema?.nodeId || ''}
+            />
+          )}
 
           {/* Leave Prompt Dialog */}
           <Dialog
@@ -380,6 +412,9 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           />
 
           {/* Loading Overlay */}
+
+          {/* Global Custom Component Renderer - renders custom components outside main component tree */}
+          <GlobalCustomComponentRenderer />
 
         </div>
       </div>) : (<>

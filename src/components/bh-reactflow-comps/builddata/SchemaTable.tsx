@@ -33,18 +33,37 @@ function SchemaTable({ initialData }: any) {
     // Ensure dataSourceTypes is an array
     const dataTypeOptions = Array.isArray(dataSourceTypes) ? dataSourceTypes : [];
 
-    console.log(initialData)
+    console.log('🔧 SchemaTable initialData:', initialData)
+    console.log('🔧 SchemaTable data_src_id:', initialData?.source?.data_src_id)
+    console.log('🔧 SchemaTable alternative data_src_id:', initialData?.data_src_id)
+    
     useEffect(() => {
         const fetchData = async () => {
+            const dataSourceId = initialData?.source?.data_src_id || initialData?.data_src_id;
+            console.log('🔧 SchemaTable: Using data_src_id:', dataSourceId);
+            
+            if (!dataSourceId) {
+                console.warn('🔧 SchemaTable: No data_src_id found, cannot fetch schema');
+                setIsLoading(false);
+                return;
+            }
+            
             setIsLoading(true);
             try {
+                const url = `/data_source_layout/list_full/?data_src_id=${dataSourceId}`;
+                console.log('🔧 SchemaTable: Making API call to:', url);
+                
                 const response = await apiService.get({
                     baseUrl: CATALOG_REMOTE_API_URL,
-                    url: `/data_source_layout/list_full/?data_src_id=${initialData?.source?.data_src_id}`,
+                    url: url,
                     method: 'GET',
                     usePrefix: true,
                 });
-                console.log(response,"response")
+                console.log('🔧 SchemaTable response:', response)
+                console.log('🔧 SchemaTable: Raw response structure:', response);
+                console.log('🔧 SchemaTable: First item:', response[0]);
+                console.log('🔧 SchemaTable: Layout fields:', response[0]?.layout_fields);
+                
                 if (response[0]?.layout_fields) {
                     const transformedData = response[0].layout_fields.map((field: any) => ({
                         name: field.lyt_fld_name,
@@ -55,8 +74,12 @@ function SchemaTable({ initialData }: any) {
                         tags: field.lyt_fld_tags || {},
                         actions: ''
                     }));
-                    console.log(transformedData,"transformedData")
+                    console.log('🔧 SchemaTable: Transformed data:', transformedData);
+                    console.log('🔧 SchemaTable: Setting table data with', transformedData.length, 'fields');
                     setTableData(transformedData);
+                } else {
+                    console.warn('🔧 SchemaTable: No layout_fields found in response');
+                    console.log('🔧 SchemaTable: Available response keys:', Object.keys(response[0] || {}));
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -66,10 +89,14 @@ function SchemaTable({ initialData }: any) {
             }
         };
 
-        if (initialData?.source?.data_src_id) {
+        const dataSourceId = initialData?.source?.data_src_id || initialData?.data_src_id;
+        if (dataSourceId) {
             fetchData();
+        } else {
+            console.warn('🔧 SchemaTable: No data_src_id available, skipping fetch');
+            setIsLoading(false);
         }
-    }, [initialData?.source?.data_src_id]);
+    }, [initialData?.source?.data_src_id, initialData?.data_src_id]);
 
     const columns = [
         {
@@ -126,20 +153,50 @@ function SchemaTable({ initialData }: any) {
     ];
 
     
+    console.log('🔧 SchemaTable: Current render state - isLoading:', isLoading, 'tableData:', tableData, 'tableData.length:', tableData.length);
+
     return (
         <div className="h-full flex flex-col">
             {isLoading ? (
                 <div className="flex justify-center items-center flex-1">
                     <div className="animate-spin rounded-full h-6 w-6 border-green-600" />
+                    <p className="ml-2 text-sm text-gray-600">Loading schema...</p>
                 </div>
             ) : (
                 <div className="flex-1 overflow-auto">
-                    <DataTable
-                        data={tableData}
-                        columns={columns}
-                        topVariant="simple"
-                        pagination={true}
-                    />
+                    {tableData.length > 0 ? (
+                        <DataTable
+                            data={tableData}
+                            columns={columns}
+                            topVariant="simple"
+                            pagination={true}
+                        />
+                    ) : (
+                        <div className="flex justify-center items-center flex-1">
+                            <div className="text-center">
+                                <p className="text-gray-500 mb-4">No schema fields discovered yet</p>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Data source exists but schema fields are empty.<br/>
+                                    Schema discovery may be needed for this data source.
+                                </p>
+                                <div className="space-y-2">
+                                    <button 
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                        onClick={() => {
+                                            console.log('🔧 Manual schema discovery triggered for data_src_id:', initialData?.source?.data_src_id || initialData?.data_src_id);
+                                            // TODO: Implement schema discovery API call
+                                            alert('Schema discovery feature needs to be implemented');
+                                        }}
+                                    >
+                                        Discover Schema
+                                    </button>
+                                    <p className="text-xs text-gray-400">
+                                        Data source ID: {initialData?.source?.data_src_id || initialData?.data_src_id}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Checkboxes Section */}
                     {/* <div className="space-y-1 bg-gray-50 p-2 rounded-lg mt-2">

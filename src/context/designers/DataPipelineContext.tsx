@@ -869,7 +869,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const moduleName = targetNode.data.label.split(' ')[0];
             const schemaArray = Array.isArray(schemaData) ? schemaData : Object.values(schemaData);
             const moduleSchema = schemaArray.find((schema: any) => schema.title === moduleName);
-
             if (moduleSchema) {
                 // Find the corresponding form state based on node type and ID
                 const existingFormState = formStates[targetNodeId] ||

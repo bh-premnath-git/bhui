@@ -4,7 +4,7 @@ import { FlowProvider } from '@/context/designers/FlowContext';
 
 const DataFlowCanvaPage = () => {
   return (
-    <div className="h-full w-[99%]">
+    <div className="h-full w-[99%]"> 
       <FlowProvider>
         <DataFlow />
       </FlowProvider>

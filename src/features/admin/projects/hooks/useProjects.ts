@@ -177,25 +177,17 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
 };
 
 export function useProjectSearch() {
-  const { getOne: searchProjects } = useResource<Project[]>(
-    'bh_project',
-    CATALOG_REMOTE_API_URL,
-    true
-  );
-  
+  const { projects } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const { data: searchResults, isLoading, error } = searchProjects({
-    url: '/bh_project/search',
-    params: { bh_project_name: searchQuery },
-    queryOptions: {
-      enabled: !!searchQuery,
-      retry: 2
-    }
-  });
 
-  const projectFound = searchResults && searchResults.length > 0;
-  const projectNotFound = searchResults && searchResults.length === 0;
+  const searchedProject =
+    searchQuery.trim() !== ''
+      ? projects.find(
+          (proj) =>
+            proj.bh_project_name?.trim().toLowerCase() ===
+            searchQuery.trim().toLowerCase()
+        ) || null
+      : null;
 
   const debounceSearchProject = useMemo(
     () => debounce((query: string) => setSearchQuery(query), 800),
@@ -207,11 +199,12 @@ export function useProjectSearch() {
   }, [debounceSearchProject]);
 
   return {
-    searchedProject: projectFound ? searchResults[0] : null,
-    projectFound,
-    projectNotFound,
-    isLoading,
-    error,
+    searchedProject,
+    projectFound: !!searchedProject,
+    projectNotFound: searchQuery.trim() !== '' && !searchedProject,
+    isBlankQuery: searchQuery.trim() === '',
+    isLoading: false,
+    error: null,
     debounceSearchProject,
   };
 }

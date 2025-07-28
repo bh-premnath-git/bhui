@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import { AppDispatch } from "@/store";
-
+ 
 export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
   const [selected, setSelected] = React.useState(0);
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
@@ -31,7 +31,7 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
   const { connectionConfigList } = useSelector((state: any) => state.datasource);
   console.log(pipelineJson, "pipelineJson")
   // const { pipelineJson } = useSelector((state: any) => state.buildPipeline.pipelineJsonData);
-  console.log(pipelineJson, "pipelineJson")
+  console.log(pipelineJson, "pipelineJson") 
   const handleClose2 = () => {
     setAnchorEl(null);
   };
@@ -61,10 +61,27 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
   const initialSource = () => {
     console.log(source, "source")
     if (source && connectionConfigList) {
-      const connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
-      console.log(connection)
+      let connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
+      console.log('🔧 Looking for connection with ID:', source?.connection_config_id);
+      console.log('🔧 Found connection:', connection);
+      
+      // If no connection found by ID, try to find by name
+      if (!connection && source?.connection?.name) {
+        connection = connectionConfigList.find((item: any) => 
+          item.connection_config_name === source?.connection?.name ||
+          item.connection_name === source?.connection?.name
+        );
+        console.log('🔧 Found connection by name:', connection);
+      }
+      
+      // If still no connection, use the first available connection as fallback
+      if (!connection && connectionConfigList.length > 0) {
+        connection = connectionConfigList[0];
+        console.log('🔧 Using first available connection as fallback:', connection);
+      }
+      
       if (!connection) {
-        console.warn('Connection not found for the given connection_config_id');
+        console.warn('No connections available in connectionConfigList');
         return;
       }
 
@@ -111,6 +128,14 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
       };
       
       console.log('OrderPopUp: Final initialData:', initialData);
+      console.log('🔧 === ORDERPOPUP INITIAL DATA DEBUGGING ===');
+      console.log('🔧 initialData.source:', initialData.source);
+      console.log('🔧 initialData.source.connection:', initialData.source.connection);
+      console.log('🔧 initialData.source.connection.name:', initialData.source.connection.name);
+      console.log('🔧 initialData.source.connection.connection_config_id:', initialData.source.connection.connection_config_id);
+      console.log('🔧 initialData.source.connection_config_id:', initialData.source.connection_config_id);
+      console.log('🔧 Available connections in list:', connectionConfigList.map(c => ({ id: c.id, name: c.connection_config_name })));
+      console.log('🔧 === END ORDERPOPUP DEBUGGING ===');
 
       setInitialData(initialData);
     }
@@ -147,11 +172,21 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     console.log("Preview button clicked");
   };
   const handleClose = () => {
+    console.log('🔧 OrderPopUp: handleClose called');
     onClose();
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    console.log('🔧 OrderPopUp: Dialog open change:', open);
+    if (!open) {
+      onClose();
+    }
+  };
+
+  console.log('🔧 OrderPopUp: Rendering with isOpen:', isOpen);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-[1000px] h-[650px] px-6 overflow-hidden flex flex-col">
         {/* Header */}
         <DialogHeader className="py-2 px-2 shrink-0">

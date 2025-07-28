@@ -3,7 +3,7 @@ import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConditionalSchemaRenderer } from './ConditionalSchemaRenderer';
 import { FieldRenderer } from './FieldRenderer';
-import { SchemaProperty, extractPropertiesFromSchema } from './schemaUtils';
+import { SchemaProperty, extractPropertiesFromSchema, formatFieldTitle } from './schemaUtils';
 
 interface NestedObjectRendererProps {
   fieldKey: string;
@@ -23,7 +23,7 @@ export const NestedObjectRenderer: React.FC<NestedObjectRendererProps> = ({
   title,
 }) => {
   const fullFieldKey = parentKey ? `${parentKey}.${fieldKey}` : fieldKey;
-  const displayTitle = title || field.title || fieldKey;
+  const displayTitle = title || field.title || formatFieldTitle(fieldKey);
 
   // If the object has conditional logic (allOf), use ConditionalSchemaRenderer
   if (field.allOf) {

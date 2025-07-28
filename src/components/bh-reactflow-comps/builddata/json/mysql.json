@@ -6,7 +6,11 @@
       "type": "object",
       "required": [
         "password",
-        "db_schema"
+        "db_schema",
+        "host",
+        "port",
+        "database",
+        "username"
       ],
       "properties": {
         "host": {
@@ -21,7 +25,7 @@
           "type": "string",
           "minimum": 0,
           "maximum": 65536,
-          "default": 1512,
+          "examples": ["3307"],
           "order": 1
         },
         "database": {

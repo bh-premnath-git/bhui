@@ -91,19 +91,43 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     useEffect(() => {
         if (initialData) {
-            console.log('ReaderOptionsForm: Looking for connection with name:', initialData.source?.connection?.name);
-            console.log('ReaderOptionsForm: Looking for connection with ID:', initialData.source?.connection?.connection_config_id || initialData.source?.connection_config_id);
-            console.log('ReaderOptionsForm: Available connections:', connectionConfigList);
+            console.log('🔧 === READEROPTIONSFORM CONNECTION DEBUGGING ===');
+            console.log('🔧 ReaderOptionsForm received initialData:', initialData);
+            console.log('🔧 initialData.source:', initialData.source);
+            console.log('🔧 initialData.source?.connection:', initialData.source?.connection);
+            console.log('🔧 Looking for connection with name:', initialData.source?.connection?.name);
+            console.log('🔧 Looking for connection with connection_config_id:', initialData.source?.connection?.connection_config_id);
+            console.log('🔧 Looking for connection with source connection_config_id:', initialData.source?.connection_config_id);
+            console.log('🔧 Available connections:', connectionConfigList);
+            console.log('🔧 Available connections summary:', connectionConfigList.map(c => ({ 
+                id: c.id, 
+                connection_config_name: c.connection_config_name,
+                connection_name: c.connection_name 
+            })));
             
-            const selectedConn = connectionConfigList.find(
+            // Try each lookup method step by step
+            console.log('🔧 Trying lookup method 1: by connection_config_name');
+            const method1 = connectionConfigList.find(
                 conn => conn.connection_config_name === initialData.source?.connection?.name
-            ) || connectionConfigList.find(
+            );
+            console.log('🔧 Method 1 result:', method1);
+            
+            console.log('🔧 Trying lookup method 2: by connection.connection_config_id');
+            const method2 = connectionConfigList.find(
                 conn => conn.id === initialData.source?.connection?.connection_config_id
-            ) || connectionConfigList.find(
+            );
+            console.log('🔧 Method 2 result:', method2);
+            
+            console.log('🔧 Trying lookup method 3: by source.connection_config_id');
+            const method3 = connectionConfigList.find(
                 conn => conn.id === initialData.source?.connection_config_id
             );
+            console.log('🔧 Method 3 result:', method3);
             
-            console.log('ReaderOptionsForm: Selected connection:', selectedConn);
+            const selectedConn = method1 || method2 || method3;
+            
+            console.log('🔧 Final selected connection:', selectedConn);
+            console.log('🔧 === END READEROPTIONSFORM DEBUGGING ===');
 
             // Set source_name from data_src_name if it's not already set
             const sourceName = initialData.source?.name || initialData.source?.data_src_name || initialData.data_src_name || '';

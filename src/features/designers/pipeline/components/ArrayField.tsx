@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,7 +8,7 @@ import { Plus, Trash2, HelpCircle } from 'lucide-react';
 import { FormFields } from '@/features/admin/connection/components/FormFields';
 import { FieldRenderer } from './FieldRenderer';
 import { NestedArrayField } from './NestedArrayField';
-import { extractPropertiesFromSchema, getDefaultValueForField } from './schemaUtils';
+import { extractPropertiesFromSchema, getDefaultValueForField, formatFieldTitle } from './schemaUtils';
 
 interface ArrayFieldProps {
   field: any;
@@ -35,16 +35,21 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
 }) => {
   const [showDescription, setShowDescription] = useState(false);
   const fullFieldKey = parentPath ? `${parentPath}.${fieldKey}` : fieldKey;
+  const keyCounter = useRef(0);
   
   return (
     <FormField
       control={form.control}
       name={fullFieldKey}
       render={({ field: formField }) => {
-        const values = formField.value || [];
+        // Ensure values is always an array and each item has a unique key
+        const values = (formField.value || []).map((item: any, index: number) => ({
+          ...item,
+          _key: item._key || `item_${++keyCounter.current}_${Date.now()}`
+        }));
         
         const addItem = () => {
-          const newValues = [...values];
+          const newItem: any = {};
           
           if (field.items?.type === 'object' || field.items?.properties) {
             // For object arrays, add an empty object with default values
@@ -56,26 +61,26 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
               properties = extracted.properties;
             }
             
-            const newItem: any = {};
-            
             if (properties) {
               Object.entries(properties).forEach(([propKey, propField]:any) => {
                 newItem[propKey] = getDefaultValueForField(propField);
               });
             }
-            
-            newValues.push(newItem);
           } else {
             // For primitive arrays, add appropriate default value
             if (field.items?.type === 'number' || field.items?.type === 'integer') {
-              newValues.push(0);
+              newItem.value = 0;
             } else if (field.items?.type === 'boolean') {
-              newValues.push(false);
+              newItem.value = false;
             } else {
-              newValues.push('');
+              newItem.value = '';
             }
           }
           
+          // Add unique key for React reconciliation
+          newItem._key = `item_${++keyCounter.current}_${Date.now()}`;
+          
+          const newValues = [...values, newItem];
           formField.onChange(newValues);
         };
         
@@ -84,18 +89,35 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
           formField.onChange(newValues);
         };
         
-        const updateItem = (index: number, value: any) => {
+        const updateItem = (index: number, updatedValue: any) => {
           const newValues = [...values];
-          newValues[index] = value;
+          // Preserve the _key when updating
+          newValues[index] = { ...updatedValue, _key: values[index]._key };
           formField.onChange(newValues);
         };
         
-        // Initialize with one empty item if no values exist
+        // Initialize with one empty item if no values exist, and ensure existing values have keys
         React.useEffect(() => {
-          if (values.length === 0) {
+          const currentFormValue = formField.value || [];
+          
+          if (currentFormValue.length === 0) {
+            // Only add item if truly empty
             addItem();
+          } else if (currentFormValue.length > 0) {
+            // Ensure existing values have _key properties
+            const hasKeysAlready = currentFormValue.every((item: any) => 
+              typeof item === 'object' && item !== null && '_key' in item
+            );
+            
+            if (!hasKeysAlready) {
+              const valuesWithKeys = currentFormValue.map((item: any, index: number) => ({
+                ...(typeof item === 'object' && item !== null ? item : { value: item }),
+                _key: `item_${++keyCounter.current}_${Date.now()}_${index}`
+              }));
+              formField.onChange(valuesWithKeys);
+            }
           }
-        }, []);
+        }, [formField.value]);
 
         return (
           <FormItem className="col-span-2 w-full">
@@ -120,7 +142,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
             
             <div className="space-y-3">
               {values.map((item: any, index: number) => (
-                <div key={index} className="relative ">
+                <div key={item._key} className="relative ">
                   {/* Content area with inline delete */}
                   <div className="p-4">
                     {(field.items?.type === 'object' || field.items?.properties) ? (
@@ -235,10 +257,10 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                     ) : (
                       // Render primitive fields
                       <FieldRenderer
-                        fieldKey={index.toString()}
-                        field={field.items}
+                        fieldKey="value"
+                        field={{...field.items, type: field.items?.type || 'string'}}
                         form={form}
-                        parentPath={fullFieldKey}
+                        parentPath={`${fullFieldKey}.${index}`}
                         sourceColumns={sourceColumns}
                         onExpressionGenerate={onExpressionGenerate}
                         isGenerating={isGenerating}

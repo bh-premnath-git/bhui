@@ -419,7 +419,7 @@ export function ComputeClusterFormStepper({
                           <Button
                             type="button"
                             onClick={nextStep}
-                            disabled={isSubmitting || isTesting}
+                            disabled={isSubmitting || isTesting || (currentStep === 1 && !form.formState.isValid)}
                             className="flex items-center space-x-2"
                           >
                             <span>Next</span>

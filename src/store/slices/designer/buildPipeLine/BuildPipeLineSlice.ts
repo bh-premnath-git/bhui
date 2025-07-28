@@ -4,6 +4,7 @@ import { apiService } from '@/lib/api/api-service';
 import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
 import { setPipeLineName } from "../features/autoSaveSlice";
+import { ValidEngineTypes, getAvailableEngineTypes } from '@/types/pipeline';
 
 const token: any = sessionStorage?.getItem("token");
 const decoded: any = token ? jwtDecode(token) : null;
@@ -55,7 +56,7 @@ export interface BuildPipelineState {
   lastSaved: string | null;
   isFlow: boolean;
   isRightPanelOpen: boolean;
-  selectedEngineType: 'pyspark' | 'flink';
+  selectedEngineType: ValidEngineTypes;
   selectedMode: 'engine' | 'debug' | 'interactive';
 }
 
@@ -86,7 +87,7 @@ const initialState: BuildPipelineState = {
   lastSaved: null,
   isFlow:false,
   isRightPanelOpen:false,
-  selectedEngineType: 'pyspark',
+  selectedEngineType: getAvailableEngineTypes()[0] || 'pyspark',
   selectedMode: 'engine',
   pipelineType: null
 };
@@ -578,7 +579,7 @@ const buildPipeLineSlice = createSlice({
     state.isSaving = false;
     state.lastSaved = null;
   },
-  setSelectedEngineType: (state, action: PayloadAction<'pyspark' | 'flink'>) => {
+  setSelectedEngineType: (state, action: PayloadAction<ValidEngineTypes>) => {
     state.selectedEngineType = action.payload;
   },
   setSelectedMode: (state, action: PayloadAction<'engine' | 'debug' | 'interactive'>) => {

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { pipelineSchema } from "@bh-ai/schemas";
 
-export function usePipelineModules(selectedEngineType: 'pyspark' | 'flink' = 'pyspark') {
+export function usePipelineModules(selectedEngineType: 'pyspark' | 'pyflink' = 'pyspark') {
   console.log(pipelineSchema)
   return useMemo(() => {
     try {
@@ -14,17 +14,18 @@ export function usePipelineModules(selectedEngineType: 'pyspark' | 'flink' = 'py
         transformations = pipelineSchema;
       } else {
         // Find the engine-specific schema in allOf (nested format)
-        const engineSchema = pipelineSchema.allOf?.find((schema: any) => 
+        const schema = pipelineSchema as any; // Type assertion to access allOf property
+        const engineSchema = schema.allOf?.find((schema: any) => 
           schema.if?.properties?.engine_type?.const == selectedEngineType
         );
-        console.log(engineSchema?.then?.properties?.transformations?.items?.items?.allOf) 
+        console.log(engineSchema?.then?.properties?.transformations?.items?.allOf) 
 
-        if (!engineSchema?.then?.properties?.transformations?.items?.items?.allOf) {
+        if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
           console.warn(`No transformations found for engine type: ${selectedEngineType}`);
           return [];
         }
 
-        transformations = engineSchema.then.properties.transformations.items.items?.allOf;
+        transformations = engineSchema.then.properties.transformations.items?.allOf;
       }
 
       if (!transformations || !Array.isArray(transformations)) {

@@ -145,40 +145,36 @@ export const useConnections = (options: UseConnectionsOptions = { shouldFetch: t
 }
 
 export function useConnectionSearch() {
-    const { getOne: searchConnection } = useResource<Connection[]>(
-        '/connection_registry/connection_config',
-        CATALOG_REMOTE_API_URL,
-        true
-    );
-
+    const { connections } = useConnections({ shouldFetch: true });
     const [searchQuery, setSearchQuery] = useState('');
 
-    const { data: searchResults, isLoading, error } = searchConnection({
-        url: '/connection_registry/connection_config/search',
-        params: { connection_name: searchQuery },
-        queryOptions: {
-            enabled: !!searchQuery,
-            retry: 2
-        }
-    });
-
-    const connectionFound = searchResults && searchResults.length > 0;
-    const connectionNotFound = searchResults && searchResults.length === 0;
-
+    const connectionFound =
+        !!searchQuery &&
+        connections.some(
+            (conn) =>
+                conn.connection_config_name?.toLowerCase().trim() === searchQuery.toLowerCase().trim()
+        );
+    const connectionNotFound =
+        !!searchQuery &&
+        !connections.some(
+            (conn) =>
+                conn.connection_config_name?.toLowerCase().trim() === searchQuery.toLowerCase().trim()
+        );
     const debounceSearchConnection = useMemo(
         () => debounce((query: string) => setSearchQuery(query), 800),
         []
     );
-    useEffect(() => {
-        return () => debounceSearchConnection.cancel();
-    }, [debounceSearchConnection]);
-
     return {
-        searchedConnection: connectionFound ? searchResults[0] : null,
+        searchedConnection: connectionFound
+            ? connections.find(
+                  (conn) =>
+                      conn.connection_config_name?.toLowerCase().trim() === searchQuery.toLowerCase().trim()
+              )
+            : null,
         connectionFound,
         connectionNotFound,
-        isLoading,
-        error,
+        isLoading: false,
+        error: null,
         debounceSearchConnection,
     };
 }

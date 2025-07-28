@@ -14,7 +14,7 @@ export function debugPipelineSchema() {
       if (engineSchema.then?.properties?.transformations?.items?.items?.allOf) {
         console.log(`Transformations for engine ${engineSchema.if?.properties?.engine_type?.const}:`);
         
-        engineSchema.then.properties.transformations.items.items.allOf.forEach((transformation: any, tIndex: number) => {
+        engineSchema.then.properties.transformations.items.allOf.forEach((transformation: any, tIndex: number) => {
           const transformationType = transformation?.if?.properties?.transformation?.const;
           console.log(`  Transformation ${tIndex}: ${transformationType}`);
           
@@ -50,7 +50,7 @@ export function debugTransformationSchema(transformationName: string, engineType
     return null;
   }
   
-  const transformation = engineSchema.then.properties.transformations.items.items.allOf.find((t: any) => 
+  const transformation = engineSchema.then.properties.transformations.items.allOf.find((t: any) => 
     t.if?.properties?.transformation?.const === transformationName
   );
   

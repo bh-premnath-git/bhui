@@ -282,26 +282,10 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       };
     }
     
-    // Add specific initialization for Lookup form
+    // Lookup form is now handled by separate LookupForm component
     if (schema?.title === 'Lookup') {
-      return {
-        lookup_type: initialValues?.lookup_type || 'Column Based',
-        lookup_config: initialValues?.lookup_config || { 
-          name: '', 
-          source: {},
-          read_options: {
-            header: true
-          }
-        },
-        lookup_data: initialValues?.lookup_data || [],
-        lookup_columns: initialValues?.lookup_columns,
-        lookup_conditions: initialValues?.lookup_conditions || {
-          column_name: '',
-          lookup_with: ''
-        },
-        keep: initialValues?.keep || 'First',
-        ...values
-      };
+      // Return early - this will be handled by LookupForm component
+      return values;
     }
     
     // Add specific initialization for CustomPySpark form
@@ -978,11 +962,7 @@ console.log(initialFormValues,"initialFormValues")
       }
       // Handle object fields
       else if (value !== null && typeof value === 'object') {
-        // Special handling for lookup_conditions - always preserve the structure
-        if (key === 'lookup_conditions') {
-          acc[key] = value;
-        } else {
-          const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
+        const cleanObj = Object.entries(value).reduce((objAcc, [objKey, objValue]) => {
             if (objValue !== '' && objValue !== null && objValue !== undefined && String(objValue).trim() !== '') {
               objAcc[objKey] = objValue;
             }
@@ -992,7 +972,6 @@ console.log(initialFormValues,"initialFormValues")
           if (Object.keys(cleanObj).length > 0) {
             acc[key] = cleanObj;
           }
-        }
       }
       // Handle primitive values
       else if (value !== undefined && value !== null && value !== '' && String(value).trim() !== '') {
@@ -1006,13 +985,7 @@ console.log(initialFormValues,"initialFormValues")
     if (schema && Array.isArray(schema.required) && schema.required.length > 0) {
       // Check if all required fields are present in cleanValues
       const missingRequiredFields = schema.required.filter(field => {
-        // Special handling for lookup_conditions
-        if (field === 'lookup_conditions') {
-          const conditions = cleanValues[field];
-          if (!conditions) return true;
-          // Check if both column_name and lookup_with have values
-          return !conditions.column_name || !conditions.lookup_with;
-        }
+        // Lookup conditions are now handled by separate LookupForm component
         // For array fields, check if they have at least one valid item
         if (Array.isArray(cleanValues[field])) {
           return cleanValues[field].length === 0;
@@ -2495,115 +2468,7 @@ const FormContent: React.FC<{
       return <div>Invalid field configuration for {key}</div>;
     }
     
-    // Special handling for lookup_data field
-    if (key === 'lookup_data' && value.type === 'array') {
-      return (
-        <div className="space-y-4">
-          <Controller
-            name={key}
-            control={control}
-            render={({ field }) => (
-              <LookupDataTable
-                value={field.value || []}
-                onChange={field.onChange}
-                disabled={false}
-              />
-            )}
-          />
-        </div>
-      );
-    }
-
-    // Special handling for lookup_columns field
-    if (key === 'lookup_columns' && value.type === 'array') {
-      // Get current form values
-      const currentLookupType = watch('lookup_type');
-      const lookupData = watch('lookup_data');
-      const lookupConfig = watch('lookup_config');
-      
-      return (
-        <div className="space-y-4">
-          <Controller
-            name={key}
-            control={control}
-            render={({ field }) => (
-              <LookupColumnsTable
-                value={field.value || []}
-                onChange={field.onChange}
-                availableColumns={[]} // Will be fetched automatically
-                disabled={false}
-                selectedSource={lookupConfig?.source}
-                lookupType={currentLookupType}
-                lookupData={lookupData}
-              />
-            )}
-          />
-        </div>
-      );
-    }
-
-    // Special handling for lookup_config field
-    if (key === 'lookup_config' && value.type === 'object') {
-      return (
-        <div className="space-y-4">
-          <Controller
-            name={`${key}.source`}
-            control={control}
-            render={({ field }) => (
-              <SourceSelector
-                value={field.value || {}}
-                onChange={field.onChange}
-                disabled={false}
-              />
-            )}
-          />
-          
-          {/* Other lookup config fields */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Configuration Name
-              </label>
-              <Controller
-                name={`${key}.name`}
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter configuration name"
-                    className="w-full"
-                  />
-                )}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Has Header
-              </label>
-              <Controller
-                name={`${key}.read_options.header`}
-                control={control}
-                render={({ field }) => (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="header-checkbox"
-                      checked={field.value || false}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="header-checkbox" className="text-sm text-gray-700">
-                      First row contains headers
-                    </label>
-                  </div>
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      );
-    }
+    // Lookup-specific fields are now handled by the separate LookupForm component
     
     if (value.type === 'array') {
       // Check if it's a string array
@@ -2939,21 +2804,10 @@ const FormContent: React.FC<{
         renderSequenceGeneratorFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (
         (() => {
-          // Filter tabs based on lookup_type for Lookup form - memoized to prevent unnecessary re-renders
+          // Get all tabs for non-lookup forms
           const filteredTabs = useMemo(() => {
-            return Object.entries(schema.properties || {}).filter(([key]) => {
-              if (schema.title === 'Lookup') {
-                const currentLookupType = watch('lookup_type');
-                if (key === 'lookup_data' && currentLookupType === 'Column Based') {
-                  return false; // Don't show lookup_data tab for Column Based
-                }
-                if (key === 'lookup_config' && currentLookupType === 'Literal') {
-                  return false; // Don't show lookup_config tab for Literal
-                }
-              }
-              return true;
-            });
-          }, [schema.properties, schema.title, watch('lookup_type')]);
+            return Object.entries(schema.properties || {});
+          }, [schema.properties]);
 
           return (
             <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>

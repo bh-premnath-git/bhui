@@ -26,7 +26,7 @@ interface FieldRendererProps {
   parentKey?: string;
   sourceColumns?: Array<{ name: string; dataType: string }>;
   onExpressionGenerate?: (fieldName: string) => Promise<void>;
-  isGenerating?: boolean;
+  isFieldGenerating?: (fieldName: string) => boolean;
 }
 
 // SQL keywords for Monaco editor autocomplete
@@ -129,7 +129,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   parentKey = '',
   sourceColumns = [],
   onExpressionGenerate,
-  isGenerating = false,
+  isFieldGenerating,
 }) => {
   const [isEditorReady, setIsEditorReady] = useState(false);
   const [editorHeight, setEditorHeight] = useState(40);
@@ -142,10 +142,22 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // Check for UI hints
   const uiHint = field['ui-hint'];
-  const isExpressionField = uiHint === 'expression' || field.type === 'expression';
+  const isExpressionField = uiHint === 'expression' || field.type === 'expression' || fieldKey === 'expression';
   const isPythonEditor = uiHint === 'python_editor' || field.type === 'python_editor';
   const isAutoComplete = uiHint === 'auto-complete' || uiHint === 'autocomplete' || field.type === 'autocomplete';
   const isCustomComponent = uiHint === 'custom' && field.component;
+  
+  // Debug logging for expression fields
+  if (fieldKey === 'expression') {
+    console.log('🎯 Expression field debug:', {
+      fieldKey,
+      uiHint,
+      fieldType: field.type,
+      isExpressionField,
+      fullFieldKey,
+      currentValue: form.watch(fullFieldKey)
+    });
+  }
   
   // Debug logging for autocomplete fields
   if (uiHint === 'auto-complete' || uiHint === 'autocomplete' || field.type === 'autocomplete') {
@@ -247,6 +259,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     }
   }, [form?.watch(fullFieldKey), isExpressionField, fullFieldKey, form]);
 
+  // Watch for form value changes and update Monaco Editor programmatically
+  // Note: Removed this effect as it was causing focus issues by programmatically updating the editor
+  // The Monaco editor now relies on the value prop for updates, which preserves focus
+
   // Monaco editor mount handler
   const handleEditorMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     try {
@@ -282,14 +298,26 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // Handle expression generation
   const handleExpressionGenerate = useCallback(async () => {
-    if (onExpressionGenerate && !isGenerating) {
+    const isCurrentlyGenerating = isFieldGenerating ? isFieldGenerating(fullFieldKey) : false;
+    
+    console.log('🎯 FieldRenderer handleExpressionGenerate called:', {
+      fieldKey,
+      parentKey,
+      fullFieldKey,
+      hasOnExpressionGenerate: !!onExpressionGenerate,
+      isCurrentlyGenerating,
+      isExpressionField,
+      uiHint: field['ui-hint']
+    });
+    
+    if (onExpressionGenerate && !isCurrentlyGenerating) {
       try {
         await onExpressionGenerate(fullFieldKey);
       } catch (error) {
         console.error('Error generating expression:', error);
       }
     }
-  }, [onExpressionGenerate, isGenerating, fullFieldKey]);
+  }, [onExpressionGenerate, isFieldGenerating, fullFieldKey, fieldKey, parentKey]);
 
   // Handle complex objects with properties or conditional logic outside of FormField
   if (field.type === 'object' && (field.properties || field.allOf)) {
@@ -354,7 +382,11 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     <FormField
       control={form.control}
       name={fullFieldKey}
-      render={({ field: formField }) => (
+      render={({ field: formField }) => {
+        // Get the current value for expression fields without causing unnecessary re-renders
+        const watchedValue = formField.value;
+        
+        return (
         <FormItem>
           {!isFieldTitleNumeric && (
             <div className="flex items-center justify-between mb-2">
@@ -399,11 +431,15 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 >
                   <div className="border rounded-md bg-white border-gray-300">
                     <MonacoEditor
+                      key={fullFieldKey}
                       height={`${editorHeight}px`}
                       language="sql"
                       theme="vs-light"
-                      value={formField.value || ''}
-                      onChange={(newValue) => formField.onChange(newValue || '')}
+                      value={watchedValue || ''}
+                      onChange={(newValue) => {
+                        console.log('🎯 Monaco Editor onChange:', { fullFieldKey, newValue, oldValue: formField.value });
+                        formField.onChange(newValue || '');
+                      }}
                       options={{
                         minimap: { enabled: false },
                         lineNumbers: 'off',
@@ -444,25 +480,28 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     />
                   </div>
                 </div>
-                {onExpressionGenerate && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleExpressionGenerate}
-                    disabled={isGenerating}
-                    className={`absolute right-2 top-2 p-1 h-auto ${
-                      true ? 'bg-black text-white hover:bg-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    } ${isGenerating ? 'opacity-70' : ''}`}
-                    title={isGenerating ? "Generating expression..." : "Generate expression with AI"}
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Hammer className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
+                {onExpressionGenerate && (() => {
+                  const isCurrentlyGenerating = isFieldGenerating ? isFieldGenerating(fullFieldKey) : false;
+                  return (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleExpressionGenerate}
+                      disabled={isCurrentlyGenerating}
+                      className={`absolute right-2 top-2 p-1 h-auto ${
+                        true ? 'bg-black text-white hover:bg-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      } ${isCurrentlyGenerating ? 'opacity-70' : ''}`}
+                      title={isCurrentlyGenerating ? "Generating expression..." : "Generate expression with AI"}
+                    >
+                      {isCurrentlyGenerating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Hammer className="h-4 w-4" />
+                      )}
+                    </Button>
+                  );
+                })()}
               </div>
             ) : /* Handle Custom Components */
             isCustomComponent ? (
@@ -534,12 +573,15 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 </SelectContent>
               </Select>
             ) : field.type === 'string' && (field.format === 'textarea' || field.minLength > 100 || fieldKey === 'expression') ? (
-              <Textarea
-                {...formField}
-                placeholder={field.examples?.[0] || field.default || (fieldKey === 'expression' ? 'Enter SQL expression...' : '')}
-                rows={fieldKey === 'expression' ? 2 : (field.format === 'textarea' ? 4 : 3)}
-                className={`text-sm resize-none ${fieldKey === 'expression' ? 'font-mono' : ''}`}
-              />
+              <>
+                {fieldKey === 'expression' && console.log('🎯 Using Textarea for expression field:', { fullFieldKey, value: formField.value })}
+                <Textarea
+                  {...formField}
+                  placeholder={field.examples?.[0] || field.default || (fieldKey === 'expression' ? 'Enter SQL expression...' : '')}
+                  rows={fieldKey === 'expression' ? 2 : (field.format === 'textarea' ? 4 : 3)}
+                  className={`text-sm resize-none ${fieldKey === 'expression' ? 'font-mono' : ''}`}
+                />
+              </>
             ) : field.type === 'array' ? (
               // Handle array fields with simple textarea for now
               <div className="space-y-2">
@@ -622,7 +664,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           )}
           <FormMessage className="text-xs" />
         </FormItem>
-      )}
+        );
+      }}
     />
   );
 };

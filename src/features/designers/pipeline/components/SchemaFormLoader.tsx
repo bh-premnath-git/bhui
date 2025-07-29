@@ -652,21 +652,36 @@ const fallbackSchemas = {}
           const targetId = `target_${formData.target_name}`;
 
           // Create or update the target
-          updatedTemplate.targets[targetId] = {
+          const targetData = {
             "name": formData.target_name,
             "target_type": formData.target_type,
-            "load_mode": formData.load_mode || "append",
-            ...formData
+            "load_mode": formData.load_mode || "append"
           };
 
-          // If there's a connection, update it as well
+          // Add target-type specific fields
+          if (formData.target_type === 'File') {
+            targetData.file_name = formData.file_name || formData.target_name;
+          } else if (formData.target_type === 'Relational') {
+            targetData.table_name = formData.table_name || formData.target_name;
+          }
+
+          // If there's a connection, add it to the target and also store it separately
           if (formData.connection) {
             const connectionId = `connection_${formData.target_name}`;
+            
+            // Add connection reference to target
+            targetData.connection = {
+              "$ref": `#/connections/${connectionId}`
+            };
+            
+            // Store connection separately
             updatedTemplate.connections[connectionId] = {
               "name": `${formData.target_name}_connection`,
               ...formData.connection
             };
           }
+
+          updatedTemplate.targets[targetId] = targetData;
         }
         break;
         
@@ -688,21 +703,36 @@ const fallbackSchemas = {}
           const targetName = formData.target.target_name;
 
           // Create or update the target
-          updatedTemplate.targets[targetId] = {
+          const targetData = {
             "name": targetName,
             "target_type": formData.target.target_type,
-            "load_mode": formData.target.load_mode || "append",
-            ...formData.target
+            "load_mode": formData.target.load_mode || "append"
           };
 
-          // If there's a connection, update it as well
+          // Add target-type specific fields
+          if (formData.target.target_type === 'File') {
+            targetData.file_name = formData.target.file_name || targetName;
+          } else if (formData.target.target_type === 'Relational') {
+            targetData.table_name = formData.target.table_name || targetName;
+          }
+
+          // If there's a connection, add it to the target and also store it separately
           if (formData.target.connection) {
             const connectionId = `connection_${targetName}`;
+            
+            // Add connection reference to target
+            targetData.connection = {
+              "$ref": `#/connections/${connectionId}`
+            };
+            
+            // Store connection separately
             updatedTemplate.connections[connectionId] = {
               "name": `${targetName}_connection`,
               ...formData.target.connection
             };
           }
+
+          updatedTemplate.targets[targetId] = targetData;
           
           // Find the last transformation to make this dependent on
           const lastTransformation = updatedTemplate.transformations.length > 0

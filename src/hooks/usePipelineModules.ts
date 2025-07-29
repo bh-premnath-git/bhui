@@ -2,10 +2,8 @@ import { useMemo } from 'react';
 import { pipelineSchema } from "@bh-ai/schemas";
 
 export function usePipelineModules(selectedEngineType: 'pyspark' | 'pyflink' = 'pyspark') {
-  console.log(pipelineSchema)
   return useMemo(() => {
     try {
-      console.log(selectedEngineType)
       
       let transformations;
       
@@ -18,7 +16,6 @@ export function usePipelineModules(selectedEngineType: 'pyspark' | 'pyflink' = '
         const engineSchema = schema.allOf?.find((schema: any) => 
           schema.if?.properties?.engine_type?.const == selectedEngineType
         );
-        console.log(engineSchema?.then?.properties?.transformations?.items?.allOf) 
 
         if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
           console.warn(`No transformations found for engine type: ${selectedEngineType}`);

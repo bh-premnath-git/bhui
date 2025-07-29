@@ -50,7 +50,6 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   // Use dynamic modules based on engine type for pipeline, static for flow
   const [flowModuleTypes] = useModules(); // For flow
   const pipelineModuleTypes = usePipelineModules(selectedEngineType); // For pipeline
-  console.log(pipelineModuleTypes)
   // Choose the appropriate module types based on context
   const moduleTypes = isFlow ? flowModuleTypes : pipelineModuleTypes;
   
@@ -82,9 +81,9 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     }));
   }, [moduleTypes]);
 
-  console.log('Selected Engine Type:', selectedEngineType);
-  console.log('Module Types:', moduleTypes);
-  console.log('Filtered Nodes:', filteredNodes);
+  // console.log('Selected Engine Type:', selectedEngineType);
+  // console.log('Module Types:', moduleTypes);
+  // console.log('Filtered Nodes:', filteredNodes);
 
   let flowNodes = moduleTypes.map((type) => {
     return {
@@ -147,10 +146,10 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
 
 
   return (
-    <div className="bg-[#fff] w-full p-0 border-border z-50">
-      <div className="flex flex-col sm:flex-row items-center justify-between bg-card">
+    <div className="bg-[#fff] w-full p-0 border-border z-50 overflow-hidden">
+      <div className="flex items-center justify-between bg-card min-w-0 gap-2">
         {/* Left section - AutoSave, NameEditor, and action buttons */}
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
+        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
           <AutoSaveStatus
             status={autoSaveStatus}
             lastSaved={lastSavedTime}
@@ -210,10 +209,12 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           {isFlow && <SettingsModal />}
 
           {!isFlow && (
-            <div className="flex items-center space-x-2">
-              <ModeSelector />
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <div className="hidden lg:block">
+                <ModeSelector />
+              </div>
 
-              <div className="h-6 w-px bg-gray-300 mx-2" />
+              <div className="h-6 w-px bg-gray-300 mx-2 hidden lg:block" />
 
               <Popover open={showClusterDropdown} onOpenChange={setShowClusterDropdown}>
                 <Tooltip>
@@ -257,18 +258,16 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
 
         {/* Middle section - Node controls */}
         {pipelineType?.toLowerCase() != "requirement" &&
-          (<div className="flex items-center justify-center gap-3 px-2 w-full sm:w-auto">
+          (<div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
             <NodeDropList
               filteredNodes={isFlow ? flowNodes : filteredNodes}
               handleNodeClick={handleNodeClick}
               addNodeToHistory={addNodeToHistory}
             />
-
           </div>)}
 
-
         {/* Right section - Pipeline controls and AI button */}
-        <div className="flex items-center justify-end space-x-4 w-full sm:w-auto">
+        <div className="flex items-center justify-end space-x-2 flex-shrink-0">
           {!isFlow && (
             <PipelineControls
               handleRunClick={handleRun}
@@ -283,17 +282,21 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           )}
 
           {isFlow && (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 overflow-hidden">
               <EnvironmentSelect />
-              <SchedulePicker />
+              <div className="hidden md:block">
+                <SchedulePicker />
+              </div>
               <DeployingPart />
-              <CommitPart />
+              <div className="hidden lg:block">
+                <CommitPart />
+              </div>
               <PlaybackButton />
             </div>
           )}
 
           {!isRightAsideOpen && (
-            <div className="border-l border-border pl-4">
+            <div className="border-l border-border pl-2 flex-shrink-0">
               <AIButton variant={playGroundHeader} color="#009f59" />
             </div>
           )}

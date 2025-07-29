@@ -35,6 +35,7 @@ import { useAppSelector } from '@/hooks/useRedux';
 import { random } from 'lodash';
 import { usePipelineOperations } from '@/hooks/usePipelineOperations';
 import { Pipeline } from '@/types/designer/pipeline';
+import { debug } from 'console';
 
 interface UIProperties {
     color: string;
@@ -798,26 +799,46 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
             
             if (nodeIndex !== -1) {
-                // Preserve existing source data if it exists
-                const existingSource = currentNodes[nodeIndex].data.source || {};
-                
                 // Update the node title if name is provided
                 const updatedTitle = data.name || currentNodes[nodeIndex].data.title;
                 
-
-                // Special handling for Filter nodes
+                // Special handling for different node types
                 let transformationData = {
                     ...currentNodes[nodeIndex].data.transformationData,
                     ...data,
                     name: updatedTitle
                 };
                 
-                // Special handling for Filter nodes
-                if (currentNodes[nodeIndex].data.label === 'Filter') {
-                    // Ensure condition is properly set
+                let sourceData = currentNodes[nodeIndex].data.source || {};
+                
+                // Special handling for Target nodes
+                if (currentNodes[nodeIndex].data.label === 'Target') {
+                    console.log('🔧 DataPipelineContext - Handling Target node data:', data);
+                    
+                    // For target nodes, the main configuration should be in source
+                    if (data.source) {
+                        sourceData = {
+                            ...data.source,
+                            name: updatedTitle
+                        };
+                        console.log('🔧 DataPipelineContext - Updated sourceData:', sourceData);
+                    }
+                    // Keep transformation data for write options
+                    if (data.transformationData) {
+                        transformationData = {
+                            ...transformationData,
+                            ...data.transformationData
+                        };
+                        console.log('🔧 DataPipelineContext - Updated transformationData:', transformationData);
+                    }
+                } else if (currentNodes[nodeIndex].data.label === 'Filter') {
+                    // Special handling for Filter nodes
                     if (data.condition !== undefined) {
                         transformationData.condition = data.condition;
                     }
+                } else {
+                    // For other nodes, preserve existing source data
+                    sourceData = currentNodes[nodeIndex].data.source || {};
                 }
                 
                 // Create a new node object with updated data
@@ -827,8 +848,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         ...currentNodes[nodeIndex].data,
                         title: updatedTitle,
                         transformationData: transformationData,
-                        // Preserve existing source data
-                        source: existingSource
+                        source: sourceData
                     }
                 };
                 
@@ -1223,7 +1243,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const nodeNumber = existingNodes.length + 1;
         const nodeLabel = existingNodes.length > 0
             ? `${baseModuleName} ${nodeNumber}`
-            : baseModuleName;
+            : baseModuleName ;
         // Find the last selected node's position
         const lastNode = nodes[nodes.length-1 ];
         const basePosition = lastNode ? {
@@ -1252,7 +1272,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     return ({ [op.type]: op.requiredFields })
                 }) || [],
                 source: source,
-                title: source?.data_src_name || nodeLabel, // Also set the title with the numbered label
+                title: source?.data_src_name.replace(/[-.\s]/g, '_') || nodeLabel.replace(/[-.\s]/g, '_'), // Also set the title with the numbered label
                 // Initialize an empty transformationData object to store form data
                 transformationData: {
                     name: source?.data_src_name || nodeLabel,

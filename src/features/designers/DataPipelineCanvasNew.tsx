@@ -11,7 +11,6 @@ import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/Sho
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { PipelineForm } from '@/features/designers/pipeline/components/PipelineForm';
-import { GlobalCustomComponentRenderer } from '@/features/designers/pipeline/components/ConditionalSchemaRenderer';
 import LookupForm from '@/features/designers/pipeline/components/form-sections/LookupForm';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
@@ -332,20 +331,58 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             </Dialog>
           )}
 
-          {selectedSchema && selectedSchema.title === 'Target' && (
-            <TargetPopUp
-              isOpen={isFormOpen}
-              onClose={handleDialogClose}
-              initialData={{
-                ...formStates[selectedSchema?.nodeId],
-                nodeId: selectedSchema?.nodeId
-              }}
-              sourceColumns={sourceColumns}
-              onSubmit={handleFormSubmit}
-            />
-          )}
+          {selectedSchema && selectedSchema.title === 'Target' && (() => {
+            console.log('🔧 DataPipelineCanvasNew - Target selectedSchema:', selectedSchema);
+            console.log('🔧 DataPipelineCanvasNew - Target initialValues:', selectedSchema.initialValues);
+            console.log('🔧 DataPipelineCanvasNew - Target formStates[nodeId]:', formStates[selectedSchema?.nodeId]);
+            
+            const sourceData = {
+              // Use initialValues from selectedSchema if available, otherwise fallback to formStates
+              ...(selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {}),
+              nodeId: selectedSchema?.nodeId
+            };
+            
+            console.log('🔧 DataPipelineCanvasNew - Target sourceData being passed:', sourceData);
+            
+            return (
+              <TargetPopUp
+                isOpen={isFormOpen}
+                onClose={handleDialogClose}
+                source={sourceData}
+                sourceColumns={sourceColumns}
+                onSubmit={handleFormSubmit}
+                nodeId={selectedSchema?.nodeId}
+              />
+            );
+          })()}
+          
+          {selectedSchema && selectedSchema.title === 'Reader' && (() => {
+            console.log('🔧 DataPipelineCanvasNew - Reader selectedSchema:', selectedSchema);
+            console.log('🔧 DataPipelineCanvasNew - Reader initialValues:', selectedSchema.initialValues);
+            console.log('🔧 DataPipelineCanvasNew - Reader formStates[nodeId]:', formStates[selectedSchema?.nodeId]);
+            
+            const sourceData = {
+              // Use initialValues from selectedSchema if available, otherwise fallback to formStates
+              ...(selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {}),
+              nodeId: selectedSchema?.nodeId
+            };
+            
+            console.log('🔧 DataPipelineCanvasNew - Reader sourceData being passed:', sourceData);
+            
+            return (
+              <OrderPopUp
+                isOpen={isFormOpen}
+                onClose={handleDialogClose}
+                source={sourceData}
+                nodeId={selectedSchema.nodeId}  
+                initialData={sourceData}
+                onSourceUpdate={handleSourceUpdate}
+              />
+            );
+          })()}
 
-          {selectedSchema && selectedSchema.title !== 'Lookup' && selectedSchema.title !== 'Target' && (
+
+          {selectedSchema && selectedSchema.title !== 'Lookup' && selectedSchema.title !== 'Target'&& selectedSchema.title !== 'Reader' && (
             <PipelineForm
               isOpen={isFormOpen}
               onClose={handleDialogClose}
@@ -414,7 +451,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           {/* Loading Overlay */}
 
           {/* Global Custom Component Renderer - renders custom components outside main component tree */}
-          <GlobalCustomComponentRenderer />
+          {/* <GlobalCustomComponentRenderer /> */}
 
         </div>
       </div>) : (<>

@@ -50,7 +50,6 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   // Use dynamic modules based on engine type for pipeline, static for flow
   const [flowModuleTypes] = useModules(); // For flow
   const pipelineModuleTypes = usePipelineModules(selectedEngineType); // For pipeline
-  console.log(pipelineModuleTypes)
   // Choose the appropriate module types based on context
   const moduleTypes = isFlow ? flowModuleTypes : pipelineModuleTypes;
   
@@ -82,9 +81,9 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     }));
   }, [moduleTypes]);
 
-  console.log('Selected Engine Type:', selectedEngineType);
-  console.log('Module Types:', moduleTypes);
-  console.log('Filtered Nodes:', filteredNodes);
+  // console.log('Selected Engine Type:', selectedEngineType);
+  // console.log('Module Types:', moduleTypes);
+  // console.log('Filtered Nodes:', filteredNodes);
 
   let flowNodes = moduleTypes.map((type) => {
     return {

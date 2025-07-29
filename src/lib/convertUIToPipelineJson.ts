@@ -543,6 +543,11 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
     const targets = uiNodes
         .filter(node => node.id.startsWith('Target_'))
         .map(node => {
+            console.log('🔧 convertUIToPipelineJson - Processing target node:', node.id);
+            console.log('🔧 convertUIToPipelineJson - Target node data:', node.data);
+            console.log('🔧 convertUIToPipelineJson - Target source data:', node.data.source);
+            console.log('🔧 convertUIToPipelineJson - Target transformation data:', node.data.transformationData);
+            
             // Determine the correct target_type
             let targetType = node.data.source?.target_type;
             // If connection type is Local or S3, ensure target_type is File
@@ -553,17 +558,29 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 targetType = "Relational";
             }
             
-            return {
-                name: node?.data.source?.name,
+            const targetData = {
+                name: node?.data.source?.name || node?.data.source?.target_name || node?.data.title,
                 target_type: targetType, // Use target_type instead of type
                 connection: node?.data.source?.connection,
-                load_mode: node?.data.source?.load_mode,
+                load_mode: node?.data.source?.load_mode || 'append',
                 file_name: node?.data.source?.file_name,
                 table_name: node?.data.source?.table_name,
                 target_name: node?.data.source?.target_name,
                 file_type: node?.data.source?.file_type?.toLowerCase(),
                 write_options: node.data.transformationData?.write_options
             };
+            
+            console.log('🔧 convertUIToPipelineJson - Generated target data:', targetData);
+            
+            // Validate that required fields are present
+            if (!targetData.connection) {
+                console.error('🔧 convertUIToPipelineJson - Missing connection for target:', targetData.name);
+            }
+            if (!targetData.target_type) {
+                console.error('🔧 convertUIToPipelineJson - Missing target_type for target:', targetData.name);
+            }
+            
+            return targetData;
         });
     
     return {

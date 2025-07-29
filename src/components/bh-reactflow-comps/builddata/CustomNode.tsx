@@ -403,7 +403,59 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
             if (data?.source || data?.label === "Reader") {
                 dispatch(setIsRightPanelOpen(false))
                 setSelectedSourceLabel("Source");
-                setSelectedSource(data?.source);
+                
+                // For Reader nodes, we need to create a proper schema structure
+                if (data?.label === "Reader") {
+                    console.log('🔧 CustomNode: Creating Reader schema for data:', data);
+                    console.log('🔧 CustomNode: data.source:', data?.source);
+                    console.log('🔧 CustomNode: data.data_src_id:', data?.data_src_id);
+                    console.log('🔧 CustomNode: data.source?.data_src_id:', data?.source?.data_src_id);
+                    
+                    // Create a Reader schema structure
+                    const readerSchema = {
+                        title: "Reader",
+                        nodeId: id,
+                        initialValues: {
+                            reader_name: data?.title || data?.source?.data_src_name || data?.source?.name || '',
+                            name: data?.title || data?.source?.data_src_name || data?.source?.name || '',
+                            file_type: data?.source?.file_type || 'CSV',
+                            source: {
+                                type: data?.source?.type || 'File',
+                                source_name: data?.source?.data_src_name || data?.source?.name || data?.title || '',
+                                file_name: data?.source?.file_name || data?.source?.data_src_name || data?.title || '',
+                                table_name: data?.source?.table_name || data?.source?.data_src_name || '',
+                                bh_project_id: data?.source?.bh_project_id || '',
+                                data_src_id: data?.source?.data_src_id || data?.data_src_id || '',
+                                file_type: data?.source?.file_type || 'CSV',
+                                connection: {
+                                    ...data?.source?.connection,
+                                    name: data?.source?.connection?.name || data?.source?.connection?.connection_config_name || '',
+                                    connection_config_id: data?.source?.connection_config_id || data?.source?.connection?.connection_config_id || '',
+                                    file_path_prefix: data?.source?.file_path_prefix || data?.source?.connection?.file_path_prefix || '',
+                                },
+                                connection_config_id: data?.source?.connection_config_id || data?.source?.connection?.connection_config_id || '',
+                                ...data?.source
+                            },
+                            ...data?.source,
+                            nodeId: id
+                        }
+                    };
+                    
+                    console.log('🔧 CustomNode: Setting Reader schema with initialValues:', readerSchema);
+                    
+                    setSelectedSchema(readerSchema);
+                    
+                    // Update form states with the Reader data
+                    setFormStates((prev: any) => ({
+                        ...prev,
+                        [id]: readerSchema.initialValues
+                    }));
+                    
+                    setIsFormOpen(true);
+                } else {
+                    setSelectedSource(data?.source);
+                }
+                
                 // Mark that the form has been opened for this node
                 setFormHasBeenOpened(true);
             }
@@ -458,12 +510,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         const rowCount = transformationCounts?.find(
             (t) => t.transformationName?.toLowerCase() === titleValue?.toLowerCase()
         )?.rowCount;
-        
-        console.log('Row count found:', rowCount);
-        console.log('Transformation counts:', transformationCounts);
-        console.log('Title value:', titleValue);
-        console.log('Pipeline details:', pipelineDtl);
-        console.log('Attached cluster:', attachedCluster);
         
         // Proceed with API call if we have the necessary data
         if (titleValue && pipelineDtl && (pipelineDtl.name || pipelineDtl.pipeline_name)) {

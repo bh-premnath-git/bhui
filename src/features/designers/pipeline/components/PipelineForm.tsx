@@ -19,6 +19,7 @@ import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
 import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { generateJoinPayload } from '@/lib/pipelineJoinPayload';
 import { AppDispatch, RootState } from '@/store';
+import { cn } from '@/lib/utils';
 
 interface PipelineFormProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface PipelineFormProps {
   initialValues?: any; // Initial form values (for editing existing nodes)
   onSubmit?: (values: any) => void; // Submit handler (for editing existing nodes)
   currentNodeId?: string; // Current node ID (for editing existing nodes)
+  inline?: boolean; // Whether to render inline (without dialog wrapper)
 }
 
 // Function to enhance schema with missing UI hints for expression fields
@@ -114,6 +116,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
   initialValues,
   onSubmit,
   currentNodeId,
+  inline = false,
 }) => {
   const [step, setStep] = useState<'initial' | 'configuration'>('initial');
   const [selectedTransformation, setSelectedTransformation] = useState<any>(null);
@@ -123,19 +126,38 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
   const [columnSuggestions, setColumnSuggestions] = useState<Array<{ name: string; dataType: string }>>([]);
+  const [rightAsideWidth, setRightAsideWidth] = useState<number>(25);
 
   // Debug: Log when column suggestions change
   useEffect(() => {
     console.log('🔄 Column suggestions changed:', columnSuggestions);
   }, [columnSuggestions]);
 
+  // Listen for right aside resize events to make form responsive
+  useEffect(() => {
+    const handleRightAsideResize = (event: CustomEvent) => {
+      setRightAsideWidth(event.detail.width);
+    };
+
+    document.addEventListener('rightAsideResize', handleRightAsideResize as EventListener);
+    
+    return () => {
+      document.removeEventListener('rightAsideResize', handleRightAsideResize as EventListener);
+    };
+  }, []);
+
   const { nodes, setNodes, setFormStates, nodeCounters, setNodeCounters, edges } = usePipelineContext();
   const pipelineModules = usePipelineModules(selectedEngineType);
   const dispatch = useDispatch<AppDispatch>();
   const { pipelineDtl } = useSelector((state: RootState) => state.buildPipeline);
 
-  // Determine if we're editing an existing node
+  // Determine if we're editing an existing node or configuring a specific transformation
   const isEditingExistingNode = Boolean(selectedSchema && currentNodeId && initialValues);
+  const isConfiguringSpecificTransformation = Boolean(selectedSchema && selectedSchema.title && !isEditingExistingNode);
+  
+  // For inline forms, we should always show configuration if we have a schema
+  const shouldShowConfiguration = inline ? Boolean(selectedSchema && selectedSchema.title) : (isEditingExistingNode || isConfiguringSpecificTransformation);
+  
   
   // Get engine type from pipeline details or default to pyspark
   const pipelineEngineType = pipelineDtl?.engine_type || 'pyspark';
@@ -145,8 +167,8 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     try {
       if (!pipelineSchema?.allOf) return [];
       
-      // Use pipeline engine type or selected engine type
-      const engineType = isEditingExistingNode ? pipelineEngineType : selectedEngineType;
+      // Use pipeline engine type for editing existing nodes or configuring specific transformations
+      const engineType = shouldShowConfiguration ? pipelineEngineType : selectedEngineType;
       console.log('Using engine type:', engineType);
       
       const engineSchema = pipelineSchema.allOf.find((schema: any) => 
@@ -170,7 +192,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       console.error('Error parsing transformations:', error);
       return [];
     }
-  }, [selectedEngineType, pipelineEngineType, isEditingExistingNode]);
+  }, [selectedEngineType, pipelineEngineType, shouldShowConfiguration]);
 
   // Initial form for transformation and engine selection
   const initialForm = useForm({
@@ -195,47 +217,62 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
   const [isFormInitialized, setIsFormInitialized] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
-  // Reset forms when dialog opens/closes
+  // Reset forms when dialog opens/closes or when inline form is mounted
   useEffect(() => {
     console.log('🔧 Form initialization effect triggered:', {
       isOpen,
+      inline,
       isEditingExistingNode,
+      isConfiguringSpecificTransformation,
       isFormInitialized,
       hasUserInteracted,
       selectedTransformation: selectedTransformation?.name
     });
 
-    if (isOpen) {
-      if (isEditingExistingNode) {
-        // Skip initial step for editing existing nodes
+    // For inline forms, we always want to initialize, for dialog forms we check isOpen
+    if (isOpen || inline) {
+      if (shouldShowConfiguration) {
+        // Skip initial step for editing existing nodes or configuring specific transformations
         setStep('configuration');
         setSelectedEngineType(pipelineEngineType);
         
         // Set up the transformation based on selectedSchema
         const transformationName = selectedSchema?.title || initialValues?.type;
+        console.log('🔧 Looking for transformation:', transformationName);
+        console.log('🔧 Available transformations:', availableTransformations.map(t => t.name));
         const transformation = availableTransformations.find(t => t.name === transformationName);
+        console.log('🔧 Found transformation:', transformation ? transformation.name : 'NOT FOUND');
         
         // Only initialize if form hasn't been initialized yet AND user hasn't interacted
-        if (transformation && !isFormInitialized && !hasUserInteracted) {
-          console.log('🔧 Initializing form for editing existing node');
-          
-          // Enhance schema with missing UI hints for expression fields
-          const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
-          
-          setSelectedTransformation(transformation);
-          setTransformationSchema(enhancedSchema);
-          
-          // Initialize configuration form with existing values
-          console.log('🔧 Resetting form with initialValues:', initialValues);
-          configurationForm.reset(initialValues);
-          setIsFormInitialized(true);
-          setHasUserInteracted(false);
-          
-          // Debug: Check form values after reset
-          setTimeout(() => {
-            const currentFormValues = configurationForm.getValues();
-            console.log('🔧 Form values after reset:', currentFormValues);
-          }, 100);
+        if (!isFormInitialized && !hasUserInteracted) {
+          if (transformation) {
+            console.log('🔧 Initializing form for', isEditingExistingNode ? 'editing existing node' : 'configuring specific transformation');
+            
+            // Enhance schema with missing UI hints for expression fields
+            const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
+            
+            setSelectedTransformation(transformation);
+            setTransformationSchema(enhancedSchema);
+            
+            // Initialize configuration form with existing values or default values
+            const formInitialValues = initialValues || {};
+            console.log('🔧 Resetting form with initialValues:', formInitialValues);
+            configurationForm.reset(formInitialValues);
+            setIsFormInitialized(true);
+            setHasUserInteracted(false);
+            
+            // Debug: Check form values after reset
+            setTimeout(() => {
+              const currentFormValues = configurationForm.getValues();
+              console.log('🔧 Form values after reset:', currentFormValues);
+            }, 100);
+          } else {
+            console.warn('🔧 Transformation not found, but setting up basic form state');
+            // Even if transformation is not found, set up basic state so debug info shows
+            setStep('configuration');
+            setIsFormInitialized(true);
+            setHasUserInteracted(false);
+          }
         } else if (hasUserInteracted) {
           console.log('🔧 Skipping form reset - user has interacted with form');
         }
@@ -260,17 +297,17 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           console.log('🔧 Skipping form reset - user has interacted with form');
         }
       }
-    } else {
-      // Reset initialization state when dialog closes
+    } else if (!inline) {
+      // Reset initialization state when dialog closes (but not for inline forms)
       console.log('🔧 Dialog closed - resetting initialization state');
       setIsFormInitialized(false);
       setHasUserInteracted(false);
     }
-  }, [isOpen, isEditingExistingNode, selectedSchema, initialValues, pipelineEngineType]);
+  }, [isOpen, inline, shouldShowConfiguration, selectedSchema?.title, initialValues?.type, pipelineEngineType, availableTransformations.length]);
 
   // Handle changes in available transformations (when engine type changes)
   useEffect(() => {
-    if (isOpen && isEditingExistingNode && !hasUserInteracted) {
+    if ((isOpen || inline) && shouldShowConfiguration && !hasUserInteracted) {
       const transformationName = selectedSchema?.title || initialValues?.type;
       const transformation = availableTransformations.find(t => t.name === transformationName);
       
@@ -284,7 +321,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         setTransformationSchema(enhancedSchema);
       }
     }
-  }, [availableTransformations, isOpen, isEditingExistingNode, hasUserInteracted, selectedSchema, initialValues, selectedTransformation]);
+  }, [availableTransformations, isOpen, inline, shouldShowConfiguration, hasUserInteracted, selectedSchema, initialValues, selectedTransformation]);
 
   // Update engine type when form changes
   useEffect(() => {
@@ -1210,56 +1247,63 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     onClose();
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-4">
-        
+  // Render the form content
+  const formContent = (
+    <div className={cn(
+      inline ? "space-y-4" : "space-y-4",
+      // Make form more compact when right aside is wider
+      rightAsideWidth > 40 ? "space-y-2" : "space-y-4"
+    )}>
+      
+      
+      {step === 'initial' && (
+        <div className="space-y-4">
+          <Form {...initialForm}>
+            <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-4">
+              <div className={cn(
+                "grid gap-4",
+                // Responsive grid based on right aside width
+                rightAsideWidth > 50 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+              )}>
+                <FormField
+                  control={initialForm.control}
+                  name="engineType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Engine Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Select engine type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent style={{zIndex: 99999}}>
+                          <SelectItem value="pyspark">PySpark</SelectItem>
+                          <SelectItem value="pyflink">PyFlink</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-        {step === 'initial' && (
-          <div className="space-y-4">
-            
-            <Form {...initialForm}>
-              <form onSubmit={initialForm.handleSubmit(handleInitialSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={initialForm.control}
-                    name="engineType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Engine Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select engine type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent style={{zIndex: 99999}}>
-                            <SelectItem value="pyspark">PySpark</SelectItem>
-                            <SelectItem value="pyflink">PyFlink</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={initialForm.control}
-                    name="transformationName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Transformation</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select transformation" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent style={{zIndex: 99999}}>
-                            {availableTransformations.map((transformation) => (
-                              <SelectItem key={transformation.name} value={transformation.name}>
-                                {transformation.name}
-                              </SelectItem>
+                <FormField
+                  control={initialForm.control}
+                  name="transformationName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Transformation</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Select transformation" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent style={{zIndex: 99999}}>
+                          {availableTransformations.map((transformation) => (
+                            <SelectItem key={transformation.name} value={transformation.name}>
+                              {transformation.name}
+                            </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1283,61 +1327,95 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           </div>
         )}
 
-        {step === 'configuration' && selectedTransformation && transformationSchema && (
+        {step === 'configuration' && (
           <div className="space-y-4">
-            <div>
-              <h3 className="font-medium text-sm mb-1">
-                {isEditingExistingNode ? `Edit ${selectedTransformation.name}` : `Configure ${selectedTransformation.name}`}
-              </h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                {selectedTransformation.description || 
-                 (isEditingExistingNode ? 'Update the transformation parameters.' : 'Configure the transformation parameters.')}
-              </p>
-            </div>
-            <Form {...configurationForm}>
-              <form onSubmit={configurationForm.handleSubmit(handleConfigurationSubmit)} className="space-y-4">
-                <ConditionalSchemaRenderer 
-                  schema={transformationSchema}
-                  twoColumnLayout={true}
-                  useTabs={true}
-                  sourceColumns={columnSuggestions}
-                  onExpressionGenerate={handleExpressionGenerate}
-                  isFieldGenerating={(fieldName: string) => generatingFields.has(fieldName)}
-                  onClosePipelineForm={handleClose}
-                />
-                
-                {/* Debug: Show current transformation info */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-                    <strong>Debug Info:</strong><br/>
-                    Transformation: {selectedTransformation?.name}<br/>
-                    Has onExpressionGenerate: {!!handleExpressionGenerate}<br/>
-                    Generating Fields: {Array.from(generatingFields).join(', ') || 'None'}<br/>
-                    AI Available: Click hammer icon to generate expressions
-                  </div>
-                )}
+            {selectedTransformation && transformationSchema ? (
+              <>
+              
+                <Form {...configurationForm}>
+                  <form 
+                    onSubmit={configurationForm.handleSubmit(handleConfigurationSubmit)} 
+                    className="space-y-4"
+                    onInput={() => {
+                      if (!hasUserInteracted) {
+                        console.log('🔧 User started interacting with form');
+                        setHasUserInteracted(true);
+                      }
+                    }}
+                    onChange={() => {
+                      if (!hasUserInteracted) {
+                        console.log('🔧 User started interacting with form (onChange)');
+                        setHasUserInteracted(true);
+                      }
+                    }}
+                  >
+                    <ConditionalSchemaRenderer 
+                      schema={transformationSchema}
+                      twoColumnLayout={rightAsideWidth <= 50} // Disable two-column layout when right aside is wide
+                      useTabs={true}
+                      sourceColumns={columnSuggestions}
+                      onExpressionGenerate={handleExpressionGenerate}
+                      isFieldGenerating={(fieldName: string) => generatingFields.has(fieldName)}
+                      onClosePipelineForm={handleClose}
+                    />
+                    
+                    
 
-                <div className="flex justify-end gap-2 pt-2">
-                  {!isEditingExistingNode && (
-                    <Button type="button" variant="outline" onClick={handleBack} size="sm">
-                      Back
-                    </Button>
-                  )}
-                  <Button type="submit" disabled={isSubmitting} size="sm" className="min-w-[120px] relative">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                        {isEditingExistingNode ? 'Updating...' : 'Adding...'}
-                      </>
-                    ) : (
-                      isEditingExistingNode ? 'Update Node' : 'Add to Canvas'
-                    )}
-                  </Button>
+                    <div className="flex justify-end gap-2 pt-2">
+                      {!isEditingExistingNode && !isConfiguringSpecificTransformation && (
+                        <Button type="button" variant="outline" onClick={handleBack} size="sm">
+                          Back
+                        </Button>
+                      )}
+                      <Button type="submit" disabled={isSubmitting} size="sm" className="min-w-[120px] relative">
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                            {isEditingExistingNode ? 'Updating...' : 'Adding...'}
+                          </>
+                        ) : (
+                          isEditingExistingNode ? 'Update Node' : 'Add to Canvas'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </>
+            ) : (
+              <div className="p-4 border border-red-200 bg-red-50 rounded">
+                <h3 className="font-medium text-sm mb-2 text-red-800">Configuration Error</h3>
+                <p className="text-xs text-red-600 mb-2">
+                  Unable to load transformation configuration. This might be due to:
+                </p>
+                <ul className="text-xs text-red-600 list-disc list-inside space-y-1">
+                  <li>Transformation schema not found</li>
+                  <li>Pipeline schema not loaded</li>
+                  <li>Engine type mismatch</li>
+                </ul>
+                <div className="mt-3 text-xs text-gray-600">
+                  <div>Requested transformation: {selectedSchema?.title || 'Unknown'}</div>
+                  <div>Available transformations: {availableTransformations.length}</div>
                 </div>
-              </form>
-            </Form>
+              </div>
+            )}
           </div>
         )}
+    </div>
+  );
+
+  // Return either dialog or inline version
+  if (inline) {
+    return formContent;
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className={cn(
+        "max-h-[90vh] overflow-y-auto p-4",
+        // Responsive max width based on right aside width
+        rightAsideWidth > 40 ? "max-w-3xl" : "max-w-5xl"
+      )}>
+        {formContent}
       </DialogContent>
     </Dialog>
   );

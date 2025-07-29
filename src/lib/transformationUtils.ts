@@ -1,3 +1,5 @@
+import { pipelineSchema, flowSchema } from "@bh-ai/schemas";
+
 interface TransformationConfig {
     name: string;
     [key: string]: any;
@@ -141,29 +143,83 @@ export const getInitialFormState = (
 
 
 
-export const getNodeIcon = (type: string): string => {
-    const iconMap: { [key: string]: string } = {
-        Reader: '/assets/buildPipeline/6.svg',
-        Target: '/assets/buildPipeline/7.svg',
-        Filter: '/assets/buildPipeline/display/filter.svg',
-        Joiner: '/assets/buildPipeline/display/join.svg',
-        Ship: '/assets/buildPipeline/display/ship.svg',
-        SchemaTransformation: '/assets/buildPipeline/28.svg',
-        Sorter: '/assets/buildPipeline/squre/1.svg',
-        Aggregator: '/assets/buildPipeline/squre/2.svg',
-        Deduplicator: '/assets/buildPipeline/squre/5.svg',
-        Repartition: '/assets/buildPipeline/squre/6.svg',
-        'SQLTransformation': '/assets/buildPipeline/squre/7.svg',
-        'Set Combiner': '/assets/buildPipeline/squre/8.svg',
-        Select: '/assets/buildPipeline/squre/11.svg',
-        SequenceGenerator: '/assets/buildPipeline/squre/12.svg',
-        Drop: '/assets/buildPipeline/squre/13.svg',
-        Lookup: '/assets/buildPipeline/squre/3.svg',
-        CustomPySpark: '/assets/buildPipeline/squre/4.svg',
-        SetCombiner:'/assets/buildPipeline/squre/8.svg',
-        DQCheck: '/assets/buildPipeline/squre/10.svg',
-    };
-    return iconMap[type] || '/assets/buildPipeline/default.svg';
+export const getNodeIcon = (type: string, selectedEngineType: 'pyspark' | 'pyflink' = 'pyspark'): string => {
+    // First, try to get icon from pipelineSchema for pipeline transformations
+    const pipelineIcon = getIconFromPipelineSchema(type, selectedEngineType);
+    if (pipelineIcon) {
+        return pipelineIcon;
+    }
+
+    // Then, try to get icon from flowSchema for flow operators
+    const flowIcon = getIconFromFlowSchema(type);
+    if (flowIcon) {
+        return flowIcon;
+    }
+
+    // Return default icon if not found in schemas
+    return '/assets/buildPipeline/default.svg';
+};
+
+/**
+ * Get icon from pipelineSchema for pipeline transformations
+ */
+const getIconFromPipelineSchema = (type: string, selectedEngineType: 'pyspark' | 'pyflink' = 'pyspark'): string | null => {
+    try {
+        let transformations;
+        
+        // Check if pipelineSchema is already an array of transformations (direct format)
+        if (Array.isArray(pipelineSchema)) {
+            transformations = pipelineSchema;
+        } else {
+            // Find the engine-specific schema in allOf (nested format)
+            const schema = pipelineSchema as any;
+            const engineSchema = schema.allOf?.find((schema: any) => 
+                schema.if?.properties?.engine_type?.const === selectedEngineType
+            );
+
+            if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
+                return null;
+            }
+
+            transformations = engineSchema.then.properties.transformations.items?.allOf;
+        }
+
+        if (!transformations || !Array.isArray(transformations)) {
+            return null;
+        }
+
+        // Find the transformation that matches the type
+        const transformation = transformations.find((t: any) => 
+            t?.if?.properties?.transformation?.const === type
+        );
+
+        return transformation?.then?.ui_properties?.icon || null;
+    } catch (error) {
+        console.warn('Error getting icon from pipelineSchema:', error);
+        return null;
+    }
+};
+
+/**
+ * Get icon from flowSchema for flow operators
+ */
+const getIconFromFlowSchema = (type: string): string | null => {
+    try {
+        const operators = flowSchema?.properties?.tasks?.items?.oneOf;
+        if (!operators || !Array.isArray(operators)) {
+            return null;
+        }
+
+        // Find the operator that matches the type
+        const operator = operators.find((op: any) => 
+            op?.properties?.type?.enum?.[0] === type
+        );
+
+        return operator?.properties?.type?.ui_properties?.icon || null;
+    } catch (error) {
+        console.warn('Error getting icon from flowSchema:', error);
+        return null;
+    }
 };
 
 export const getNodePorts = (type: string) => {

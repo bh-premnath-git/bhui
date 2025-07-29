@@ -16,9 +16,10 @@ import { ReaderOptionsForm } from '@/components/bh-reactflow-comps/builddata/Rea
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { usePipelineModules } from '@/hooks/usePipelineModules';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
+import { pipelineSchema } from "@bh-ai/schemas";
 import { useAppDispatch } from '@/hooks/useRedux';
 import { getConnectionConfigList } from '@/store/slices/dataCatalog/datasourceSlice';
-import CreateFormFormik from './form-sections/CreateForm';
+import { PipelineForm } from './PipelineForm';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { CATALOG_REMOTE_API_URL, AGENT_REMOTE_URL } from '@/config/platformenv';
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
@@ -334,6 +335,128 @@ const MultiSourceSelectForm: React.FC<{
       </div>
     </div>
   );
+};
+
+// Helper function to get schema for transformation directly from pipeline schema
+const getSchemaForTransformation = (transformationType: string, targetNodeId: string, engineType: 'pyspark' | 'pyflink' = 'pyspark') => {
+  console.log('🔧 getSchemaForTransformation called with:', { transformationType, targetNodeId, engineType });
+  
+  try {
+    // Get the transformation schema directly from pipeline schema
+    if (!pipelineSchema?.allOf) {
+      console.error('🔧 Pipeline schema not available');
+      return null;
+    }
+    
+    const engineSchema = pipelineSchema.allOf.find((schema: any) => 
+      schema.if?.properties?.engine_type?.const === engineType
+    );
+
+    if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
+      console.error('🔧 No transformations found in pipeline schema');
+      return null;
+    }
+
+    const availableTransformations = engineSchema.then.properties.transformations.items.allOf.map((transformation: any) => ({
+      name: transformation?.if?.properties?.transformation?.const,
+      description: transformation?.then?.description || '',
+      schema: transformation?.then,
+    })).filter((t: any) => t.name);
+
+    console.log('🔧 Available transformations:', availableTransformations.map(t => t.name));
+    
+    // Find the transformation by name
+    const transformation = availableTransformations.find(t => t.name === transformationType);
+    
+    if (transformation) {
+      console.log('🔧 Found transformation in pipeline schema:', transformation.name);
+      
+      // Create schema object compatible with PipelineForm
+      const schemaWithNodeId = {
+        title: transformation.name,
+        module_name: transformation.name,
+        nodeId: targetNodeId,
+        description: transformation.description,
+        // Include the actual schema for form generation
+        properties: transformation.schema.properties,
+        required: transformation.schema.required,
+        // Add the full transformation schema
+        transformationSchema: transformation.schema
+      };
+      
+      console.log('🔧 Created schema from pipeline schema:', schemaWithNodeId);
+      return schemaWithNodeId;
+    } else {
+      console.error('🔧 Transformation not found in pipeline schema:', transformationType);
+      console.log('🔧 Available transformation names:', availableTransformations.map(t => t.name));
+      return null;
+    }
+  } catch (error) {
+    console.error('🔧 Error getting schema from pipeline schema:', error);
+    return null;
+  }
+};
+
+// Function to get transformation name mapping from old schema to new pipeline schema
+const getTransformationNameMapping = (engineType: 'pyspark' | 'pyflink' = 'pyspark') => {
+  try {
+    if (!pipelineSchema?.allOf) return {};
+    
+    const engineSchema = pipelineSchema.allOf.find((schema: any) => 
+      schema.if?.properties?.engine_type?.const === engineType
+    );
+
+    if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
+      return {};
+    }
+
+    const availableTransformations = engineSchema.then.properties.transformations.items.allOf.map((transformation: any) => ({
+      name: transformation?.if?.properties?.transformation?.const,
+      description: transformation?.then?.description || '',
+      schema: transformation?.then,
+    })).filter((t: any) => t.name);
+
+    // Create mapping from common old names to new names
+    const mapping: Record<string, string> = {};
+    
+    availableTransformations.forEach((transformation: any) => {
+      const name = transformation.name;
+      // Add direct mapping
+      mapping[name] = name;
+      
+      // Add common old name mappings
+      if (name === 'Mapper') {
+        mapping['SchemaTransformation'] = name;
+        mapping['Schema Transformation'] = name;
+        mapping['schema_transformation'] = name;
+      } else if (name === 'Set') {
+        mapping['SetCombiner'] = name;
+        mapping['Set Combiner'] = name;
+        mapping['set_combiner'] = name;
+        mapping['Union'] = name; // Union is also mapped to Set
+      } else if (name === 'SQL') {
+        mapping['SqlTransformation'] = name;
+        mapping['SQL Transformation'] = name;
+        mapping['SQLTransformation'] = name;
+        mapping['sql_transformation'] = name;
+        mapping['Sql'] = name;
+      } else if (name === 'Aggregator') {
+        mapping['Aggregate'] = name;
+        mapping['aggregator'] = name;
+        mapping['aggregate'] = name;
+      } else if (name === 'Joiner') {
+        mapping['Join'] = name;
+        mapping['joiner'] = name;
+        mapping['join'] = name;
+      }
+    });
+
+    console.log('🔧 Transformation name mapping:', mapping);
+    return mapping;
+  } catch (error) {
+    console.error('Error creating transformation name mapping:', error);
+    return {};
+  }
 };
 
 const PipeLineChatPanel = () => {
@@ -1058,7 +1181,7 @@ const PipeLineChatPanel = () => {
             sourceName = 'data source';
           } else if (sourceNodeId.includes('Filter')) {
             sourceName = 'Filter transformation';
-          } else if (sourceNodeId.includes('SchemaTransformation')) {
+          } else if (sourceNodeId.includes('Mapper')) {
             sourceName = 'Schema transformation';
           } else if (sourceNodeId.includes('Aggregate')) {
             sourceName = 'Aggregate transformation';
@@ -1257,7 +1380,7 @@ const PipeLineChatPanel = () => {
       {
         id: "msg2",
         formData: {
-          schema: { module_name: "SchemaTransformation" },
+          schema: { module_name: "Mapper" },
           initialValues: { column_mappings: ["name", "age", "email"] },
           currentNodeId: "schema1"
         },
@@ -1930,6 +2053,12 @@ const PipeLineChatPanel = () => {
     setTimeout(() => {
       const transformationType = targetNodeType.ui_properties.module_name;
       
+      console.log('🔧 Creating form message for transformation:', {
+        transformationType,
+        targetNodeId,
+        targetNodeType: targetNodeType.ui_properties
+      });
+      
       // Check if this is a Target transformation
       const isTarget = transformationType === 'Target';
 
@@ -1965,17 +2094,11 @@ const PipeLineChatPanel = () => {
         return;
       }
 
-      // Check if schemaData has a schema property (array) or is an array itself
-      const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
-      const schema = schemaArray.find(s => s.title === transformationType);
+      // Get schema with proper transformation name mapping
+      const engineType = pipelineContext.pipelineDtl?.engine_type || 'pyspark';
+      const schemaWithNodeId = getSchemaForTransformation(transformationType, targetNodeId, engineType);
 
-      if (schema) {
-        // Set up the schema with the node ID for the form
-        const schemaWithNodeId = {
-          ...schema,
-          nodeId: targetNodeId
-        };
-
+      if (schemaWithNodeId) {
         // Set the selected schema
         setSelectedSchema(schemaWithNodeId);
 
@@ -2652,18 +2775,11 @@ const PipeLineChatPanel = () => {
         return; // Skip the rest of the function
       }
 
-      // Check if schemaData has a schema property (array) or is an array itself
-      const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
+      // Get schema with proper transformation name mapping
+      const engineType = pipelineContext.pipelineDtl?.engine_type || 'pyspark';
+      const schemaWithNodeId = getSchemaForTransformation(transformationType, targetNodeId, engineType);
 
-      const schema = schemaArray.find(s => s.title === transformationType);
-
-      if (schema) {
-        // Set up the schema with the node ID for the form
-        const schemaWithNodeId = {
-          ...schema,
-          nodeId: targetNodeId
-        };
-
+      if (schemaWithNodeId) {
         // Set the selected schema
         setSelectedSchema(schemaWithNodeId);
 
@@ -2678,21 +2794,105 @@ const PipeLineChatPanel = () => {
                 const formId = `form_${targetNodeId}_${Date.now()}`;
                 console.log(`📝 Creating new form with formId: ${formId}, nodeId: ${targetNodeId}, transformation: ${transformationType}`);
                 
+                // Create the embedded form data directly
+                const embeddedFormData = {
+                  schema: schemaWithNodeId,
+                  sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
+                  currentNodeId: targetNodeId,
+                  formId: formId,
+                  isEmbeddedForm: true, // Flag to indicate this is an embedded form
+                  initialValues: {
+                    ...formStates[targetNodeId],
+                    nodeId: targetNodeId,
+                    dependent_on: dependentOnData
+                  },
+                  onSubmit: (data) => {
+                    // Handle form submission
+                    const nodeId = data.nodeId || targetNodeId;
+                    const formId = embeddedFormData.formId;
+                    
+                    // Get the current node to determine the title
+                    const currentNode = nodes.find(n => n.id === nodeId);
+                    const updatedTitle = currentNode?.data?.title || currentNode?.data?.label || schemaWithNodeId.title;
+                    
+                    console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
+                    const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
+                    handleFormSubmit(formSubmitData);
+
+                    // Add a message to show the form was submitted and remove the embedded form
+                    const newMessages = [
+                      { role: 'user' as const, content: `Configured ${schemaWithNodeId?.title} transformation`, id: generateMessageId() },
+                      {
+                        role: 'assistant' as const,
+                        content:"",
+                        id: generateMessageId(),
+                        // Include form data to save transformation configuration in chat history
+                        formData: {
+                          schema: schemaWithNodeId,
+                          sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
+                          currentNodeId: targetNodeId,
+                          isTarget: isTarget || false,
+                          isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
+                          initialValues: {
+                            ...formStates[targetNodeId],
+                            ...data,
+                            nodeId: nodeId,
+                            name: updatedTitle
+                          }
+                        }
+                      }
+                    ];
+
+                    // SINGLE STATE UPDATE: Remove embedded form message and add new messages
+                    setMessages(prevMessages => {
+                      // Recreate cleanFormData within this scope
+                      const cleanFormData = { ...data };
+                      delete cleanFormData.nodeId;
+
+                      // Special handling for different transformation types
+                      const currentNode = nodes.find(n => n.id === nodeId);
+                      if (currentNode && currentNode.data.label === 'Filter') {
+                        if (data.condition !== undefined) {
+                          cleanFormData.condition = data.condition;
+                        }
+                      }
+
+                      // STEP 1: Remove the embedded form message
+                      const messagesWithoutEmbeddedForm = prevMessages.filter(msg => 
+                        !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === formId)
+                      );
+
+                      // STEP 2: Add the new messages
+                      const finalMessages = [...messagesWithoutEmbeddedForm, ...newMessages];
+
+                      // STEP 3: Save chat history batch with the correctly updated messages
+                      setTimeout(() => {
+                        saveChatHistoryBatchWithMessages(finalMessages);
+                      }, 500);
+
+                      // Show transformations dropdown after transformation configuration
+                      setTimeout(() => {
+                        handleShowTransformations();
+                      }, 800);
+
+                      return finalMessages;
+                    });
+                  },
+                  onClose: () => {
+                    // Remove the embedded form message when closed
+                    setMessages(prevMessages => 
+                      prevMessages.filter(msg => 
+                        !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === formId)
+                      )
+                    );
+                  }
+                };
+
+                // Create the embedded form message
                 const newMessage = {
                   role: 'assistant',
-                  content: "",
-                  formData: {
-                    schema: schemaWithNodeId,
-                    sourceColumns: columns.map(col => ({ name: col, dataType: 'string' })),
-                    currentNodeId: targetNodeId,
-                    isTarget: isTarget, // Add flag to indicate if this is a Target
-                    formId: formId, // Add unique form identifier
-                    initialValues: {
-                      ...formStates[targetNodeId],
-                      nodeId: targetNodeId,
-                      dependent_on: dependentOnData
-                    }
-                  }
+                  content: '',
+                  formData: embeddedFormData
                 };
 
                 setMessages((prevMessages: any) => {
@@ -2712,21 +2912,96 @@ const PipeLineChatPanel = () => {
                 const formId = `form_${targetNodeId}_${Date.now()}`;
                 console.log(`📝 Creating new form (fallback) with formId: ${formId}, nodeId: ${targetNodeId}, transformation: ${transformationType}`);
                 
+                // Create the embedded form data directly (fallback)
+                const embeddedFormData = {
+                  schema: schemaWithNodeId,
+                  sourceColumns: [],
+                  currentNodeId: targetNodeId,
+                  formId: formId,
+                  isEmbeddedForm: true, // Flag to indicate this is an embedded form
+                  initialValues: {
+                    ...formStates[targetNodeId],
+                    nodeId: targetNodeId,
+                    dependent_on: dependentOnData
+                  },
+                  onSubmit: (data) => {
+                    // Handle form submission (same as above)
+                    const nodeId = data.nodeId || targetNodeId;
+                    const formId = embeddedFormData.formId;
+                    
+                    // Get the current node to determine the title
+                    const currentNode = nodes.find(n => n.id === nodeId);
+                    const updatedTitle = currentNode?.data?.title || currentNode?.data?.label || schemaWithNodeId.title;
+                    
+                    console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
+                    const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
+                    handleFormSubmit(formSubmitData);
+
+                    // Add a message to show the form was submitted and remove the embedded form
+                    const newMessages = [
+                      { role: 'user' as const, content: `Configured ${schemaWithNodeId?.title} transformation`, id: generateMessageId() },
+                      {
+                        role: 'assistant' as const,
+                        content:"",
+                        id: generateMessageId(),
+                        formData: {
+                          schema: schemaWithNodeId,
+                          sourceColumns: [],
+                          currentNodeId: targetNodeId,
+                          isTarget: isTarget || false,
+                          isConfirmation: true,
+                          initialValues: {
+                            ...formStates[targetNodeId],
+                            ...data,
+                            nodeId: nodeId,
+                            name: updatedTitle
+                          }
+                        }
+                      }
+                    ];
+
+                    // Remove embedded form message and add new messages
+                    setMessages(prevMessages => {
+                      const cleanFormData = { ...data };
+                      delete cleanFormData.nodeId;
+
+                      const currentNode = nodes.find(n => n.id === nodeId);
+                      if (currentNode && currentNode.data.label === 'Filter') {
+                        if (data.condition !== undefined) {
+                          cleanFormData.condition = data.condition;
+                        }
+                      }
+
+                      const messagesWithoutEmbeddedForm = prevMessages.filter(msg => 
+                        !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === formId)
+                      );
+
+                      const finalMessages = [...messagesWithoutEmbeddedForm, ...newMessages];
+
+                      setTimeout(() => {
+                        saveChatHistoryBatchWithMessages(finalMessages);
+                      }, 500);
+
+                      setTimeout(() => {
+                        handleShowTransformations();
+                      }, 800);
+
+                      return finalMessages;
+                    });
+                  },
+                  onClose: () => {
+                    setMessages(prevMessages => 
+                      prevMessages.filter(msg => 
+                        !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === formId)
+                      )
+                    );
+                  }
+                };
+
                 const newMessage = {
                   role: 'assistant',
                   content: '',
-                  formData: {
-                    schema: schemaWithNodeId,
-                    sourceColumns: [],
-                    currentNodeId: targetNodeId,
-                    isTarget: isTarget, // Add flag to indicate if this is a Target
-                    formId: formId, // Add unique form identifier
-                    initialValues: {
-                      ...formStates[targetNodeId],
-                      nodeId: targetNodeId,
-                      dependent_on: dependentOnData
-                    }
-                  }
+                  formData: embeddedFormData
                 };
 
                 setMessages((prevMessages: any) => {
@@ -2769,18 +3044,11 @@ const PipeLineChatPanel = () => {
             // Find the schema for this transformation type
             const transformationType = targetNodeType.ui_properties.module_name;
 
-            // Check if schemaData has a schema property (array) or is an array itself
-            const schemaArray = Array.isArray(schemaData) ? schemaData : schemaData.schema;
+            // Get schema with proper transformation name mapping
+            const engineType = pipelineContext.pipelineDtl?.engine_type || 'pyspark';
+            const schemaWithNodeId = getSchemaForTransformation(transformationType, targetNodeId, engineType);
 
-            const schema = schemaArray.find(s => s.title === transformationType);
-
-            if (schema) {
-              // Set up the schema with the node ID for the form
-              const schemaWithNodeId = {
-                ...schema,
-                nodeId: targetNodeId
-              };
-
+            if (schemaWithNodeId) {
               // Set the selected schema and open the form
               setSelectedSchema(schemaWithNodeId);
 
@@ -3305,149 +3573,188 @@ const PipeLineChatPanel = () => {
                         ) : (
                           <div className="form-wrapper">
                             {message.formData && message.formData.schema && message.formData.currentNodeId ? (
-                              <CreateFormFormik
-                                schema={message.formData.schema}
-                                sourceColumns={message.formData.sourceColumns || []}
-                                onClose={() => {
-                                  // Handle form close
-
-                                }}
-                                currentNodeId={message.formData.currentNodeId}
-                                formId={message.formData.formId}
-                                initialValues={{
-                                  // Start with the original form data initial values
-                                  ...message.formData.initialValues,
-                                  // Then try to get values from formStates (saved form data)
-                                  ...formStates[message.formData.currentNodeId],
-                                  nodeId: message.formData.currentNodeId,
-                                  // Finally, try to get values from the node's transformationData if it exists
-                                  ...(() => {
-                                    const node = nodes.find(n => n.id === message.formData.currentNodeId);
-                                    return node?.data?.transformationData || {};
-                                  })()
-                                }}
-                                nodes={nodes}
-                                edges={edges}
-                                pipelineDtl={pipelineDtl}
-                                onSubmit={(data) => {
-                                  const nodeId = message.formData.currentNodeId;
-                                  const formId = message.formData.formId;
-                                  const schemaTitle = message.formData.schema?.title || "Transformation";
-                                  
-                                  // Find the current node to preserve its original title if no new title is provided
-                                  const currentNode = pipelineContext.nodes.find(node => node.id === nodeId);
-                                  const currentTitle = currentNode?.data?.title || currentNode?.data?.label || schemaTitle;
-                                  
-                                  // Only update title if explicitly provided in form data, otherwise keep the current title
-                                  const updatedTitle = data.name || data.title || currentTitle;
-
-                                  // Debug: Log form submission details
-                                  console.log(`🔧 Form submission - nodeId: ${nodeId}, formId: ${formId}`);
-                                  console.log(`🔧 Schema title: ${schemaTitle}, data.name: ${data.name}, data.title: ${data.title}`);
-                                  console.log(`🔧 Current title: ${currentTitle}, Final updatedTitle: ${updatedTitle}`);
-                                  console.log(`🔧 Form data:`, data);
-
-                                  // Debug: Log current state before update
-                                  debugNodeData(pipelineContext.nodes, `📋 Nodes before form submission for ${nodeId}:`);
-
-                                  // Create a clean copy of the form data for form states
-                                  const cleanFormData = { ...data };
-                                  delete cleanFormData.nodeId;
-
-                                  // Update form states with the data including nodeId for tracking
-                                  const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
-                                  setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
-                                  setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
-
-                                  // Mark as unsaved
-                                  setUnsavedChanges();
-
-                                  // Call handleFormSubmit to ensure all state is updated properly
-                                  console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
-                                  const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
-                                  handleFormSubmit(formSubmitData);
-
-                                  // Add a message to show the form was submitted
-                                  const newMessages = [
-                                    { role: 'user' as const, content: `Configured ${message.formData?.schema?.title} transformation`, id: generateMessageId() },
-                                    {
-                                      role: 'assistant' as const,
-                                      content:"",
-                                      id: generateMessageId(),
-                                      // Include form data to save transformation configuration in chat history
-                                      formData: {
-                                        schema: message.formData.schema,
-                                        sourceColumns: message.formData.sourceColumns || [],
-                                        currentNodeId: message.formData.currentNodeId,
-                                        isTarget: message.formData.isTarget || false,
-                                        isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
-                                        initialValues: {
-                                          ...message.formData.initialValues,
-                                          ...data,
-                                          nodeId: nodeId,
-                                          name: updatedTitle
-                                        }
-                                      }
+                              <div className="pipeline-form-trigger">
+                                <button
+                                  onClick={() => {
+                                    // The schema should already have the correct title from getSchemaForTransformation
+                                    const transformationName = message.formData.schema?.title;
+                                    const originalName = message.formData.schema?.originalTitle || message.formData.schema?.title;
+                                    
+                                    console.log('🔧 Opening PipelineForm for transformation:');
+                                    console.log('  - Display name:', originalName);
+                                    console.log('  - Pipeline name:', transformationName);
+                                    console.log('🔧 Message formData:', message.formData);
+                                    
+                                    if (!transformationName) {
+                                      console.error('❌ No transformation name found!');
+                                      return;
                                     }
-                                  ];
+                                    
+                                    // Create the form data for the embedded form
+                                    const embeddedFormData = {
+                                      schema: {
+                                        title: transformationName
+                                      },
+                                      sourceColumns: message.formData.sourceColumns || [],
+                                      currentNodeId: message.formData.currentNodeId,
+                                      formId: message.formData.formId,
+                                      isEmbeddedForm: true, // Flag to indicate this is an embedded form
+                                      initialValues: {
+                                        // Add the transformation type to help PipelineForm identify the transformation
+                                        type: transformationName,
+                                        transformation: transformationName,
+                                        // Start with the original form data initial values
+                                        ...message.formData.initialValues,
+                                        // Then try to get values from formStates (saved form data)
+                                        ...formStates[message.formData.currentNodeId],
+                                        nodeId: message.formData.currentNodeId,
+                                        // Finally, try to get values from the node's transformationData if it exists
+                                        ...(() => {
+                                          const node = nodes.find(n => n.id === message.formData.currentNodeId);
+                                          return node?.data?.transformationData || {};
+                                        })()
+                                      },
+                                      onSubmit: (data) => {
+                                        const nodeId = message.formData.currentNodeId;
+                                        const formId = message.formData.formId;
+                                        const schemaTitle = message.formData.schema?.title || "Transformation";
+                                        
+                                        // Find the current node to preserve its original title if no new title is provided
+                                        const currentNode = pipelineContext.nodes.find(node => node.id === nodeId);
+                                        const currentTitle = currentNode?.data?.title || currentNode?.data?.label || schemaTitle;
+                                        
+                                        // Only update title if explicitly provided in form data, otherwise keep the current title
+                                        const updatedTitle = data.name || data.title || currentTitle;
 
-                                  // SINGLE STATE UPDATE: Update existing message formData AND add new messages
-                                  setMessages(prevMessages => {
+                                        // Debug: Log form submission details
+                                        console.log(`🔧 Form submission - nodeId: ${nodeId}, formId: ${formId}`);
+                                        console.log(`🔧 Schema title: ${schemaTitle}, data.name: ${data.name}, data.title: ${data.title}`);
+                                        console.log(`🔧 Current title: ${currentTitle}, Final updatedTitle: ${updatedTitle}`);
+                                        console.log(`🔧 Form data:`, data);
 
-                                    // Recreate cleanFormData within this scope
-                                    const cleanFormData = { ...data };
-                                    delete cleanFormData.nodeId;
+                                        // Debug: Log current state before update
+                                        debugNodeData(pipelineContext.nodes, `📋 Nodes before form submission for ${nodeId}:`);
 
-                                    // Special handling for different transformation types
-                                    const currentNode = nodes.find(n => n.id === nodeId);
-                                    if (currentNode && currentNode.data.label === 'Filter') {
-                                      if (data.condition !== undefined) {
-                                        cleanFormData.condition = data.condition;
-                                      }
-                                    }
+                                        // Create a clean copy of the form data for form states
+                                        const cleanFormData = { ...data };
+                                        delete cleanFormData.nodeId;
 
+                                        // Update form states with the data including nodeId for tracking
+                                        const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
+                                        setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+                                        setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
 
-                                    // STEP 1: Update ONLY the specific message's formData.initialValues using formId
-                                    const messagesWithUpdatedFormData = prevMessages.map(msg => {
-                                      // FIX: Use formId instead of nodeId to target the specific form
-                                      if (msg.formData && msg.formData.formId === formId) {
-                                        console.log(`✅ Updating form data for formId: ${formId}, nodeId: ${nodeId}`);
-                                        console.log(`📝 Previous values:`, msg.formData.initialValues);
-                                        console.log(`📝 New values:`, cleanFormData);
-                                        const updatedInitialValues = {
-                                          ...msg.formData.initialValues,
-                                          ...cleanFormData
-                                        };
-                                        return {
-                                          ...msg,
-                                          formData: {
-                                            ...msg.formData,
-                                            initialValues: updatedInitialValues
+                                        // Mark as unsaved
+                                        setUnsavedChanges();
+
+                                        // Call handleFormSubmit to ensure all state is updated properly
+                                        console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
+                                        const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
+                                        handleFormSubmit(formSubmitData);
+
+                                        // Add a message to show the form was submitted and remove the embedded form
+                                        const newMessages = [
+                                          { role: 'user' as const, content: `Configured ${message.formData?.schema?.title} transformation`, id: generateMessageId() },
+                                          {
+                                            role: 'assistant' as const,
+                                            content:"",
+                                            id: generateMessageId(),
+                                            // Include form data to save transformation configuration in chat history
+                                            formData: {
+                                              schema: message.formData.schema,
+                                              sourceColumns: message.formData.sourceColumns || [],
+                                              currentNodeId: message.formData.currentNodeId,
+                                              isTarget: message.formData.isTarget || false,
+                                              isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
+                                              initialValues: {
+                                                ...message.formData.initialValues,
+                                                ...data,
+                                                nodeId: nodeId,
+                                                name: updatedTitle
+                                              }
+                                            }
                                           }
-                                        };
+                                        ];
+
+                                        // SINGLE STATE UPDATE: Remove embedded form message and add new messages
+                                        setMessages(prevMessages => {
+                                          // Recreate cleanFormData within this scope
+                                          const cleanFormData = { ...data };
+                                          delete cleanFormData.nodeId;
+
+                                          // Special handling for different transformation types
+                                          const currentNode = nodes.find(n => n.id === nodeId);
+                                          if (currentNode && currentNode.data.label === 'Filter') {
+                                            if (data.condition !== undefined) {
+                                              cleanFormData.condition = data.condition;
+                                            }
+                                          }
+
+                                          // STEP 1: Remove the embedded form message and update the original message's formData.initialValues using formId
+                                          const messagesWithoutEmbeddedForm = prevMessages.filter(msg => 
+                                            !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === formId)
+                                          ).map(msg => {
+                                            // Update the original form message with the new values
+                                            if (msg.formData && msg.formData.formId === formId && !msg.formData.isEmbeddedForm) {
+                                              console.log(`✅ Updating form data for formId: ${formId}, nodeId: ${nodeId}`);
+                                              console.log(`📝 Previous values:`, msg.formData.initialValues);
+                                              console.log(`📝 New values:`, cleanFormData);
+                                              const updatedInitialValues = {
+                                                ...msg.formData.initialValues,
+                                                ...cleanFormData
+                                              };
+                                              return {
+                                                ...msg,
+                                                formData: {
+                                                  ...msg.formData,
+                                                  initialValues: updatedInitialValues
+                                                }
+                                              };
+                                            }
+                                            return msg;
+                                          });
+
+                                          // STEP 2: Add the new messages
+                                          const finalMessages = [...messagesWithoutEmbeddedForm, ...newMessages];
+
+                                          // STEP 3: Save chat history batch with the correctly updated messages
+                                          setTimeout(() => {
+                                            saveChatHistoryBatchWithMessages(finalMessages);
+                                          }, 500);
+
+                                          // Show transformations dropdown after transformation configuration
+                                          setTimeout(() => {
+                                            handleShowTransformations();
+                                          }, 800);
+
+                                          return finalMessages;
+                                        });
+                                      },
+                                      onClose: () => {
+                                        // Remove the embedded form message when closed
+                                        setMessages(prevMessages => 
+                                          prevMessages.filter(msg => 
+                                            !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === message.formData.formId)
+                                          )
+                                        );
                                       }
-                                      return msg;
-                                    });
+                                    };
 
-                                    // STEP 2: Add the new messages
-                                    const finalMessages = [...messagesWithUpdatedFormData, ...newMessages];
+                                    // Add the embedded form as a new message
+                                    const embeddedFormMessage: ChatMessage = {
+                                      id: generateMessageId(),
+                                      role: 'assistant',
+                                      content: '',
+                                      formData: embeddedFormData
+                                    };
 
-
-                                    // STEP 3: Save chat history batch with the correctly updated messages
-                                    setTimeout(() => {
-                                      saveChatHistoryBatchWithMessages(finalMessages);
-                                    }, 500);
-
-                                    // Show transformations dropdown after transformation configuration
-                                    setTimeout(() => {
-                                      handleShowTransformations();
-                                    }, 800);
-
-                                    return finalMessages;
-                                  });
-                                }}
-
-                              />
+                                    setMessages(prevMessages => [...prevMessages, embeddedFormMessage]);
+                                  }}
+                                  className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                                >
+                                  Configure {message.formData.schema?.originalTitle || message.formData.schema?.title || message.formData.schema?.module_name || 'Transformation'}
+                                </button>
+                              </div>
                             ) : (
                               <div className="p-4 text-center text-gray-500">
                                 Form data is not available. Please refresh the page or start a new configuration.
@@ -3455,6 +3762,29 @@ const PipeLineChatPanel = () => {
                             )}
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Embedded Pipeline Form */}
+                  {message.formData && message.formData.isEmbeddedForm && (
+                    <div className="mt-4">
+                      <div className="flex items-start gap-2">
+                        <div className="w-6 h-6 mt-1 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
+                          AI
+                        </div>
+                        <div className="flex-1 rounded-lg px-3 py-2 shadow-sm bg-gray-50 border">
+                         
+                          <PipelineForm
+                            isOpen={false}
+                            onClose={message.formData.onClose}
+                            selectedSchema={message.formData.schema}
+                            initialValues={message.formData.initialValues}
+                            currentNodeId={message.formData.currentNodeId}
+                            onSubmit={message.formData.onSubmit}
+                            inline={true}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -3545,78 +3875,10 @@ const PipeLineChatPanel = () => {
           pipelineDtl={pipelineDtl}
         />
       </div>
+      
+
     </div>
   );
 };
 
 export default PipeLineChatPanel;
-
-/* 
- * USAGE EXAMPLES FOR DYNAMIC CHAT GENERATION
- * 
- * 1. To generate chat messages from API form data:
- * 
- * const apiFormData = [
- *   {
- *     id: "msg1",
- *     formData: {
- *       schema: { module_name: "SchemaTransformation" },
- *       initialValues: { column_mappings: ["col1", "col2"] },
- *       currentNodeId: "node1"
- *     },
- *     msg_owner: "user123"
- *   },
- *   {
- *     id: "msg2", 
- *     formData: {
- *       schema: { module_name: "Filter" },
- *       initialValues: { filter_conditions: ["age > 18"] },
- *       currentNodeId: "node2"
- *     },
- *     msg_owner: "user123"
- *   }
- * ];
- * 
- * const generatedMessages = generateChatFromAPIData(apiFormData);
- * setMessages(generatedMessages);
- * 
- * This will generate messages like:
- * - "Add SchemaTransformation transformation" (user)
- * - "Configured SchemaTransformation transformation with column mappings: 2 columns" (assistant)
- * - "Add Filter transformation" (user)
- * - "Configured Filter transformation with filter conditions: age > 18" (assistant)
- * 
- * 
- * 2. To add a single configuration message:
- * 
- * const formData = {
- *   schema: { module_name: "Filter" },
- *   initialValues: { filter_conditions: ["status = 'active'"] },
- *   currentNodeId: "node1"
- * };
- * 
- * addConfigurationMessage(formData, 'configured');
- * // This will add: "Configured Filter transformation with filter conditions: status = 'active'"
- * 
- * 
- * 3. To generate just the message content without adding to chat:
- * 
- * const messageContent = generateConfigurationMessage(formData, 'configured');
- * console.log(messageContent); // "Configured Filter transformation with filter conditions: status = 'active'"
- * 
- * 
- * 4. The system automatically handles these transformation types:
- * - Reader: "Configured data source \"input.csv\""
- * - Filter: "Configured Filter transformation with filter conditions: age > 18"
- * - SchemaTransformation: "Configured SchemaTransformation transformation with column mappings: 5 columns"
- * - Aggregate: "Configured Aggregate transformation with group by: country, aggregates: 3 functions"
- * - Join: "Configured Join transformation with inner join on 2 conditions"
- * - Sort: "Configured Sort transformation with sort by: name, age"
- * 
- * 
- * 5. Connection messages are automatically generated when sourceColumns are present:
- * - "Connect \"input.csv\" to Filter"
- * - "Connect \"users_table\" to SchemaTransformation"
- */
-
-

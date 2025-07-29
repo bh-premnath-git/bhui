@@ -65,25 +65,32 @@ export const Header = () => {
       return 25; // Default to 25% if container not found
     };
     
+    // Calculate the sidebar width
+    const sidebarWidth = isExpanded ? 256 : 56; // 16rem = 256px, 3.5rem = 56px
+    
     // Calculate the available width for the header content
-    const availableWidth = isRightAsideOpen ? `calc(100% - ${getRightAsideWidth()}%)` : "100%";
+    // We need to account for both sidebar and right aside panel
+    const rightAsideWidthPercent = getRightAsideWidth();
+    const availableWidth = isRightAsideOpen 
+      ? `calc(100vw - ${sidebarWidth}px - ${rightAsideWidthPercent}vw)` 
+      : `calc(100vw - ${sidebarWidth}px)`;
     
     if (isBuildPlaygroundRoute(location.pathname)) {
       dispatch(setIsFlow(false))
 
-      return <div className="w-full" style={{ maxWidth: availableWidth }}>
+      return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
       dispatch(setIsFlow(true))
-      return <div className="w-full" style={{ maxWidth: availableWidth }}>
+      return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
         <PlaygroundHeader playGroundHeader="flow" />
       </div>
     }
     if (isDataOpsHubRoute(location.pathname)) {
       return (
-        <div className={cn("flex justify-between w-full")} style={{ maxWidth: availableWidth }}>
+        <div className={cn("flex justify-between w-full overflow-hidden")} style={{ width: availableWidth }}>
           <NavigationBreadcrumb />
           {!isRightAsideOpen && <AIChatButton variant="dataops" />}
         </div>
@@ -91,31 +98,32 @@ export const Header = () => {
     }
     if (isDataXploreRoute(location.pathname)) {
       return (
-        <div className={cn("flex justify-between w-full")} style={{ maxWidth: availableWidth }}>
+        <div className={cn("flex justify-between w-full overflow-hidden")} style={{ width: availableWidth }}>
           <NavigationBreadcrumb />
           {!isRightAsideOpen && <AIChatButton variant="explorer" />}
         </div>
       );
     }
-    return <NavigationBreadcrumb />;
+    return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
+      <NavigationBreadcrumb />
+    </div>;
   };
-
-  // Padding to offset sidebar width
-  const paddingLeft = isExpanded ? "pl-64" : "pl-24";
 
   return (
     <header
       className={cn(
-        // Stretch full width: left:0; right:0
-        "fixed top-0 inset-x-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[90]"
+        "fixed top-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[90]",
+        "transition-all duration-300"
       )}
+      style={{
+        left: isExpanded ? '256px' : '56px',
+        right: '0',
+        width: isRightAsideOpen 
+          ? `calc(100vw - ${isExpanded ? '256px' : '56px'})` 
+          : `calc(100vw - ${isExpanded ? '256px' : '56px'})`
+      }}
     >
-      <div
-        className={cn(
-          "flex items-center justify-between h-full px-6 transition-all duration-300",
-          paddingLeft
-        )}
-      >
+      <div className="flex items-center justify-between h-full px-6 w-full">
         {renderHeaderContent()}
         {isNotebookRoute(location.pathname) && <NotebookAiButton />}
       </div>

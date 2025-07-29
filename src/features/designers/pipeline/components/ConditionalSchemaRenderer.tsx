@@ -37,6 +37,7 @@ export const ConditionalSchemaRenderer: React.FC<ConditionalSchemaRendererProps>
   const form = useFormContext();
   
   // Watch all form values to trigger re-renders when values change
+  // Use a more optimized approach to prevent unnecessary re-renders
   const formValues = form.watch();
 
   // Get active fields based on current form values

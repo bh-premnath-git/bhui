@@ -20,6 +20,7 @@ export function RightAside({
 }: RightAsideProps) {
   const { closeRightAside, updateRightAsideWidth } = useSidebar();
   const [currentWidth, setCurrentWidth] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const asideRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef<boolean>(false);
@@ -40,6 +41,7 @@ export function RightAside({
   const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     isDraggingRef.current = true;
+    setIsDragging(true);
     startXRef.current = e.clientX;
     
     // Get the current width from the parent container
@@ -109,6 +111,7 @@ export function RightAside({
   // Handle resize end
   const handleResizeEnd = () => {
     isDraggingRef.current = false;
+    setIsDragging(false);
     document.removeEventListener('mousemove', handleResize);
     document.removeEventListener('mouseup', handleResizeEnd);
     
@@ -153,18 +156,19 @@ export function RightAside({
           <div className="w-[2px] h-8 bg-green-500/50 rounded" />
         </div>
       </div>
-      {/* Collapse handle */}
+      {/* Collapse handle - Hidden during resize */}
       <Button
         variant="ghost"
         size="icon"
         onClick={closeRightAside}
-        className="
-          absolute left-0 top-1/2 -translate-y-1/2 -ml-4
-          h-6 w-6 rounded-full border bg-background
-          hover:bg-accent shadow-sm hover:shadow-md
-          transition-all duration-200
-          group z-10
-        "
+        className={cn(
+          "absolute left-0 top-1/2 -translate-y-1/2 -ml-4",
+          "h-6 w-6 rounded-full border bg-background",
+          "hover:bg-accent shadow-sm hover:shadow-md",
+          "transition-all duration-200",
+          "group z-10",
+          isDragging ? "opacity-0 pointer-events-none" : "opacity-100"
+        )}
         aria-label="Collapse panel"
       >
         <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />

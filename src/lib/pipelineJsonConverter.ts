@@ -401,20 +401,8 @@ const getNodePrefix = (operatorType: string): string => {
  * Gets the appropriate icon for an operator type
  */
 const getNodeIconForOperator = (operatorType: string): string => {
-    const iconMap: { [key: string]: string } = {
-        'S3KeySensor': '/assets/flow/Sensor.svg',
-        'HttpSensor': '/assets/flow/Sensor.svg',
-        'BashOperator': '/assets/flow/Other.svg',
-        'EmailOperator': '/assets/flow/Notify.svg',
-        'EmrAddStepsOperator': '/assets/flow/EMR.svg',
-        'EmrCreateJobFlowOperator': '/assets/flow/EMR.svg',
-        'EmrTerminateJobFlowOperator': '/assets/flow/EMR.svg',
-        'SFTPOperator': '/assets/flow/Transfer.svg',
-        'SFTPToS3Operator': '/assets/flow/Transfer.svg',
-        'SimpleHttpOperator': '/assets/flow/API.svg'
-    };
-
-    return iconMap[operatorType] || '/assets/flow/Custom.svg';
+    // Use the dynamic getNodeIcon function for flow operators
+    return getNodeIcon(operatorType);
 };
 
 
@@ -468,6 +456,9 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     let yPosition = 100;
     const yOffset = -117;
     console.log(pipelineJson, "pipelineJson");
+    
+    // Extract engine type from pipeline JSON, default to 'pyspark'
+    const selectedEngineType = pipelineJson.engine_type || 'pyspark';
 
     // Track existing titles to ensure uniqueness
     const existingTitles = new Set<string>();
@@ -597,7 +588,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                     data: {
                         label: 'Reader',
                         title: nodeTitle,
-                        icon: getNodeIcon('Reader'),
+                        icon: getNodeIcon('Reader', selectedEngineType),
                         ports: getNodePorts('Reader'),
                         transformationType: 'Reader',
                         transformationData: normalizeTransformationData(transform, 'Reader'),
@@ -724,7 +715,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             data: {
                 label: type,
                 title: nodeTitle,
-                icon: getNodeIcon(type),
+                icon: getNodeIcon(type, selectedEngineType),
                 ports: getNodePorts(type),
                 transformationType: type,
                 transformationData: normalizeTransformationData(transform, type)
@@ -823,7 +814,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             data: {
                 label: 'Target',
                 title: targetData?.name || targetTitle,
-                icon: getNodeIcon('Target'),
+                icon: getNodeIcon('Target', selectedEngineType),
                 ports: getNodePorts('Target'),
                 transformationType: 'Target',
                 transformationData: {

@@ -133,7 +133,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 }) => {
   const [isEditorReady, setIsEditorReady] = useState(false);
   const [editorHeight, setEditorHeight] = useState(40);
-  const [forceRender, setForceRender] = useState(0);
   const completionProviderRef = useRef<monaco.IDisposable | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monaco | null>(null);
@@ -261,31 +260,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   }, [form?.watch(fullFieldKey), isExpressionField, fullFieldKey, form]);
 
   // Watch for form value changes and update Monaco Editor programmatically
-  useEffect(() => {
-    if (isExpressionField && editorRef.current && form) {
-      const currentFormValue = form.watch(fullFieldKey) || '';
-      const currentEditorValue = editorRef.current.getValue();
-      
-      // Only update if the values are different to avoid infinite loops
-      if (currentFormValue !== currentEditorValue) {
-        console.log('🎯 Updating Monaco Editor value programmatically:', {
-          fullFieldKey,
-          currentFormValue,
-          currentEditorValue
-        });
-        
-        // Update the editor value programmatically
-        editorRef.current.setValue(currentFormValue);
-        
-        // Update height based on new content
-        const newHeight = calculateEditorHeight(currentFormValue);
-        setEditorHeight(newHeight);
-        
-        // Force a re-render to ensure the UI updates
-        setForceRender(prev => prev + 1);
-      }
-    }
-  }, [form?.watch(fullFieldKey), isExpressionField, fullFieldKey, form]);
+  // Note: Removed this effect as it was causing focus issues by programmatically updating the editor
+  // The Monaco editor now relies on the value prop for updates, which preserves focus
 
   // Monaco editor mount handler
   const handleEditorMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
@@ -407,8 +383,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       control={form.control}
       name={fullFieldKey}
       render={({ field: formField }) => {
-        // Force re-render when form value changes for expression fields
-        const watchedValue = form.watch(fullFieldKey);
+        // Get the current value for expression fields without causing unnecessary re-renders
+        const watchedValue = formField.value;
         
         return (
         <FormItem>
@@ -455,7 +431,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 >
                   <div className="border rounded-md bg-white border-gray-300">
                     <MonacoEditor
-                      key={`${fullFieldKey}-${watchedValue || 'empty'}-${forceRender}`}
+                      key={fullFieldKey}
                       height={`${editorHeight}px`}
                       language="sql"
                       theme="vs-light"
@@ -463,11 +439,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                       onChange={(newValue) => {
                         console.log('🎯 Monaco Editor onChange:', { fullFieldKey, newValue, oldValue: formField.value });
                         formField.onChange(newValue || '');
-                      }}
-                      onMount={(editor) => {
-                        console.log('🎯 Monaco Editor mounted for:', fullFieldKey, 'with value:', watchedValue);
-                        // Store editor reference for potential programmatic updates
-                        editorRef.current = editor;
                       }}
                       options={{
                         minimap: { enabled: false },

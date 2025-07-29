@@ -805,6 +805,14 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         if (connection && connection.$ref) {
             connection = resolveRef(connection.$ref);
         }
+        
+        // Ensure connection has the required fields for validation
+        if (connection) {
+            // Make sure connection_config_id is available
+            if (!connection.connection_config_id && connection.id) {
+                connection.connection_config_id = connection.id;
+            }
+        }
 
         console.log(writerTransformation, "writerTransformation");
 

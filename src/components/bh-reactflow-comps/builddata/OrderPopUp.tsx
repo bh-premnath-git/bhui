@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import SchemaTable from "./SchemaTable";
-import OnboardTaggingStep from "./OnboardTaggingStep";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
 import { useDispatch, useSelector } from "react-redux";
 import { Search, HelpCircle } from "lucide-react";
@@ -21,19 +20,25 @@ import {
 import { toast } from "sonner";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import { AppDispatch } from "@/store";
+import { apiService } from '@/lib/api/api-service';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { ReaderDataProvider, useReaderData } from '@/context/ReaderDataContext';
  
-export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
+// Internal component that uses the context
+function OrderPopUpContent({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
   const [selected, setSelected] = React.useState(0);
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
   const [initialData, setInitialData] = useState(null);
+  const [dataSources, setDataSources] = useState<any[]>([]);
   const { pipelineJson } = usePipelineContext();
   const dispatch = useDispatch<AppDispatch>();
   const { connectionConfigList } = useSelector((state: any) => state.datasource);
-  console.log(pipelineJson, "pipelineJson")
-  // const { pipelineJson } = useSelector((state: any) => state.buildPipeline.pipelineJsonData);
-  console.log(pipelineJson, "pipelineJson") 
-  const handleClose2 = () => {
-    setAnchorEl(null);
+  const { readerData, setReaderData } = useReaderData();
+  
+console.log('🔧 OrderPopUp: Initializing OrderPopUpContent with source:', source);
+  // Callback for ReaderOptionsForm to update global context
+  const handleFormDataChange = (updatedFormData: any) => {
+    setReaderData(updatedFormData);
   };
   useEffect(() => {
     const fetchConnectionConfigs = async () => {
@@ -46,38 +51,82 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
         toast.error('Failed to load connection configurations');
       }
     };
-    console.log("Fetching connection configs...",connectionConfigList);
 
     fetchConnectionConfigs();
   }, [dispatch]);
 
-  // Add a new useEffect to watch for changes in connectionConfigList and source
+  // Fetch data sources to try to match file names with data_src_id
   useEffect(() => {
+    const fetchDataSources = async () => {
+      try {
+        const response:any = await apiService.get({
+          baseUrl: CATALOG_REMOTE_API_URL,
+          url: '/data_source/list/',
+          usePrefix: true,
+          method: 'GET',
+          params: { limit: 1000 }
+        });
+        const dataSourcesArray = response?.data || [];
+        setDataSources(dataSourcesArray);
+      } catch (error) {
+        console.error('🔧 OrderPopUp: Error fetching data sources:', error);
+      }
+    };
+
+    fetchDataSources();
+  }, []);
+
+  // Add a new useEffect to watch for changes in connectionConfigList, source, and dataSources
+  useEffect(() => {
+    
     if (connectionConfigList?.length > 0 && source) {
       initialSource();
     }
-  }, [connectionConfigList, source]);
+  }, [connectionConfigList, source, dataSources]);
 
   const initialSource = () => {
-    console.log(source, "source")
+    
+let data_src_id=dataSources.find((item: any) => item.data_src_name === source?.name||source?.source?.name )?.data_src_id;
     if (source && connectionConfigList) {
+      // Try to find a matching data source if data_src_id is missing
+      let matchedDataSource = null;
+      if (!source?.data_src_id && !source?.source?.data_src_id && dataSources?.length > 0) {
+        const fileName = source?.file_name || source?.source?.file_name || source?.name || source?.reader_name;
+        const connectionId = source?.connection_config_id || source?.source?.connection_config_id || source?.source?.connection?.connection_config_id;
+        
+       
+        
+        matchedDataSource = dataSources.find((ds: any) => {
+          const nameMatch = ds.data_src_name === fileName || ds.file_name === fileName;
+          const connectionMatch = ds.connection_config_id === connectionId || ds.connection_config_id === parseInt(connectionId);
+         
+          return nameMatch && connectionMatch;
+        });
+        
+        if (matchedDataSource) {
+          source = {
+            ...source,
+            data_src_id: data_src_id,
+            source: {
+              ...source.source,
+              data_src_id: data_src_id
+            }
+          };
+        } else {
+        }
+      }
       let connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
-      console.log('🔧 Looking for connection with ID:', source?.connection_config_id);
-      console.log('🔧 Found connection:', connection);
-      
       // If no connection found by ID, try to find by name
       if (!connection && source?.connection?.name) {
         connection = connectionConfigList.find((item: any) => 
           item.connection_config_name === source?.connection?.name ||
           item.connection_name === source?.connection?.name
         );
-        console.log('🔧 Found connection by name:', connection);
       }
       
       // If still no connection, use the first available connection as fallback
       if (!connection && connectionConfigList.length > 0) {
         connection = connectionConfigList[0];
-        console.log('🔧 Using first available connection as fallback:', connection);
       }
       
       if (!connection) {
@@ -85,59 +134,50 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
         return;
       }
 
-
-
-      const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === source?.data_src_id);
-      console.log(pipelineJsonData, "pipelineJsonData")
-      console.log('Connection data:', connection);
-      console.log('Source file_path_prefix:', source?.file_path_prefix);
-      console.log('Pipeline connection:', pipelineJsonData?.connection);
-      
-      console.log('OrderPopUp: Building initial data with connection:', connection);
-      console.log('OrderPopUp: Source data:', source);
-      console.log('OrderPopUp: Pipeline JSON data:', pipelineJsonData);
+      const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === (source?.data_src_id || source?.source?.data_src_id));
       
       const initialData = {
-        reader_name: source?.data_src_name || pipelineJsonData?.name || '',
-        name: pipelineJsonData?.name || source?.data_src_name || '',
-        file_type: pipelineJsonData?.connection?.file_type || source?.file_type || 'CSV',
+        reader_name: source?.reader_name || source?.name || source?.data_src_name || pipelineJsonData?.name || '',
+        name: source?.name || source?.reader_name || pipelineJsonData?.name || source?.data_src_name || '',
+        file_type: source?.file_type || pipelineJsonData?.connection?.file_type || source?.source?.file_type || 'CSV',
 
         source: {
-          type: (connection.connection_name?.toLowerCase() === 'local' ||
-            connection.connection_name?.toLowerCase() === 's3')
-            ? 'File'
-            : 'Relational',
-          source_name: pipelineJsonData?.name || source?.data_src_name || '',
-          file_name: pipelineJsonData?.file_name || source?.file_name,
-          table_name: pipelineJsonData?.connection?.table_name ||
-            source?.data_src_name ||
-            pipelineJsonData?.name || '',
-          bh_project_id: pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
-          data_src_id: pipelineJsonData?.data_src_id || source?.data_src_id || '',
-          file_type: pipelineJsonData?.connection?.file_type || source?.file_type || 'CSV',
+          type: source?.source?.type || 
+                (connection.connection_name?.toLowerCase() === 'local' ||
+                 connection.connection_name?.toLowerCase() === 's3')
+                ? 'File'
+                : 'Relational',
+          source_name: source?.source?.source_name || source?.name || source?.reader_name || pipelineJsonData?.name || source?.data_src_name || '',
+          file_name: source?.source?.file_name || pipelineJsonData?.file_name || source?.file_name || source?.data_src_name || source?.name || '',
+          table_name: source?.source?.table_name || 
+                     pipelineJsonData?.connection?.table_name ||
+                     source?.data_src_name ||
+                     pipelineJsonData?.name || '',
+          bh_project_id: source?.source?.bh_project_id || pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
+          data_src_id: data_src_id,
+          file_type: source?.source?.file_type || source?.file_type || pipelineJsonData?.connection?.file_type || 'CSV',
           connection: {
-            ...(pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata),
-            name: connection?.connection_config_name || connection?.connection_name || '',
-            connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || connection?.id || '',
-            file_path_prefix: pipelineJsonData?.connection?.file_path_prefix || 
+            ...(source?.source?.connection || pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata),
+            name: source?.source?.connection?.name || connection?.connection_config_name || connection?.connection_name || '',
+            connection_config_id: source?.source?.connection?.connection_config_id || 
+                                 pipelineJsonData?.connection?.connection_config_id || 
+                                 source?.connection_config_id || 
+                                 connection?.id || '',
+            file_path_prefix: source?.source?.connection?.file_path_prefix ||
+                             pipelineJsonData?.connection?.file_path_prefix || 
                              source?.file_path_prefix || 
                              connection?.custom_metadata?.file_path_prefix || '',
           },
-          connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
+          connection_config_id: source?.source?.connection_config_id || 
+                               pipelineJsonData?.connection?.connection_config_id || 
+                               source?.connection_config_id || '',
         }
       };
-      
-      console.log('OrderPopUp: Final initialData:', initialData);
-      console.log('🔧 === ORDERPOPUP INITIAL DATA DEBUGGING ===');
-      console.log('🔧 initialData.source:', initialData.source);
-      console.log('🔧 initialData.source.connection:', initialData.source.connection);
-      console.log('🔧 initialData.source.connection.name:', initialData.source.connection.name);
-      console.log('🔧 initialData.source.connection.connection_config_id:', initialData.source.connection.connection_config_id);
-      console.log('🔧 initialData.source.connection_config_id:', initialData.source.connection_config_id);
-      console.log('🔧 Available connections in list:', connectionConfigList.map(c => ({ id: c.id, name: c.connection_config_name })));
-      console.log('🔧 === END ORDERPOPUP DEBUGGING ===');
 
+      console.log('🔧 OrderPopUp: Setting initialData and readerData context:', initialData);
+      console.log('🔧 OrderPopUp: data_src_id being set:', initialData.source?.data_src_id);
       setInitialData(initialData);
+      setReaderData(initialData); // Set global context for both components
     }
   };
   const open = Boolean(anchorEl);
@@ -161,29 +201,26 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
     }
   };
   const handleSchemaClick = () => {
-    console.log("Schema button clicked");
   };
 
   const handleTagClick = () => {
-    console.log("Tag button clicked");
   };
 
   const handlePreviewClick = () => {
-    console.log("Preview button clicked");
   };
-  const handleClose = () => {
-    console.log('🔧 OrderPopUp: handleClose called');
-    onClose();
-  };
+ 
 
   const handleDialogOpenChange = (open: boolean) => {
-    console.log('🔧 OrderPopUp: Dialog open change:', open);
     if (!open) {
       onClose();
     }
   };
 
-  console.log('🔧 OrderPopUp: Rendering with isOpen:', isOpen);
+  const handleClose2 = (open: boolean) => {
+    if (!open) {
+      setAnchorEl(null);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
@@ -270,14 +307,29 @@ export default function OrderPopUp({ isOpen, onClose, source, nodeId, onSourceUp
                   onSourceUpdate(updatedSource);
                   // The changes will be saved automatically by the auto-save mechanism
                 }}
+                onFormDataChange={handleFormDataChange} // Pass the callback
               />
             )}
-            {selected === 1 && <SchemaTable initialData={initialData} />}
+            {selected === 1 && (
+              <SchemaTable 
+                initialData={readerData || initialData} 
+                onSwitchToReaderOptions={() => setSelected(0)}
+              />
+            )}
             {/* {selected === 2 && <OnboardTaggingStep />} */}
             {/* {selected === 3 && <PreviewTable />} */}
           </div>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Main component that provides the context
+export default function OrderPopUp(props: any) {
+  return (
+    <ReaderDataProvider>
+      <OrderPopUpContent {...props} />
+    </ReaderDataProvider>
   );
 }

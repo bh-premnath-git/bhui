@@ -54,7 +54,7 @@ export const navigationItems: NavItem[] = [
       //   parent: ROUTES.DESIGNERS.INDEX,
       // },
       {
-        title: "Agent Pipeline",
+        title: "Data Pipeline",
         icon: Share2,
         path: ROUTES.DESIGNERS.BUILD_PIPELINE,
         parent: ROUTES.DESIGNERS.INDEX,

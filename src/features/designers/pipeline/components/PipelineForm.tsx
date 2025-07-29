@@ -29,6 +29,57 @@ interface PipelineFormProps {
   currentNodeId?: string; // Current node ID (for editing existing nodes)
 }
 
+// Function to enhance schema with missing UI hints for expression fields
+const enhanceSchemaWithUIHints = (schema: any, transformationName: string): any => {
+  if (!schema) return schema;
+  
+  // Deep clone the schema to avoid mutating the original
+  const enhancedSchema = JSON.parse(JSON.stringify(schema));
+  
+  try {
+    if (transformationName === 'Aggregator') {
+      // Add ui-hint to aggregations.items.properties.expression
+      if (enhancedSchema.properties?.aggregations?.items?.properties?.expression) {
+        enhancedSchema.properties.aggregations.items.properties.expression['ui-hint'] = 'expression';
+        console.log('✅ Added ui-hint to Aggregator expression field');
+      }
+    } else if (transformationName === 'SchemaTransformation') {
+      // Add ui-hint to derived_fields.items.properties.expression
+      if (enhancedSchema.properties?.derived_fields?.items?.properties?.expression) {
+        enhancedSchema.properties.derived_fields.items.properties.expression['ui-hint'] = 'expression';
+        console.log('✅ Added ui-hint to SchemaTransformation expression field');
+      }
+    } else if (transformationName === 'Mapper') {
+      // Add ui-hint to derived_fields.items.properties.expression
+      if (enhancedSchema.properties?.derived_fields?.items?.properties?.expression) {
+        enhancedSchema.properties.derived_fields.items.properties.expression['ui-hint'] = 'expression';
+        console.log('✅ Added ui-hint to Mapper derived_fields expression field');
+      }
+      // Add ui-hint to column_list.items.properties.expression
+      if (enhancedSchema.properties?.column_list?.items?.properties?.expression) {
+        enhancedSchema.properties.column_list.items.properties.expression['ui-hint'] = 'expression';
+        console.log('✅ Added ui-hint to Mapper column_list expression field');
+      }
+    } else if (transformationName === 'Joiner') {
+      // Add ui-hint to expressions.items.properties.expression
+      if (enhancedSchema.properties?.expressions?.items?.properties?.expression) {
+        enhancedSchema.properties.expressions.items.properties.expression['ui-hint'] = 'expression';
+        console.log('✅ Added ui-hint to Joiner expressions field');
+      }
+      // Add ui-hint to conditions.items.properties.join_condition
+      if (enhancedSchema.properties?.conditions?.items?.properties?.join_condition) {
+        enhancedSchema.properties.conditions.items.properties.join_condition['ui-hint'] = 'expression';
+        console.log('✅ Added ui-hint to Joiner join_condition field');
+      }
+    }
+  } catch (error) {
+    console.error('Error enhancing schema with UI hints:', error);
+    return schema; // Return original schema if enhancement fails
+  }
+  
+  return enhancedSchema;
+};
+
 // Initial form schema for transformation and engine selection
 const initialFormSchema = z.object({
   transformationName: z.string().min(1, 'Transformation name is required'),
@@ -69,7 +120,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
   const [selectedEngineType, setSelectedEngineType]:any = useState<'pyspark' | 'pyflink'>('pyspark');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transformationSchema, setTransformationSchema] = useState<any>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const [aiAttempted, setAiAttempted] = useState<Set<string>>(new Set());
   const [columnSuggestions, setColumnSuggestions] = useState<Array<{ name: string; dataType: string }>>([]);
 
@@ -140,8 +191,20 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     mode: 'onSubmit', // Only validate on submit to avoid premature validation
   });
 
+  // Add state to track if form has been initialized to prevent unwanted resets
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+
   // Reset forms when dialog opens/closes
   useEffect(() => {
+    console.log('🔧 Form initialization effect triggered:', {
+      isOpen,
+      isEditingExistingNode,
+      isFormInitialized,
+      hasUserInteracted,
+      selectedTransformation: selectedTransformation?.name
+    });
+
     if (isOpen) {
       if (isEditingExistingNode) {
         // Skip initial step for editing existing nodes
@@ -152,36 +215,76 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         const transformationName = selectedSchema?.title || initialValues?.type;
         const transformation = availableTransformations.find(t => t.name === transformationName);
         
-        if (transformation) {
+        // Only initialize if form hasn't been initialized yet AND user hasn't interacted
+        if (transformation && !isFormInitialized && !hasUserInteracted) {
+          console.log('🔧 Initializing form for editing existing node');
+          
+          // Enhance schema with missing UI hints for expression fields
+          const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
+          
           setSelectedTransformation(transformation);
-          setTransformationSchema(transformation.schema);
+          setTransformationSchema(enhancedSchema);
           
           // Initialize configuration form with existing values
           console.log('🔧 Resetting form with initialValues:', initialValues);
           configurationForm.reset(initialValues);
+          setIsFormInitialized(true);
+          setHasUserInteracted(false);
           
           // Debug: Check form values after reset
           setTimeout(() => {
             const currentFormValues = configurationForm.getValues();
             console.log('🔧 Form values after reset:', currentFormValues);
           }, 100);
+        } else if (hasUserInteracted) {
+          console.log('🔧 Skipping form reset - user has interacted with form');
         }
       } else {
         // Normal flow for creating new nodes
-        setStep('initial');
-        setSelectedTransformation(null);
-        setTransformationSchema(null);
-        setSelectedEngineType(pipelineEngineType);
-        initialForm.reset({
-          transformationName: '',
-          engineType: pipelineEngineType,
-          useCustomSchema: false,
-          customSchema: '',
-        });
-        configurationForm.reset();
+        if (!isFormInitialized && !hasUserInteracted) {
+          console.log('🔧 Initializing form for new node');
+          setStep('initial');
+          setSelectedTransformation(null);
+          setTransformationSchema(null);
+          setSelectedEngineType(pipelineEngineType);
+          initialForm.reset({
+            transformationName: '',
+            engineType: pipelineEngineType,
+            useCustomSchema: false,
+            customSchema: '',
+          });
+          configurationForm.reset();
+          setIsFormInitialized(true);
+          setHasUserInteracted(false);
+        } else if (hasUserInteracted) {
+          console.log('🔧 Skipping form reset - user has interacted with form');
+        }
+      }
+    } else {
+      // Reset initialization state when dialog closes
+      console.log('🔧 Dialog closed - resetting initialization state');
+      setIsFormInitialized(false);
+      setHasUserInteracted(false);
+    }
+  }, [isOpen, isEditingExistingNode, selectedSchema, initialValues, pipelineEngineType]);
+
+  // Handle changes in available transformations (when engine type changes)
+  useEffect(() => {
+    if (isOpen && isEditingExistingNode && !hasUserInteracted) {
+      const transformationName = selectedSchema?.title || initialValues?.type;
+      const transformation = availableTransformations.find(t => t.name === transformationName);
+      
+      if (transformation && !selectedTransformation) {
+        console.log('🔧 Setting up transformation from availableTransformations change');
+        
+        // Enhance schema with missing UI hints for expression fields
+        const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
+        
+        setSelectedTransformation(transformation);
+        setTransformationSchema(enhancedSchema);
       }
     }
-  }, [isOpen, isEditingExistingNode, selectedSchema, initialValues, pipelineEngineType, availableTransformations]);
+  }, [availableTransformations, isOpen, isEditingExistingNode, hasUserInteracted, selectedSchema, initialValues, selectedTransformation]);
 
   // Update engine type when form changes
   useEffect(() => {
@@ -193,18 +296,35 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     return () => subscription.unsubscribe();
   }, [initialForm, selectedEngineType]);
 
+  // Track user interaction with configuration form to prevent unwanted resets
+  useEffect(() => {
+    if (step === 'configuration') {
+      let timeoutId: NodeJS.Timeout;
+      const subscription = configurationForm.watch(() => {
+        // Use a small delay to avoid marking as user interaction during initial form setup
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          if (!hasUserInteracted) {
+            console.log('🔧 User started interacting with form');
+            setHasUserInteracted(true);
+          }
+        }, 100);
+      });
+      
+      return () => {
+        subscription.unsubscribe();
+        if (timeoutId) clearTimeout(timeoutId);
+      };
+    }
+  }, [configurationForm, step, hasUserInteracted]);
+
   // Load column suggestions when step changes to configuration
   useEffect(() => {
     const loadColumnSuggestions = async () => {
       if (step === 'configuration') {
         // Always provide some initial columns immediately
         const initialSuggestions = [
-          { name: 'id', dataType: 'string' },
-          { name: 'name', dataType: 'string' },
-          { name: 'email', dataType: 'string' },
-          { name: 'created_at', dataType: 'string' },
-          { name: 'updated_at', dataType: 'string' },
-          { name: 'status', dataType: 'string' }
+         
         ];
         console.log('🔍 Setting initial column suggestions:', initialSuggestions);
         setColumnSuggestions(initialSuggestions);
@@ -250,41 +370,378 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
   // Handle expression generation for AI-powered fields
   const handleExpressionGenerate = useCallback(async (fieldName: string) => {
-    if (!selectedTransformation || isGenerating) {
+    console.log('🤖 AI Expression generation requested for:', {
+      fieldName,
+      transformationName: selectedTransformation?.name,
+      isGeneratingForField: generatingFields.has(fieldName),
+      aiAttempted: aiAttempted.has(fieldName),
+      transformationSchema: transformationSchema?.title
+    });
+
+    if (!selectedTransformation || generatingFields.has(fieldName)) {
+      console.log('🤖 Skipping AI generation - no transformation or already generating for this field');
       return;
     }
 
-    // If AI has already been attempted for this field, allow typing
-    if (aiAttempted.has(fieldName)) {
-      return;
-    }
+    // Allow AI generation every time the hammer is clicked
+    console.log('🤖 Proceeding with AI generation for field:', fieldName);
+    console.log('🤖 Field name analysis:', {
+      fieldName,
+      isAggregatorPattern: /aggregations\.(\d+)\.expression/.test(fieldName),
+      isMapperDerivedPattern: /derived_fields\.(\d+)\.expression/.test(fieldName),
+      isMapperColumnPattern: /column_list\.(\d+)\.expression/.test(fieldName),
+      isSchemaTransformationPattern: /derived_fields\.(\d+)\.expression/.test(fieldName)
+    });
 
-    setIsGenerating(true);
+    setGeneratingFields(prev => new Set(prev).add(fieldName));
     try {
       // Create a temporary node ID for expression generation
-      const tempNodeId = `temp_${selectedTransformation.name}_${Date.now()}`;
-      const suggestions = await getColumnSuggestions(tempNodeId, nodes, edges, pipelineDtl);
+      const nodeIdForSuggestions = isEditingExistingNode && currentNodeId 
+        ? currentNodeId 
+        : `temp_${selectedTransformation.name}_${Date.now()}`;
+      
+      console.log('🤖 Loading column suggestions for AI generation:', nodeIdForSuggestions);
+      const suggestions = await getColumnSuggestions(nodeIdForSuggestions, nodes, edges, pipelineDtl);
       const schemaString = suggestions.map(col => `${col}:string`).join(', ');
+      console.log('🤖 Schema string for AI:', schemaString);
 
       // Handle different transformation types
-      if (['SchemaTransformation', 'Aggregator'].includes(selectedTransformation.name)) {
-        // Extract target column from field name patterns
-        let targetColumn = '';
+      if (selectedTransformation.name === 'Aggregator') {
+        console.log('🤖 Processing Aggregator AI generation');
+        console.log('🤖 Field name received:', fieldName);
+        console.log('🤖 Field name type:', typeof fieldName);
+        console.log('🤖 Field name length:', fieldName.length);
+        console.log('🤖 Field name characters:', fieldName.split('').map((c, i) => `${i}: '${c}' (${c.charCodeAt(0)})`));
+        console.log('🤖 Testing regex pattern /aggregations\\.(\d+)\\.expression/');
+        
+        // Handle Aggregator transformation - try multiple patterns
+        let match = fieldName.match(/aggregations\.(\d+)\.expression/);
+        console.log('🤖 Aggregator regex match result (pattern 1):', match);
+        
+        // Try alternative patterns if the first one doesn't match
+        if (!match) {
+          match = fieldName.match(/aggregations\[(\d+)\]\.expression/);
+          console.log('🤖 Aggregator regex match result (pattern 2 - brackets):', match);
+        }
+        
+        if (!match) {
+          // Try to extract index from any aggregation-related field
+          const aggregationMatch = fieldName.match(/aggregation.*?(\d+).*?expression/);
+          console.log('🤖 Aggregator regex match result (pattern 3 - flexible):', aggregationMatch);
+          if (aggregationMatch) {
+            match = [fieldName, aggregationMatch[1]]; // Create a match-like array
+          }
+        }
+        
+        console.log('🤖 Manual test - does field contain "aggregations"?', fieldName.includes('aggregations'));
+        console.log('🤖 Manual test - does field contain "expression"?', fieldName.includes('expression'));
+        console.log('🤖 Final match result:', match);
+        
+        if (match) {
+          const index = parseInt(match[1]);
+          const aggregations = configurationForm.watch('aggregations');
+          const actualTargetColumn = aggregations?.[index]?.target_column || '';
+
+          console.log('🤖 Aggregator details:', { index, aggregations, actualTargetColumn });
+
+          if (!actualTargetColumn) {
+            console.warn('🤖 No target column specified for Aggregator');
+            toast.warning('Please specify a target column first before generating expression');
+            return;
+          }
+
+          const response: any = await dispatch(generatePipelineAgent({ 
+            params: {
+              schema: schemaString,
+              target_column: actualTargetColumn
+            },
+            operation_type: "spark_expression",
+            thread_id: 'spark_123'
+          })).unwrap();
+
+          if (response?.result) {
+            try {
+              console.log('🤖 Raw AI response:', response);
+              console.log('🤖 Response result:', response.result);
+              const parsedResult = JSON.parse(response.result);
+              console.log('🤖 Parsed result:', parsedResult);
+              console.log('🤖 Expression value:', parsedResult.expression);
+              
+              // Mark this field as having attempted AI generation
+              setAiAttempted(prev => new Set(prev).add(fieldName));
+
+              // Update the aggregations array properly
+              const expressionValue = parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : 
+                (parsedResult === "" ? '' : parsedResult.expression);
+              
+              const currentAggregations = [...(configurationForm.watch('aggregations') || [])];
+              console.log('🤖 Current aggregations before update:', currentAggregations);
+              console.log('🤖 Updating index:', index, 'with expression:', expressionValue);
+              
+              currentAggregations[index] = {
+                ...currentAggregations[index],
+                expression: expressionValue
+              };
+              
+              console.log('🤖 Updated aggregations:', currentAggregations);
+              
+              configurationForm.setValue('aggregations', currentAggregations, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+              
+              console.log('🤖 Form value after setValue:', configurationForm.watch('aggregations'));
+              
+              // Show success message
+              if (expressionValue) {
+                toast.success('AI expression generated successfully!');
+              } else {
+                toast.info('AI could not generate expression. You can type manually.');
+              }
+            } catch (error) {
+              console.error('Error parsing AI response for Aggregator:', error);
+            }
+          }
+        } else {
+          console.warn('🤖 Aggregator field name does not match any expected pattern:', fieldName);
+          console.warn('🤖 Expected patterns:');
+          console.warn('🤖   1. aggregations.{index}.expression');
+          console.warn('🤖   2. aggregations[{index}].expression');
+          console.warn('🤖   3. Any field containing aggregation + number + expression');
+          console.warn('🤖 Received field name:', `"${fieldName}"`);
+          
+          // Try a last resort - if it's an expression field in aggregator, try to use it anyway
+          if (fieldName.includes('expression') && selectedTransformation.name === 'Aggregator') {
+            console.log('🤖 Attempting fallback processing for Aggregator expression field');
+            
+            // Try multiple ways to get aggregations data
+            const aggregationsWatch = configurationForm.watch('aggregations');
+            const aggregationsGetValues = configurationForm.getValues().aggregations;
+            const allFormValues = configurationForm.getValues();
+            
+            console.log('🤖 Fallback - aggregations via watch():', aggregationsWatch);
+            console.log('🤖 Fallback - aggregations via getValues():', aggregationsGetValues);
+            console.log('🤖 Fallback - all form values:', allFormValues);
+            console.log('🤖 Fallback - form values keys:', Object.keys(allFormValues));
+            
+            // Try both methods to get aggregations
+            const aggregations = aggregationsWatch || aggregationsGetValues;
+            
+            if (aggregations && aggregations.length > 0) {
+              // Try to extract index from field name
+              let targetIndex = 0;
+              const indexMatch = fieldName.match(/(\d+)/);
+              if (indexMatch) {
+                targetIndex = parseInt(indexMatch[1]);
+                console.log('🤖 Extracted index from field name:', targetIndex);
+              }
+              
+              // Use the specific aggregation or fall back to first one
+              const targetAggregation = aggregations[targetIndex] || aggregations[0];
+              const actualTargetColumn = targetAggregation?.target_column || '';
+              
+              console.log('🤖 Using aggregation at index:', targetIndex);
+              console.log('🤖 Target aggregation:', targetAggregation);
+              console.log('🤖 Target column:', actualTargetColumn);
+              
+              if (actualTargetColumn) {
+                console.log('🤖 Using fallback with target_column:', actualTargetColumn);
+                
+                const response: any = await dispatch(generatePipelineAgent({ 
+                  params: {
+                    schema: schemaString,
+                    target_column: actualTargetColumn
+                  },
+                  operation_type: "spark_expression",
+                  thread_id: 'spark_123'
+                })).unwrap();
+
+                if (response?.result) {
+                  try {
+                    const parsedResult = JSON.parse(response.result);
+                    const expressionValue = parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : 
+                      (parsedResult === "" ? '' : parsedResult.expression);
+                    
+                    // Set the value directly on the field that was clicked
+                    configurationForm.setValue(fieldName, expressionValue, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                      shouldTouch: true
+                    });
+                    
+                    setAiAttempted(prev => new Set(prev).add(fieldName));
+                    
+                    if (expressionValue) {
+                      toast.success('AI expression generated successfully (fallback method)!');
+                    } else {
+                      toast.info('AI could not generate expression. You can type manually.');
+                    }
+                  } catch (error) {
+                    console.error('Error parsing AI response for Aggregator fallback:', error);
+                    toast.error('Error processing AI response. You can type manually.');
+                  }
+                } else {
+                  toast.info('No AI response received. You can type manually.');
+                }
+              } else {
+                toast.warning('Please specify a target column first before generating expression');
+              }
+            } else {
+              console.log('🤖 No aggregations array found, trying to extract target column directly from field path');
+              
+              // Try to extract target column from the field path directly
+              // If fieldName is something like "aggregations.0.expression", try to get "aggregations.0.target_column"
+              let targetColumnFieldName = '';
+              if (fieldName.includes('expression')) {
+                targetColumnFieldName = fieldName.replace('expression', 'target_column');
+                console.log('🤖 Trying to get target column from field:', targetColumnFieldName);
+                
+                // Try multiple ways to access the target column value
+                const targetColumnValue = configurationForm.watch(targetColumnFieldName) || 
+                                         configurationForm.getValues()[targetColumnFieldName] ||
+                                         (() => {
+                                           // Try to access nested value manually
+                                           const allValues = configurationForm.getValues();
+                                           const pathParts = targetColumnFieldName.split('.');
+                                           let value = allValues;
+                                           for (const part of pathParts) {
+                                             if (value && typeof value === 'object') {
+                                               value = value[part];
+                                             } else {
+                                               return null;
+                                             }
+                                           }
+                                           return value;
+                                         })();
+                console.log('🤖 Target column value from direct field access:', targetColumnValue);
+                
+                if (targetColumnValue) {
+                  console.log('🤖 Found target column via direct field access:', targetColumnValue);
+                  
+                  const response: any = await dispatch(generatePipelineAgent({ 
+                    params: {
+                      schema: schemaString,
+                      target_column: targetColumnValue
+                    },
+                    operation_type: "spark_expression",
+                    thread_id: 'spark_123'
+                  })).unwrap();
+
+                  if (response?.result) {
+                    try {
+                      const parsedResult = JSON.parse(response.result);
+                      const expressionValue = parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : 
+                        (parsedResult === "" ? '' : parsedResult.expression);
+                      
+                      // Set the value directly on the field that was clicked
+                      configurationForm.setValue(fieldName, expressionValue, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                        shouldTouch: true
+                      });
+                      
+                      setAiAttempted(prev => new Set(prev).add(fieldName));
+                      
+                      if (expressionValue) {
+                        toast.success('AI expression generated successfully (direct field access)!');
+                      } else {
+                        toast.info('AI could not generate expression. You can type manually.');
+                      }
+                    } catch (error) {
+                      console.error('Error parsing AI response for Aggregator direct access:', error);
+                      toast.error('Error processing AI response. You can type manually.');
+                    }
+                  } else {
+                    toast.info('No AI response received. You can type manually.');
+                  }
+                } else {
+                  toast.warning('No target column found. Please fill the target column field first.');
+                }
+              } else {
+                toast.warning('No aggregation data found. Please add aggregation fields first.');
+              }
+            }
+          } else {
+            toast.warning('Unable to process this field for AI generation. Please check the field structure.');
+          }
+        }
+      } else if (selectedTransformation.name === 'SchemaTransformation') {
+        console.log('🤖 Processing SchemaTransformation AI generation');
+        // Handle SchemaTransformation (derived_fields)
+        const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const derivedFields = configurationForm.watch('derived_fields');
+          const actualTargetColumn = derivedFields?.[index]?.name || '';
+
+          console.log('🤖 SchemaTransformation details:', { index, derivedFields, actualTargetColumn });
+
+          if (!actualTargetColumn) {
+            console.warn('🤖 No target column specified for SchemaTransformation');
+            return;
+          }
+
+          const response: any = await dispatch(generatePipelineAgent({ 
+            params: {
+              schema: schemaString,
+              target_column: actualTargetColumn
+            },
+            operation_type: "spark_expression",
+            thread_id: 'spark_123'
+          })).unwrap();
+
+          if (response?.result) {
+            try {
+              const parsedResult = JSON.parse(response.result);
+              console.log('SchemaTransformation AI response:', parsedResult);
+              
+              // Mark this field as having attempted AI generation
+              setAiAttempted(prev => new Set(prev).add(fieldName));
+              
+              const expressionValue = parsedResult === "" ? '' : 
+                parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+              
+              // Update the derived_fields array properly
+              const currentDerivedFields = [...(configurationForm.watch('derived_fields') || [])];
+              currentDerivedFields[index] = {
+                ...currentDerivedFields[index],
+                expression: expressionValue
+              };
+              
+              configurationForm.setValue('derived_fields', currentDerivedFields, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            } catch (error) {
+              console.error('Error parsing AI response for SchemaTransformation:', error);
+            }
+          }
+        }
+      } else if (selectedTransformation.name === 'Mapper') {
+        console.log('🤖 Processing Mapper AI generation');
+        // Handle Mapper transformation - similar to SchemaTransformation
         const derivedFieldMatch = fieldName.match(/derived_fields\.(\d+)\.expression/);
-        const aggregationMatch = fieldName.match(/aggregations\.(\d+)\.expression/);
+        const columnListMatch = fieldName.match(/column_list\.(\d+)\.expression/);
+        
+        let targetColumn = '';
+        let index = -1;
         
         if (derivedFieldMatch) {
-          const index = parseInt(derivedFieldMatch[1]);
+          index = parseInt(derivedFieldMatch[1]);
           const derivedFields = configurationForm.watch('derived_fields');
           targetColumn = derivedFields?.[index]?.name || '';
-        } else if (aggregationMatch) {
-          const index = parseInt(aggregationMatch[1]);
-          const aggregations = configurationForm.watch('aggregations');
-          targetColumn = aggregations?.[index]?.target_column || '';
+          console.log('🤖 Mapper derived_fields details:', { index, derivedFields, targetColumn });
+        } else if (columnListMatch) {
+          index = parseInt(columnListMatch[1]);
+          const columnList = configurationForm.watch('column_list');
+          targetColumn = columnList?.[index]?.name || '';
+          console.log('🤖 Mapper column_list details:', { index, columnList, targetColumn });
         }
 
         if (!targetColumn) {
-          console.warn('No target column specified for expression generation');
+          console.warn('🤖 No target column specified for Mapper');
           return;
         }
 
@@ -299,58 +756,224 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
         if (response?.result) {
           try {
+            console.log('🤖 Mapper Raw AI response:', response);
+            console.log('🤖 Mapper Response result:', response.result);
             const parsedResult = JSON.parse(response.result);
+            console.log('🤖 Mapper Parsed result:', parsedResult);
+            console.log('🤖 Mapper Expression value:', parsedResult.expression);
+            
+            // Mark this field as having attempted AI generation
+            setAiAttempted(prev => new Set(prev).add(fieldName));
+            
             const expressionValue = parsedResult === "" ? '' : 
               parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
             
-            // Update the form field
-            configurationForm.setValue(fieldName, expressionValue, {
-              shouldValidate: true,
-              shouldDirty: true,
-              shouldTouch: true
-            });
-
-            // Mark this field as having attempted AI generation
-            setAiAttempted(prev => new Set(prev).add(fieldName));
+            // Update the appropriate array based on field type
+            if (derivedFieldMatch) {
+              const currentDerivedFields = [...(configurationForm.watch('derived_fields') || [])];
+              console.log('🤖 Mapper derived_fields before update:', currentDerivedFields);
+              console.log('🤖 Mapper updating index:', index, 'with expression:', expressionValue);
+              
+              currentDerivedFields[index] = {
+                ...currentDerivedFields[index],
+                expression: expressionValue
+              };
+              
+              console.log('🤖 Mapper updated derived_fields:', currentDerivedFields);
+              
+              configurationForm.setValue('derived_fields', currentDerivedFields, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+              
+              console.log('🤖 Mapper form value after setValue:', configurationForm.watch('derived_fields'));
+              
+              // Show success message
+              if (expressionValue) {
+                toast.success('AI expression generated successfully!');
+              } else {
+                toast.info('AI could not generate expression. You can type manually.');
+              }
+            } else if (columnListMatch) {
+              const currentColumnList = [...(configurationForm.watch('column_list') || [])];
+              console.log('🤖 Mapper column_list before update:', currentColumnList);
+              console.log('🤖 Mapper updating column_list index:', index, 'with expression:', expressionValue);
+              
+              currentColumnList[index] = {
+                ...currentColumnList[index],
+                expression: expressionValue
+              };
+              
+              console.log('🤖 Mapper updated column_list:', currentColumnList);
+              
+              configurationForm.setValue('column_list', currentColumnList, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+              
+              console.log('🤖 Mapper column_list form value after setValue:', configurationForm.watch('column_list'));
+              
+              // Show success message
+              if (expressionValue) {
+                toast.success('AI expression generated successfully!');
+              } else {
+                toast.info('AI could not generate expression. You can type manually.');
+              }
+            }
           } catch (error) {
-            console.error('Error parsing AI response:', error);
+            console.error('Error parsing AI response for Mapper:', error);
           }
         }
       } else if (selectedTransformation.name === 'Joiner') {
-        // Handle join condition generation
-        const joinPayload: any = await generateJoinPayload(tempNodeId, nodes, edges);
-        
-        const response: any = await dispatch(generatePipelineAgent({ 
-          params: joinPayload.params,
-          operation_type: "dataset_join",
-          thread_id: 'join_123'
-        })).unwrap();
+        // Handle different types of Joiner fields
+        if (fieldName.includes('expressions')) {
+          // Handle expressions tab - use spark_expression operation
+          const match = fieldName.match(/expressions\.(\d+)\.expression/);
+          if (match) {
+            const index = parseInt(match[1]);
+            const expressions = configurationForm.watch('expressions');
+            const targetColumn = expressions?.[index]?.name || '';
 
-        if (response?.result) {
-          try {
-            const parsedResult = JSON.parse(response.result);
-            const expressionValue = parsedResult === "" ? '' : 
-              parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
-            
-            configurationForm.setValue(fieldName, expressionValue, {
+            if (!targetColumn) {
+              console.warn('No target column specified for expression generation');
+              return;
+            }
+
+            const response: any = await dispatch(generatePipelineAgent({ 
+              params: {
+                schema: schemaString,
+                target_column: targetColumn
+              },
+              operation_type: "spark_expression",
+              thread_id: 'spark_123'
+            })).unwrap();
+
+            if (response?.result) {
+              try {
+                const parsedResult = JSON.parse(response.result);
+                const expressionValue = parsedResult === "" ? '' : 
+                  parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+                
+                // Update the expressions array properly
+                const currentExpressions = [...(configurationForm.watch('expressions') || [])];
+                currentExpressions[index] = {
+                  ...currentExpressions[index],
+                  expression: expressionValue
+                };
+                
+                configurationForm.setValue('expressions', currentExpressions, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                  shouldTouch: true
+                });
+
+                setAiAttempted(prev => new Set(prev).add(fieldName));
+              } catch (error) {
+                console.error('Error parsing AI response:', error);
+              }
+            }
+          }
+        } else if (fieldName.includes('join_condition')) {
+          // Handle join condition generation - only for existing nodes with proper connections
+          if (isEditingExistingNode && currentNodeId) {
+            try {
+              const joinPayload: any = await generateJoinPayload(currentNodeId, nodes, edges);
+              
+              const response: any = await dispatch(generatePipelineAgent({ 
+                params: joinPayload.params,
+                operation_type: "dataset_join",
+                thread_id: 'join_123'
+              })).unwrap();
+
+              if (response?.result) {
+                try {
+                  const parsedResult = JSON.parse(response.result);
+                  const expressionValue = parsedResult === "" ? '' : 
+                    parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
+                  const joinType = parsedResult.join_type?.split(' ')[0]?.toLowerCase() || 'inner';
+                  
+                  // Update the join condition field
+                  configurationForm.setValue(fieldName, expressionValue, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+
+                  // Also update join_type if it's available
+                  const joinTypeFieldName = fieldName.replace('join_condition', 'join_type');
+                  configurationForm.setValue(joinTypeFieldName, joinType, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+
+                  // Update join_input if available
+                  const joinInputFieldName = fieldName.replace('join_condition', 'join_input');
+                  configurationForm.setValue(joinInputFieldName, joinPayload.params.dataset1_name, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+
+                  setAiAttempted(prev => new Set(prev).add(fieldName));
+                } catch (error) {
+                  console.error('Error parsing AI response:', error);
+                }
+              }
+            } catch (error) {
+              console.error('Error generating join payload:', error);
+              // For new nodes or nodes without proper connections, just mark as attempted
+              // so user can type manually
+              setAiAttempted(prev => new Set(prev).add(fieldName));
+              configurationForm.setValue(fieldName, '', {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+            }
+          } else {
+            // For new nodes, just enable manual typing
+            console.log('Join condition generation not available for new nodes - enabling manual input');
+            setAiAttempted(prev => new Set(prev).add(fieldName));
+            configurationForm.setValue(fieldName, '', {
               shouldValidate: true,
               shouldDirty: true,
               shouldTouch: true
             });
-
-            setAiAttempted(prev => new Set(prev).add(fieldName));
-          } catch (error) {
-            console.error('Error parsing AI response:', error);
           }
         }
+      } else {
+        // Unsupported transformation type
+        console.warn('🤖 AI generation not supported for transformation:', selectedTransformation.name);
+        toast.info(`AI generation not available for ${selectedTransformation.name}. You can type manually.`);
+        setAiAttempted(prev => new Set(prev).add(fieldName));
+        configurationForm.setValue(fieldName, '', {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true
+        });
       }
     } catch (error) {
-      console.error('Error generating expression:', error);
-      toast.error('Failed to generate expression');
+      console.error('🤖 Error generating expression:', error);
+      toast.error('Failed to generate expression. You can type manually.');
+      // Mark field as attempted so user can type manually
+      setAiAttempted(prev => new Set(prev).add(fieldName));
+      // Clear the field to allow manual input
+      configurationForm.setValue(fieldName, '', {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
     } finally {
-      setIsGenerating(false);
+      setGeneratingFields(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fieldName);
+        return newSet;
+      });
     }
-  }, [selectedTransformation, isGenerating, aiAttempted, nodes, edges, pipelineDtl, configurationForm, dispatch]);
+  }, [selectedTransformation, generatingFields, aiAttempted, nodes, edges, pipelineDtl, configurationForm, dispatch, isEditingExistingNode, currentNodeId]);
 
   // Handle initial form submission (transformation selection)
   const handleInitialSubmit = (data: any) => {
@@ -360,11 +983,23 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       return;
     }
 
+    // Enhance schema with missing UI hints for expression fields
+    const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
+    
     setSelectedTransformation(transformation);
-    setTransformationSchema(transformation.schema);
+    setTransformationSchema(enhancedSchema);
     
     console.log('Selected transformation:', transformation);
-    console.log('Transformation schema:', transformation.schema);
+    console.log('Original transformation schema:', transformation.schema);
+    console.log('Enhanced transformation schema:', enhancedSchema);
+    
+    // Debug: Check if expression fields have ui-hint
+    if (transformation.name === 'Aggregator' && enhancedSchema?.properties?.aggregations?.items?.properties?.expression) {
+      console.log('🔍 Aggregator expression field schema:', enhancedSchema.properties.aggregations.items.properties.expression);
+    }
+    if (transformation.name === 'Mapper' && enhancedSchema?.properties) {
+      console.log('🔍 Mapper schema properties:', enhancedSchema.properties);
+    }
     
     // Generate initial values for the configuration form using schema utilities
     const initialValues = generateInitialValues(transformation.schema);
@@ -375,6 +1010,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     
     configurationForm.reset(initialValues);
     setStep('configuration');
+    setHasUserInteracted(false); // Reset user interaction state for new form
   };
 
   // Manual validation function
@@ -666,9 +1302,20 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                   useTabs={true}
                   sourceColumns={columnSuggestions}
                   onExpressionGenerate={handleExpressionGenerate}
-                  isGenerating={isGenerating}
+                  isFieldGenerating={(fieldName: string) => generatingFields.has(fieldName)}
                   onClosePipelineForm={handleClose}
                 />
+                
+                {/* Debug: Show current transformation info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+                    <strong>Debug Info:</strong><br/>
+                    Transformation: {selectedTransformation?.name}<br/>
+                    Has onExpressionGenerate: {!!handleExpressionGenerate}<br/>
+                    Generating Fields: {Array.from(generatingFields).join(', ') || 'None'}<br/>
+                    AI Available: Click hammer icon to generate expressions
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2">
                   {!isEditingExistingNode && (

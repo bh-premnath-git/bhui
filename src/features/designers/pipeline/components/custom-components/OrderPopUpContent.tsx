@@ -101,7 +101,6 @@ export default function OrderPopUpContent({ source, nodeId, onSourceUpdate }: Or
           connection_config_id: pipelineJsonData?.connection?.connection_config_id || source?.connection_config_id || '',
         }
       };
-      
       console.log('🔧 OrderPopUpContent: Final initialData:', initialData);
       setInitialData(initialData);
     }

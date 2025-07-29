@@ -53,10 +53,28 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
             }
 
             if (data.label.toLowerCase() === "target") {
-                if (!data.source) return 'bg-red-500';
-                return (data.source.target_type && data.source.connection?.connection_config_id)
+                console.log('🔧 ValidationIndicator - Target data:', data);
+                
+                if (!data.source) {
+                    console.log('🔧 ValidationIndicator - No source data found');
+                    return 'bg-red-500';
+                }
+                
+                // Check for connection_config_id in different possible locations
+                const hasConnection = data.source.connection?.connection_config_id || 
+                                    data.source.connection_config_id;
+                const hasTargetType = data.source.target_type;
+                
+                console.log('🔧 ValidationIndicator - Target validation:', {
+                    hasConnection,
+                    hasTargetType,
+                    connection: data.source.connection,
+                    target_type: data.source.target_type
+                });
+                
+                return (hasTargetType && hasConnection)
                     ? 'bg-green-500'
-                    : (data.source.target_type || data.source.connection?.connection_config_id)
+                    : (hasTargetType || hasConnection)
                         ? 'bg-yellow-500'
                         : 'bg-red-500';
             }

@@ -65,8 +65,10 @@ interface TargetPopUpProps {
     onClose: () => void;
     initialData?: FormData;
     onSourceUpdate?: (updatedSource: any) => void;
+    onSubmit?: (updatedSource: any) => void;
     nodeId?: string;
     source?: any;
+    sourceColumns?: any;
 }
 
 const isFieldRequired = (
@@ -114,7 +116,7 @@ const RequiredFieldLabel: React.FC<{ fieldName: string }> = ({ fieldName }) => (
     </div>
 );
 
-export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpdate, nodeId, source }: TargetPopUpProps) {
+export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpdate, onSubmit, nodeId, source, sourceColumns }: TargetPopUpProps) {
     const [formData, setFormData] = useState<FormData>({});
     const [currentSchema, setCurrentSchema] = useState<FormSchema>(writerSchema);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -124,6 +126,11 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
     const { pipelineJson } = usePipelineContext();
     const [isAdvance, setIsAdvanvce] = useState<boolean>(false);
     const [isInlineMode, setIsInlineMode] = useState<boolean>(false);
+    const [previousNodeId, setPreviousNodeId] = useState<string | undefined>(undefined);
+    
+    // Add state to track if form has been initialized to prevent unwanted resets
+    const [isInitialized, setIsInitialized] = useState<boolean>(false);
+    const [hasUserInput, setHasUserInput] = useState<boolean>(false);
     
     // Determine if we're in inline mode (used in chat panel) or modal mode (used in canvas)
     useEffect(() => {
@@ -143,32 +150,91 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
      * This component can be initialized in two ways:
      * 1. With source data (when used in canvas mode)
      * 2. With initialData (when used in chat panel mode)
+     * 
+     * Fixed to prevent unwanted re-renders that reset user input
      */
     useEffect(() => {
-       
+        console.log('🔧 TargetPopUp - Initialization effect triggered', {
+            hasSource: !!source,
+            hasInitialData: !!initialData,
+            nodeId,
+            previousNodeId,
+            isInitialized,
+            hasUserInput,
+            formDataEmpty: Object.keys(formData).length === 0
+        });
+
+        // Don't reinitialize if user has started entering data for the same node
+        if (hasUserInput && isInitialized && nodeId === previousNodeId) {
+            console.log('🔧 TargetPopUp - Skipping initialization - user has input for same node');
+            return;
+        }
+
+        // Always initialize if we have data and either:
+        // 1. Form is not initialized yet, OR
+        // 2. We're switching to a different node, OR  
+        // 3. Form data is empty (form was reset), OR
+        // 4. We have source data (saved form data should always be loaded)
+        const shouldInitialize = (source || initialData) && (
+            !isInitialized || 
+            nodeId !== previousNodeId || 
+            Object.keys(formData).length === 0 ||
+            (source && source.source) // Always load if we have saved source data
+        );
+        
+        if (!shouldInitialize) {
+            console.log('🔧 TargetPopUp - Skipping initialization - no data or already initialized');
+            return;
+        }
+
+        console.log('🔧 TargetPopUp - Starting initialization for nodeId:', nodeId);
 
         if (source) {
-            // console.log('Using source data for initialization');
-            let connection = source.source?.connection ? { ...source.source.connection } : {};
-            connection.connection_config_id = source?.source?.connection?.connection_config_id || 
-                (Array.isArray(connectionConfigList) ? connectionConfigList.find((item: any) => item.connection_config_name === source?.source?.connection?.name)?.id : undefined);
+            console.log('🔧 TargetPopUp - Using source data for initialization:', source);
+            
+            // Handle different possible data structures
+            // The source could be in different formats:
+            // 1. { source: { ... }, transformationData: { ... } } - from saved form data
+            // 2. { source: { ... } } - from initial node data  
+            // 3. Direct object - from other sources
+            let sourceObj;
+            let transformationData;
+            
+            if (source.source && typeof source.source === 'object') {
+                // Case 1: Saved form data with nested structure
+                sourceObj = source.source;
+                transformationData = source.transformationData;
+                console.log('🔧 TargetPopUp - Using nested structure from saved data');
+            } else {
+                // Case 2 & 3: Direct object or other formats
+                sourceObj = source;
+                transformationData = source.transformationData;
+                console.log('🔧 TargetPopUp - Using flat structure');
+            }
+            
+            console.log('🔧 TargetPopUp - Extracted sourceObj:', sourceObj);
+            console.log('🔧 TargetPopUp - Extracted transformationData:', transformationData);
+            
+            let connection = sourceObj?.connection ? { ...sourceObj.connection } : {};
+            connection.connection_config_id = sourceObj?.connection?.connection_config_id || 
+                (Array.isArray(connectionConfigList) ? connectionConfigList.find((item: any) => item.connection_config_name === sourceObj?.connection?.name)?.id : undefined);
             // console.log('Connection data:', connection);
             
-            let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === source?.source?.name);
+            let pipelineJsonData = pipelineJson?.targets?.find((item: any) => item.name === sourceObj?.name);
             
             // Make sure we have a valid initialFormData object with all required fields
-            const targetType = source.source?.target_type || pipelineJsonData?.target?.target_type || 'File';
+            const targetType = sourceObj?.target_type || pipelineJsonData?.target?.target_type || 'File';
             
             // Create base form data with common fields
             const initialFormData: FormData = {
-                name: source.source?.name || '', // Use source name or empty, not the generated title
+                name: sourceObj?.name || '', // Use source name or empty, not the generated title
                 target: {
                     target_type: targetType,
-                    target_name: source.source?.target_name || '',
-                    load_mode: source.source?.load_mode || 'append',
+                    target_name: sourceObj?.target_name || '',
+                    load_mode: sourceObj?.load_mode || 'append',
                     connection: connection
                 },
-                write_options: source.transformationData?.write_options || {
+                write_options: transformationData?.write_options || {
                     header: true,
                     sep: ",",
                     createDisposition: 'CREATE_IF_NEEDED',
@@ -178,24 +244,32 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             
             // Add target-type specific fields
             if (targetType === 'Relational') {
-                initialFormData.target.table_name = source.source?.table_name || '';
+                initialFormData.target.table_name = sourceObj?.table_name || '';
             } else if (targetType === 'File') {
-                initialFormData.target.file_name = source.source?.file_name || '';
-                initialFormData.file_type = source.source?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV';
+                initialFormData.target.file_name = sourceObj?.file_name || '';
+                initialFormData.file_type = sourceObj?.file_type || pipelineJsonData?.target?.file_type?.toUpperCase() || 'CSV';
             }
 
-            // console.log('Setting form data from source:', initialFormData);
+            console.log('🔧 TargetPopUp - Setting form data from source:', initialFormData);
             setFormData(initialFormData);
+            setIsInitialized(true);
+            
+            // If we're loading saved data (has name field), don't mark as user input
+            // This allows the form to be properly initialized with saved data
+            if (initialFormData.name) {
+                console.log('🔧 TargetPopUp - Loading saved data, not marking as user input');
+                setHasUserInput(false);
+            }
 
             // Set selected connection if connection_config_id exists
-            if (source.source?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
+            if (sourceObj?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
                 const selectedConn = connectionConfigList.find(
-                    conn => conn.id === source.source.connection.connection_config_id
+                    conn => conn.id === sourceObj.connection.connection_config_id
                 );
                 setSelectedConnection(selectedConn || null);
             }
         } else if (initialData) {
-            // console.log('Using initialData for initialization:', initialData);
+            console.log('🔧 TargetPopUp - Using initialData for initialization:', initialData);
             
             // Make sure we have a valid initialData object with all required fields
             const targetType = initialData.target?.target_type || 'File';
@@ -225,8 +299,12 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 safeInitialData.file_type = initialData.file_type || 'CSV';
             }
             
-            // console.log('Safe initialData:', safeInitialData);
+            console.log('🔧 TargetPopUp - Safe initialData:', safeInitialData);
             setFormData(safeInitialData);
+            setIsInitialized(true);
+            
+            // For initialData, always start fresh (used in chat panel)
+            setHasUserInput(false);
             
             if (initialData.target?.connection?.connection_config_id && Array.isArray(connectionConfigList)) {
                 const selectedConn = connectionConfigList.find(
@@ -235,17 +313,72 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 // console.log('Selected connection:', selectedConn);
                 setSelectedConnection(selectedConn || null);
             }
-        } else {
-            // console.log('No source or initialData provided');
         }
         
         // console.log('Selected connection:', selectedConnection);
         // console.log('Current form data:', formData);
-    }, [source, initialData, connectionConfigList, isInlineMode, nodeId]);
+    }, [source, initialData, isInlineMode, nodeId, isInitialized, hasUserInput, previousNodeId]); // Removed connectionConfigList from dependencies
+
+    // Separate effect to handle connection list updates without resetting form data
+    useEffect(() => {
+        if (!isInitialized || !connectionConfigList?.length) {
+            return;
+        }
+
+        // Update selected connection when connectionConfigList is available
+        const connectionId = formData.target?.connection?.connection_config_id;
+        if (connectionId && !selectedConnection) {
+            const selectedConn = connectionConfigList.find(conn => conn.id === connectionId);
+            if (selectedConn) {
+                setSelectedConnection(selectedConn);
+            }
+        }
+    }, [connectionConfigList, isInitialized, formData.target?.connection?.connection_config_id, selectedConnection]);
 
     useEffect(() => {
         resolveSchema();
     }, [formData]);
+
+    // Reset state when form is closed or a new node is opened
+    useEffect(() => {
+        if (!isOpen) {
+            // Reset when dialog is closed, but preserve form data for reopening
+            setTimeout(() => {
+                console.log('🔧 TargetPopUp - Resetting state after form close');
+                setIsInitialized(false);
+                setHasUserInput(false);
+                // Don't reset previousNodeId here - let it persist to track node changes
+                // Don't clear form data - let it persist so it can be reloaded
+                setErrors({});
+            }, 100); // Small delay to ensure cleanup happens after close
+        }
+    }, [isOpen]);
+
+    // Reset state when switching between different nodes
+    // Track the previous nodeId to only reset when actually switching nodes
+    
+    useEffect(() => {
+        if (nodeId && nodeId !== previousNodeId) {
+            // Only reset when switching to a different node
+            setIsInitialized(false);
+            setHasUserInput(false);
+            setPreviousNodeId(nodeId);
+        }
+    }, [nodeId, previousNodeId]);
+
+    // Debug logging to track re-renders (can be removed in production)
+    useEffect(() => {
+        console.log('🔧 TargetPopUp - Component re-rendered', {
+            nodeId,
+            previousNodeId,
+            isInitialized,
+            hasUserInput,
+            isOpen,
+            formDataEmpty: Object.keys(formData).length === 0,
+            hasSource: !!source,
+            hasInitialData: !!initialData
+        });
+    });
 
     const resolveSchema = async () => {
         let resolvedSchema = { ...writerSchema } as WriterSchema;
@@ -270,6 +403,11 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {
         const { name, value } = e.target;
+
+        // Mark that user has started entering data
+        if (!hasUserInput) {
+            setHasUserInput(true);
+        }
 
         setFormData(prev => {
             // Create a deep copy of the previous state
@@ -656,57 +794,68 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             connection.connection_config_id = formData.target?.connection?.connection_config_id;
             // console.log('Prepared connection data:', connection);
 
-            // Create a properly structured source data object
-            // Make sure we have all the required fields with fallbacks
+            // Create a properly structured source data object that matches the expected initialization format
             const sourceData:any = {
                 nodeId,
-                sourceData: {
-                    data: {
-                        label: formData.name || 'Unnamed Target',
-                        title: formData.name || 'Unnamed Target', // Set the title to the name entered by user
-                        source: {
-                            name: formData.name || 'Unnamed Target', // Also update the source name
-                            target_type: formData.target?.target_type || 'File',
-                            target_name: formData.target?.target_name || '',
-                            connection: connection || {},
-                            load_mode: formData.target?.load_mode || 'append'
-                        },
-                        transformationData: {
-                            write_options: formData.write_options || {
-                                header: true,
-                                sep: ",",
-                                createDisposition: 'CREATE_IF_NEEDED',
-                                writeMethod: formData.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
-                            }
-                        }
+                // Structure data to match what initialization expects
+                label: formData.name || 'Unnamed Target',
+                title: formData.name || 'Unnamed Target',
+                source: {
+                    name: formData.name || 'Unnamed Target',
+                    target_type: formData.target?.target_type || 'File',
+                    target_name: formData.target?.target_name || '',
+                    connection: connection || {},
+                    load_mode: formData.target?.load_mode || 'append'
+                },
+                transformationData: {
+                    write_options: formData.write_options || {
+                        header: true,
+                        sep: ",",
+                        createDisposition: 'CREATE_IF_NEEDED',
+                        writeMethod: formData.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
                     }
                 }
             };
             
             // Add target-type specific fields
             if (formData.target?.target_type === 'Relational') {
-                sourceData.sourceData.data.source.table_name = formData.target?.table_name || '';
+                sourceData.source.table_name = formData.target?.table_name || '';
             } else if (formData.target?.target_type === 'File') {
-                sourceData.sourceData.data.source.file_name = formData.target?.file_name || '';
-                sourceData.sourceData.data.source.file_type = formData.file_type || 'CSV';
+                sourceData.source.file_name = formData.target?.file_name || '';
+                sourceData.source.file_type = formData.file_type || 'CSV';
             }
             
-            // console.log('Sending source data to parent component:', JSON.stringify(sourceData, null, 2));
-            // console.log('onSourceUpdate function exists:', !!onSourceUpdate);
-            // console.log('Current mode:', isInlineMode ? 'inline (chat panel)' : 'modal (canvas)');
+            console.log('🔧 TargetPopUp - Sending source data to parent component:', JSON.stringify(sourceData, null, 2));
+            console.log('🔧 TargetPopUp - Submit function exists:', !!(onSubmit || onSourceUpdate));
+            console.log('🔧 TargetPopUp - Current mode:', isInlineMode ? 'inline (chat panel)' : 'modal (canvas)');
+            console.log('🔧 TargetPopUp - Connection data details:', {
+                hasConnection: !!connection,
+                connectionConfigId: connection?.connection_config_id,
+                connectionType: connection?.connection_type,
+                connectionName: connection?.connection_config_name
+            });
 
             try {
-                if (onSourceUpdate) {
-                    // console.log('Calling onSourceUpdate with data');
-                    onSourceUpdate(sourceData);
-                    // console.log('onSourceUpdate called successfully');
+                // Use onSubmit if available (for canvas mode), otherwise use onSourceUpdate (for chat panel mode)
+                const submitFunction = onSubmit || onSourceUpdate;
+                
+                if (submitFunction) {
+                    console.log('🔧 TargetPopUp - Calling submit function with data');
+                    console.log('🔧 TargetPopUp - Form data being saved:', formData);
+                    console.log('🔧 TargetPopUp - Source data structure:', sourceData);
+                    
+                    submitFunction(sourceData);
+                    console.log('🔧 TargetPopUp - Submit function called successfully');
+                    
+                    // Mark that we've successfully saved
+                    setHasUserInput(false); // Reset user input flag after successful save
                     
                     // For debugging - log what happens after the update
                     setTimeout(() => {
-                        // console.log('Form state after update (delayed check)');
+                        console.log('🔧 TargetPopUp - Form state after save (delayed check)');
                     }, 500);
                 } else {
-                    console.error('onSourceUpdate function is not defined');
+                    console.error('No submit function is defined (onSubmit or onSourceUpdate)');
                 }
                 
                 onClose();

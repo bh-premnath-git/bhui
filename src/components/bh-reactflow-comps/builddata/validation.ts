@@ -83,10 +83,33 @@ export const validateFormData = (
     // Check schema requirements if they exist
     if (schema?.required) {
         schema.required.forEach((field: string) => {
-            if (!formData[field] ||
-                (Array.isArray(formData[field]) && formData[field].length === 0) ||
-                (typeof formData[field] === 'string' && formData[field].trim() === '')) {
-                
+            const fieldValue = formData[field];
+            let isEmpty = false;
+            
+            if (!fieldValue) {
+                isEmpty = true;
+            } else if (Array.isArray(fieldValue) && fieldValue.length === 0) {
+                isEmpty = true;
+            } else if (typeof fieldValue === 'string' && fieldValue.trim() === '') {
+                isEmpty = true;
+            } else if (typeof fieldValue === 'object' && !Array.isArray(fieldValue)) {
+                // For objects, check if all required properties are empty
+                // Special handling for lookup_conditions
+                if (field === 'lookup_conditions') {
+                    const hasColumnName = fieldValue.column_name && fieldValue.column_name.trim() !== '';
+                    const hasLookupWith = fieldValue.lookup_with && fieldValue.lookup_with.trim() !== '';
+                    isEmpty = !hasColumnName || !hasLookupWith;
+                } else {
+                    // For other objects, check if it's empty or has no meaningful values
+                    const values = Object.values(fieldValue);
+                    isEmpty = values.length === 0 || values.every(val => 
+                        val === null || val === undefined || val === '' || 
+                        (Array.isArray(val) && val.length === 0)
+                    );
+                }
+            }
+            
+            if (isEmpty) {
                 // Create more user-friendly field names by replacing underscores with spaces and capitalizing
                 const fieldName = field
                     .split('_')

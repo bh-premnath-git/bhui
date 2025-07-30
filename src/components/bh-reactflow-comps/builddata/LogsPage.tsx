@@ -9,6 +9,15 @@ import {
 import { usePipelineContext } from "@/context/designers/DataPipelineContext"
 import { useEventStream } from "@/features/admin/connection/hooks/useEventStream"
 import { DataTable } from "@/components/bh-table/data-table"
+import { 
+  getCoreRowModel, 
+  getFilteredRowModel, 
+  getPaginationRowModel, 
+  useReactTable 
+} from "@tanstack/react-table"
+import { SimpleTopSection } from "@/components/bh-table/simple-top-section"
+import { TableContent } from "@/components/bh-table/table-content"
+import { TablePagination } from "@/components/bh-table/table-pagination"
 import { CATALOG_REMOTE_API_URL, API_PREFIX_URL } from '@/config/platformenv';
 import { useAppSelector } from "@/hooks/useRedux";
 import { RootState } from "@/store";
@@ -45,6 +54,47 @@ interface TerminalProps {
   pipelineName?: string
   activeTabOnOpen?: "terminal" | "proples" | "preview"
 }
+
+// Custom client-side pagination table component
+const PreviewDataTable: React.FC<{
+  data: Array<Record<string, string>>;
+  columns: any[];
+}> = ({ data, columns }) => {
+  const [columnFilters, setColumnFilters] = React.useState<any[]>([])
+  const [globalFilter, setGlobalFilter] = React.useState("")
+
+  console.log('PreviewDataTable rendering with data length:', data.length);
+
+  const table = useReactTable({
+    data: data || [],
+    columns,
+    state: {
+      columnFilters,
+      globalFilter,
+    },
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    // Client-side pagination - no manual pagination
+    manualPagination: false,
+  })
+
+  return (
+    <div className="space-y-4 w-full">
+      <SimpleTopSection table={table} />
+      
+      <div className="relative w-full [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300">
+        <div style={{ minWidth: '100%' }}>
+          <TableContent table={table} />
+        </div>
+      </div>
+
+      <TablePagination table={table} />
+    </div>
+  );
+};
 
 // Helper function to get node display configuration
 const getNodeDisplayConfig = (moduleName: string, pipelineModules: any[]) => {
@@ -1716,11 +1766,9 @@ export const Terminal: React.FC<TerminalProps> = ({
                             <TabsContent key={index} value={index.toString()}>
                               {output.rows.length > 0 ? (
                                 <div className="h-full">
-                                  <DataTable
+                                  <PreviewDataTable
                                     data={output.rows}
                                     columns={columns}
-                                    pagination={true}
-                                    topVariant="status"
                                   />
                                 </div>
                               ) : (
@@ -1756,11 +1804,9 @@ export const Terminal: React.FC<TerminalProps> = ({
 
                             {output.rows.length > 0 ? (
                               <div className="h-full">
-                                <DataTable
+                                <PreviewDataTable
                                   data={output.rows}
                                   columns={columns}
-                                  pagination={true}
-                                  topVariant="status"
                                 />
                               </div>
                             ) : (

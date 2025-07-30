@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Flow, FlowAgentConversationResponse } from '@/types/designer/flow';
-import { Environment } from '@/types/admin/environment';
+import { Environment, EnvironmentWithAirflow } from '@/types/admin/environment';
 import { Project } from '@/types/admin/project';
 import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
@@ -25,9 +25,9 @@ interface FlowState {
     dagEunID: Record<string, any> | null;
     dagParserTime: string | null;
     projects: Project[];
-    environments: Environment[];
+    environments: EnvironmentWithAirflow[];
     selectedProject: Project | null;
-    selectedEnvironment: Environment | null;
+    selectedEnvironment: EnvironmentWithAirflow | null;
     loading: boolean;
     projectsLoading: boolean;
     environmentsLoading: boolean;
@@ -105,7 +105,7 @@ export const fetchEnvironments = createAsyncThunk(
             if (search) {
                 url += `&search=${search}`;
             }
-            const response = await apiService.get<PaginatedResponse<Environment>>({
+            const response = await apiService.get<PaginatedResponse<EnvironmentWithAirflow>>({
                 baseUrl: CATALOG_REMOTE_API_URL,
                 url,
                 usePrefix: true,

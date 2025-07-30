@@ -19,7 +19,6 @@ import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from '@/store';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import OrderPopUp from '@/components/bh-reactflow-comps/builddata/OrderPopUp';
-import { Target } from 'lucide-react';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
@@ -29,12 +28,11 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
 
   // No sidebar width needed since we removed the sidebar
-  const sidebarWidth = 0;
   const { pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
 
   const {
     pipelineDtl,
-    nodes,
+    nodes, 
     edges,
     formStates,
     setNodes,
@@ -73,10 +71,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     handleLeavePage,
     showLeavePrompt,
     setShowLeavePrompt,
-    ctrlDTimeout,
-    hasUnsavedChanges,
-    setLastSaved,
-    lastSaved,
     fetchPipelineDetails,
     errorBanner,
     setErrorBanner
@@ -102,7 +96,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           handleCenter();
           // Make sure nodes are visible when layout changes
           if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
-            console.log('Centering nodes after layout change');
             handleCenter();
           }
         } catch (error) {
@@ -177,10 +170,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         });
     }
   }, [id]);
-  // Create a Set from the array for .has() functionality
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 
-  // Update memoizedNodeTypes to include debug props
   const memoizedNodeTypes = useMemo(() => ({
     custom: (props: any) => (
       <CustomNode
@@ -229,10 +220,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
 
 
   const getMainContentStyle = () => {
-    // Calculate the available width without sidebar
     let availableWidth = '100%';
     if (isRightAsideOpen) {
-      // Extract percentage value from rightAsideWidth (e.g., 'w-[25%]' -> '25%')
       const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
       availableWidth = `calc(100% - ${rightAsidePercentage}%)`;
     }
@@ -247,7 +236,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     <>
       {pipelineType?.toLowerCase() == "design" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
         
-        {/* Error Banner */}
         {errorBanner && (
           <div className="fixed top-0 left-0 right-0 z-50 p-4">
             <ErrorBanner
@@ -262,7 +250,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           className={`flex-1 relative p-1 transition-all duration-300 ${errorBanner ? 'mt-24' : ''}`}
           style={getMainContentStyle()}>
 
-          {/* Main Canvas */}
           <div
             className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
             style={{
@@ -305,7 +292,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             />
           </div>
 
-          {/* Node Form Components */}
           {selectedSchema && selectedSchema.title === 'Lookup' && (
             <Dialog
               open={isFormOpen}
@@ -332,23 +318,47 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           )}
 
           {selectedSchema && selectedSchema.title === 'Target' && (() => {
-            console.log('🔧 DataPipelineCanvasNew - Target selectedSchema:', selectedSchema);
-            console.log('🔧 DataPipelineCanvasNew - Target initialValues:', selectedSchema.initialValues);
-            console.log('🔧 DataPipelineCanvasNew - Target formStates[nodeId]:', formStates[selectedSchema?.nodeId]);
+            const initialValues = selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {};
             
+            console.log('🔧 DataPipelineCanvasNew - Target form data:', {
+              selectedSchema,
+              initialValues,
+              formStates: formStates[selectedSchema?.nodeId],
+              nodeId: selectedSchema?.nodeId
+            });
+            
+            // Structure the source data the way TargetPopUp expects it
             const sourceData = {
-              // Use initialValues from selectedSchema if available, otherwise fallback to formStates
-              ...(selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {}),
+              source: {
+                // Map the resolved target data to the format TargetPopUp expects
+                name: initialValues?.name || '',
+                target_type: initialValues?.target?.target_type || 'File',
+                target_name: initialValues?.target?.target_name || '',
+                table_name: initialValues?.target?.table_name || '',
+                file_name: initialValues?.target?.file_name || '',
+                load_mode: initialValues?.target?.load_mode || 'append',
+                connection: initialValues?.target?.connection || {},
+                file_type: initialValues?.file_type || 'CSV'
+              },
+              transformationData: {
+                write_options: initialValues?.write_options || {
+                  header: true,
+                  sep: ",",
+                  createDisposition: 'CREATE_IF_NEEDED',
+                  writeMethod: initialValues?.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                }
+              },
               nodeId: selectedSchema?.nodeId
             };
             
-            console.log('🔧 DataPipelineCanvasNew - Target sourceData being passed:', sourceData);
+            console.log('🔧 DataPipelineCanvasNew - Structured sourceData:', sourceData);
             
             return (
               <TargetPopUp
                 isOpen={isFormOpen}
                 onClose={handleDialogClose}
                 source={sourceData}
+                initialData={initialValues}
                 sourceColumns={sourceColumns}
                 onSubmit={handleFormSubmit}
                 nodeId={selectedSchema?.nodeId}
@@ -357,17 +367,11 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           })()}
           
           {selectedSchema && selectedSchema.title === 'Reader' && (() => {
-            console.log('🔧 DataPipelineCanvasNew - Reader selectedSchema:', selectedSchema);
-            console.log('🔧 DataPipelineCanvasNew - Reader initialValues:', selectedSchema.initialValues);
-            console.log('🔧 DataPipelineCanvasNew - Reader formStates[nodeId]:', formStates[selectedSchema?.nodeId]);
-            
             const sourceData = {
               // Use initialValues from selectedSchema if available, otherwise fallback to formStates
               ...(selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {}),
               nodeId: selectedSchema?.nodeId
             };
-            
-            console.log('🔧 DataPipelineCanvasNew - Reader sourceData being passed:', sourceData);
             
             return (
               <OrderPopUp
@@ -447,12 +451,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             terminalLogs={terminalLogs}
             proplesLogs={conversionLogs}
           />
-
-          {/* Loading Overlay */}
-
-          {/* Global Custom Component Renderer - renders custom components outside main component tree */}
-          {/* <GlobalCustomComponentRenderer /> */}
-
         </div>
       </div>) : (<>
         <RequirementForm  />

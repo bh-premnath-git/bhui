@@ -795,13 +795,23 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
             // console.log('Prepared connection data:', connection);
 
             // Create a properly structured source data object that matches the expected initialization format
+            const targetTitle = formData.target?.target_name || formData.name || 'Unnamed Target';
             const sourceData:any = {
                 nodeId,
                 // Structure data to match what initialization expects
-                label: formData.name || 'Unnamed Target',
-                title: formData.name || 'Unnamed Target',
+                label: targetTitle,
+                title: targetTitle,
+                name: formData.name || 'Target', // Keep the transformation name
+                target: {
+                    target_type: formData.target?.target_type || 'File',
+                    target_name: formData.target?.target_name || '',
+                    table_name: formData.target?.table_name || '',
+                    file_name: formData.target?.file_name || '',
+                    load_mode: formData.target?.load_mode || 'append',
+                    connection: connection || {}
+                },
                 source: {
-                    name: formData.name || 'Unnamed Target',
+                    name: targetTitle,
                     target_type: formData.target?.target_type || 'File',
                     target_name: formData.target?.target_name || '',
                     connection: connection || {},
@@ -817,11 +827,14 @@ export default function TargetPopUp({ isOpen, onClose, initialData, onSourceUpda
                 }
             };
             
-            // Add target-type specific fields
+            // Add target-type specific fields to both target and source objects
             if (formData.target?.target_type === 'Relational') {
+                sourceData.target.table_name = formData.target?.table_name || '';
                 sourceData.source.table_name = formData.target?.table_name || '';
             } else if (formData.target?.target_type === 'File') {
+                sourceData.target.file_name = formData.target?.file_name || '';
                 sourceData.source.file_name = formData.target?.file_name || '';
+                sourceData.target.file_type = formData.file_type || 'CSV';
                 sourceData.source.file_type = formData.file_type || 'CSV';
             }
             

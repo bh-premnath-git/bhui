@@ -84,13 +84,13 @@ console.log(filteredSources)
     console.log(connectionType)
     switch (connectionType?.toLowerCase()) {
       case 'postgres':
-        return '/assets/buildPipeline/connection/postgres.png';
+        return '/assets/buildPipeline/connection/postgres.svg';
       case 'snowflake':
-        return '/assets/buildPipeline/connection/snowflake.png';
+        return '/assets/buildPipeline/connection/snowflake.svg';
       case 'local':
-        return '/assets/buildPipeline/connection/bigquery.png';
+        return '/assets/buildPipeline/connection/bigquery.svg';
       case 'mysql':
-        return '/assets/buildPipeline/connection/mysql.png';
+        return '/assets/buildPipeline/connection/mysql.svg';
       case 's3':
         return '/assets/buildPipeline/connection/s3.svg';
       default:

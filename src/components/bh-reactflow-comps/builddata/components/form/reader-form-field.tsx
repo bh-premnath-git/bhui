@@ -171,9 +171,18 @@ export const ReaderFormField: React.FC<{
                     </Label>
                     <select
                         name="connection_config_id"
-                        value={formData.source?.connection_config_id || ""}
+                        value={(() => {
+                            const value = formData.source?.connection?.connection_config_id || formData.source?.connection_config_id || "";
+                            console.log('🔧 ReaderFormField: Connection select value:', value, 'from formData:', {
+                                nested: formData.source?.connection?.connection_config_id,
+                                direct: formData.source?.connection_config_id,
+                                formData: formData
+                            });
+                            return value;
+                        })()}
                         onChange={(e) => {
                             const newValue = e.target.value;
+                            console.log('🔧 ReaderFormField: Connection changed to:', newValue);
                             onChange(e, [...path, 'connection', 'connection_config_id']);
                         }}
                         disabled={isFieldDisabled}

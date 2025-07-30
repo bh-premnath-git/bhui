@@ -505,12 +505,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
         console.log('handleMetricsClick called for node:', id)
         e.stopPropagation();
         e.preventDefault();
-        
-        // Find the row count for this node
-        const rowCount = transformationCounts?.find(
-            (t) => t.transformationName?.toLowerCase() === titleValue?.toLowerCase()
-        )?.rowCount;
-        
         // Proceed with API call if we have the necessary data
         if (titleValue && pipelineDtl && (pipelineDtl.name || pipelineDtl.pipeline_name)) {
             setIsLoading(true);
@@ -685,6 +679,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
                     isOpen={true}
                     onClose={() => setSelectedSourceLabel(null)}
                     source={selectedSource}
+                    initialData={selectedSource}
                     nodeId={id}
                     onSourceUpdate={onSourceUpdate}
                 />

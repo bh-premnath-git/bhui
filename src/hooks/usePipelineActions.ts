@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/store';
 import { showErrorToast } from '@/components/ui/error-toast';
 import { 
     getTransformationCount, 
@@ -81,6 +81,7 @@ export const usePipelineActions = ({
     setErrorBanner
 }: UsePipelineActionsProps) => {
     const dispatch = useDispatch<AppDispatch>();
+    const selectedEngineType = useSelector((state: RootState) => state.buildPipeline.selectedEngineType);
 
     // Helper function to extract detailed error information
     const extractErrorDetails = useCallback((error: any) => {
@@ -253,7 +254,7 @@ export const usePipelineActions = ({
             }]);
 
             const { pipeline_json }: any = await convertOptimisedPipelineJsonToPipelineJson(nodes, edges, pipelineDtl, pipelineName);
-            pipeline_json.engine_type = "pyspark";
+            pipeline_json.engine_type = selectedEngineType;
             pipeline_json.transformations = pipeline_json.transformations.map(transform => {
                 if (transform.transformation.toLowerCase() === "target") {
                     return {

@@ -98,16 +98,19 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .map(node => {
             const source = node.data.source || {};
             const connectionConfig = source?.connection_config?.custom_metadata;
+            const fullConnectionConfig = source?.connection_config || { custom_metadata: connectionConfig };
             const source_type = source.type || source.source_type;
             const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
-            //console.log(source_type, "firstName")
+            
+
+            
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
                 source_type: isFileSource ? "File" : "Relational",
                 ...(isFileSource ? {} : { table_name: source?.table_name || source.data_src_name }),
                 file_name: source.file_name ? `${source.file_name}` : undefined,
                 data_src_id: source.data_src_id,
-                connection: connectionConfig
+                connection: fullConnectionConfig
             };
         });
 
@@ -121,9 +124,12 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 
                 const source = lookupConfig.source;
                 const connectionConfig = source?.connection_config?.custom_metadata;
+                const fullConnectionConfig = source?.connection_config || { custom_metadata: connectionConfig };
                 const source_type = source.type || source.source_type;
                 const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
                 const sourceName = source.data_src_name || source.name;
+                
+
                 
                 return {
                     name: sourceName,
@@ -131,7 +137,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     ...(isFileSource ? {} : { table_name: source?.table_name || source.data_src_name }),
                     file_name: source.file_name ? `${source.file_name}` : undefined,
                     data_src_id: source.data_src_id,
-                    connection: connectionConfig
+                    connection: fullConnectionConfig
                 };
             }
             return null;
@@ -153,6 +159,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .filter(node => node.id.startsWith('Reader_'))
         .map(node => {
             const connectionConfig = node.data.source?.connection_config?.custom_metadata;
+            const fullConnectionConfig = node.data.source?.connection_config || { custom_metadata: connectionConfig };
             const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
             //console.log(connectionConfig, "connectionConfig")
             
@@ -166,7 +173,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     source_type: capitalizeFirstLetter(node.data.source.type || node.data.source.source_type) || "Relational",
                     ...(isFileSource ? {} : { table_name: node.data?.source?.table_name || node.data.source.data_src_name }),
                     file_name: `${node.data.source.file_name}`,
-                    connection: connectionConfig
+                    connection: fullConnectionConfig
                 },
                 read_options: {
                     header: true
@@ -331,7 +338,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         sort_columns: node.data.transformationData?.sort_columns
                     };
                 case 'DQCheck':
-                    return {
+                    const dqCheckConfig: any = {
                         name: node.data.transformationData?.name || node.data.title,
                         dependent_on: edges
                             .filter(edge => edge.target === node.id)
@@ -340,9 +347,20 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                                 return sourceNode?.data?.title || '';
                             }),
                         transformation: "DQCheck",
-                        limit: node.data.transformationData?.limit || undefined,
                         dq_rules: node.data.transformationData?.dq_rules || []
                     };
+                    
+                    // Convert limit to integer if it has a value
+                    if (node.data.transformationData?.limit !== undefined && 
+                        node.data.transformationData?.limit !== null && 
+                        node.data.transformationData?.limit !== '') {
+                        const limitValue = parseInt(node.data.transformationData.limit, 10);
+                        if (!isNaN(limitValue)) {
+                            dqCheckConfig.limit = limitValue;
+                        }
+                    }
+                    
+                    return dqCheckConfig;
                 case 'Deduplicator':
                     return {
                         ...baseConfig,
@@ -353,9 +371,18 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 case 'Repartition':
                     const repartitionConfig:any = {
                         ...baseConfig,
-                        repartition_type: node.data.transformationData?.repartition_type || "repartition",
-                        repartition_value: node.data.transformationData?.repartition_value
+                        repartition_type: node.data.transformationData?.repartition_type || "repartition"
                     };
+                    
+                    // Convert repartition_value to integer if it exists
+                    if (node.data.transformationData?.repartition_value !== undefined && 
+                        node.data.transformationData?.repartition_value !== null && 
+                        node.data.transformationData?.repartition_value !== '') {
+                        const repartitionValue = parseInt(node.data.transformationData.repartition_value, 10);
+                        if (!isNaN(repartitionValue)) {
+                            repartitionConfig.repartition_value = repartitionValue;
+                        }
+                    }
                     
                     // Only add override_partition if it has a non-empty value
                     if (node.data.transformationData?.override_partition) {
@@ -368,9 +395,14 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         repartitionConfig.repartition_expression = node.data.transformationData.repartition_expression;
                     }
                     
-                    // Only add limit if it has a value
-                    if (node.data.transformationData?.limit) {
-                        repartitionConfig.limit = node.data.transformationData.limit;
+                    // Convert limit to integer if it has a value
+                    if (node.data.transformationData?.limit !== undefined && 
+                        node.data.transformationData?.limit !== null && 
+                        node.data.transformationData?.limit !== '') {
+                        const limitValue = parseInt(node.data.transformationData.limit, 10);
+                        if (!isNaN(limitValue)) {
+                            repartitionConfig.limit = limitValue;
+                        }
                     }
                     
                     return repartitionConfig;
@@ -387,28 +419,46 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         column_list: node.data.transformationData?.column_list || []
                     };
                     
-                    // Only add limit if it has a value
-                    if (node.data.transformationData?.limit) {
-                        selectConfig.limit = node.data.transformationData.limit;
+                    // Convert limit to integer if it has a value
+                    if (node.data.transformationData?.limit !== undefined && 
+                        node.data.transformationData?.limit !== null && 
+                        node.data.transformationData?.limit !== '') {
+                        const limitValue = parseInt(node.data.transformationData.limit, 10);
+                        if (!isNaN(limitValue)) {
+                            selectConfig.limit = limitValue;
+                        }
                     }
                     
                     return selectConfig;
                 case 'SequenceGenerator':
                     const seqGenConfig:any = {
                         ...baseConfig,
-                        for_column_name: node.data.transformationData?.for_column_name || "",
-                        start_with: node.data.transformationData?.start_with || 1
+                        for_column_name: node.data.transformationData?.for_column_name || ""
                     };
+                    
+                    // Convert start_with to integer
+                    const startWith = node.data.transformationData?.start_with;
+                    if (startWith !== undefined && startWith !== null && startWith !== '') {
+                        const startWithValue = parseInt(startWith, 10);
+                        seqGenConfig.start_with = !isNaN(startWithValue) ? startWithValue : 1;
+                    } else {
+                        seqGenConfig.start_with = 1;
+                    }
+                    
+                    // Convert step to integer if it has a value
+                    if (node.data.transformationData?.step !== undefined && 
+                        node.data.transformationData?.step !== null && 
+                        node.data.transformationData?.step !== '') {
+                        const stepValue = parseInt(node.data.transformationData.step, 10);
+                        if (!isNaN(stepValue)) {
+                            seqGenConfig.step = stepValue;
+                        }
+                    }
                     
                     // Only add order_by if it's an array with at least one item
                     if (Array.isArray(node.data.transformationData?.order_by) && 
                         node.data.transformationData.order_by.length > 0) {
                         seqGenConfig.order_by = node.data.transformationData.order_by;
-                    }
-                    
-                    // Only add step if it has a value
-                    if (node.data.transformationData?.step) {
-                        seqGenConfig.step = node.data.transformationData.step;
                     }
                     
                     return seqGenConfig;

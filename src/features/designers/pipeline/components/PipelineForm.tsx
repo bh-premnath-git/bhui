@@ -43,35 +43,29 @@ const enhanceSchemaWithUIHints = (schema: any, transformationName: string): any 
       // Add ui-hint to aggregations.items.properties.expression
       if (enhancedSchema.properties?.aggregations?.items?.properties?.expression) {
         enhancedSchema.properties.aggregations.items.properties.expression['ui-hint'] = 'expression';
-        console.log('✅ Added ui-hint to Aggregator expression field');
       }
     } else if (transformationName === 'SchemaTransformation') {
       // Add ui-hint to derived_fields.items.properties.expression
       if (enhancedSchema.properties?.derived_fields?.items?.properties?.expression) {
         enhancedSchema.properties.derived_fields.items.properties.expression['ui-hint'] = 'expression';
-        console.log('✅ Added ui-hint to SchemaTransformation expression field');
       }
     } else if (transformationName === 'Mapper') {
       // Add ui-hint to derived_fields.items.properties.expression
       if (enhancedSchema.properties?.derived_fields?.items?.properties?.expression) {
         enhancedSchema.properties.derived_fields.items.properties.expression['ui-hint'] = 'expression';
-        console.log('✅ Added ui-hint to Mapper derived_fields expression field');
       }
       // Add ui-hint to column_list.items.properties.expression
       if (enhancedSchema.properties?.column_list?.items?.properties?.expression) {
         enhancedSchema.properties.column_list.items.properties.expression['ui-hint'] = 'expression';
-        console.log('✅ Added ui-hint to Mapper column_list expression field');
       }
     } else if (transformationName === 'Joiner') {
       // Add ui-hint to expressions.items.properties.expression
       if (enhancedSchema.properties?.expressions?.items?.properties?.expression) {
         enhancedSchema.properties.expressions.items.properties.expression['ui-hint'] = 'expression';
-        console.log('✅ Added ui-hint to Joiner expressions field');
       }
       // Add ui-hint to conditions.items.properties.join_condition
       if (enhancedSchema.properties?.conditions?.items?.properties?.join_condition) {
         enhancedSchema.properties.conditions.items.properties.join_condition['ui-hint'] = 'expression';
-        console.log('✅ Added ui-hint to Joiner join_condition field');
       }
     }
   } catch (error) {
@@ -128,11 +122,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
   const [columnSuggestions, setColumnSuggestions] = useState<Array<{ name: string; dataType: string }>>([]);
   const [rightAsideWidth, setRightAsideWidth] = useState<number>(25);
 
-  // Debug: Log when column suggestions change
-  useEffect(() => {
-    console.log('🔄 Column suggestions changed:', columnSuggestions);
-  }, [columnSuggestions]);
-
   // Listen for right aside resize events to make form responsive
   useEffect(() => {
     const handleRightAsideResize = (event: CustomEvent) => {
@@ -169,12 +158,9 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       
       // Use pipeline engine type for editing existing nodes or configuring specific transformations
       const engineType = shouldShowConfiguration ? pipelineEngineType : selectedEngineType;
-      console.log('Using engine type:', engineType);
-      
       const engineSchema = pipelineSchema.allOf.find((schema: any) => 
         schema.if?.properties?.engine_type?.const === engineType
       );
-      console.log(engineSchema)
 
       if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
         return [];
@@ -186,7 +172,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         schema: transformation?.then,
       })).filter((t: any) => t.name);
       
-      console.log('Available transformations:', transformations);
       return transformations;
     } catch (error) {
       console.error('Error parsing transformations:', error);
@@ -219,16 +204,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
   // Reset forms when dialog opens/closes or when inline form is mounted
   useEffect(() => {
-    console.log('🔧 Form initialization effect triggered:', {
-      isOpen,
-      inline,
-      isEditingExistingNode,
-      isConfiguringSpecificTransformation,
-      isFormInitialized,
-      hasUserInteracted,
-      selectedTransformation: selectedTransformation?.name
-    });
-
     // For inline forms, we always want to initialize, for dialog forms we check isOpen
     if (isOpen || inline) {
       if (shouldShowConfiguration) {
@@ -238,15 +213,11 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         
         // Set up the transformation based on selectedSchema
         const transformationName = selectedSchema?.title || initialValues?.type;
-        console.log('🔧 Looking for transformation:', transformationName);
-        console.log('🔧 Available transformations:', availableTransformations.map(t => t.name));
         const transformation = availableTransformations.find(t => t.name === transformationName);
-        console.log('🔧 Found transformation:', transformation ? transformation.name : 'NOT FOUND');
         
         // Only initialize if form hasn't been initialized yet AND user hasn't interacted
         if (!isFormInitialized && !hasUserInteracted) {
           if (transformation) {
-            console.log('🔧 Initializing form for', isEditingExistingNode ? 'editing existing node' : 'configuring specific transformation');
             
             // Enhance schema with missing UI hints for expression fields
             const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
@@ -256,7 +227,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             
             // Initialize configuration form with existing values or default values
             const formInitialValues = initialValues || {};
-            console.log('🔧 Resetting form with initialValues:', formInitialValues);
             configurationForm.reset(formInitialValues);
             setIsFormInitialized(true);
             setHasUserInteracted(false);
@@ -264,7 +234,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             // Debug: Check form values after reset
             setTimeout(() => {
               const currentFormValues = configurationForm.getValues();
-              console.log('🔧 Form values after reset:', currentFormValues);
             }, 100);
           } else {
             console.warn('🔧 Transformation not found, but setting up basic form state');
@@ -273,13 +242,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             setIsFormInitialized(true);
             setHasUserInteracted(false);
           }
-        } else if (hasUserInteracted) {
-          console.log('🔧 Skipping form reset - user has interacted with form');
-        }
+        } 
       } else {
         // Normal flow for creating new nodes
         if (!isFormInitialized && !hasUserInteracted) {
-          console.log('🔧 Initializing form for new node');
           setStep('initial');
           setSelectedTransformation(null);
           setTransformationSchema(null);
@@ -293,13 +259,9 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           configurationForm.reset();
           setIsFormInitialized(true);
           setHasUserInteracted(false);
-        } else if (hasUserInteracted) {
-          console.log('🔧 Skipping form reset - user has interacted with form');
-        }
+        } 
       }
     } else if (!inline) {
-      // Reset initialization state when dialog closes (but not for inline forms)
-      console.log('🔧 Dialog closed - resetting initialization state');
       setIsFormInitialized(false);
       setHasUserInteracted(false);
     }
@@ -312,9 +274,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       const transformation = availableTransformations.find(t => t.name === transformationName);
       
       if (transformation && !selectedTransformation) {
-        console.log('🔧 Setting up transformation from availableTransformations change');
-        
-        // Enhance schema with missing UI hints for expression fields
         const enhancedSchema = enhanceSchemaWithUIHints(transformation.schema, transformation.name);
         
         setSelectedTransformation(transformation);
@@ -342,7 +301,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         if (timeoutId) clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           if (!hasUserInteracted) {
-            console.log('🔧 User started interacting with form');
             setHasUserInteracted(true);
           }
         }, 100);
@@ -363,7 +321,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         const initialSuggestions = [
          
         ];
-        console.log('🔍 Setting initial column suggestions:', initialSuggestions);
         setColumnSuggestions(initialSuggestions);
 
         // Then try to load actual column suggestions if transformation is selected
@@ -373,30 +330,14 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             const nodeIdForSuggestions = isEditingExistingNode && currentNodeId 
               ? currentNodeId 
               : `temp_${selectedTransformation.name}_${Date.now()}`;
-              
-            console.log('🔍 Loading column suggestions for:', {
-              nodeIdForSuggestions,
-              selectedTransformation: selectedTransformation.name,
-              isEditingExistingNode,
-              currentNodeId,
-              nodesCount: nodes.length,
-              edgesCount: edges.length,
-              pipelineDtl: !!pipelineDtl
-            });
-            
             const suggestions = await getColumnSuggestions(nodeIdForSuggestions, nodes, edges, pipelineDtl);
-            console.log('🔍 Column suggestions loaded:', suggestions);
             
             if (suggestions.length > 0) {
               const formattedSuggestions = suggestions.map(col => ({ name: col, dataType: 'string' }));
-              console.log('🔍 Formatted column suggestions:', formattedSuggestions);
               setColumnSuggestions(formattedSuggestions);
-            } else {
-              console.log('🔍 No column suggestions found, keeping initial suggestions');
-            }
+            } 
           } catch (error) {
             console.error('Error loading column suggestions:', error);
-            console.log('🔍 Keeping initial column suggestions due to error');
           }
         }
       }
@@ -407,28 +348,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
   // Handle expression generation for AI-powered fields
   const handleExpressionGenerate = useCallback(async (fieldName: string) => {
-    console.log('🤖 AI Expression generation requested for:', {
-      fieldName,
-      transformationName: selectedTransformation?.name,
-      isGeneratingForField: generatingFields.has(fieldName),
-      aiAttempted: aiAttempted.has(fieldName),
-      transformationSchema: transformationSchema?.title
-    });
-
+   
     if (!selectedTransformation || generatingFields.has(fieldName)) {
-      console.log('🤖 Skipping AI generation - no transformation or already generating for this field');
       return;
     }
-
-    // Allow AI generation every time the hammer is clicked
-    console.log('🤖 Proceeding with AI generation for field:', fieldName);
-    console.log('🤖 Field name analysis:', {
-      fieldName,
-      isAggregatorPattern: /aggregations\.(\d+)\.expression/.test(fieldName),
-      isMapperDerivedPattern: /derived_fields\.(\d+)\.expression/.test(fieldName),
-      isMapperColumnPattern: /column_list\.(\d+)\.expression/.test(fieldName),
-      isSchemaTransformationPattern: /derived_fields\.(\d+)\.expression/.test(fieldName)
-    });
 
     setGeneratingFields(prev => new Set(prev).add(fieldName));
     try {
@@ -437,49 +360,30 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         ? currentNodeId 
         : `temp_${selectedTransformation.name}_${Date.now()}`;
       
-      console.log('🤖 Loading column suggestions for AI generation:', nodeIdForSuggestions);
       const suggestions = await getColumnSuggestions(nodeIdForSuggestions, nodes, edges, pipelineDtl);
       const schemaString = suggestions.map(col => `${col}:string`).join(', ');
-      console.log('🤖 Schema string for AI:', schemaString);
 
       // Handle different transformation types
       if (selectedTransformation.name === 'Aggregator') {
-        console.log('🤖 Processing Aggregator AI generation');
-        console.log('🤖 Field name received:', fieldName);
-        console.log('🤖 Field name type:', typeof fieldName);
-        console.log('🤖 Field name length:', fieldName.length);
-        console.log('🤖 Field name characters:', fieldName.split('').map((c, i) => `${i}: '${c}' (${c.charCodeAt(0)})`));
-        console.log('🤖 Testing regex pattern /aggregations\\.(\d+)\\.expression/');
-        
-        // Handle Aggregator transformation - try multiple patterns
         let match = fieldName.match(/aggregations\.(\d+)\.expression/);
-        console.log('🤖 Aggregator regex match result (pattern 1):', match);
-        
         // Try alternative patterns if the first one doesn't match
         if (!match) {
           match = fieldName.match(/aggregations\[(\d+)\]\.expression/);
-          console.log('🤖 Aggregator regex match result (pattern 2 - brackets):', match);
         }
         
         if (!match) {
           // Try to extract index from any aggregation-related field
           const aggregationMatch = fieldName.match(/aggregation.*?(\d+).*?expression/);
-          console.log('🤖 Aggregator regex match result (pattern 3 - flexible):', aggregationMatch);
           if (aggregationMatch) {
             match = [fieldName, aggregationMatch[1]]; // Create a match-like array
           }
         }
         
-        console.log('🤖 Manual test - does field contain "aggregations"?', fieldName.includes('aggregations'));
-        console.log('🤖 Manual test - does field contain "expression"?', fieldName.includes('expression'));
-        console.log('🤖 Final match result:', match);
         
         if (match) {
           const index = parseInt(match[1]);
           const aggregations = configurationForm.watch('aggregations');
           const actualTargetColumn = aggregations?.[index]?.target_column || '';
-
-          console.log('🤖 Aggregator details:', { index, aggregations, actualTargetColumn });
 
           if (!actualTargetColumn) {
             console.warn('🤖 No target column specified for Aggregator');
@@ -498,13 +402,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
           if (response?.result) {
             try {
-              console.log('🤖 Raw AI response:', response);
-              console.log('🤖 Response result:', response.result);
               const parsedResult = JSON.parse(response.result);
-              console.log('🤖 Parsed result:', parsedResult);
-              console.log('🤖 Expression value:', parsedResult.expression);
-              
-              // Mark this field as having attempted AI generation
               setAiAttempted(prev => new Set(prev).add(fieldName));
 
               // Update the aggregations array properly
@@ -512,15 +410,12 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 (parsedResult === "" ? '' : parsedResult.expression);
               
               const currentAggregations = [...(configurationForm.watch('aggregations') || [])];
-              console.log('🤖 Current aggregations before update:', currentAggregations);
-              console.log('🤖 Updating index:', index, 'with expression:', expressionValue);
               
               currentAggregations[index] = {
                 ...currentAggregations[index],
                 expression: expressionValue
               };
               
-              console.log('🤖 Updated aggregations:', currentAggregations);
               
               configurationForm.setValue('aggregations', currentAggregations, {
                 shouldValidate: true,
@@ -528,7 +423,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 shouldTouch: true
               });
               
-              console.log('🤖 Form value after setValue:', configurationForm.watch('aggregations'));
+              // Force a re-render by triggering form state change
+              setTimeout(() => {
+                configurationForm.trigger(fieldName);
+              }, 0);
               
               // Show success message
               if (expressionValue) {
@@ -541,28 +439,12 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             }
           }
         } else {
-          console.warn('🤖 Aggregator field name does not match any expected pattern:', fieldName);
-          console.warn('🤖 Expected patterns:');
-          console.warn('🤖   1. aggregations.{index}.expression');
-          console.warn('🤖   2. aggregations[{index}].expression');
-          console.warn('🤖   3. Any field containing aggregation + number + expression');
-          console.warn('🤖 Received field name:', `"${fieldName}"`);
-          
-          // Try a last resort - if it's an expression field in aggregator, try to use it anyway
           if (fieldName.includes('expression') && selectedTransformation.name === 'Aggregator') {
-            console.log('🤖 Attempting fallback processing for Aggregator expression field');
             
             // Try multiple ways to get aggregations data
             const aggregationsWatch = configurationForm.watch('aggregations');
             const aggregationsGetValues = configurationForm.getValues().aggregations;
             const allFormValues = configurationForm.getValues();
-            
-            console.log('🤖 Fallback - aggregations via watch():', aggregationsWatch);
-            console.log('🤖 Fallback - aggregations via getValues():', aggregationsGetValues);
-            console.log('🤖 Fallback - all form values:', allFormValues);
-            console.log('🤖 Fallback - form values keys:', Object.keys(allFormValues));
-            
-            // Try both methods to get aggregations
             const aggregations = aggregationsWatch || aggregationsGetValues;
             
             if (aggregations && aggregations.length > 0) {
@@ -571,19 +453,13 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
               const indexMatch = fieldName.match(/(\d+)/);
               if (indexMatch) {
                 targetIndex = parseInt(indexMatch[1]);
-                console.log('🤖 Extracted index from field name:', targetIndex);
               }
               
               // Use the specific aggregation or fall back to first one
               const targetAggregation = aggregations[targetIndex] || aggregations[0];
               const actualTargetColumn = targetAggregation?.target_column || '';
-              
-              console.log('🤖 Using aggregation at index:', targetIndex);
-              console.log('🤖 Target aggregation:', targetAggregation);
-              console.log('🤖 Target column:', actualTargetColumn);
-              
+           
               if (actualTargetColumn) {
-                console.log('🤖 Using fallback with target_column:', actualTargetColumn);
                 
                 const response: any = await dispatch(generatePipelineAgent({ 
                   params: {
@@ -607,6 +483,11 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                       shouldTouch: true
                     });
                     
+                    // Force a re-render by triggering form state change
+                    setTimeout(() => {
+                      configurationForm.trigger(fieldName);
+                    }, 0);
+                    
                     setAiAttempted(prev => new Set(prev).add(fieldName));
                     
                     if (expressionValue) {
@@ -625,14 +506,12 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 toast.warning('Please specify a target column first before generating expression');
               }
             } else {
-              console.log('🤖 No aggregations array found, trying to extract target column directly from field path');
               
               // Try to extract target column from the field path directly
               // If fieldName is something like "aggregations.0.expression", try to get "aggregations.0.target_column"
               let targetColumnFieldName = '';
               if (fieldName.includes('expression')) {
                 targetColumnFieldName = fieldName.replace('expression', 'target_column');
-                console.log('🤖 Trying to get target column from field:', targetColumnFieldName);
                 
                 // Try multiple ways to access the target column value
                 const targetColumnValue = configurationForm.watch(targetColumnFieldName) || 
@@ -651,10 +530,8 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                                            }
                                            return value;
                                          })();
-                console.log('🤖 Target column value from direct field access:', targetColumnValue);
                 
                 if (targetColumnValue) {
-                  console.log('🤖 Found target column via direct field access:', targetColumnValue);
                   
                   const response: any = await dispatch(generatePipelineAgent({ 
                     params: {
@@ -677,6 +554,11 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                         shouldDirty: true,
                         shouldTouch: true
                       });
+                      
+                      // Force a re-render by triggering form state change
+                      setTimeout(() => {
+                        configurationForm.trigger(fieldName);
+                      }, 0);
                       
                       setAiAttempted(prev => new Set(prev).add(fieldName));
                       
@@ -704,15 +586,12 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           }
         }
       } else if (selectedTransformation.name === 'SchemaTransformation') {
-        console.log('🤖 Processing SchemaTransformation AI generation');
         // Handle SchemaTransformation (derived_fields)
         const match = fieldName.match(/derived_fields\.(\d+)\.expression/);
         if (match) {
           const index = parseInt(match[1]);
           const derivedFields = configurationForm.watch('derived_fields');
           const actualTargetColumn = derivedFields?.[index]?.name || '';
-
-          console.log('🤖 SchemaTransformation details:', { index, derivedFields, actualTargetColumn });
 
           if (!actualTargetColumn) {
             console.warn('🤖 No target column specified for SchemaTransformation');
@@ -731,11 +610,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           if (response?.result) {
             try {
               const parsedResult = JSON.parse(response.result);
-              console.log('SchemaTransformation AI response:', parsedResult);
-              
-              // Mark this field as having attempted AI generation
               setAiAttempted(prev => new Set(prev).add(fieldName));
-              
               const expressionValue = parsedResult === "" ? '' : 
                 parsedResult.expression === "UNABLE_TO_GENERATE" ? '' : parsedResult.expression;
               
@@ -751,13 +626,17 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 shouldDirty: true,
                 shouldTouch: true
               });
+              
+              // Force a re-render by triggering form state change
+              setTimeout(() => {
+                configurationForm.trigger(fieldName);
+              }, 0);
             } catch (error) {
               console.error('Error parsing AI response for SchemaTransformation:', error);
             }
           }
         }
       } else if (selectedTransformation.name === 'Mapper') {
-        console.log('🤖 Processing Mapper AI generation');
         // Handle Mapper transformation - similar to SchemaTransformation
         const derivedFieldMatch = fieldName.match(/derived_fields\.(\d+)\.expression/);
         const columnListMatch = fieldName.match(/column_list\.(\d+)\.expression/);
@@ -769,12 +648,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           index = parseInt(derivedFieldMatch[1]);
           const derivedFields = configurationForm.watch('derived_fields');
           targetColumn = derivedFields?.[index]?.name || '';
-          console.log('🤖 Mapper derived_fields details:', { index, derivedFields, targetColumn });
         } else if (columnListMatch) {
           index = parseInt(columnListMatch[1]);
           const columnList = configurationForm.watch('column_list');
           targetColumn = columnList?.[index]?.name || '';
-          console.log('🤖 Mapper column_list details:', { index, columnList, targetColumn });
         }
 
         if (!targetColumn) {
@@ -793,13 +670,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
         if (response?.result) {
           try {
-            console.log('🤖 Mapper Raw AI response:', response);
-            console.log('🤖 Mapper Response result:', response.result);
             const parsedResult = JSON.parse(response.result);
-            console.log('🤖 Mapper Parsed result:', parsedResult);
-            console.log('🤖 Mapper Expression value:', parsedResult.expression);
-            
-            // Mark this field as having attempted AI generation
             setAiAttempted(prev => new Set(prev).add(fieldName));
             
             const expressionValue = parsedResult === "" ? '' : 
@@ -808,15 +679,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             // Update the appropriate array based on field type
             if (derivedFieldMatch) {
               const currentDerivedFields = [...(configurationForm.watch('derived_fields') || [])];
-              console.log('🤖 Mapper derived_fields before update:', currentDerivedFields);
-              console.log('🤖 Mapper updating index:', index, 'with expression:', expressionValue);
-              
               currentDerivedFields[index] = {
                 ...currentDerivedFields[index],
                 expression: expressionValue
               };
-              
-              console.log('🤖 Mapper updated derived_fields:', currentDerivedFields);
               
               configurationForm.setValue('derived_fields', currentDerivedFields, {
                 shouldValidate: true,
@@ -824,7 +690,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 shouldTouch: true
               });
               
-              console.log('🤖 Mapper form value after setValue:', configurationForm.watch('derived_fields'));
+              // Force a re-render by triggering form state change
+              setTimeout(() => {
+                configurationForm.trigger(fieldName);
+              }, 0);
               
               // Show success message
               if (expressionValue) {
@@ -834,15 +703,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
               }
             } else if (columnListMatch) {
               const currentColumnList = [...(configurationForm.watch('column_list') || [])];
-              console.log('🤖 Mapper column_list before update:', currentColumnList);
-              console.log('🤖 Mapper updating column_list index:', index, 'with expression:', expressionValue);
-              
               currentColumnList[index] = {
                 ...currentColumnList[index],
                 expression: expressionValue
               };
-              
-              console.log('🤖 Mapper updated column_list:', currentColumnList);
               
               configurationForm.setValue('column_list', currentColumnList, {
                 shouldValidate: true,
@@ -850,7 +714,10 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 shouldTouch: true
               });
               
-              console.log('🤖 Mapper column_list form value after setValue:', configurationForm.watch('column_list'));
+              // Force a re-render by triggering form state change
+              setTimeout(() => {
+                configurationForm.trigger(fieldName);
+              }, 0);
               
               // Show success message
               if (expressionValue) {
@@ -906,6 +773,11 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                   shouldTouch: true
                 });
 
+                // Force a re-render by triggering form state change
+                setTimeout(() => {
+                  configurationForm.trigger(fieldName);
+                }, 0);
+
                 setAiAttempted(prev => new Set(prev).add(fieldName));
               } catch (error) {
                 console.error('Error parsing AI response:', error);
@@ -948,11 +820,18 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
                   // Update join_input if available
                   const joinInputFieldName = fieldName.replace('join_condition', 'join_input');
-                  configurationForm.setValue(joinInputFieldName, joinPayload.params.dataset1_name, {
+                  configurationForm.setValue(joinInputFieldName, joinPayload.params.dataset2_name, {
                     shouldValidate: true,
                     shouldDirty: true,
                     shouldTouch: true
                   });
+
+                  // Force a re-render by triggering form state change
+                  setTimeout(() => {
+                    configurationForm.trigger(fieldName);
+                    configurationForm.trigger(joinTypeFieldName);
+                    configurationForm.trigger(joinInputFieldName);
+                  }, 0);
 
                   setAiAttempted(prev => new Set(prev).add(fieldName));
                 } catch (error) {
@@ -969,16 +848,25 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                 shouldDirty: true,
                 shouldTouch: true
               });
+              
+              // Force a re-render by triggering form state change
+              setTimeout(() => {
+                configurationForm.trigger(fieldName);
+              }, 0);
             }
           } else {
             // For new nodes, just enable manual typing
-            console.log('Join condition generation not available for new nodes - enabling manual input');
             setAiAttempted(prev => new Set(prev).add(fieldName));
             configurationForm.setValue(fieldName, '', {
               shouldValidate: true,
               shouldDirty: true,
               shouldTouch: true
             });
+            
+            // Force a re-render by triggering form state change
+            setTimeout(() => {
+              configurationForm.trigger(fieldName);
+            }, 0);
           }
         }
       } else {
@@ -1025,20 +913,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     
     setSelectedTransformation(transformation);
     setTransformationSchema(enhancedSchema);
-    
-    console.log('Selected transformation:', transformation);
-    console.log('Original transformation schema:', transformation.schema);
-    console.log('Enhanced transformation schema:', enhancedSchema);
-    
-    // Debug: Check if expression fields have ui-hint
-    if (transformation.name === 'Aggregator' && enhancedSchema?.properties?.aggregations?.items?.properties?.expression) {
-      console.log('🔍 Aggregator expression field schema:', enhancedSchema.properties.aggregations.items.properties.expression);
-    }
-    if (transformation.name === 'Mapper' && enhancedSchema?.properties) {
-      console.log('🔍 Mapper schema properties:', enhancedSchema.properties);
-    }
-    
-    // Generate initial values for the configuration form using schema utilities
     const initialValues = generateInitialValues(transformation.schema);
     
     // Remove internal fields
@@ -1057,11 +931,6 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     try {
       // Get active fields based on current form values
       const { fields, required } = getActiveFields(transformationSchema, data);
-      
-      console.log('🔍 Manual validation - Active fields:', Object.keys(fields));
-      console.log('🔍 Manual validation - Required fields:', required);
-      console.log('🔍 Manual validation - Form data:', data);
-      
       const errors: any = {};
       
       // Check required fields
@@ -1122,15 +991,8 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
 
       // Clean up internal React keys before processing
       const cleanedData = cleanupFormData(data);
-
-      console.log('🚀 Form submission data (cleaned):', cleanedData);
-      console.log('🔍 Form errors:', configurationForm.formState.errors);
-      console.log('🔍 Form is valid:', configurationForm.formState.isValid);
-
-      // Manual validation
       const validation = validateFormData(cleanedData);
       if (!validation.isValid) {
-        console.log('🚫 Validation failed:', validation.errors);
         
         // Set form errors
         Object.entries(validation.errors).forEach(([path, error]: [string, any]) => {
@@ -1338,13 +1200,11 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                     className="space-y-4"
                     onInput={() => {
                       if (!hasUserInteracted) {
-                        console.log('🔧 User started interacting with form');
                         setHasUserInteracted(true);
                       }
                     }}
                     onChange={() => {
                       if (!hasUserInteracted) {
-                        console.log('🔧 User started interacting with form (onChange)');
                         setHasUserInteracted(true);
                       }
                     }}

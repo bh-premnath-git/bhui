@@ -196,12 +196,8 @@ export function ConnectionForm({
     };
 
     if (type === 'postgres') {
-      // Handle schemas array properly
-      const schemasArray = Array.isArray(data.schemas)
-        ? data.schemas
-        : data.schemas
-          ? [data.schemas]
-          : ['public']; // Default to ['public'] if no schemas provided
+      // Handle schema field properly - the form field is named 'schema' (singular)
+      const schemaValue = data.schema || 'public'; // Default to 'public' if no schema provided
 
       return {
         host: data.host || '',
@@ -209,7 +205,7 @@ export function ConnectionForm({
         database: data.database || '',
         username: data.username || '',
         password: data.password || '',
-        schemas: schemasArray[0],
+        schemas: schemaValue, // Use the schema value from the form
         // Add SSL mode if present
         ...(data.ssl_mode && { ssl_mode: data.ssl_mode }),
         // Add JDBC params if present
@@ -339,7 +335,7 @@ export function ConnectionForm({
         return {
           name: connectionConfigName,
           connection_type: "PostgreSQL",
-          schema: Array.isArray(data.schemas) ? data.schemas[0] : data.schemas || null,
+          schema: data.schema || null,
           database: data?.database || null,
           secret_name: `bh-postgres-${cleanedName}`
         };
@@ -470,6 +466,7 @@ export function ConnectionForm({
         connectionData.dataset_id = rawFormData.dataset_id;
         connectionData.credentials_json = rawFormData.credentials_json?.toString();
       }
+      console.log('Submitting connection data:', connectionData);
       if (isEdit) {
         await handleUpdateConnection(connectionId, connectionData);
         toast.success('Connection updated successfully');

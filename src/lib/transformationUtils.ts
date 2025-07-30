@@ -157,7 +157,7 @@ export const getNodeIcon = (type: string, selectedEngineType: 'pyspark' | 'pyfli
     }
 
     // Return default icon if not found in schemas
-    return '/assets/buildPipeline/default.svg';
+    return '/assets/buildPipeline/7.svg';
 };
 
 /**

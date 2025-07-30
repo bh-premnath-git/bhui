@@ -115,22 +115,85 @@ let data_src_id=dataSources.find((item: any) => item.data_src_name === source?.n
         } else {
         }
       }
-      let connection = connectionConfigList.find((item: any) => item.id === source?.connection_config_id);
-      // If no connection found by ID, try to find by name
-      if (!connection && source?.connection?.name) {
+      // Try multiple methods to find the correct connection
+      console.log('🔧 OrderPopUp: === CONNECTION SELECTION DEBUGGING ===');
+      console.log('🔧 OrderPopUp: Source data:', source);
+      console.log('🔧 OrderPopUp: Available connections:', connectionConfigList.map(c => ({ 
+        id: c.id, 
+        connection_config_name: c.connection_config_name,
+        connection_name: c.connection_name 
+      })));
+      
+      let connection = null;
+      
+      // Method 1: Try by source.connection_config_id
+      if (source?.connection_config_id) {
         connection = connectionConfigList.find((item: any) => 
-          item.connection_config_name === source?.connection?.name ||
-          item.connection_name === source?.connection?.name
+          item.id === source.connection_config_id || 
+          item.id === parseInt(source.connection_config_id)
         );
+        console.log('🔧 OrderPopUp: Method 1 (source.connection_config_id):', source.connection_config_id, '→', connection);
       }
       
-      // If still no connection, use the first available connection as fallback
-      if (!connection && connectionConfigList.length > 0) {
+      // Method 2: Try by source.source.connection_config_id
+      if (!connection && source?.source?.connection_config_id) {
+        connection = connectionConfigList.find((item: any) => 
+          item.id === source.source.connection_config_id || 
+          item.id === parseInt(source.source.connection_config_id)
+        );
+        console.log('🔧 OrderPopUp: Method 2 (source.source.connection_config_id):', source.source.connection_config_id, '→', connection);
+      }
+      
+      // Method 3: Try by source.source.connection.connection_config_id
+      if (!connection && source?.source?.connection?.connection_config_id) {
+        connection = connectionConfigList.find((item: any) => 
+          item.id === source.source.connection.connection_config_id || 
+          item.id === parseInt(source.source.connection.connection_config_id)
+        );
+        console.log('🔧 OrderPopUp: Method 3 (source.source.connection.connection_config_id):', source.source.connection.connection_config_id, '→', connection);
+      }
+      
+      // Method 4: Try by connection name
+      if (!connection && source?.connection?.name) {
+        connection = connectionConfigList.find((item: any) => 
+          item.connection_config_name === source.connection.name ||
+          item.connection_name === source.connection.name
+        );
+        console.log('🔧 OrderPopUp: Method 4 (source.connection.name):', source.connection.name, '→', connection);
+      }
+      
+      // Method 5: Try by source.source.connection.name
+      if (!connection && source?.source?.connection?.name) {
+        connection = connectionConfigList.find((item: any) => 
+          item.connection_config_name === source.source.connection.name ||
+          item.connection_name === source.source.connection.name
+        );
+        console.log('🔧 OrderPopUp: Method 5 (source.source.connection.name):', source.source.connection.name, '→', connection);
+      }
+      
+      // Only use fallback if we have no source connection information at all
+      if (!connection && connectionConfigList.length > 0 && 
+          !source?.connection_config_id && 
+          !source?.source?.connection_config_id && 
+          !source?.source?.connection?.connection_config_id &&
+          !source?.connection?.name && 
+          !source?.source?.connection?.name) {
+        console.warn('🔧 OrderPopUp: No connection information found in source, using first available connection as fallback');
         connection = connectionConfigList[0];
       }
       
+      console.log('🔧 OrderPopUp: Final selected connection:', connection);
+      console.log('🔧 OrderPopUp: === END CONNECTION SELECTION DEBUGGING ===');
+      
       if (!connection) {
-        console.warn('No connections available in connectionConfigList');
+        console.warn('🔧 OrderPopUp: No matching connection found and no fallback available');
+        console.warn('🔧 OrderPopUp: Source connection info:', {
+          connection_config_id: source?.connection_config_id,
+          source_connection_config_id: source?.source?.connection_config_id,
+          nested_connection_config_id: source?.source?.connection?.connection_config_id,
+          connection_name: source?.connection?.name,
+          source_connection_name: source?.source?.connection?.name
+        });
         return;
       }
 

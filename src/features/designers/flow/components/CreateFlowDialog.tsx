@@ -43,6 +43,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 project: "",
                 environment: "",
                 flowName: "",
+                airflowInstance: "",
             },
             additionalDetails: {
                 tags: [],
@@ -61,6 +62,31 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
 
     const onSubmit = async (data: FlowFormValues) => {
         try {
+            // Get the selected environment to determine bh_airflow_id
+            const selectedEnvironment = environments.find(env => 
+                env.bh_env_id.toString() === data.basicInformation.environment
+            );
+            
+            let bh_airflow_id: number | undefined;
+            
+            if (selectedEnvironment?.bh_airflow) {
+                if (selectedEnvironment.bh_airflow.length === 1) {
+                    // Auto-use the first (and only) airflow instance
+                    bh_airflow_id = selectedEnvironment.bh_airflow[0].id;
+                } else if (selectedEnvironment.bh_airflow.length > 1) {
+                    if (!data.basicInformation.airflowInstance) {
+                        // Set error if airflow instance is required but not selected
+                        form.setError("basicInformation.airflowInstance", {
+                            type: "required",
+                            message: "Airflow instance is required when multiple instances are available"
+                        });
+                        return;
+                    }
+                    // Use the selected airflow instance
+                    bh_airflow_id = Number(data.basicInformation.airflowInstance);
+                }
+            }
+
             await handleCreateFlow({
                 flow_name: data.basicInformation.flowName,
                 notes: '',
@@ -76,7 +102,8 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                     long_running: data.monitorSettings.alertSettings.delayed
                 },
                 flow_json: {},
-                bh_env_id: Number(data.basicInformation.environment)
+                bh_env_id: Number(data.basicInformation.environment),
+                bh_airflow_id: bh_airflow_id
             }).then((result: any) => {
                 dispatch(setSelectedProject(Number(data.basicInformation.project)));
                 dispatch(setSelectedEnv(Number(data.basicInformation.environment)));

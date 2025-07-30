@@ -260,6 +260,36 @@ console.log(initialValues,"initialValues")
         dependent_on: initialValues?.dependent_on || []
       };
 
+    case 'Target':
+    case 'Writer':
+      // Handle both resolved and unresolved target data
+      const targetData = initialValues?.target || {};
+      const connectionData = targetData?.connection || {};
+      
+      return {
+        ...baseValues,
+        name: initialValues?.name || '',
+        target: {
+          target_type: targetData?.target_type || 'File',
+          target_name: targetData?.target_name || '',
+          table_name: targetData?.table_name || '',
+          file_name: targetData?.file_name || '',
+          load_mode: targetData?.load_mode || 'append',
+          connection: {
+            ...connectionData,
+            // Ensure connection_config_id is available for form validation
+            connection_config_id: connectionData?.connection_config_id || connectionData?.id
+          }
+        },
+        file_type: initialValues?.file_type || targetData?.file_type || 'CSV',
+        write_options: initialValues?.write_options || {
+          header: true,
+          sep: ",",
+          createDisposition: 'CREATE_IF_NEEDED',
+          writeMethod: targetData?.target_type === 'Relational' ? 'direct' : 'APPEND'
+        }
+      };
+
     default:
       return baseValues;
   }

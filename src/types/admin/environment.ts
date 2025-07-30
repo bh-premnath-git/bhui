@@ -86,3 +86,42 @@ export interface EnvironmentListResponse {
 }
 
 export type MWAAEnvironments = string[];
+
+// Extended Environment type with bh_airflow array
+export interface AirflowInstance {
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string | null;
+  is_deleted: boolean;
+  deleted_by: string | null;
+  tenant_key: string;
+  id: number;
+  bh_env_id: number;
+  airflow_env_type: string;
+  airflow_env_name: string;
+  airflow_env_url: string;
+  airflow_env_version: string | null;
+  airflow_env_status: string;
+  airflow_bucket_name: string;
+  airflow_tags: Record<string, any>;
+}
+
+export interface EnvironmentWithAirflow extends Omit<Environment, 'bh_env_id'> {
+  bh_env_id: number;
+  bh_env_name: string;
+  bh_env_description: string | null;
+  bh_env_type: string;
+  bh_env_key: string;
+  cloud_provider: string;
+  status: string;
+  aws_cloud_details?: {
+    cloud_region: string;
+    secrets_url: string | null;
+  };
+  gcp_cloud_details?: any;
+  tags: {
+    tagList: string;
+  };
+  bh_airflow: AirflowInstance[];
+}

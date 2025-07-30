@@ -670,6 +670,61 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 return {};
             }
             try {
+                // Handle Target/Writer transformations specially
+                if (transformation.transformation === 'Writer' || transformation.transformation === 'Target') {
+                    // Resolve target reference if it exists
+                    let resolvedTarget = transformation.target;
+                    if (resolvedTarget && resolvedTarget.$ref && result.pipeline_definition) {
+                        // Resolve the reference manually
+                        const refPath = resolvedTarget.$ref.substring(2); // Remove '#/'
+                        const pathParts = refPath.split('/');
+                        let resolved = result.pipeline_definition;
+                        
+                        for (const part of pathParts) {
+                            if (resolved && resolved[part]) {
+                                resolved = resolved[part];
+                            } else {
+                                resolved = null;
+                                break;
+                            }
+                        }
+                        
+                        if (resolved) {
+                            resolvedTarget = resolved;
+                        }
+                    }
+                    
+                    // Also resolve connection reference if it exists
+                    let resolvedConnection = resolvedTarget?.connection;
+                    if (resolvedConnection && resolvedConnection.$ref && result.pipeline_definition) {
+                        const refPath = resolvedConnection.$ref.substring(2);
+                        const pathParts = refPath.split('/');
+                        let resolved = result.pipeline_definition;
+                        
+                        for (const part of pathParts) {
+                            if (resolved && resolved[part]) {
+                                resolved = resolved[part];
+                            } else {
+                                resolved = null;
+                                break;
+                            }
+                        }
+                        
+                        if (resolved) {
+                            resolvedConnection = resolved;
+                        }
+                    }
+                    
+                    return {
+                        ...transformation,
+                        nodeId,
+                        target: {
+                            ...resolvedTarget,
+                            connection: resolvedConnection
+                        }
+                    };
+                }
+                
                 return {
                     ...transformation,
                     nodeId
@@ -682,9 +737,19 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         await result.pipeline_definition.transformations?.forEach((transformation: any) => {
             const matchingNode = nodesWithTitles.find(
-                (node: any) =>
-                    node?.data?.label === transformation?.transformation &&
-                    node?.data?.title === transformation?.name
+                (node: any) => {
+                    // Handle Target/Writer transformation matching
+                    const isTargetMatch = (transformation?.transformation === 'Writer' || transformation?.transformation === 'Target') && 
+                                         node?.data?.label === 'Target';
+                    
+                    // Handle regular transformation matching
+                    const isRegularMatch = node?.data?.label === transformation?.transformation;
+                    
+                    // Match by name as well
+                    const isNameMatch = node?.data?.title === transformation?.name;
+                    
+                    return (isTargetMatch || isRegularMatch) && isNameMatch;
+                }
             );
 
             if (matchingNode?.id) {
@@ -799,14 +864,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
             
             if (nodeIndex !== -1) {
-                // Update the node title if name is provided
-                const updatedTitle = data.name || currentNodes[nodeIndex].data.title;
-                
                 // Special handling for different node types
+                let updatedTitle;
                 let transformationData = {
                     ...currentNodes[nodeIndex].data.transformationData,
-                    ...data,
-                    name: updatedTitle
+                    ...data
                 };
                 
                 let sourceData = currentNodes[nodeIndex].data.source || {};
@@ -814,6 +876,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // Special handling for Target nodes
                 if (currentNodes[nodeIndex].data.label === 'Target') {
                     console.log('🔧 DataPipelineContext - Handling Target node data:', data);
+                    
+                    // For Target nodes, use target_name as the title
+                    updatedTitle = data.target?.target_name || 
+                                  data.source?.target_name || 
+                                  data.name || 
+                                  currentNodes[nodeIndex].data.title;
                     
                     // For target nodes, the main configuration should be in source
                     if (data.source) {
@@ -831,12 +899,23 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         };
                         console.log('🔧 DataPipelineContext - Updated transformationData:', transformationData);
                     }
+                    
+                    // Update transformation data name to match the title
+                    transformationData.name = updatedTitle;
                 } else if (currentNodes[nodeIndex].data.label === 'Filter') {
+                    // For Filter nodes, use name as title
+                    updatedTitle = data.name || currentNodes[nodeIndex].data.title;
+                    
                     // Special handling for Filter nodes
                     if (data.condition !== undefined) {
                         transformationData.condition = data.condition;
                     }
+                    transformationData.name = updatedTitle;
                 } else {
+                    // For other nodes, use name as title
+                    updatedTitle = data.name || currentNodes[nodeIndex].data.title;
+                    transformationData.name = updatedTitle;
+                    
                     // For other nodes, preserve existing source data
                     sourceData = currentNodes[nodeIndex].data.source || {};
                 }
@@ -887,6 +966,21 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const targetNode = nodes.find(node => node.id === targetNodeId);
         if (targetNode) {
             const moduleName = targetNode.data.label.split(' ')[0];
+            
+            // Handle Target nodes specially since they don't have a schema in mdata.json
+            if (moduleName === 'Target') {
+                // Find the corresponding form state based on node ID
+                const existingFormState = formStates[targetNodeId];
+                
+                setSelectedSchema({
+                    title: 'Target',
+                    nodeId: targetNodeId,
+                    initialValues: existingFormState // Pass the existing form state
+                });
+                setIsFormOpen(true);
+                return;
+            }
+            
             const schemaArray = Array.isArray(schemaData) ? schemaData : Object.values(schemaData);
             const moduleSchema = schemaArray.find((schema: any) => schema.title === moduleName);
             if (moduleSchema) {

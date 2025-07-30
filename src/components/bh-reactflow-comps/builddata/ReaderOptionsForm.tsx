@@ -106,7 +106,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     }, [dispatch]);
 
     useEffect(() => {
-        if (initialData) {
+        if (initialData && connectionConfigList && connectionConfigList.length > 0) {
             console.log('🔧 === READEROPTIONSFORM CONNECTION DEBUGGING ===');
             console.log('🔧 ReaderOptionsForm received initialData:', initialData);
             console.log('🔧 initialData.source:', initialData.source);
@@ -121,22 +121,24 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                 connection_name: c.connection_name 
             })));
             
-            // Try each lookup method step by step
-            console.log('🔧 Trying lookup method 1: by connection_config_name');
+            // Try each lookup method step by step with improved priority order
+            console.log('🔧 Trying lookup method 1: by source.connection_config_id');
             const method1 = connectionConfigList.find(
-                conn => conn.connection_config_name === initialData.source?.connection?.name
+                conn => conn.id === initialData.source?.connection_config_id || 
+                        conn.id === parseInt(initialData.source?.connection_config_id)
             );
             console.log('🔧 Method 1 result:', method1);
             
             console.log('🔧 Trying lookup method 2: by connection.connection_config_id');
             const method2 = connectionConfigList.find(
-                conn => conn.id === initialData.source?.connection?.connection_config_id
+                conn => conn.id === initialData.source?.connection?.connection_config_id ||
+                        conn.id === parseInt(initialData.source?.connection?.connection_config_id)
             );
             console.log('🔧 Method 2 result:', method2);
             
-            console.log('🔧 Trying lookup method 3: by source.connection_config_id');
+            console.log('🔧 Trying lookup method 3: by connection_config_name');
             const method3 = connectionConfigList.find(
-                conn => conn.id === initialData.source?.connection_config_id
+                conn => conn.connection_config_name === initialData.source?.connection?.name
             );
             console.log('🔧 Method 3 result:', method3);
             
@@ -146,17 +148,15 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             );
             console.log('🔧 Method 4 result:', method4);
             
-            console.log('🔧 Trying lookup method 5: by numeric connection_config_id');
+            console.log('🔧 Trying lookup method 5: by numeric connection_config_id (fallback)');
             const method5 = connectionConfigList.find(
                 conn => conn.id === parseInt(initialData.source?.connection?.connection_config_id)
             );
             console.log('🔧 Method 5 result:', method5);
             
-            const selectedConn = method1 || method2 || method3 || method4 || method5;
+            // Prioritize ID-based matches over name-based matches
+            const selectedConn = method1 || method2 || method5 || method3 || method4;
             
-            console.log('🔧 Final selected connection:', selectedConn);
-            console.log('🔧 === END READEROPTIONSFORM DEBUGGING ===');
-
             // Set source_name from various possible sources
             const sourceName = initialData.source?.source_name || 
                               initialData.source?.name || 
@@ -186,7 +186,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     file_type: (initialData.source?.file_type || initialData.file_type || 'CSV').toUpperCase(),
                     connection: {
                         ...initialData.source?.connection,
-                        connection_config_id: selectedConn?.id || 
+                        connection_config_id: 
                                             initialData.source?.connection?.connection_config_id || 
                                             initialData.source?.connection_config_id || '',
                         name: selectedConn?.connection_config_name || 
@@ -208,7 +208,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                                         initialData.source?.connection?.connection_config_id || ''
                 }
             });
-
             setSelectedConnection(selectedConn);
             
             // Reset the ref when initialData changes
@@ -310,7 +309,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {
         const { name, value } = e.target;
-
         setFormData(prev => {
             const newData = { ...prev };
 
@@ -327,7 +325,8 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                             type: selectedConn.custom_metadata?.type || '',
                             file_path_prefix: selectedConn.custom_metadata?.file_path_prefix || '',
                             connection_name: selectedConn.connection_config_name || ''
-                        }
+                        },
+                        connection_config_id: selectedConn.id // Also set at source level
                     };
                 }
             } else if (name === 'type') {
@@ -386,7 +385,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(formData, "formData")
         const missingFields = validateFormData(currentSchema, formData);
 
         if (missingFields.length > 0) {
@@ -400,7 +398,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
 
         try {
-            // Ensure data_src_id is generated if missing
             let finalFormData = { ...formData };
             if ((!finalFormData.source?.data_src_id || finalFormData.source?.data_src_id === '') && 
                 finalFormData.source?.connection?.connection_config_id && 
@@ -410,8 +407,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                 const fileName = finalFormData.source.file_name;
                 const cleanFileName = cleanFileNameForId(fileName);
                 const generatedId = `${connectionId}_${cleanFileName}`;
-                
-                console.log('🔧 ReaderOptionsForm: Generating data_src_id during submit:', generatedId);
                 
                 finalFormData = {
                     ...finalFormData,

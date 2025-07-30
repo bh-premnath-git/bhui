@@ -8,7 +8,8 @@ import { Plus, Trash2, HelpCircle } from 'lucide-react';
 import { FormFields } from '@/features/admin/connection/components/FormFields';
 import { FieldRenderer } from './FieldRenderer';
 import { NestedArrayField } from './NestedArrayField';
-import { extractPropertiesFromSchema, getDefaultValueForField, formatFieldTitle } from './schemaUtils';
+import { ConditionalArrayItem } from './ConditionalArrayItem';
+import { extractPropertiesFromSchema, getDefaultValueForField, formatFieldTitle, getActiveFields } from './schemaUtils';
 
 interface ArrayFieldProps {
   field: any;
@@ -55,8 +56,22 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
             // For object arrays, add an empty object with default values
             let properties = field.items?.properties;
             
-            // If no direct properties, use schema utils
-            if (!properties) {
+            // If the field has conditional logic, get base fields first
+            if (field.items?.allOf || !properties) {
+              // Get active fields with empty values to get base fields
+              const activeFields = getActiveFields(field.items, {});
+              properties = activeFields.fields;
+              
+              // Debug logging for new item initialization
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`🆕 Initializing new array item:`, {
+                  fieldKey: fullFieldKey,
+                  baseFields: Object.keys(properties),
+                  hasAllOf: !!field.items?.allOf
+                });
+              }
+            } else if (!properties) {
+              // Fallback to extractPropertiesFromSchema for simple cases
               const extracted = extractPropertiesFromSchema(field.items);
               properties = extracted.properties;
             }
@@ -146,115 +161,18 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                   {/* Content area with inline delete */}
                   <div className="p-4">
                     {(field.items?.type === 'object' || field.items?.properties) ? (
-                      // Render object fields
-                      <div className="space-y-4">
-                        {(() => {
-                          // First try direct properties (most common case)
-                          let properties = field.items?.properties;
-                          let required = field.items?.required || [];
-                          
-                          // If no direct properties, use schema utils for complex cases
-                          if (!properties) {
-                            const extracted = extractPropertiesFromSchema(field.items);
-                            properties = extracted.properties;
-                            required = extracted.required;
-                          }
-                          
-                          if (!properties || Object.keys(properties).length === 0) {
-                            return (
-                              <div className="text-sm text-muted-foreground text-center py-4">
-                                No properties found for this object type
-                              </div>
-                            );
-                          }
-                          
-                          // Organize fields for better layout
-                          const fieldEntries = Object.entries(properties);
-                          const simpleFields = fieldEntries.filter(([, propField]: [string, any]) => 
-                            propField.type !== 'array' && propField.type !== 'object'
-                          );
-                          const complexFields = fieldEntries.filter(([, propField]: [string, any]) => 
-                            propField.type === 'array' || propField.type === 'object'
-                          );
-                          
-                          return (
-                            <div className="space-y-4">
-                              {/* Simple fields with inline delete button */}
-                              {simpleFields.length > 0 && (
-                                <div className="flex items-start gap-2">
-                                  <div className={`flex-1 grid gap-4 ${simpleFields.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-                                    {simpleFields.map(([propKey, propField]: [string, any]) => (
-                                      <FieldRenderer
-                                        key={propKey}
-                                        fieldKey={propKey}
-                                        field={propField}
-                                        form={form}
-                                        isRequired={required.includes(propKey)}
-                                        parentKey={`${fullFieldKey}.${index}`}
-                                        sourceColumns={sourceColumns}
-                                        onExpressionGenerate={onExpressionGenerate}
-                                        isFieldGenerating={isFieldGenerating}
-                                      />
-                                    
-                                    ))}
-                                  </div>
-                                  {values.length > 1 && (
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeItem(index)}
-                                      className="text-destructive hover:text-destructive h-8 w-8 p-0 hover:bg-destructive/10 transition-colors duration-200 flex-shrink-0 mt-6"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
-                              
-                              {/* Complex fields (arrays, objects) with inline delete */}
-                              {complexFields.map(([propKey, propField]: [string, any]) => (
-                                <div key={propKey} className="flex items-start gap-2">
-                                  <div className="flex-1">
-                                    {propField.type === 'array' ? (
-                                      <NestedArrayField
-                                        field={propField}
-                                        fieldKey={propKey}
-                                        form={form}
-                                        isRequired={required.includes(propKey)}
-                                        title={propField.title || propKey}
-                                        parentPath={`${fullFieldKey}.${index}`}
-                                      />
-                                    ) : (
-                                      <FieldRenderer
-                                        fieldKey={propKey}
-                                        field={propField}
-                                        form={form}
-                                        isRequired={required.includes(propKey)}
-                                        parentKey={`${fullFieldKey}.${index}`}
-                                        sourceColumns={sourceColumns}
-                                        onExpressionGenerate={onExpressionGenerate}
-                                        isFieldGenerating={isFieldGenerating}
-                                      />
-                                    )}
-                                  </div>
-                                  {values.length > 1 && simpleFields.length === 0 && (
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeItem(index)}
-                                      className="text-destructive hover:text-destructive h-8 w-8 p-0 hover:bg-destructive/10 transition-colors duration-200 flex-shrink-0 mt-6"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()}
-                      </div>
+                      // Render object fields using ConditionalArrayItem for proper conditional logic
+                      <ConditionalArrayItem
+                        field={field}
+                        item={item}
+                        index={index}
+                        fullFieldKey={fullFieldKey}
+                        onRemove={removeItem}
+                        canRemove={values.length > 1}
+                        sourceColumns={sourceColumns}
+                        onExpressionGenerate={onExpressionGenerate}
+                        isFieldGenerating={isFieldGenerating}
+                      />
                     ) : (
                       // Render primitive fields
                       <FieldRenderer

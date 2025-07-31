@@ -2,7 +2,7 @@ import type React from "react"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { EnvironmentFormValues, environmentsOptions, platforms, regions } from "./environmentFormSchema"
+import { EnvironmentFormValues, environments, platforms, regions } from "./environmentFormSchema"
 import { AddTagDialog } from "@/components/shared/AddTagDialog"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
@@ -10,7 +10,6 @@ import { Control, useFormContext } from "react-hook-form"
 import { ValidationButton, ValidationState } from "@/components/shared/ValidationButton"
 import { useState, useEffect } from "react"
 import { useAirflowEnvironment, useMwaaEnvironments } from "../hooks/useEnvironments"
-import { useEnvironments } from "../hooks/useEnvironments"
 import { useDebounce } from "@/hooks/useDebounce"
 
 const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
@@ -20,8 +19,12 @@ const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   </FormLabel>
 )
 
-export const EnvironmentDetailsFields = ({ control }: { control: Control<EnvironmentFormValues> }) => {
-  const { environments } = useEnvironments();
+interface EnvironmentDetailsFieldsProps {
+  control: Control<EnvironmentFormValues>;
+  existingEnvironments?: Array<{ bh_env_name: string }>;
+}
+
+export const EnvironmentDetailsFields = ({ control, existingEnvironments = [] }: EnvironmentDetailsFieldsProps) => {
   const form = useFormContext<EnvironmentFormValues>();
   const [nameStatus, setNameStatus] = useState<"available" | "taken" | null>(null);
 
@@ -34,11 +37,11 @@ export const EnvironmentDetailsFields = ({ control }: { control: Control<Environ
       setNameStatus(null);
       return;
     }
-    const exists = environments.some(
+    const exists = existingEnvironments.some(
       (env) => env.bh_env_name?.toLowerCase().trim() === debouncedEnvName.toLowerCase().trim()
     );
     setNameStatus(exists ? "taken" : "available");
-  }, [debouncedEnvName, environments]);
+  }, [debouncedEnvName, existingEnvironments]);
 
   return (
     <div className="space-y-3">
@@ -81,7 +84,7 @@ export const EnvironmentDetailsFields = ({ control }: { control: Control<Environ
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="z-[9999]">
-                  {environmentsOptions.map((env) => (
+                  {environments.map((env) => (
                     <SelectItem key={env.value} value={env.value}>
                       {env.label}
                     </SelectItem>

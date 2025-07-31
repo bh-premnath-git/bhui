@@ -25,6 +25,7 @@ interface EnvironmentFormProps {
   isValidating: boolean
   isTokenValidated: boolean
   error: string | null
+  existingEnvironments?: Array<{ bh_env_name: string }>
 }
 
 export function EnvironmentForm({ initialData, onSubmit, ...props }: EnvironmentFormProps) {
@@ -136,7 +137,10 @@ export function EnvironmentForm({ initialData, onSubmit, ...props }: Environment
         <FormProvider {...form}>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <EnvironmentDetailsFields control={form.control} />
+              <EnvironmentDetailsFields 
+                control={form.control} 
+                existingEnvironments={props.existingEnvironments}
+              />
               <PlatformFields control={form.control} />
               
               {/* Show message when AWS is not selected */}

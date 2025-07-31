@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 export function AddEnvironment() {
   const navigate = useNavigate();
-  const { handleCreateEnvironment, handleAWSValidation } = useEnvironments();
+  const { handleCreateEnvironment, handleAWSValidation, environments } = useEnvironments();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isTokenValidated, setIsTokenValidated] = useState(false);
@@ -101,6 +101,7 @@ export function AddEnvironment() {
           isValidating={isValidating}
           isTokenValidated={isTokenValidated}
           error={error}
+          existingEnvironments={environments}
         />
     </EnvironmentPageLayout>
   );

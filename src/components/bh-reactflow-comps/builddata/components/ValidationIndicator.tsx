@@ -13,6 +13,17 @@ interface ValidationIndicatorProps {
             };
         };
         selectedData?: any;
+        transformationData?: {
+            lookup_type?: string;
+            lookup_columns?: Array<{
+                column: string;
+                out_column_name: string;
+            }>;
+            lookup_conditions?: {
+                column_name: string;
+                lookup_with: string;
+            };
+        };
     };
     validationStatus: 'none' | 'valid' | 'warning' | 'error';
     validationMessages: string[];
@@ -75,6 +86,42 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                 return (hasTargetType && hasConnection)
                     ? 'bg-green-500'
                     : (hasTargetType || hasConnection)
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500';
+            }
+
+            if (data.label.toLowerCase() === "lookup") {
+                console.log('🔧 ValidationIndicator - Lookup data:', data);
+                
+                // Check if transformationData exists (where lookup form data is stored)
+                const lookupData = data.transformationData;
+                if (!lookupData) {
+                    console.log('🔧 ValidationIndicator - No lookup transformation data found');
+                    return 'bg-red-500';
+                }
+                
+                // Check required fields for lookup
+                const hasLookupType = lookupData.lookup_type && lookupData.lookup_type.trim() !== '';
+                const hasLookupColumns = lookupData.lookup_columns && Array.isArray(lookupData.lookup_columns) && lookupData.lookup_columns.length > 0;
+                const hasLookupConditions = lookupData.lookup_conditions && 
+                    lookupData.lookup_conditions.column_name && lookupData.lookup_conditions.column_name.trim() !== '' &&
+                    lookupData.lookup_conditions.lookup_with && lookupData.lookup_conditions.lookup_with.trim() !== '';
+                
+                console.log('🔧 ValidationIndicator - Lookup validation:', {
+                    hasLookupType,
+                    hasLookupColumns,
+                    hasLookupConditions,
+                    lookup_type: lookupData.lookup_type,
+                    lookup_columns: lookupData.lookup_columns,
+                    lookup_conditions: lookupData.lookup_conditions
+                });
+                
+                const allRequiredFieldsFilled = hasLookupType && hasLookupColumns && hasLookupConditions;
+                const someFieldsFilled = hasLookupType || hasLookupColumns || hasLookupConditions;
+                
+                return allRequiredFieldsFilled
+                    ? 'bg-green-500'
+                    : someFieldsFilled
                         ? 'bg-yellow-500'
                         : 'bg-red-500';
             }
@@ -207,6 +254,47 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                                             )}
                                         </>
                                     )
+                                ) : data?.label && data.label.toLowerCase() === 'lookup' ? (
+                                    // Lookup-specific validation messages
+                                    (() => {
+                                        const lookupData = data.transformationData;
+                                        if (!lookupData) {
+                                            return (
+                                                <li className="flex items-start gap-2.5 group">
+                                                    <span className="mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-red-300 group-hover:bg-red-400"></span>
+                                                    <span className="text-gray-600 leading-relaxed">Lookup configuration is missing</span>
+                                                </li>
+                                            );
+                                        }
+                                        
+                                        const messages = [];
+                                        const hasLookupType = lookupData.lookup_type && lookupData.lookup_type.trim() !== '';
+                                        const hasLookupColumns = lookupData.lookup_columns && Array.isArray(lookupData.lookup_columns) && lookupData.lookup_columns.length > 0;
+                                        const hasLookupConditions = lookupData.lookup_conditions && 
+                                            lookupData.lookup_conditions.column_name && lookupData.lookup_conditions.column_name.trim() !== '' &&
+                                            lookupData.lookup_conditions.lookup_with && lookupData.lookup_conditions.lookup_with.trim() !== '';
+                                        
+                                        if (!hasLookupType) {
+                                            messages.push({ text: 'Lookup type is required', color: 'bg-red-300 group-hover:bg-red-400' });
+                                        }
+                                        if (!hasLookupColumns) {
+                                            messages.push({ text: 'Lookup columns are required', color: 'bg-red-300 group-hover:bg-red-400' });
+                                        }
+                                        if (!hasLookupConditions) {
+                                            messages.push({ text: 'Lookup conditions are required', color: 'bg-red-300 group-hover:bg-red-400' });
+                                        }
+                                        
+                                        if (messages.length === 0) {
+                                            messages.push({ text: 'All required fields are filled', color: 'bg-emerald-300 group-hover:bg-emerald-400' });
+                                        }
+                                        
+                                        return messages.map((msg, idx) => (
+                                            <li key={idx} className="flex items-start gap-2.5 group">
+                                                <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${msg.color}`}></span>
+                                                <span className="text-gray-600 leading-relaxed">{msg.text}</span>
+                                            </li>
+                                        ));
+                                    })()
                                 ) : (
                                     // Regular validation messages
                                     validationMessages.map((msg, idx) => (

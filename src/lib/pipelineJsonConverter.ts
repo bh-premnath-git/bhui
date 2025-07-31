@@ -142,11 +142,18 @@ const normalizeTransformationData = (transform: any, type: string): any => {
             };
         
         case 'SequenceGenerator':
+            // Helper function to safely convert to integer
+            const safeParseIntSeq = (value: any, defaultValue: number) => {
+                if (value === undefined || value === null || value === '') return defaultValue;
+                const parsed = parseInt(value, 10);
+                return isNaN(parsed) ? defaultValue : parsed;
+            };
+
             return {
                 ...normalizedData,
                 for_column_name: transform.for_column_name || '',
-                start_with: transform.start_with || 1,
-                step: transform.step || 1,
+                start_with: safeParseIntSeq(transform.start_with, 1),
+                step: safeParseIntSeq(transform.step, 1),
                 order_by: Array.isArray(transform.order_by) ? transform.order_by : []
             };
         
@@ -159,11 +166,18 @@ const normalizeTransformationData = (transform: any, type: string): any => {
             };
         
         case 'DQCheck':
+            // Helper function to safely convert to integer
+            const safeParseIntDQ = (value: any) => {
+                if (value === undefined || value === null || value === '') return undefined;
+                const parsed = parseInt(value, 10);
+                return isNaN(parsed) ? undefined : parsed;
+            };
+
             return {
                 ...normalizedData,
                 transformation: transform.transformation || 'DQCheck',
                 name: transform.name || '',
-                limit: transform.limit || undefined,
+                limit: safeParseIntDQ(transform.limit),
                 dq_rules: Array.isArray(transform.dq_rules) 
                     ? transform.dq_rules.map(rule => ({
                         rule_name: rule.rule_name || '',
@@ -193,10 +207,17 @@ const normalizeTransformationData = (transform: any, type: string): any => {
             };
         
         case 'Repartition':
+            // Helper function to safely convert to integer
+            const safeParseInt = (value: any) => {
+                if (value === undefined || value === null || value === '') return undefined;
+                const parsed = parseInt(value, 10);
+                return isNaN(parsed) ? undefined : parsed;
+            };
+
             return {
                 ...normalizedData,
                 repartition_type: transform.repartition_type || 'repartition',
-                repartition_value: transform.repartition_value || '',
+                repartition_value: safeParseInt(transform.repartition_value),
                 override_partition: transform.override_partition || '',
                 repartition_expression: Array.isArray(transform.repartition_expression) 
                     ? transform.repartition_expression.map(expr => ({
@@ -204,7 +225,50 @@ const normalizeTransformationData = (transform: any, type: string): any => {
                         sort_order: expr.sort_order || 'asc'
                     }))
                     : [],
-                limit: transform.limit || ''
+                limit: safeParseInt(transform.limit)
+            };
+        
+        case 'Target':
+        case 'Writer':
+            // For Writer/Target transformations, the target data might be in different places
+            // 1. Direct target object: transform.target (when resolved)
+            // 2. Reference: transform.target.$ref (needs resolution)
+            // 3. Embedded in transform itself
+            
+            let targetInfo = {};
+            if (transform.target && !transform.target.$ref) {
+                // Direct target object (already resolved)
+                targetInfo = transform.target;
+            } else if (transform.target_type) {
+                // Target info is directly in the transform
+                targetInfo = {
+                    target_type: transform.target_type,
+                    target_name: transform.target_name,
+                    table_name: transform.table_name,
+                    file_name: transform.file_name,
+                    load_mode: transform.load_mode,
+                    connection: transform.connection
+                };
+            }
+            
+            return {
+                ...normalizedData,
+                name: transform.name || '',
+                target: {
+                    target_type: targetInfo.target_type || 'File',
+                    target_name: targetInfo.target_name || '',
+                    table_name: targetInfo.table_name || '',
+                    file_name: targetInfo.file_name || '',
+                    load_mode: targetInfo.load_mode || 'append',
+                    connection: targetInfo.connection || {}
+                },
+                file_type: transform.file_type || targetInfo.file_type || 'CSV',
+                write_options: transform.write_options || {
+                    header: true,
+                    sep: ",",
+                    createDisposition: 'CREATE_IF_NEEDED',
+                    writeMethod: 'APPEND'
+                }
             };
         
         default:
@@ -903,10 +967,40 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
 
             // Add connection to connections section
             if (source.connection) {
-                connections[connectionKey] = {
-                    ...source.connection,
-                    name: source.connection.name || connectionKey
-                };
+                // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
+                const connectionData = source.connection.custom_metadata || source.connection;
+                
+
+                
+                // Only create connection if we have connection_type
+                if (connectionData && connectionData.connection_type) {
+                    const cleanConnection: any = {
+                        name: connectionData.name || connectionKey,
+                        connection_type: connectionData.connection_type
+                    };
+                    
+                    // Add file_path_prefix for file-based connections
+                    if (connectionData.connection_type === 'Local' || connectionData.connection_type === 'S3') {
+                        cleanConnection.file_path_prefix = connectionData.file_path_prefix || "";
+                    }
+                    
+                    // Add S3-specific fields
+                    if (connectionData.connection_type === 'S3') {
+                        if (connectionData.bucket) cleanConnection.bucket = connectionData.bucket;
+                        if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
+                    }
+                    
+                    // Add database-specific fields for relational connections
+                    if (connectionData.connection_type !== 'Local' && connectionData.connection_type !== 'S3') {
+                        if (connectionData.database) cleanConnection.database = connectionData.database;
+                        if (connectionData.schema) cleanConnection.schema = connectionData.schema;
+                        if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
+                    }
+                    
+                    connections[connectionKey] = cleanConnection;
+                } else {
+                    console.warn('Missing connection_type for source:', source.name, connectionData);
+                }
             }
 
             // Add source to sources section with reference to connection
@@ -935,16 +1029,51 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
 
             // Add connection to connections section
             if (target.connection) {
-                connections[connectionKey] = {
-                    ...target.connection,
-                    name: target.connection.name || connectionKey
-                };
+                // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
+                const connectionData = target.connection.custom_metadata || target.connection;
+                
+
+                
+                // Only create connection if we have connection_type
+                if (connectionData && connectionData.connection_type) {
+                    const cleanConnection: any = {
+                        name: connectionData.name || connectionKey,
+                        connection_type: connectionData.connection_type
+                    };
+                    
+                    // Add file_path_prefix for file-based connections
+                    if (connectionData.connection_type === 'Local' || connectionData.connection_type === 'S3') {
+                        cleanConnection.file_path_prefix = connectionData.file_path_prefix || "";
+                    }
+                    
+                    // Add S3-specific fields
+                    if (connectionData.connection_type === 'S3') {
+                        if (connectionData.bucket) cleanConnection.bucket = connectionData.bucket;
+                        if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
+                    }
+                    
+                    // Add database-specific fields for relational connections
+                    if (connectionData.connection_type !== 'Local' && connectionData.connection_type !== 'S3') {
+                        if (connectionData.database) cleanConnection.database = connectionData.database;
+                        if (connectionData.schema) cleanConnection.schema = connectionData.schema;
+                        if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
+                    }
+                    
+                    connections[connectionKey] = cleanConnection;
+                } else {
+                    console.warn('Missing connection_type for target:', target.name, connectionData);
+                }
             }
             console.log(target)
+            // Determine target type based on connection
+            const connectionData = target.connection?.custom_metadata || target.connection;
+            const isFileTarget = connectionData?.connection_type?.toLowerCase() === 'local' || 
+                                connectionData?.connection_type?.toLowerCase() === 's3';
+            
             // Add target to targets section with reference to connection
             optimizedJson.targets[targetKey] = {
                 name: target.name || targetKey,
-                target_type: target?.connection?.connection_type?.toLowerCase() == 'local' || target?.connection?.connection_type?.toLowerCase() == 's3' ? 'File' : 'Relational',
+                target_type: isFileTarget ? 'File' : 'Relational',
                 target_name: target.target_name,
                 table_name: target.table_name || target.name || targetKey,
                 load_mode: target.load_mode || 'append',
@@ -972,16 +1101,51 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                 if (!optimizedJson.targets[targetKey]) {
                     // Add connection to connections section if it exists
                     if (transform.target.connection) {
-                        connections[connectionKey] = {
-                            ...transform.target.connection,
-                            name: transform.target.connection.name || connectionKey
-                        };
+                        // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
+                        const connectionData = transform.target.connection.custom_metadata || transform.target.connection;
+                        
+
+                        
+                        // Only create connection if we have connection_type
+                        if (connectionData && connectionData.connection_type) {
+                            const cleanConnection: any = {
+                                name: connectionData.name || connectionKey,
+                                connection_type: connectionData.connection_type
+                            };
+                            
+                            // Add file_path_prefix for file-based connections
+                            if (connectionData.connection_type === 'Local' || connectionData.connection_type === 'S3') {
+                                cleanConnection.file_path_prefix = connectionData.file_path_prefix || "";
+                            }
+                            
+                            // Add S3-specific fields
+                            if (connectionData.connection_type === 'S3') {
+                                if (connectionData.bucket) cleanConnection.bucket = connectionData.bucket;
+                                if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
+                            }
+                            
+                            // Add database-specific fields for relational connections
+                            if (connectionData.connection_type !== 'Local' && connectionData.connection_type !== 'S3') {
+                                if (connectionData.database) cleanConnection.database = connectionData.database;
+                                if (connectionData.schema) cleanConnection.schema = connectionData.schema;
+                                if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
+                            }
+                            
+                            connections[connectionKey] = cleanConnection;
+                        } else {
+                            console.warn('Missing connection_type for writer target:', transform.target.name, connectionData);
+                        }
                     }
                     console.log(transform)
+                    // Determine target type based on connection
+                    const connectionData = transform.target.connection?.custom_metadata || transform.target.connection;
+                    const isFileTarget = connectionData?.connection_type?.toLowerCase() === 'local' || 
+                                        connectionData?.connection_type?.toLowerCase() === 's3';
+                    
                     // Add target to targets section
                     optimizedJson.targets[targetKey] = {
                         name: transform.target.name || targetKey,
-                        target_type: transform.target?.connection?.connection_type?.toLowerCase() == 'local' || transform.target?.connection?.connection_type?.toLowerCase() == 's3' ? 'File' : 'Relational',
+                        target_type: isFileTarget ? 'File' : 'Relational',
                         target_name: transform.target.target_name,
                         table_name: transform.target.table_name,
                         load_mode: transform.target.load_mode || 'append',

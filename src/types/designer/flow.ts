@@ -69,6 +69,7 @@ export interface FlowMutationData {
   };
   flow_json?: Record<string, any>;
   bh_env_id?: number;
+  bh_airflow_id?: number;
 }
 
 export interface FlowAgentConversationResponse {

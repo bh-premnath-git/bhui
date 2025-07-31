@@ -40,7 +40,7 @@ interface LookupFormValues {
     lookup_with: string;
   };
   keep: string;
-  dependent_on: string[];
+  dependent_on?: string[];
 }
 
 interface LookupFormProps {
@@ -73,22 +73,6 @@ const LookupForm: React.FC<LookupFormProps> = ({
       title: 'Lookup',
       type: 'object',
       properties: {
-        name: {
-          type: 'string',
-          description: 'The name of the transformation.'
-        },
-        dependent_on: {
-          type: 'array',
-          items: {
-            type: 'string'
-          },
-          description: 'List of transformations this transformation depends on.'
-        },
-        transformation: {
-          type: 'string',
-          enum: ['Lookup'],
-          description: 'The type of transformation.'
-        },
         lookup_type: {
           type: 'string',
           enum: ['Column Based', 'Literal'],
@@ -164,9 +148,6 @@ const LookupForm: React.FC<LookupFormProps> = ({
         }
       },
       required: [
-        'name',
-        'dependent_on',
-        'transformation',
         'lookup_columns',
         'lookup_type',
         'lookup_conditions'
@@ -219,8 +200,15 @@ const LookupForm: React.FC<LookupFormProps> = ({
 
   // Handle form submission
   const onFormSubmit = (data: LookupFormValues) => {
-    console.log('LookupForm submitting:', data);
-    onSubmit(data);
+    // Ensure required fields that are not in UI are included
+    const submissionData = {
+      ...data,
+      name: initialFormValues.name,
+      transformation: 'Lookup',
+      dependent_on: initialFormValues.dependent_on
+    };
+    console.log('LookupForm submitting:', submissionData);
+    onSubmit(submissionData);
   };
 
   // Render field based on schema
@@ -518,69 +506,7 @@ const LookupForm: React.FC<LookupFormProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Lookup Configuration</h2>
-        {onClose && (
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-        )}
-      </div>
-
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        {/* Lookup Type Selection */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Lookup Type</Label>
-          <Controller
-            name="lookup_type"
-            control={control}
-            render={({ field }) => (
-              <div className="flex space-x-4">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    value="Column Based"
-                    checked={field.value === 'Column Based'}
-                    onChange={() => field.onChange('Column Based')}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="text-sm">Column Based</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    value="Literal"
-                    checked={field.value === 'Literal'}
-                    onChange={() => field.onChange('Literal')}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="text-sm">Literal</span>
-                </label>
-              </div>
-            )}
-          />
-        </div>
-
-        {/* Keep Field */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Keep</Label>
-          <Controller
-            name="keep"
-            control={control}
-            render={({ field }) => (
-              <select
-                {...field}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="First">First</option>
-                <option value="Last">Last</option>
-                <option value="All">All</option>
-              </select>
-            )}
-          />
-        </div>
-
-        {/* Tabbed Content */}
         <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
           <TabsList>
             {filteredTabs.map(([key], index) => (

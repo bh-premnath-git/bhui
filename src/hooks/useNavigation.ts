@@ -65,17 +65,6 @@ export function useNavigation(): NavigationHook {
         finalPath = `${finalPath}${finalPath.includes('?') ? '&' : '?'}${queryParams.toString()}`;
       }
     }
-
-    // Check if we're currently on the build-datapipeline route and trying to navigate away
-    const isLeavingBuildDataPipeline = location.pathname === '/designers/build-datapipeline' && 
-                                       !finalPath.startsWith('/designers/build-datapipeline');
-    
-    // Use window.location.href to force a refresh when leaving the problematic route
-    if (isLeavingBuildDataPipeline) {
-      console.log('Forcing page refresh when leaving build-datapipeline route:', finalPath);
-      window.location.href = finalPath;
-      return; // Exit early as the page will refresh
-    }
     
     // Clean up any event listeners that might be interfering with navigation
     const cleanupEvents = () => {

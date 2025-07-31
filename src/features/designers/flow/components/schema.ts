@@ -1,4 +1,4 @@
-import { Environment } from "@/types/admin/environment"
+import { Environment, EnvironmentWithAirflow, AirflowInstance } from "@/types/admin/environment"
 import { Project } from "@/types/admin/project"
 import * as z from "zod"
 
@@ -6,6 +6,7 @@ export const basicInformationSchema = z.object({
   project: z.string().min(1, "Project is required"),
   environment: z.string().min(1, "Environment is required"),
   flowName: z.string().min(1, "Flow name is required"),
+  airflowInstance: z.string().optional(),
 })
 
 export const additionalDetailsSchema = z.object({
@@ -41,6 +42,13 @@ export const getEnvironmentOptions = (environments: Environment[]) => {
   return environments.map(environment => ({
     label: environment.bh_env_name,
     value: environment.bh_env_id.toString()
+  }));
+};
+
+export const getAirflowOptions = (airflowInstances: AirflowInstance[]) => {
+  return airflowInstances.map(instance => ({
+    label: instance.airflow_env_name,
+    value: instance.id.toString()
   }));
 };
 

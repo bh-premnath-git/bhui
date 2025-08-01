@@ -88,9 +88,9 @@ export const environmentFormSchema = z.object({
 export type EnvironmentFormValues = z.infer<typeof environmentFormSchema>
 
 export const environments = [
-  { label: "Development", value: "301" },
-  { label: "Staging", value: "304" },
-  { label: "Production", value: "305" },
+  { label: "Development", value: "development" },
+  { label: "Staging", value: "staging" },
+  { label: "Production", value: "production" },
 ] as const
 
 export const platforms = [

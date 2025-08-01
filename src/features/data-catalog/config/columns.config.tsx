@@ -95,7 +95,7 @@ const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<DataSource>[]
     header: 'Project',
     enableColumnFilter: true,
   }),
-  columnHelper.accessor((row) => row.connection_config?.connection_name ?? "-", {
+  columnHelper.accessor((row) => row.connection_config?.connection_config_name ?? "-", {
     id: 'connection_name',
     header: 'Connection',
     enableColumnFilter: true,

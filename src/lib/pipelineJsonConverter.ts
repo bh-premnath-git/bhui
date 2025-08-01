@@ -193,16 +193,30 @@ const normalizeTransformationData = (transform: any, type: string): any => {
             };
         
         case 'Lookup':
+            // Handle lookup_conditions - convert array back to single object for UI
+            let lookupConditions = {
+                column_name: '',
+                lookup_with: ''
+            };
+            
+            if (Array.isArray(transform.lookup_conditions) && transform.lookup_conditions.length > 0) {
+                // If it's an array, take the first valid condition
+                const firstCondition = transform.lookup_conditions[0];
+                if (firstCondition && (firstCondition.column_name || firstCondition.lookup_with)) {
+                    lookupConditions = firstCondition;
+                }
+            } else if (transform.lookup_conditions && typeof transform.lookup_conditions === 'object') {
+                // If it's already a single object, use it
+                lookupConditions = transform.lookup_conditions;
+            }
+            
             return {
                 ...normalizedData,
                 lookup_type: transform.lookup_type || 'Column Based',
                 lookup_config: transform.lookup_config || { name: '', source: {}, read_options: { header: true } },
                 lookup_data: Array.isArray(transform.lookup_data) ? transform.lookup_data : [],
                 lookup_columns: Array.isArray(transform.lookup_columns) ? transform.lookup_columns : [],
-                lookup_conditions: transform.lookup_conditions || {
-                    column_name: '',
-                    lookup_with: ''
-                },
+                lookup_conditions: lookupConditions,
                 keep: transform.keep || 'First'
             };
         
@@ -962,13 +976,16 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
 
     // Process sources and their connections
     if (Array.isArray(currentJson.sources)) {
+        console.log('🔧 Processing sources in convertToOptimizedPipelineJson:', currentJson.sources);
         currentJson.sources.forEach((source: any, index: number) => {
             const connectionKey = `${source.name}`;
+            console.log('🔧 Processing source:', source.name, 'connection:', source.connection);
 
             // Add connection to connections section
             if (source.connection) {
                 // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
                 const connectionData = source.connection.custom_metadata || source.connection;
+                console.log('🔧 Connection data for', source.name, ':', connectionData);
                 
 
                 

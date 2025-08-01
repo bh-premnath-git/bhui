@@ -126,7 +126,7 @@ const BuildPlayGround: React.FC = () => {
         } else if (id) {
             console.warn(`DataFlow: Invalid flow ID provided: ${id}, skipping refetch`);
         }
-    }, [id, refetch, isValidFlowId]);
+    }, []);
     
     // Listen for custom flow selection events
     useEffect(() => {

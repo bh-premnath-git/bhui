@@ -110,8 +110,9 @@ export const useDataOpsWidgets = (options: UseWidgetOptions = {}) => {
     refetch: refetchWidgetDetail,
   } = widgetId
     ? getWidget({
-        url: `/${WIDGET_API_PATH}/${widgetId}/`,
-        queryOptions: {
+        url: `/${WIDGET_API_PATH}/${widgetId}`,
+        id: widgetId,
+        queryOptions: { 
           enabled: shouldFetch,
           retry: 2,
           staleTime: 60_000,

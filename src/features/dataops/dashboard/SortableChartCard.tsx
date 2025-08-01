@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { WidgetHeader } from "./widgets/WidgetHeader";
 import { cn } from "@/lib/utils";
 import { Widget as WidgetType } from "@/types/dataops/dataops-dash"; 
-import { PlotlyChart } from "./widgets/charts/PlotlyChart"; 
+import { PlotlyChart } from "./widgets/components/PlotlyChart"; 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { LayoutDashboard, X, Check, BarChart2, Table as TableIcon } from "lucide-react";
 import { WIDGET_REMOVED_EVENT } from "@/components/shared/XplorerGenericChat"; 

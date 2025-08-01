@@ -4,7 +4,7 @@ import { DashboardLayout } from './DashboardLayout'
 const Dashboard = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="pt-8">
+      <div className="pt-2">
       <DashboardHeader />
       </div>
       <main className="flex-1">

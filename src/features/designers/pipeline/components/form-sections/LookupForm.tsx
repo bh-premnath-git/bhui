@@ -159,36 +159,65 @@ const LookupForm: React.FC<LookupFormProps> = ({
   const initialFormValues = useMemo(() => {
     const baseValues = generateInitialValues(lookupSchema, initialValues, currentNodeId);
     
+    // Properly merge lookup_config with existing values
+    const defaultLookupConfig = { 
+      name: '', 
+      source: {},
+      read_options: {
+        header: true
+      }
+    };
+    
+    const mergedLookupConfig = initialValues?.lookup_config ? {
+      name: initialValues.lookup_config.name || defaultLookupConfig.name,
+      source: initialValues.lookup_config.source || defaultLookupConfig.source,
+      read_options: {
+        header: initialValues.lookup_config.read_options?.header ?? defaultLookupConfig.read_options.header
+      }
+    } : defaultLookupConfig;
+    
+    // Properly merge lookup_conditions with existing values
+    const defaultLookupConditions = {
+      column_name: '',
+      lookup_with: ''
+    };
+    
+    const mergedLookupConditions = initialValues?.lookup_conditions ? {
+      column_name: initialValues.lookup_conditions.column_name || defaultLookupConditions.column_name,
+      lookup_with: initialValues.lookup_conditions.lookup_with || defaultLookupConditions.lookup_with
+    } : defaultLookupConditions;
+    
+    console.log('🔧 LookupForm lookup_conditions debug:', {
+      'initialValues.lookup_conditions': initialValues?.lookup_conditions,
+      'mergedLookupConditions': mergedLookupConditions
+    });
+    
     return {
       name: initialValues?.name || '',
       transformation: 'Lookup',
       lookup_type: initialValues?.lookup_type || 'Column Based',
-      lookup_config: initialValues?.lookup_config || { 
-        name: '', 
-        source: {},
-        read_options: {
-          header: true
-        }
-      },
+      lookup_config: mergedLookupConfig,
       lookup_data: initialValues?.lookup_data || [],
       lookup_columns: initialValues?.lookup_columns || [],
-      lookup_conditions: initialValues?.lookup_conditions || {
-        column_name: '',
-        lookup_with: ''
-      },
+      lookup_conditions: mergedLookupConditions,
       keep: initialValues?.keep || 'First',
       dependent_on: initialValues?.dependent_on || [],
       ...baseValues
     };
   }, [lookupSchema, initialValues, currentNodeId]);
 
-  console.log('LookupForm initialFormValues:', initialFormValues);
+
 
   // Form configuration
-  const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<LookupFormValues>({
+  const { control, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<LookupFormValues>({
     defaultValues: initialFormValues,
     mode: 'onChange',
   });
+
+  // Reset form when initialValues change
+  useEffect(() => {
+    reset(initialFormValues);
+  }, [reset, initialValues, currentNodeId]); // Use initialValues and currentNodeId instead of initialFormValues
 
   // Watch form values
   const formValues = watch();
@@ -363,13 +392,16 @@ const LookupForm: React.FC<LookupFormProps> = ({
               <Controller
                 name="lookup_conditions.column_name"
                 control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter column name"
-                    className="w-full"
-                  />
-                )}
+                render={({ field }) => {
+                  console.log('🔧 lookup_conditions.column_name field value:', field.value);
+                  return (
+                    <Input
+                      {...field}
+                      placeholder="Enter column name"
+                      className="w-full"
+                    />
+                  );
+                }}
               />
             </div>
             
@@ -380,13 +412,16 @@ const LookupForm: React.FC<LookupFormProps> = ({
               <Controller
                 name="lookup_conditions.lookup_with"
                 control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter lookup column"
-                    className="w-full"
-                  />
-                )}
+                render={({ field }) => {
+                  console.log('🔧 lookup_conditions.lookup_with field value:', field.value);
+                  return (
+                    <Input
+                      {...field}
+                      placeholder="Enter lookup column"
+                      className="w-full"
+                    />
+                  );
+                }}
               />
             </div>
           </div>

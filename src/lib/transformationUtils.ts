@@ -65,6 +65,23 @@ export const getInitialFormState = (
             };
 
         case 'Lookup':
+            // Handle lookup_conditions - convert array back to single object for UI
+            let lookupConditions = {
+                column_name: '',
+                lookup_with: ''
+            };
+            
+            if (Array.isArray(transformation.lookup_conditions) && transformation.lookup_conditions.length > 0) {
+                // If it's an array, take the first valid condition
+                const firstCondition = transformation.lookup_conditions[0];
+                if (firstCondition && (firstCondition.column_name || firstCondition.lookup_with)) {
+                    lookupConditions = firstCondition;
+                }
+            } else if (transformation.lookup_conditions && typeof transformation.lookup_conditions === 'object') {
+                // If it's already a single object, use it
+                lookupConditions = transformation.lookup_conditions;
+            }
+            
             return {
                 ...baseState,
                 lookup_type: transformation.lookup_type || 'Column Based',
@@ -77,10 +94,7 @@ export const getInitialFormState = (
                 },
                 lookup_data: transformation.lookup_data ,
                 lookup_columns: transformation.lookup_columns ,
-                lookup_conditions: transformation.lookup_conditions || {
-                    column_name: '',
-                    lookup_with: ''
-                },
+                lookup_conditions: lookupConditions,
                 keep: transformation.keep || 'First'
             };
 
@@ -237,9 +251,12 @@ export const getNodePorts = (type: string) => {
         Repartition: { inputs: 1, outputs: 1, maxInputs: 1 },
         'SQLTransformation': { inputs: 1, outputs: 1, maxInputs: 'unlimited' },
         'SetCombiner': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
+        'Set': { inputs: 2, outputs: 1, maxInputs: 'unlimited' },
         DqCheck: { inputs: 1, outputs: 1, maxInputs: 1 },
         Lookup: { inputs: 1, outputs: 1, maxInputs: 1 },
-        CustomPySpark: { inputs: 1, outputs: 1, maxInputs: 1 }
+        CustomPySpark: { inputs: 1, outputs: 1, maxInputs: 1 },
+        python: { inputs: 1, outputs: 1, maxInputs: 1 }
+
     };
     return portsMap[type] || { inputs: 1, outputs: 1, maxInputs: 1 };
 };

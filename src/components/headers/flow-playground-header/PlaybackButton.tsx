@@ -87,7 +87,9 @@ export const PlaybackButton = () => {
     }, []);
 
     const deployFlow = async (): Promise<boolean> => {
-        if (!selectedFlow?.flow_name || !selectedEnvironment?.airflow_env_name || !selectedEnvironment?.bh_env_name) {
+        console.log("Deploying flow with selectedEnvironment:", selectedEnvironment);
+        const airflowEnvName = selectedEnvironment?.bh_airflow?.[0]?.airflow_env_name;
+        if (!selectedFlow?.flow_name || !airflowEnvName || !selectedEnvironment?.bh_env_name) {
             toast.error("Missing required deployment information");
             return false;
         }
@@ -97,13 +99,13 @@ export const PlaybackButton = () => {
             const formattedDagId = selectedFlow.flow_key.replace(/\s+/g, '_');
             const result:any = await dispatch(triggerDagDeployment({
                 dag_id: formattedDagId,
-                airflow_env_name: selectedEnvironment.airflow_env_name,
+                airflow_env_name: airflowEnvName,
                 bh_env_name: selectedEnvironment.bh_env_name
             })).unwrap();
 
             dispatch(setDagRunId({
                 dag_run_id: result.trigger_response?.dag_run_id,
-                airflow_env_name: selectedEnvironment.airflow_env_name,
+                airflow_env_name: airflowEnvName,
                 dag_id: formattedDagId,
                 bh_env_name: selectedEnvironment.bh_env_name
             }));
@@ -122,25 +124,36 @@ export const PlaybackButton = () => {
 
     // Function to start polling for dagParserTime
     const startPollingDagParserTime = () => {
+        console.log("startPollingDagParserTime called");
+        
         // Clear any existing interval first
         if (pollingIntervalRef.current) {
+            console.log("Clearing existing polling interval");
             clearInterval(pollingIntervalRef.current);
         }
         
         // Start a new polling interval
+        console.log("Setting up new polling interval (5 seconds)");
         pollingIntervalRef.current = setInterval(() => {
-            if (selectedFlow?.flow_name && selectedEnvironment?.airflow_env_name && selectedEnvironment?.bh_env_name) {
-                // debugger
-                // Replace spaces with underscores in dag_id to match API expectations
-                const formattedDagId = selectedFlow.flow_name.replace(/\s+/g, '_');
-                console.log(selectedFlow)
+            console.log("Polling interval triggered - checking conditions...");
+            console.log("selectedFlow:", selectedFlow?.flow_name);
+            console.log("selectedEnvironment:", selectedEnvironment);
+            
+            const airflowEnvName = selectedEnvironment?.bh_airflow?.[0]?.airflow_env_name;
+            if (selectedFlow?.flow_name && airflowEnvName && selectedEnvironment?.bh_env_name) {
+                console.log("Conditions met - calling fetchDagParserTime with dag_id:", selectedFlow.flow_key);
                 dispatch(fetchDagParserTime({
                     dag_id: selectedFlow.flow_key,
-                    airflow_env_name: selectedEnvironment.airflow_env_name,
+                    airflow_env_name: airflowEnvName,
                     bh_env_name: selectedEnvironment.bh_env_name
                 }));
+            } else {
+                console.log("Conditions not met for polling - missing required data");
+                console.log("Missing data - flow_name:", selectedFlow?.flow_name, "airflow_env_name:", airflowEnvName, "bh_env_name:", selectedEnvironment?.bh_env_name);
             }
-        }, 10000); // Poll every 10 seconds
+        }, 5000); // Poll every 5 seconds
+        
+        console.log("Polling interval set up with ID:", pollingIntervalRef.current);
     };
 
     const handleClick = async () => {
@@ -148,34 +161,43 @@ export const PlaybackButton = () => {
         try {
             // Initial state: First click should only call deployDag
             if (deploymentState === DeploymentState.INITIAL) {
+                console.log("Starting deployment process...", selectedFlow);
                 if (!selectedFlow?.flow_definition?.flow_definition_id || !selectedFlow?.flow_deployment?.[0]?.flow_deployment_id) {
                     toast.error("Missing flow definition or deployment ID for deployment.");
                     return;
                 }
 
-                // First, call deployDag
-                await dispatch(deployDag({
-                    flow_definition_id: selectedFlow.flow_definition.flow_definition_id,
-                    flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id
-                })).unwrap();
+                try {
+                    // First, call deployDag
+                    const deployResult = await dispatch(deployDag({
+                        flow_definition_id: selectedFlow.flow_definition.flow_definition_id,
+                        flow_deployment_id: selectedFlow.flow_deployment[0].flow_deployment_id
+                    })).unwrap();
+                    
+                    console.log("Deploy DAG result:", deployResult);
 
-                // Immediately fetch dagParserTime once
-                if (selectedFlow?.flow_name && selectedEnvironment?.airflow_env_name && selectedEnvironment?.bh_env_name) {
-                    // Replace spaces with underscores in dag_id to match API expectations
-                    const formattedDagId = selectedFlow.flow_name.replace(/\s+/g, '_');
-                    console.log(selectedFlow)
-                    dispatch(fetchDagParserTime({
-                        dag_id: selectedFlow.flow_key,
-                        airflow_env_name: selectedEnvironment.airflow_env_name,
-                        bh_env_name: selectedEnvironment.bh_env_name
-                    }));
+                    // Immediately fetch dagParserTime once
+                    const airflowEnvName = selectedEnvironment?.bh_airflow?.[0]?.airflow_env_name;
+                    if (selectedFlow?.flow_name && airflowEnvName && selectedEnvironment?.bh_env_name) {
+                        console.log("Fetching dagParserTime immediately...");
+                        dispatch(fetchDagParserTime({
+                            dag_id: selectedFlow.flow_key,
+                            airflow_env_name: airflowEnvName,
+                            bh_env_name: selectedEnvironment.bh_env_name
+                        }));
+                    }
+
+                    toast.success("Initial deployment started. Waiting for deployment to be ready...");
+                    setDeploymentState(DeploymentState.DEPLOYING);
+                    
+                    // Start polling for dagParserTime
+                    console.log("Starting polling for dagParserTime...");
+                    startPollingDagParserTime();
+                } catch (deployError) {
+                    console.error("Deploy DAG failed:", deployError);
+                    toast.error("Failed to deploy DAG");
+                    return;
                 }
-
-                toast.success("Initial deployment started. Waiting for deployment to be ready...");
-                setDeploymentState(DeploymentState.DEPLOYING);
-                
-                // Start polling for dagParserTime
-                startPollingDagParserTime();
             } 
             // Ready state: Second click should trigger the DAG deployment
             else if (deploymentState === DeploymentState.READY) {

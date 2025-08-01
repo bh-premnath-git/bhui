@@ -24,6 +24,7 @@ import { RootState } from '@/store';
 import { useReaderData } from '@/context/ReaderDataContext';
 
 function SchemaTable({ initialData, onSwitchToReaderOptions }: any) {
+    console.log('🔧 SchemaTable: Initializing SchemaTable with initialData:', initialData);
     const [openDialog, setOpenDialog] = React.useState(false);
     const [inputValue, setInputValue] = React.useState('');
     const [selectedDataType, setSelectedDataType] = React.useState('');

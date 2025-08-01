@@ -920,6 +920,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           } catch (e) {
             // If parsing fails, keep the original string
             parsedMsg = msg;
+            console.warn("Failed to parse SSE message as JSON:", e);
           }
         }
         

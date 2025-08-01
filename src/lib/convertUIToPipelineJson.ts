@@ -123,13 +123,24 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 (lookupConfig.source.data_src_name || lookupConfig.source.name)) {
                 
                 const source = lookupConfig.source;
-                const connectionConfig = source?.connection_config?.custom_metadata;
-                const fullConnectionConfig = source?.connection_config || { custom_metadata: connectionConfig };
+                // Handle different connection config formats
+                const connectionConfig = source?.connection_config?.custom_metadata || 
+                                       source?.connection?.custom_metadata || 
+                                       source?.connection;
+                const fullConnectionConfig = source?.connection_config || source?.connection || {};
                 const source_type = source.type || source.source_type;
-                const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
+                const isFileSource = connectionConfig?.connection_type == "Local" || 
+                                    connectionConfig?.connection_type == "S3" ||
+                                    source.source_type === "File";
                 const sourceName = source.data_src_name || source.name;
                 
-
+                console.log('🔧 Processing lookup source:', {
+                    sourceName,
+                    source,
+                    connectionConfig,
+                    fullConnectionConfig,
+                    isFileSource
+                });
                 
                 return {
                     name: sourceName,
@@ -144,15 +155,24 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         })
         .filter(Boolean); // Remove null entries
 
-    // Combine reader sources and lookup sources, removing duplicates by name
+    // Combine reader sources and lookup sources, ensuring lookup sources are included
     const allSources = [...readerSources];
     lookupSources.forEach(lookupSource => {
-        if (!allSources.find(source => source.name === lookupSource.name)) {
+        const existingSource = allSources.find(source => source.name === lookupSource.name);
+        if (!existingSource) {
+            // Add new lookup source
             allSources.push(lookupSource);
+        } else {
+            // Update existing source with lookup source data if it has more complete connection info
+            if (lookupSource.connection && (!existingSource.connection || !existingSource.connection.custom_metadata)) {
+                existingSource.connection = lookupSource.connection;
+            }
         }
     });
 
     const sources = allSources;
+    
+    console.log('🔧 Final sources array:', sources);
 
     // Update the reader transformations
     const readerTransformations = uiNodes
@@ -516,21 +536,18 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         lookupConfig.lookup_columns = node.data.transformationData.lookup_columns;
                     }
                     
-                    // Handle lookup_conditions as an array
+                    // Handle lookup_conditions - convert single object to array
                     if (node.data.transformationData?.lookup_conditions) {
                         const conditions = node.data.transformationData.lookup_conditions;
                         
                         if (Array.isArray(conditions)) {
-                            // If it's an array, take the first valid condition as a single object
-                            const validCondition = conditions.find(condition => 
+                            // If it's already an array, use it directly
+                            lookupConfig.lookup_conditions = conditions.filter(condition => 
                                 condition && (condition.column_name || condition.lookup_with)
                             );
-                            if (validCondition) {
-                                lookupConfig.lookup_conditions = validCondition;
-                            }
                         } else if (conditions && (conditions.column_name || conditions.lookup_with)) {
-                            // If it's a single object, use it directly
-                            lookupConfig.lookup_conditions = conditions;
+                            // If it's a single object, convert it to an array
+                            lookupConfig.lookup_conditions = [conditions];
                         }
                     }
                     
@@ -728,7 +745,9 @@ export const convertOptimisedPipelineJsonToPipelineJson = async (nodes: Node[], 
         });
     }
     
+    console.log('🔧 Pipeline JSON before optimization:', pipelineJson?.pipeline_json);
     let optimized = convertToOptimizedPipelineJson(pipelineJson?.pipeline_json,pipelineName);
+    console.log('🔧 Optimized pipeline JSON:', optimized);
     
     // Ensure all transformations in the optimized pipeline are properly converted
     if (optimized?.transformations && Array.isArray(optimized.transformations)) {

@@ -21,7 +21,7 @@ interface XplorerGenericChatUIProps {
 // Custom event name constant
 export const CHART_ADDED_EVENT = 'chart-added-to-xplorer-dashboard';
 export const WIDGET_REMOVED_EVENT = 'widget-removed-from-xplorer-dashboard';
-const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
+const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION', 'IDENTIFY', 'ERROR'];
 
 export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   userColor = '#000000', suggestions, variant = 'explorer' }: XplorerGenericChatUIProps) {
@@ -48,6 +48,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
   const [processingState, setProcessingState] = useState<'processing' | 'processed' | 'hidden'>('hidden');
   const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
   const streamAbortRef = useRef<() => void>();
+  const responseRef = useRef<{ sql: any; chart: any; table: any; explanation: any } | null>(null);
   
   // Initialize conversation
   useEffect(() => {
@@ -102,6 +103,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
 
     // Reset states for new query
     setResponse(null);
+    responseRef.current = null;
     setProcessingState('processing');
     
     // Add user message first
@@ -120,9 +122,94 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
         try {
           const parsedChunk = JSON.parse(chunk);
           
-          if (allowedResponseTypes.includes(parsedChunk?.response_type)) {
+          // Handle different types of streaming responses
+          if (parsedChunk?.response_type && allowedResponseTypes.includes(parsedChunk.response_type)) {
+            console.log('Processing chunk:', parsedChunk.response_type, parsedChunk);
             const responseTypeKey = parsedChunk.response_type.toLowerCase();
-            setResponse(prev => ({ ...prev, [responseTypeKey]: parsedChunk }));
+            
+            // Handle different response types based on your API structure
+            if (parsedChunk.response_type === 'SQL') {
+              const newResponse = {
+                sql_query: parsedChunk.content,
+                ...parsedChunk
+              };
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: newResponse };
+                responseRef.current = updated;
+                return updated;
+              });
+            } else if (parsedChunk.response_type === 'EXPLANATION') {
+              // Handle explanation responses - show them in the processing message
+              if (parsedChunk.content && processingMessageId) {
+                updateMessageById(processingMessageId, parsedChunk.content);
+              }
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: parsedChunk };
+                responseRef.current = updated;
+                return updated;
+              });
+            } else if (parsedChunk.response_type === 'CHART') {
+              const newResponse = {
+                chart_metadata: parsedChunk.content,
+                ...parsedChunk
+              };
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: newResponse };
+                responseRef.current = updated;
+                return updated;
+              });
+            } else if (parsedChunk.response_type === 'TABLE') {
+              // Transform the table data to match what the component expects
+              const tableData = parsedChunk.content.column_values.map((row: any[]) => {
+                const rowObj: any = {};
+                parsedChunk.content.column_names.forEach((colName: string, index: number) => {
+                  rowObj[colName] = row[index];
+                });
+                return rowObj;
+              });
+              
+              console.log('Transformed table data:', tableData);
+              
+              const newResponse = {
+                table_data: tableData,
+                ...parsedChunk
+              };
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: newResponse };
+                responseRef.current = updated;
+                return updated;
+              });
+            } else if (parsedChunk.response_type === 'ERROR') {
+              // Handle error responses - show them in the processing message
+              if (parsedChunk.content && processingMessageId) {
+                updateMessageById(processingMessageId, `Error: ${parsedChunk.content}`);
+              }
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: parsedChunk };
+                responseRef.current = updated;
+                return updated;
+              });
+            } else if (parsedChunk.response_type === 'IDENTIFY') {
+              // Handle identify responses - these are usually intermediate steps
+              console.log('Identified table:', parsedChunk.content);
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: parsedChunk };
+                responseRef.current = updated;
+                return updated;
+              });
+            } else {
+              // Default handling for other response types
+              setResponse(prev => {
+                const updated = { ...prev, [responseTypeKey]: parsedChunk };
+                responseRef.current = updated;
+                return updated;
+              });
+            }
+          }
+          
+          // Handle meta messages (status updates)
+          if (parsedChunk?.meta?.status) {
+            console.log('Stream status:', parsedChunk.meta.status, parsedChunk.data?.message);
           }
         } catch (error) {
           console.error("Error parsing chunk:", error);
@@ -133,7 +220,18 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
     const onComplete = () => {
       // Update processing message with completion confirmation
       if (processingMessageId) {
-        updateMessageById(processingMessageId, 'Here are the results of your query:');
+        // Check if we have any meaningful response data
+        const currentResponse = responseRef.current;
+        const hasResults = currentResponse && (currentResponse.sql || currentResponse.chart || currentResponse.table);
+        
+        if (hasResults) {
+          updateMessageById(processingMessageId, 'Here are the results of your query:');
+        } else if (currentResponse?.explanation?.content) {
+          // If we only have an explanation, it's already been shown, so just mark as processed
+          // The explanation content was already updated in onChunk
+        } else {
+          updateMessageById(processingMessageId, 'Query processed, but no results were generated.');
+        }
       }
       setProcessingState('processed');
     };
@@ -289,13 +387,16 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
               {response && (
                 <>
                   {(response.sql || response.chart || response.table) && (
-                    <AIDataVisualizer
-                      sql={response.sql}
-                      chart={response.chart}
-                      data={response.table}
-                      onAddToDashboard={handleAddToDashboard}
-                      variant={variant}
-                    />
+                    <>
+                      {console.log('Rendering AIDataVisualizer with:', { sql: response.sql, chart: response.chart, table: response.table })}
+                      <AIDataVisualizer
+                        sql={response.sql}
+                        chart={response.chart}
+                        data={response.table}
+                        onAddToDashboard={handleAddToDashboard}
+                        variant={variant}
+                      />
+                    </>
                   )}
 
                   {/* Follow-up question - only show when processing is complete */}

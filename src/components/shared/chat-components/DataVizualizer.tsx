@@ -79,7 +79,15 @@ export function AIDataVisualizer({
   onAddToDashboard,
   variant
 }: AIDataVisualizerProps) {
-  const [activeTab, setActiveTab] = useState<'chart' | 'sql' |'table' | 'explanation'>('chart');
+  // Determine default tab based on available data
+  const getDefaultTab = () => {
+    if (chart) return 'chart';
+    if (sql) return 'sql';
+    if (data) return 'table';
+    return 'sql';
+  };
+  
+  const [activeTab, setActiveTab] = useState<'chart' | 'sql' |'table' | 'explanation'>(getDefaultTab());
   const [chartMetadata, setChartMetadata] = useState<ChartData | null>(null);
   const [formattedTableData, setFormattedTableData] = useState<any[]>([]);
   const [chartType, setChartType] = useState('bar');
@@ -96,18 +104,23 @@ export function AIDataVisualizer({
   
   // Generate stable IDs for each tab component
   const tabIds = useMemo(() => ({
-    chart: `chart-tab-${chart?.content?.layout?.title?.text || Date.now()}`,
-    sql: `sql-tab-${sql?.content?.substring?.(0, 20)?.replace(/\s+/g, '-') || Date.now()}`,
-    table: `table-tab-${data?.content?.column_names?.join('-')?.substring?.(0, 20) || Date.now()}`
+    chart: `chart-tab-${chart?.chart_metadata?.layout?.title?.text || chart?.response_type || Date.now()}`,
+    sql: `sql-tab-${sql?.sql_query?.substring?.(0, 20)?.replace(/\s+/g, '-') || sql?.response_type || Date.now()}`,
+    table: `table-tab-${data?.table_data?.length || data?.response_type || Date.now()}`
   }), [chart, sql, data]);
 
   useEffect(() => {
     if (chart && chart.chart_metadata) {
       setChartMetadata(chart.chart_metadata);
       setChartType(chart.chart_metadata.chart_type || 'bar');
+      setActiveTab('chart');
     }
     if (data && data.table_data) {
       setFormattedTableData(data.table_data);
+      if (!chart) setActiveTab('table');
+    }
+    if (sql && !chart && !data) {
+      setActiveTab('sql');
     }
   }, [sql, data, chart]);
 

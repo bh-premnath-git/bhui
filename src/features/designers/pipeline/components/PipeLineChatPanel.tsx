@@ -1645,7 +1645,7 @@ const PipeLineChatPanel = () => {
 
       // Call the pipeline schema edit API
       const response: any = await apiService.post({
-        url: 'pipeline_schema/edit_pipeline',
+        url: 'pipeline_schema/pipeline',
         baseUrl: AGENT_REMOTE_URL,
         method: 'POST',
         usePrefix: true,

@@ -32,6 +32,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/config/routes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
+import { setSelectedFlow } from '@/store/slices/designer/flowSlice';
 import { useFlow } from '@/context/designers/FlowContext';
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
 import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';
@@ -130,7 +131,8 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
     } else if (initialFlows.data && Array.isArray(initialFlows.data)) {
       flowData = initialFlows.data;
     }
-    
+    console.log("FlowSelector: Initial flows data", flowData);
+    dispatch(setSelectedFlow(flowData[0] || null));
     // Enhance flows with mock data if needed
     const enhancedFlows = flowData.map((flow: Flow) => ({
       ...flow,
@@ -140,6 +142,7 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
     }));
     
     setFlows(enhancedFlows);
+
   }, [initialFlows]);
 
   // Fetch flow list
@@ -202,10 +205,6 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setFlowToDelete(null);
-  };
 
   // Handle flow selection
   const handleFlowSelect = async (flow: Flow) => {
@@ -234,6 +233,9 @@ export const FlowSelector: React.FC<FlowSelectorProps> = ({
     
     // Update the FlowContext
     setSelectedFlowId(flowIdStr);
+    dispatch(setSelectedFlow(flow));
+    
+    // Update Redux store
 
     try {
       // Navigate to the new flow

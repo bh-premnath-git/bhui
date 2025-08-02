@@ -171,23 +171,23 @@ console.log(filteredSources)
     <div className="space-y-4">
       <Label className="text-sm font-medium">Data Source</Label>
       
-      {value && value.data_src_name ? (
+      {value && (value.data_src_name || value.name) ? (
         <Card className="border-2 border-green-200 bg-green-50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src={getConnectionTypeIcon(value.connection_config?.custom_metadata?.connection_type)}
-                  alt={value.connection_type}
+                  src={getConnectionTypeIcon(value.connection_config?.custom_metadata?.connection_type || value.connection?.custom_metadata?.connection_type)}
+                  alt={value.connection_type || value.connection?.custom_metadata?.connection_type}
                   className="w-8 h-8 rounded"
                 />
                 <div>
                   <div className="font-medium text-sm flex items-center gap-2">
-                    {value.data_src_name}
+                    {value.data_src_name || value.name}
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
                   <div className="text-xs text-gray-500 capitalize">
-                    {value.connection_type}
+                    {value.connection_type || value.connection?.custom_metadata?.connection_type || value.source_type}
                   </div>
                 </div>
               </div>

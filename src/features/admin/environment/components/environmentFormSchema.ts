@@ -1,4 +1,4 @@
-import { EnvironmentMutationData } from "@/types/admin/environment"
+import { EnvironmentMutationData, EnvironmentWithAirflow, Environment } from "@/types/admin/environment"
 import * as z from "zod"
 
 export const environmentFormSchema = z.object({
@@ -139,25 +139,30 @@ export const transforFormToAPiData = (formData: EnvironmentFormValues ): FormDat
  };
 
 
-export const transformApiDataToForm = (apiData: EnvironmentMutationData): EnvironmentFormValues => {
+export const transformApiDataToForm = (apiData: EnvironmentWithAirflow | Environment | any): EnvironmentFormValues => {
+  const airflow = (apiData as EnvironmentWithAirflow).bh_airflow?.[0]
   const formData: Partial<EnvironmentFormValues> = {
     environmentName: apiData.bh_env_name,
     environment: apiData.bh_env_type,
     platform: {
-      type: apiData.cloud_provider,
-      region: apiData.cloud_region,
+      type: apiData.cloud_provider?.toUpperCase() || "",
+      region:
+        (apiData as EnvironmentWithAirflow).aws_cloud_details?.cloud_region ||
+        (apiData as any).cloud_region ||
+        "",
     },
     credentials: {
-      publicId: apiData.project_id,
-      accessKey: apiData.access_key,
-      secretKey: apiData.secret_access_key,
-      pvtKey: apiData.pvt_key,
+      publicId: (apiData as any).project_id || "",
+      accessKey: (apiData as any).access_key || "",
+      secretKey: (apiData as any).secret_access_key || "",
+      pvtKey: (apiData as any).pvt_key || "",
     },
     advancedSettings:{
-      airflowName: apiData.airflow_env_name,
-      airflowBucketName: apiData.airflow_bucket_name,
-      airflowBucketUrl: apiData.airflow_env_url,
-      airflowEnvType: apiData.airflow_env_type,
+      airflowName: airflow?.airflow_env_name || (apiData as any).airflow_env_name || "",
+      airflowBucketName:
+        airflow?.airflow_bucket_name || (apiData as any).airflow_bucket_name || "",
+      airflowBucketUrl: airflow?.airflow_env_url || (apiData as any).airflow_url || "",
+      airflowEnvType: airflow?.airflow_env_type || "",
     },
     status: apiData.status || 'active',
   }

@@ -29,6 +29,7 @@ export function EditEnvironment() {
   });
 
   const environment = selectedEnvironment || fetchedEnvironment;
+  console.log("environment", environment);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isTokenValidated, setIsTokenValidated] = useState(false);
@@ -40,7 +41,7 @@ export function EditEnvironment() {
     pvtKey?: string;
   } | null>(null);
 
-  const formData = transformApiDataToForm(environment);
+  const formData = environment ? transformApiDataToForm(environment) : undefined;
 
   const handleValidate = async (data: EnvironmentFormValues) => {
     try {

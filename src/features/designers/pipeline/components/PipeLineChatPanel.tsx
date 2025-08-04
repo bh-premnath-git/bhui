@@ -503,7 +503,7 @@ const PipeLineChatPanel = () => {
       module.operators.forEach(operator => {
         nodes.push({
           ui_properties: {
-            module_name: module.label,
+            module_name: operator.type, // Use operator.type instead of module.label to avoid duplicates
             color: module.color,
             icon: module.icon,
             ports: module.ports
@@ -2794,6 +2794,12 @@ const PipeLineChatPanel = () => {
                 const formId = `form_${targetNodeId}_${Date.now()}`;
                 console.log(`📝 Creating new form with formId: ${formId}, nodeId: ${targetNodeId}, transformation: ${transformationType}`);
                 
+                // Debug: Log current form states and node data
+                const currentNode = nodes.find(n => n.id === targetNodeId);
+                console.log(`📝 Current form states for ${targetNodeId}:`, formStates[targetNodeId]);
+                console.log(`📝 Current node transformation data:`, currentNode?.data?.transformationData);
+                console.log(`📝 Current node data:`, currentNode?.data);
+                
                 // Create the embedded form data directly
                 const embeddedFormData = {
                   schema: schemaWithNodeId,
@@ -2801,11 +2807,20 @@ const PipeLineChatPanel = () => {
                   currentNodeId: targetNodeId,
                   formId: formId,
                   isEmbeddedForm: true, // Flag to indicate this is an embedded form
-                  initialValues: {
-                    ...formStates[targetNodeId],
-                    nodeId: targetNodeId,
-                    dependent_on: dependentOnData
-                  },
+                  initialValues: (() => {
+                    const currentNode = nodes.find(n => n.id === targetNodeId);
+                    const initialValues = {
+                      // Start with existing form states
+                      ...formStates[targetNodeId],
+                      // Add current node's transformation data if available
+                      ...(currentNode?.data?.transformationData || {}),
+                      // Always include nodeId and dependencies
+                      nodeId: targetNodeId,
+                      dependent_on: dependentOnData
+                    };
+                    console.log(`📝 Final initial values for form:`, initialValues);
+                    return initialValues;
+                  })(),
                   onSubmit: (data) => {
                     // Handle form submission
                     const nodeId = data.nodeId || targetNodeId;
@@ -2813,9 +2828,21 @@ const PipeLineChatPanel = () => {
                     
                     // Get the current node to determine the title
                     const currentNode = nodes.find(n => n.id === nodeId);
-                    const updatedTitle = currentNode?.data?.title || currentNode?.data?.label || schemaWithNodeId.title;
+                    // Preserve the existing node title/label, don't overwrite with transformation type
+                    const updatedTitle = data.name || data.title || currentNode?.data?.title || currentNode?.data?.label || `${schemaWithNodeId.title}_${nodeId.slice(-4)}`;
                     
+                    // Update local form states first
+                    const cleanFormData = { ...data };
+                    delete cleanFormData.nodeId;
+                    const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
+                    setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+                    setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+
+                    // Mark as unsaved
+                    setUnsavedChanges();
+
                     console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
+                    console.log(`🔧 Updated form states for nodeId ${nodeId}:`, formStateData);
                     const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
                     handleFormSubmit(formSubmitData);
 
@@ -2919,11 +2946,20 @@ const PipeLineChatPanel = () => {
                   currentNodeId: targetNodeId,
                   formId: formId,
                   isEmbeddedForm: true, // Flag to indicate this is an embedded form
-                  initialValues: {
-                    ...formStates[targetNodeId],
-                    nodeId: targetNodeId,
-                    dependent_on: dependentOnData
-                  },
+                  initialValues: (() => {
+                    const currentNode = nodes.find(n => n.id === targetNodeId);
+                    const initialValues = {
+                      // Start with existing form states
+                      ...formStates[targetNodeId],
+                      // Add current node's transformation data if available
+                      ...(currentNode?.data?.transformationData || {}),
+                      // Always include nodeId and dependencies
+                      nodeId: targetNodeId,
+                      dependent_on: dependentOnData
+                    };
+                    console.log(`📝 Final initial values for form:`, initialValues);
+                    return initialValues;
+                  })(),
                   onSubmit: (data) => {
                     // Handle form submission (same as above)
                     const nodeId = data.nodeId || targetNodeId;
@@ -2931,9 +2967,21 @@ const PipeLineChatPanel = () => {
                     
                     // Get the current node to determine the title
                     const currentNode = nodes.find(n => n.id === nodeId);
-                    const updatedTitle = currentNode?.data?.title || currentNode?.data?.label || schemaWithNodeId.title;
+                    // Preserve the existing node title/label, don't overwrite with transformation type
+                    const updatedTitle = data.name || data.title || currentNode?.data?.title || currentNode?.data?.label || `${schemaWithNodeId.title}_${nodeId.slice(-4)}`;
                     
+                    // Update local form states first
+                    const cleanFormData = { ...data };
+                    delete cleanFormData.nodeId;
+                    const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
+                    setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+                    setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
+
+                    // Mark as unsaved
+                    setUnsavedChanges();
+
                     console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
+                    console.log(`🔧 Updated form states for nodeId ${nodeId}:`, formStateData);
                     const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
                     handleFormSubmit(formSubmitData);
 
@@ -3570,198 +3618,7 @@ const PipeLineChatPanel = () => {
                               maxInputs={message.formData.dependencyData?.maxInputs || 'unlimited'}
                             />
                           </div>
-                        ) : (
-                          <div className="form-wrapper">
-                            {message.formData && message.formData.schema && message.formData.currentNodeId ? (
-                              <div className="pipeline-form-trigger">
-                                <button
-                                  onClick={() => {
-                                    // The schema should already have the correct title from getSchemaForTransformation
-                                    const transformationName = message.formData.schema?.title;
-                                    const originalName = message.formData.schema?.originalTitle || message.formData.schema?.title;
-                                    
-                                    console.log('🔧 Opening PipelineForm for transformation:');
-                                    console.log('  - Display name:', originalName);
-                                    console.log('  - Pipeline name:', transformationName);
-                                    console.log('🔧 Message formData:', message.formData);
-                                    
-                                    if (!transformationName) {
-                                      console.error('❌ No transformation name found!');
-                                      return;
-                                    }
-                                    
-                                    // Create the form data for the embedded form
-                                    const embeddedFormData = {
-                                      schema: {
-                                        title: transformationName
-                                      },
-                                      sourceColumns: message.formData.sourceColumns || [],
-                                      currentNodeId: message.formData.currentNodeId,
-                                      formId: message.formData.formId,
-                                      isEmbeddedForm: true, // Flag to indicate this is an embedded form
-                                      initialValues: {
-                                        // Add the transformation type to help PipelineForm identify the transformation
-                                        type: transformationName,
-                                        transformation: transformationName,
-                                        // Start with the original form data initial values
-                                        ...message.formData.initialValues,
-                                        // Then try to get values from formStates (saved form data)
-                                        ...formStates[message.formData.currentNodeId],
-                                        nodeId: message.formData.currentNodeId,
-                                        // Finally, try to get values from the node's transformationData if it exists
-                                        ...(() => {
-                                          const node = nodes.find(n => n.id === message.formData.currentNodeId);
-                                          return node?.data?.transformationData || {};
-                                        })()
-                                      },
-                                      onSubmit: (data) => {
-                                        const nodeId = message.formData.currentNodeId;
-                                        const formId = message.formData.formId;
-                                        const schemaTitle = message.formData.schema?.title || "Transformation";
-                                        
-                                        // Find the current node to preserve its original title if no new title is provided
-                                        const currentNode = pipelineContext.nodes.find(node => node.id === nodeId);
-                                        const currentTitle = currentNode?.data?.title || currentNode?.data?.label || schemaTitle;
-                                        
-                                        // Only update title if explicitly provided in form data, otherwise keep the current title
-                                        const updatedTitle = data.name || data.title || currentTitle;
-
-                                        // Debug: Log form submission details
-                                        console.log(`🔧 Form submission - nodeId: ${nodeId}, formId: ${formId}`);
-                                        console.log(`🔧 Schema title: ${schemaTitle}, data.name: ${data.name}, data.title: ${data.title}`);
-                                        console.log(`🔧 Current title: ${currentTitle}, Final updatedTitle: ${updatedTitle}`);
-                                        console.log(`🔧 Form data:`, data);
-
-                                        // Debug: Log current state before update
-                                        debugNodeData(pipelineContext.nodes, `📋 Nodes before form submission for ${nodeId}:`);
-
-                                        // Create a clean copy of the form data for form states
-                                        const cleanFormData = { ...data };
-                                        delete cleanFormData.nodeId;
-
-                                        // Update form states with the data including nodeId for tracking
-                                        const formStateData = { ...cleanFormData, nodeId: nodeId, name: updatedTitle };
-                                        setFormStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
-                                        setformsHanStates(prevStates => ({ ...prevStates, [nodeId]: formStateData }));
-
-                                        // Mark as unsaved
-                                        setUnsavedChanges();
-
-                                        // Call handleFormSubmit to ensure all state is updated properly
-                                        console.log(`🔧 Calling handleFormSubmit with:`, { ...data, nodeId: nodeId, name: updatedTitle });
-                                        const formSubmitData = { ...data, nodeId: nodeId, name: updatedTitle };
-                                        handleFormSubmit(formSubmitData);
-
-                                        // Add a message to show the form was submitted and remove the embedded form
-                                        const newMessages = [
-                                          { role: 'user' as const, content: `Configured ${message.formData?.schema?.title} transformation`, id: generateMessageId() },
-                                          {
-                                            role: 'assistant' as const,
-                                            content:"",
-                                            id: generateMessageId(),
-                                            // Include form data to save transformation configuration in chat history
-                                            formData: {
-                                              schema: message.formData.schema,
-                                              sourceColumns: message.formData.sourceColumns || [],
-                                              currentNodeId: message.formData.currentNodeId,
-                                              isTarget: message.formData.isTarget || false,
-                                              isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
-                                              initialValues: {
-                                                ...message.formData.initialValues,
-                                                ...data,
-                                                nodeId: nodeId,
-                                                name: updatedTitle
-                                              }
-                                            }
-                                          }
-                                        ];
-
-                                        // SINGLE STATE UPDATE: Remove embedded form message and add new messages
-                                        setMessages(prevMessages => {
-                                          // Recreate cleanFormData within this scope
-                                          const cleanFormData = { ...data };
-                                          delete cleanFormData.nodeId;
-
-                                          // Special handling for different transformation types
-                                          const currentNode = nodes.find(n => n.id === nodeId);
-                                          if (currentNode && currentNode.data.label === 'Filter') {
-                                            if (data.condition !== undefined) {
-                                              cleanFormData.condition = data.condition;
-                                            }
-                                          }
-
-                                          // STEP 1: Remove the embedded form message and update the original message's formData.initialValues using formId
-                                          const messagesWithoutEmbeddedForm = prevMessages.filter(msg => 
-                                            !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === formId)
-                                          ).map(msg => {
-                                            // Update the original form message with the new values
-                                            if (msg.formData && msg.formData.formId === formId && !msg.formData.isEmbeddedForm) {
-                                              console.log(`✅ Updating form data for formId: ${formId}, nodeId: ${nodeId}`);
-                                              console.log(`📝 Previous values:`, msg.formData.initialValues);
-                                              console.log(`📝 New values:`, cleanFormData);
-                                              const updatedInitialValues = {
-                                                ...msg.formData.initialValues,
-                                                ...cleanFormData
-                                              };
-                                              return {
-                                                ...msg,
-                                                formData: {
-                                                  ...msg.formData,
-                                                  initialValues: updatedInitialValues
-                                                }
-                                              };
-                                            }
-                                            return msg;
-                                          });
-
-                                          // STEP 2: Add the new messages
-                                          const finalMessages = [...messagesWithoutEmbeddedForm, ...newMessages];
-
-                                          // STEP 3: Save chat history batch with the correctly updated messages
-                                          setTimeout(() => {
-                                            saveChatHistoryBatchWithMessages(finalMessages);
-                                          }, 500);
-
-                                          // Show transformations dropdown after transformation configuration
-                                          setTimeout(() => {
-                                            handleShowTransformations();
-                                          }, 800);
-
-                                          return finalMessages;
-                                        });
-                                      },
-                                      onClose: () => {
-                                        // Remove the embedded form message when closed
-                                        setMessages(prevMessages => 
-                                          prevMessages.filter(msg => 
-                                            !(msg.formData && msg.formData.isEmbeddedForm && msg.formData.formId === message.formData.formId)
-                                          )
-                                        );
-                                      }
-                                    };
-
-                                    // Add the embedded form as a new message
-                                    const embeddedFormMessage: ChatMessage = {
-                                      id: generateMessageId(),
-                                      role: 'assistant',
-                                      content: '',
-                                      formData: embeddedFormData
-                                    };
-
-                                    setMessages(prevMessages => [...prevMessages, embeddedFormMessage]);
-                                  }}
-                                  className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
-                                >
-                                  Configure {message.formData.schema?.originalTitle || message.formData.schema?.title || message.formData.schema?.module_name || 'Transformation'}
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="p-4 text-center text-gray-500">
-                                Form data is not available. Please refresh the page or start a new configuration.
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -3776,6 +3633,7 @@ const PipeLineChatPanel = () => {
                         <div className="flex-1 rounded-lg px-3 py-2 shadow-sm bg-gray-50 border">
                          
                           <PipelineForm
+                            key={`pipeline-form-${message.formData.currentNodeId}-${message.formData.formId}`}
                             isOpen={false}
                             onClose={message.formData.onClose}
                             selectedSchema={message.formData.schema}
@@ -3836,7 +3694,12 @@ const PipeLineChatPanel = () => {
                           <SelectValue placeholder="Select a transformation" />
                         </SelectTrigger>
                         <SelectContent style={{zIndex:9999}}>
-                          {nodeDisplayData.nodes.map((node) => (
+                          {nodeDisplayData.nodes
+                            .filter((node, index, self) => 
+                              // Remove duplicates by keeping only the first occurrence of each module_name
+                              index === self.findIndex(n => n.ui_properties.module_name === node.ui_properties.module_name)
+                            )
+                            .map((node) => (
                             <SelectItem 
                               key={node.ui_properties.module_name} 
                               value={node.ui_properties.module_name}

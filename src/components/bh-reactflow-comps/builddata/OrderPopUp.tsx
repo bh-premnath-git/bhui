@@ -23,6 +23,7 @@ import { AppDispatch } from "@/store";
 import { apiService } from '@/lib/api/api-service';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { ReaderDataProvider, useReaderData } from '@/context/ReaderDataContext';
+import { setIsRightPanelOpen } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
  
 // Internal component that uses the context
 function OrderPopUpContent({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
@@ -78,7 +79,7 @@ console.log('🔧 OrderPopUp: Initializing OrderPopUpContent with source:', sour
 
   // Add a new useEffect to watch for changes in connectionConfigList, source, and dataSources
   useEffect(() => {
-    
+    dispatch(setIsRightPanelOpen(false))
     if (connectionConfigList?.length > 0 && source) {
       initialSource();
     }

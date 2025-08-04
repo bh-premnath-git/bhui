@@ -843,9 +843,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [onEdgesChange, dispatch, updateAllNodeDependencies]);
 
     const handleFormSubmit = useCallback((data: any) => {
+        console.log('🔧 DataPipelineContext - handleFormSubmit called with data:', data);
+        console.log('🔧 DataPipelineContext - selectedSchema:', selectedSchema);
         
-        // Get the nodeId from either selectedSchema or data.nodeId
-        const nodeId = selectedSchema?.nodeId || data.nodeId;
+        // Get the nodeId from data.nodeId first (more reliable), then fall back to selectedSchema
+        const nodeId = data.nodeId || selectedSchema?.nodeId;
+        console.log('🔧 DataPipelineContext - Using nodeId:', nodeId);
         
         if (nodeId) {
             // Update form states first
@@ -862,8 +865,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             
             // Find the node to update
             const nodeIndex = currentNodes.findIndex(node => node.id === nodeId);
+            console.log('🔧 DataPipelineContext - Found node at index:', nodeIndex, 'for nodeId:', nodeId);
             
             if (nodeIndex !== -1) {
+                const currentNode = currentNodes[nodeIndex];
+                console.log('🔧 DataPipelineContext - Updating node:', currentNode.data.title || currentNode.data.label, 'with nodeId:', nodeId);
                 // Special handling for different node types
                 let updatedTitle;
                 let transformationData = {
@@ -1079,9 +1085,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             updateAllNodeDependencies();
         }, 0);
         
-        // Open the node form for the target node
-        handleNodeForm(connection.target!);
-    }, [checkConnectionExists, checkForCircularDependency, handleNodeForm, setEdges, updateAllNodeDependencies]);
+        // Note: Removed automatic form opening - forms should only open when user clicks on nodes
+    }, [checkConnectionExists, checkForCircularDependency, setEdges, updateAllNodeDependencies]);
 
 
     const handleDebugToggle = useCallback((nodeId: string, title: string) => {

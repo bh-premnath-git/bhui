@@ -227,6 +227,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             
             // Initialize configuration form with existing values or default values
             const formInitialValues = initialValues || {};
+            console.log(`🔧 PipelineForm (${currentNodeId}) initializing with values:`, formInitialValues);
             configurationForm.reset(formInitialValues);
             setIsFormInitialized(true);
             setHasUserInteracted(false);
@@ -265,7 +266,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       setIsFormInitialized(false);
       setHasUserInteracted(false);
     }
-  }, [isOpen, inline, shouldShowConfiguration, selectedSchema?.title, initialValues?.type, pipelineEngineType, availableTransformations.length]);
+  }, [isOpen, inline, shouldShowConfiguration, selectedSchema?.title, initialValues?.type, pipelineEngineType, currentNodeId]);
 
   // Handle changes in available transformations (when engine type changes)
   useEffect(() => {
@@ -280,7 +281,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         setTransformationSchema(enhancedSchema);
       }
     }
-  }, [availableTransformations, isOpen, inline, shouldShowConfiguration, hasUserInteracted, selectedSchema, initialValues, selectedTransformation]);
+  }, [availableTransformations, isOpen, inline, shouldShowConfiguration, hasUserInteracted, selectedSchema?.title, initialValues?.type, selectedTransformation, currentNodeId]);
 
   // Update engine type when form changes
   useEffect(() => {
@@ -1015,6 +1016,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           ...cleanedData,
         };
         
+        console.log(`🔧 PipelineForm (${currentNodeId}) submitting update:`, updatedData);
         onSubmit(updatedData);
         toast.success('Node updated successfully');
         onClose();

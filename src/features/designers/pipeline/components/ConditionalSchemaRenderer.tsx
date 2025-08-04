@@ -113,7 +113,7 @@ export const ConditionalSchemaRenderer: React.FC<ConditionalSchemaRendererProps>
     });
   });
 
-  const renderField = (key: string, field: SchemaProperty) => {
+  const renderField = (key: string, field: any) => {
     const fieldKey = parentKey ? `${parentKey}.${key}` : key;
     const isRequired = activeRequired.includes(key);
     const fieldTitle = field.title || formatFieldTitle(key);
@@ -294,7 +294,7 @@ export const ConditionalSchemaDebugger: React.FC<{ schema: SchemaProperty }> = (
         <strong>Conditional Fields:</strong>
         {conditionalFields.map((cf, index) => (
           <div key={index} className="ml-2">
-            {cf.conditions.map(c => {
+            {cf.conditions.map((c:any) => {
               const operator = c.operator === 'in' ? 'in' : '===';
               const value = Array.isArray(c.value) ? `[${c.value.join(', ')}]` : c.value;
               const negate = c.negate ? 'NOT ' : '';

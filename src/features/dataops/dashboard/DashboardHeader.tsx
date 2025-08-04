@@ -1,107 +1,66 @@
-import { useCallback, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import {
-  Filter,
-  XCircle
-} from "lucide-react";
-import { useDataOps } from "@/context/dataops/DataOpsContext";
-import { ExecutedQueryItem } from "@/types/dataops/dataops-dash";
-
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Lock, Unlock, RefreshCw, Star, Link, MoreHorizontal } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { toggleGridLock, refreshWidget } from '@/store/slices/dataops/dashboardStore'
 export const DashboardHeader = () => {
-  const { state, dispatch } = useDataOps();
-
-  const projectNames = useMemo(() => {
-    const projectSet = new Set<string>();
-    state.widgets.forEach(widget => {
-      if (Array.isArray(widget.executed_query)) {
-        (widget.executed_query as ExecutedQueryItem[]).forEach(item => {
-          projectSet.add(item.project_name);
-        });
-      }
+  const { widgets, isGridLocked } = useAppSelector((state) => state.dashboard);
+  const dispatch = useAppDispatch();
+  const handleRefreshAll = () => {
+    Object.keys(widgets).forEach(widgetId => {
+      dispatch(refreshWidget(widgetId));
     });
-    return Array.from(projectSet).sort();
-  }, [state.widgets]);
-
-  const handleProjectChange = useCallback((value: string) => {
-    dispatch({
-      type: "SET_PROJECT_FILTER",
-      payload: value === "all" ? null : value
-    });
-  }, [dispatch]);
-
-  const handleTimeRangeChange = useCallback((value: string) => {
-    dispatch({
-      type: "SET_TIME_RANGE_FILTER",
-      payload: value === "all" ? null : value
-    });
-  }, [dispatch]);
-
-  const handleResetFilters = useCallback(() => {
-    dispatch({ type: "RESET_FILTERS" });
-  }, [dispatch]);
+  };
+  const handleToggleLock = () => {
+    dispatch(toggleGridLock());
+  };
 
   return (
-    <div className="bg-background sticky top-0 z-10 border-b border-border/40 pl-5 pb-2">
-      <div className="flex flex-wrap gap-4 items-center">
-        <div className="flex items-center space-x-2 min-w-[200px]">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={state.filters.projectName || "all"}
-            onValueChange={handleProjectChange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by project" />
-            </SelectTrigger>
-            <SelectContent >
-              <SelectItem key="project-all" value="all">All Projects</SelectItem>
-              {projectNames.map((project, index) => (
-                <SelectItem key={project + index} value={project}>
-                  {project}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="flex items-center justify-between p-2 bg-widget-bg border-b border-widget-border">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="text-xs">
+            {Object.keys(widgets).length} widgets
+          </Badge>
         </div>
+      </div>
 
-        <div className="flex items-center space-x-2 min-w-[200px]">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={state.filters.timeRange || "all"}
-            onValueChange={handleTimeRangeChange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Time period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem key="time-all" value="all">All Time</SelectItem>
-              <SelectItem key="time-today" value="today">Today</SelectItem>
-              <SelectItem key="time-yesterday" value="yesterday">Yesterday</SelectItem>
-              <SelectItem key="time-7days" value="7days">Last 7 Days</SelectItem>
-              <SelectItem key="time-30days" value="30days">Last 30 Days</SelectItem>
-              <SelectItem key="time-90days" value="90days">Last 90 Days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {(state.filters.projectName || state.filters.timeRange) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleResetFilters}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <XCircle className="h-4 w-4 mr-2" />
-            Clear Filters
-          </Button>
-        )}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Star className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Link className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefreshAll}
+          className="h-8 px-3"
+        >
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Refresh
+        </Button>
+        <Button
+          variant={isGridLocked ? "default" : "ghost"}
+          size="sm"
+          onClick={handleToggleLock}
+          className="h-8 px-3"
+        >
+          {isGridLocked ? (
+            <>
+              <Lock className="h-4 w-4 mr-1" />
+              Locked
+            </>
+          ) : (
+            <>
+              <Unlock className="h-4 w-4 mr-1" />
+              Unlocked
+            </>
+          )}
+        </Button>
       </div>
     </div>
-  );
-};
+  )
+}
+

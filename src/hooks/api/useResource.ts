@@ -47,13 +47,16 @@ export function useResource<T>(resource: string, baseUrl: string, usePrefix: boo
    * ================  GET ONE  ================
    */
   const getOne = <TQueryFnData = T, TData = TQueryFnData>(options?: {
+    id?: string | number;
     url?: string;
     params?: Record<string, any>;
     query?: string;
     queryOptions?: Omit<UseQueryOptions<TQueryFnData, Error, TData>, 'queryKey' | 'queryFn'>;
   }) => {
-    const { url, params, query, queryOptions } = options || {};
-    const queryKey = [resource, 'one', JSON.stringify({ params, query })];
+    const {id,  url, params, query, queryOptions } = options || {};
+    const queryKey = [resource, 'one', id, JSON.stringify({ params, query })]
+      .filter(item => item !== undefined && item !== null)
+      .map(String);
     const queryConfig: ApiConfig = {
       ...baseConfig,
       url: url || `/${resource}`,

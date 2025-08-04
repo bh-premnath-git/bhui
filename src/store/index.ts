@@ -15,6 +15,7 @@ import connectionReducer from './slices/admin/connectionSlice'
 import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineSlice'
 import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
 import promptsReducer from './slices/admin/promptsSlice';
+import dashboardReducer from './slices/dataops/dashboardStore';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     projects: projectsReducer,
     environments: environmentsReducer,
     connections: connectionReducer,
+    dashboard: dashboardReducer,
     datasource: dataSourceReducer,
     pipeline: pipelineReducer,
     flow: flowReducer,

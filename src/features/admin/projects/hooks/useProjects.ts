@@ -70,19 +70,13 @@ export const useProjects = (options: UseProjectsOptions = { shouldFetch: true })
     isLoading: isProjectLoading, 
     isFetching: isProjectFetching, 
     isError: isProjectError 
-  } = options.projectId ? getProject({
+  } = getProject({
     url: `/bh_project/${options.projectId}/`,
     queryOptions: {
       enabled: !!options.projectId,
       retry: 2
     }
-    
-  }) : {
-    data: undefined,
-    isLoading: false,
-    isFetching: false,
-    isError: false
-  };
+  });
 
   // Create project mutation
   const createProjectMutation = createProject({

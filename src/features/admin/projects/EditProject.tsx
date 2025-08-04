@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { RootState } from "@/store/"
 import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectFormData, transformFormToApiData } from './components/projectFormSchema';
@@ -10,14 +9,14 @@ import { ProjectPageLayout } from './components/ProjectPageLayout';
 import { encrypt_string } from '@/lib/encryption';
 import { Project, ProjectGitValidation } from '@/types/admin/project';
 import { setSelectedProject } from '@/store/slices/admin/projectsSlice';
+import { GithubProvidersResponse } from '@/store/slices/globalGitSlice';
 
-const transformProjectToFormData = (project: Project): Partial<ProjectFormData> => {
+const transformProjectToFormData = (project: Project, githubProviders: GithubProvidersResponse): Partial<ProjectFormData> => {
   let parsedTags = [];
-  
   if (project.tags?.tagList && project.tags.tagList !== '*-') {
     if (Array.isArray(project.tags.tagList)) {
       parsedTags = project.tags.tagList;
-    } 
+    }
     else if (typeof project.tags.tagList === 'string' && project.tags.tagList.trim() !== '') {
       try {
         const parsed = JSON.parse(project.tags.tagList);
@@ -28,15 +27,18 @@ const transformProjectToFormData = (project: Project): Partial<ProjectFormData> 
     }
   }
 
+  // EditProject.tsx
+  const foundProvider = githubProviders.codes_dtl.find((provider: any) => provider.id === project.bh_github_provider);
+  const projectProvider = foundProvider ? foundProvider.dtl_desc.toLowerCase() : '';
   const status = project.status === 'inactive' ? 'inactive' : 'active';
 
   return {
     bh_project_name: project.bh_project_name,
-    bh_github_provider: project.bh_github_provider?.toString() || '',
-    bh_github_username: project.bh_github_username || '',
-    bh_github_email: project.bh_github_email || '',
-    bh_default_branch: project.bh_default_branch || '',
-    bh_github_url: project.bh_github_url || '',
+    bh_github_provider: projectProvider,
+    bh_github_username: project[projectProvider].bh_github_username || '',
+    bh_github_email: project[projectProvider].created_by || '',
+    bh_default_branch: project[projectProvider].bh_default_branch || '',
+    bh_github_url: project[projectProvider].bh_github_url || '',
     bh_github_token_url: '', // Always return empty string for security
     status,
     tags: parsedTags
@@ -47,14 +49,15 @@ export function EditProject() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { id } = useParams();
-  const { selectedProject } = useAppSelector((state: RootState) => state.projects);
+  const { selectedProject } = useAppSelector((state) => state.projects);
+  const { githubProviders } = useAppSelector((state) => state.global);
   const {
     handleUpdateProject,
     handleValidateToken,
     project: interProject,
     isProjectLoading,
     isProjectError
-  } = useProjects({ 
+  } = useProjects({
     projectId: selectedProject?.bh_project_id ? undefined : id, // Only fetch if we don't have selectedProject
   });
 
@@ -102,7 +105,7 @@ export function EditProject() {
     try {
       setIsSubmitting(true);
       setError(null);
-      
+
       if (id) {
         // Only require token validation if the token field was filled
         if (data.bh_github_token_url && !validatedToken) {
@@ -111,7 +114,7 @@ export function EditProject() {
         }
 
         const apiData = transformFormToApiData(data);
-        
+
         // Only include token-related data if a new token was provided and validated
         if (validatedToken) {
           await handleUpdateProject(id, {
@@ -123,7 +126,7 @@ export function EditProject() {
           // Don't include token-related fields if no new token was provided
           await handleUpdateProject(id, apiData);
         }
-        
+
         navigate(ROUTES.ADMIN.PROJECTS.INDEX);
       }
     } catch (error) {
@@ -133,23 +136,16 @@ export function EditProject() {
       setIsSubmitting(false);
     }
   };
-
-  // Only show loading if we're actually fetching (no selectedProject)
   if (!selectedProject && isProjectLoading) {
     return <div className="p-6">Loading project...</div>;
   }
-
-  // Only show error if we tried to fetch and failed (no selectedProject)
   if (!selectedProject && isProjectError) {
     return <div className="p-6">Project not found</div>;
   }
-
   if (!project) {
     return <div className="p-6">Project not found</div>;
   }
-
-  const formInitialData = transformProjectToFormData(project);
-
+  const formInitialData = transformProjectToFormData(project, githubProviders);
   return (
     <ProjectPageLayout
       description="Modify your project settings and repository details."

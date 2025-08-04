@@ -1,3 +1,12 @@
+export const when =
+  <A, B = A>(cond: unknown, fn: (arg: A) => B) =>
+    (cond ? fn : ((v: A) => v as unknown as B));
+
+export const unless =
+  <A, B = A>(cond: unknown, fn: (arg: A) => B) =>
+    (cond ? ((v: A) => v as unknown as B) : fn);
+
+
 // More flexible compose with variadic generics
 export function compose<T>(...fns: [(arg: T) => T]): (arg: T) => T;
 export function compose<T, U>(...fns: [(arg: T) => U, (arg: U) => U]): (arg: T) => U;
@@ -63,6 +72,19 @@ export function partial<T extends readonly unknown[], U extends readonly unknown
   ...partialArgs: T
 ): (...remainingArgs: U) => R {
   return (...remainingArgs: U) => fn(...partialArgs, ...remainingArgs);
+}
+
+// -----  Compose (right‑to‑left)  -----
+export function composeOpt<T>(...fns: Array<((arg: T) => T) | null | undefined>) {
+  const safe = fns.filter(Boolean) as Array<(arg: T) => T>;
+  return (value: T) => safe.reduceRight((acc, fn) => fn(acc), value);
+}
+
+// -----  Pipe (left‑to‑right, first arg is value)  -----
+export function pipeOpt<A>(value: A): A;
+export function pipeOpt<A, B>(value: A, fn1?: (arg: A) => B | null): B | A;
+export function pipeOpt(value: any, ...fns: Array<Function | null | undefined>) {
+  return fns.filter(Boolean).reduce((acc, fn: Function) => fn(acc), value);
 }
 
 // Maybe/Option type for null safety

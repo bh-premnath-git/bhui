@@ -1,6 +1,6 @@
 import pako from "pako";
 
-export function decompressValue(base64GzipStr: string): string {
+export function decompressValue(base64GzipStr: string): any {
     try {
         // check null and not string
         if (!base64GzipStr && typeof base64GzipStr !== 'string') {

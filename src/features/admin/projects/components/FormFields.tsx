@@ -13,7 +13,6 @@ import { ValidationButton, ValidationState } from "@/components/shared/Validatio
 import { useState } from "react"
 
 export const ProjectNameField = ({ control,
-
   searchedProject,
   searchLoading,
   projectNotFound,
@@ -103,36 +102,40 @@ export function GithubFields({
         <FormField
           control={control}
           name="bh_github_provider"
-          render={({ field }) => (
-            <FormItem>
-              <RequiredFormLabel>GitHub Provider</RequiredFormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <span>Loading...</span>
-                      </div>
+          render={({ field }) => {
+            const provider = providers?.find(p => p.value === field.value || p.label === field.value);
+            const value = provider?.value;
+            return (
+              <FormItem>
+                <RequiredFormLabel>GitHub Provider</RequiredFormLabel>
+                <Select onValueChange={field.onChange} value={value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <span>Loading...</span>
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="Select Provider" />
+                      )}
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {providersError ? (
+                      <div className="p-2 text-sm text-destructive">Failed to load providers</div>
                     ) : (
-                      <SelectValue placeholder="Select Provider" />
+                      providers?.map((provider) => (
+                        <SelectItem key={provider.value} value={provider.value}>
+                          {provider.label}
+                        </SelectItem>
+                      ))
                     )}
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {providersError ? (
-                    <div className="p-2 text-sm text-destructive">Failed to load providers</div>
-                  ) : (
-                    providers?.map((provider) => (
-                      <SelectItem key={provider.value} value={provider.value}>
-                        {provider.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
         />
 
         <FormField

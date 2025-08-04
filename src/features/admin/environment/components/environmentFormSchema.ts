@@ -20,6 +20,7 @@ export const environmentFormSchema = z.object({
     airflowName: z.string().optional(),
     airflowBucketName: z.string().optional(),
     airflowBucketUrl: z.string().optional(),
+    airflowEnvType: z.string().optional(),
   }),
   tags: z
     .array(

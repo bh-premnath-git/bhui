@@ -86,7 +86,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     onSourceUpdate,
     nodeId,
     onFormDataChange
-}) => {
+}:any) => {
 
     const dispatch = useAppDispatch();
     const [formData, setFormData] = useState<FormData>(initialData || {});

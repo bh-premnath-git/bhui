@@ -53,8 +53,6 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   isLoading,
   pipelineConfig,
   proplesLogs,
-  onAlignHorizontal,
-  onAlignVertical,
   onAlignTopLeft,
 }) => {
   const [isLogsOpen, setIsLogsOpen] = useState(false)
@@ -83,6 +81,13 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   const { setBottomDrawerContent, closeBottomDrawer } = useSidebar();
   
   const handleLogsClick = async () => {
+    await handleCenterClick();
+await handleAlignTopLeftClick();
+
+    console.log("🔧 Terminal button clicked - starting logs and alignment process");
+    console.log("🔧 onAlignTopLeft prop available:", !!onAlignTopLeft);
+    console.log("🔧 Current nodes count:", nodes?.length || 0);
+    
     // Stop any existing stream
     stop()
     
@@ -106,6 +111,25 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
       />,
       // `Terminal - ${pipelineDtl?.pipeline_name || 'Pipeline'}`
     );
+    console.log("🔧 Bottom drawer content set, scheduling alignment...");
+
+    // Auto-align pipeline to top-left hierarchically when terminal opens
+    // Try multiple times with different delays to ensure it works
+    const alignmentAttempts = [300, 600, 1000];
+    
+    alignmentAttempts.forEach((delay, index) => {
+      setTimeout(() => {
+        console.log(`🔧 Alignment attempt ${index + 1} (delay: ${delay}ms)`);
+        
+        if (onAlignTopLeft) {
+          console.log("🔧 Calling onAlignTopLeft from props");
+          onAlignTopLeft();
+        } else {
+          console.log("🔧 onAlignTopLeft not available, using local hierarchical alignment");
+          handleAlignTopLeftHierarchical();
+        }
+      }, delay);
+    });
   }
 
   const handleCloseLogs = () => {
@@ -499,7 +523,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
       }
       
       // Simple grid layout starting from top-left
-      const startX = -250; // Move nodes more to the right
+      const startX = -200; // Move nodes more to the right
       const startY = -120; // Move nodes even higher up (can go negative)
       const gridSpacing = 100; // Space between nodes
       const nodesPerRow = 4; // Number of nodes per row
@@ -544,6 +568,123 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     }
   };
 
+  const handleAlignTopLeftHierarchical = () => {
+    console.log("🔧 Hierarchical Top Left alignment triggered");
+    console.log("🔧 Nodes available:", nodes?.length || 0);
+    console.log("🔧 Edges available:", edges?.length || 0);
+    
+    try {
+      if (!nodes || nodes.length === 0) {
+        console.log("🔧 No nodes to align hierarchically");
+        return;
+      }
+      
+      // Create a map of node levels (hierarchical layers)
+      const nodeLevels = new Map<string, number>();
+      const visited = new Set<string>();
+
+      // Find source nodes (nodes with no incoming edges)
+      const sourceNodes = nodes.filter(node =>
+        !edges.some(edge => edge.target === node.id)
+      );
+
+      // If no source nodes found, treat all nodes as potential sources
+      if (sourceNodes.length === 0) {
+        console.log("No clear source nodes found, using first node as source");
+        if (nodes.length > 0) {
+          sourceNodes.push(nodes[0]);
+        }
+      }
+
+      // Assign levels through BFS (Breadth-First Search)
+      const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
+      while (queue.length > 0) {
+        const { id, level } = queue.shift()!;
+        if (visited.has(id)) continue;
+
+        visited.add(id);
+        nodeLevels.set(id, level);
+
+        // Find all outgoing edges from this node
+        const outgoingEdges = edges.filter(edge => edge.source === id);
+        outgoingEdges.forEach(edge => {
+          if (!visited.has(edge.target)) {
+            queue.push({ id: edge.target, level: level + 1 });
+          }
+        });
+      }
+
+      // Handle any unvisited nodes (disconnected components)
+      nodes.forEach(node => {
+        if (!visited.has(node.id)) {
+          nodeLevels.set(node.id, 0);
+        }
+      });
+
+      // Group nodes by their hierarchical levels
+      const nodesByLevel = new Map<number, string[]>();
+      nodeLevels.forEach((level, nodeId) => {
+        if (!nodesByLevel.has(level)) {
+          nodesByLevel.set(level, []);
+        }
+        nodesByLevel.get(level)!.push(nodeId);
+      });
+
+      // Calculate positions for hierarchical layout
+      const startX = 50; // Start from left edge
+      const startY = 50; // Start from top edge  
+      const levelWidth = 250; // Horizontal spacing between levels
+      const nodeSpacing = 120; // Vertical spacing between nodes in the same level
+
+      // Calculate new positions
+      const newNodes = nodes.map(node => {
+        const level = nodeLevels.get(node.id) || 0;
+        const nodesInLevel = nodesByLevel.get(level) || [];
+        const indexInLevel = nodesInLevel.indexOf(node.id);
+
+        return {
+          ...node,
+          position: {
+            x: startX + (level * levelWidth),
+            y: startY + (indexInLevel * nodeSpacing)
+          }
+        };
+      });
+
+      console.log("🔧 Calculated new node positions:", newNodes.map(n => ({ id: n.id, position: n.position })));
+      
+      // Update nodes with new positions
+      updateSetNode(newNodes, edges);
+      console.log("🔧 Nodes updated with new positions");
+
+      // Center the view after positioning
+      setTimeout(() => {
+        const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
+        const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 0);
+        
+        if (reactFlowInstance && reactFlowInstance.fitView) {
+          // Use fitView to show all nodes properly
+          reactFlowInstance.fitView({ 
+            padding: 0.1, 
+            duration: 800,
+            minZoom: 0.3,
+            maxZoom: 1.0
+          });
+        } else {
+          // Fallback: try to click the fitView button directly
+          const fitViewButton = document.querySelector('.react-flow__controls-fitview');
+          if (fitViewButton instanceof HTMLElement) {
+            console.log("Clicking fitView button after hierarchical alignment");
+            fitViewButton.click();
+          }
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error in hierarchical top left alignment:", error);
+    }
+  };
+
   const actions = [
     { key: 'add-node', icon: MdAdd, handler: handleAddNodeClick },
     { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
@@ -551,7 +692,6 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
     { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: handleAlignHorizontalClick },
     { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: handleAlignVerticalClick },
-    // { key: 'align-top-left', icon: MdVerticalAlignTop, handler: handleAlignTopLeftClick },
     // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
     // { key: 'stop', icon: MdOutlineStop, handler: onStop },
     // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },

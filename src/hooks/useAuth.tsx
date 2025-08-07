@@ -17,7 +17,6 @@ type AuthUtils = {
  */
 export function useAuth(): AuthUtils {
   const { initialized, authenticated, token, login, logout, keycloak } = useKeycloak();
-
   // Get auth headers for API calls
   const getAuthHeaders = () => {
     if (token) {
@@ -33,7 +32,7 @@ export function useAuth(): AuthUtils {
         username: keycloak.tokenParsed.preferred_username,
         email: keycloak.tokenParsed.email,
         name: keycloak.tokenParsed.name,
-        roles: keycloak.tokenParsed.realm_access?.roles || [],
+        roles: keycloak.tokenParsed.bh_roles?.roles || [],
       };
     }
     return null;

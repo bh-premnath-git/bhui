@@ -35,6 +35,7 @@ export function Sidebar() {
   const navigation = useNavigation();
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
+  console.log("userInfo : ", userInfo);
   const location = useLocation();
   const queryClient = useQueryClient();
   const { navigationItems: dynamicBaseItems = [], loading: navLoading } = navigation;

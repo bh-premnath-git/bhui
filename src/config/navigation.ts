@@ -13,11 +13,10 @@ import {
   Settings2,
   Cable,
   BarChart,
-  NotebookText,
   BookMarked,
-  FileText,
   Server,
-  ShieldCheck
+  ShieldCheck,
+  Keyboard
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -144,7 +143,13 @@ export const navigationItems: NavItem[] = [
         icon: ShieldCheck,
         path: ROUTES.ADMIN.PII.INDEX,
         parent: ROUTES.ADMIN.INDEX
-      }
+      },
+      {
+       title: "Manage LLM",
+       icon: Keyboard,
+       path: ROUTES.ADMIN.LLM.INDEX,
+       parent: ROUTES.ADMIN.INDEX
+     }
     ],
   },
 ];

@@ -16,6 +16,7 @@ import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineS
 import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
 import promptsReducer from './slices/admin/promptsSlice';
 import dashboardReducer from './slices/dataops/dashboardStore';
+import llmReducer from './slices/admin/llmSlice';
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +37,7 @@ export const store = configureStore({
     buildPipeline: buildPipelineReducer,
     cluster: clusterReducer,
     prompts: promptsReducer,
+    llms: llmReducer,
   },
 });
 

@@ -52,7 +52,7 @@ export function Sidebar() {
   const [editingReportName, setEditingReportName] = useState("");
   const [xplorerSearchTerm, setXplorerSearchTerm] = useState("");
   const [isXplorerOpen, setIsXplorerOpen] = useState(true);
-  // Check if user has admin role
+ 
   const showAdminNavItems = shouldShowAdminNavItems(userInfo?.roles || []);
   
   const navItems = useMemo(() => {

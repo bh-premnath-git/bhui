@@ -58,7 +58,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
 }: UserFormProps<T>) {
   const isEdit = mode === "edit";
   const schema = isEdit ? userEditSchema : userCreateSchema;
-  
+
   // Helper function to get default values with proper typing
   const getDefaultValues = <T extends AnyUserFormValues>(_: boolean, initialData: Partial<T>): T => {
     // Just use provided initial data; leave other fields undefined so they show up empty in the form.
@@ -67,7 +67,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
   };
 
   const defaultValues = getDefaultValues(isEdit, initialData);
-  
+
   const form = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
@@ -77,7 +77,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
 
   // Watch tenant admin status to conditionally fetch all roles
   const isTenantAdmin = Boolean(form.watch('is_tenant_admin' as Path<T>));
-  
+
   // Fetch all roles when tenant admin is enabled
   const { roles: allRoles = [], isLoading: isLoadingRoles } = useRoleMatrixQuery({
     fetchAll: isTenantAdmin,
@@ -88,7 +88,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
     try {
       setFormState("submitting");
       const payload: any = { ...data };
-      
+
       if (payload.is_tenant_admin) {
         // For tenant admin, include ALL role matrix IDs
         if (allRoles.length > 0) {
@@ -99,7 +99,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
         delete payload.project_assignments;
         delete payload.environment_assignments;
       }
-      
+
       await onSubmit(payload as T);
       setFormState("success");
     } catch (err) {
@@ -117,7 +117,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
     <div className="w-full">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          
+
           {/* User Information Section */}
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader>
@@ -135,9 +135,9 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter first name..." 
-                          {...field} 
+                        <Input
+                          placeholder="Enter first name..."
+                          {...field}
                           value={field.value as string}
                           disabled={isSubmitting}
                         />
@@ -146,7 +146,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name={"last_name" as Path<T>}
@@ -154,9 +154,9 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter last name..." 
-                          {...field} 
+                        <Input
+                          placeholder="Enter last name..."
+                          {...field}
                           value={field.value as string}
                           disabled={isSubmitting}
                         />
@@ -174,10 +174,10 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         type="email"
-                        placeholder="Enter email address..." 
-                        {...field} 
+                        placeholder="Enter email address..."
+                        {...field}
                         value={field.value as string}
                         disabled={isSubmitting || isEdit}
                       />
@@ -189,15 +189,16 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
             </CardContent>
           </Card>
 
-          {/* Admin Role Section */}
+          {/* Role Assignment Section */}
           <Card className="border-l-4 border-l-orange-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-orange-500" />
-                Admin Role
+                Role Assignment
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Tenant Admin Toggle */}
               <FormField
                 control={form.control}
                 name={"is_tenant_admin" as Path<T>}
@@ -221,8 +222,10 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                   </FormItem>
                 )}
               />
-              {isTenantAdmin && (
-                <div className="space-y-2 mt-4">
+
+              {/* Role Assignment Status */}
+              {isTenantAdmin ? (
+                <div className="space-y-2">
                   <Badge variant="destructive" className="w-fit">
                     Admin Access Enabled
                   </Badge>
@@ -237,63 +240,69 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                     </p>
                   ) : null}
                 </div>
+              ) : (
+                <div className="p-4 border rounded-lg bg-muted/20">
+                  <p className="text-sm text-muted-foreground">
+                    User will be assigned specific roles based on resource assignments below
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Role Assignments Section */}
+          {/* Resource Section */}
           {!isTenantAdmin && (
             <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="role-assignments" className="border rounded-lg border-l-4 border-l-green-500">
-              <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-green-500" />
-                  <div className="text-left">
-                    <h3 className="font-semibold">Role Assignments</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Assign user roles for projects and environments
-                    </p>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-6">
-                <div className="space-y-6">
-                  
-                  {/* Project-Level Access */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">📁</span>
-                      <h4 className="font-medium">Project Access</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        Full project access
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Grant access to entire projects (includes all environments)
-                    </p>
-                    <ProjectRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
-                  </div>
-
-                  <Separator />
-
-                  {/* Environment-Specific Access */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🌍</span>
-                      <h4 className="font-medium">Environment-Specific Access</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Assign roles for specific environments
-                    </p>
-                    <div className="border rounded-lg p-4">
-                      <EnvironmentRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
+              <AccordionItem value="resource-assignments" className="border rounded-lg border-l-4 border-l-green-500">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-green-500" />
+                    <div className="text-left">
+                      <h3 className="font-semibold">Resource Assignments</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Assign user access to specific projects and environments
+                      </p>
                     </div>
                   </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <div className="space-y-6">
 
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                    {/* Project-Level Access */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📁</span>
+                        <h4 className="font-medium">Project Access</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          Full project access
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Grant access to entire projects (includes all environments)
+                      </p>
+                      <ProjectRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
+                    </div>
+
+                    <Separator />
+
+                    {/* Environment-Specific Access */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🌍</span>
+                        <h4 className="font-medium">Environment-Specific Access</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Assign roles for specific environments
+                      </p>
+                      <div className="border rounded-lg p-4">
+                        <EnvironmentRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
+                      </div>
+                    </div>
+
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           )}
 
           <Separator />
@@ -320,7 +329,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                   {isEdit ? (
                     <>
                       <Settings className="mr-2 h-4 w-4" />
-                      Update User
+                      User List
                     </>
                   ) : (
                     <>
@@ -331,7 +340,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                 </>
               )}
             </Button>
-            
+
             {error && (
               <Alert variant="destructive" className="max-w-md">
                 <AlertCircle className="h-4 w-4" />

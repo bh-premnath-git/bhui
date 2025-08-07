@@ -60,6 +60,11 @@ export const ROUTES = {
     PII: {
       INDEX: '/admin-console/pii',
       MANAGE: '/admin-console/pii/manage'
-    }
+    },
+    LLM: {
+      INDEX: '/admin-console/llm',
+       ADD: '/admin-console/llm/add',
+      EDIT: (id: string) => `/admin-console/llm/edit/${id}`
+    },
   }
 } as const;

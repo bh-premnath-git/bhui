@@ -7,17 +7,49 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface TableViewProps {
-  data: Record<string, any>[];
+  data: Record<string, any>[] | null | undefined;
 }
 
 export const TableView = ({ data }: TableViewProps) => {
-  if (!data || data.length === 0) {
+  // Handle null or undefined data
+  if (!data) {
     return <div className="text-center text-sm text-muted-foreground p-4">No data to display.</div>;
   }
 
-  const columns = Object.keys(data[0]);
+  // Handle error cases - check if data contains error objects
+  if (Array.isArray(data) && data.length > 0 && data[0]?.error) {
+    return (
+      <Alert variant="destructive" className="m-2">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Query Error</AlertTitle>
+        <AlertDescription className="text-xs whitespace-pre-wrap max-h-32 overflow-auto">
+          {data[0].error}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Handle empty array
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-sm text-muted-foreground p-4">No data to display.</div>;
+  }
+
+  // Handle case where first row doesn't have valid columns
+  const firstRow = data[0];
+  if (!firstRow || typeof firstRow !== 'object') {
+    return <div className="text-center text-sm text-muted-foreground p-4">Invalid data format.</div>;
+  }
+
+  const columns = Object.keys(firstRow);
+  
+  // Handle case where there are no columns
+  if (columns.length === 0) {
+    return <div className="text-center text-sm text-muted-foreground p-4">No columns to display.</div>;
+  }
 
   return (
     <ScrollArea className="h-full w-full">
@@ -36,7 +68,7 @@ export const TableView = ({ data }: TableViewProps) => {
             <TableRow key={rowIndex}>
               {columns.map((column, cellIndex) => (
                 <TableCell key={cellIndex} className="text-xs py-1 px-3">
-                  {row[column]}
+                  {row[column] ?? ''}
                 </TableCell>
               ))}
             </TableRow>

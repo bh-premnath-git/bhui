@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     /*   headers: {
         'Content-Security-Policy': "frame-ancestors 'self' https://54.82.150.27:8443/; default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';"
       } */
-      allowedHosts: ['ui.nprd.bighammer.ai', 'localhost'],
+      allowedHosts: [...(process.env.VITE_ALLOWED_HOSTS?.split(',') || [])],
       proxy: {
         '/api/v1/': {
           target: catalogRemoteApiUrl,

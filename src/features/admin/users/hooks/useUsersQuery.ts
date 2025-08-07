@@ -36,7 +36,7 @@ export const useUsersQuery = (options: UseUsersQueryOptions = { shouldFetch: tru
 
   // List users with pagination - only when not fetching a specific user
   const { data: usersResponse, isLoading, isFetching, isError } = getAllUsers<ApiUsersResponse>({
-    url: '/bh-user/get-tenant-users/',
+    url: '/bh-user/get-users/',
     queryOptions: {
       enabled: options.shouldFetch && !options.email, // Don't fetch list when fetching single user
       retry: 2
@@ -51,7 +51,7 @@ export const useUsersQuery = (options: UseUsersQueryOptions = { shouldFetch: tru
     isFetching: isUserFetching,
     isError: isUserError
   } = options.email ? getUser({
-    url: `/bh-user/get-tenant-user-details/${options.email}`,
+    url: `/bh-user/get-user-details/${options.email}`,
     queryOptions: {
       enabled: !!options.email,
       retry: 2

@@ -1,9 +1,9 @@
 import { createPortal } from 'react-dom';
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
-import { 
-  setChartType, 
-  setColorScheme, 
-  toggleChartTypePicker, 
+import {
+  setChartType,
+  setColorScheme,
+  toggleChartTypePicker,
   toggleColorSchemePicker,
   flipWidget,
   toggleMaximize,
@@ -41,10 +41,16 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
   const widgetState = useAppSelector((state) => state.dashboard.widgets[widgetId]);
   const plotlyData = decompressValue(data?.plotly_data);
   const { isFlipped, isMaximized, isChartTypePickerOpen, isColorSchemePickerOpen, chartType, color } = widgetState;
-
+  
+  // Check for errors in executed_query
+  const hasExecutedQueryError = data?.executed_query && 
+    Array.isArray(data.executed_query) && 
+    data.executed_query.length > 0 && 
+    data.executed_query[0]?.error;
+  
   const headerProps = {
     widgetId,
-    title: plotlyData?.layout.title.text as string || title,
+    title: plotlyData?.layout?.title?.text as string || title,
     isFlipped,
     isMaximized,
     isRefreshing: isLoading || isFetching,
@@ -75,11 +81,15 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
   }
 
   if (!widgetState || isError || !data || !plotlyData) {
+    const errorMessage = hasExecutedQueryError 
+      ? `Query Error: ${data.executed_query[0].error.split('\n')[0]}` 
+      : 'Failed to load widget data.';
+    
     return (
       <Alert variant="destructive">
         <Terminal className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
-        <AlertDescription>Failed to load widget data.</AlertDescription>
+        <AlertDescription>{errorMessage}</AlertDescription>
       </Alert>
     );
   }

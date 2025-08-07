@@ -33,6 +33,7 @@ export function useAuth(): AuthUtils {
         email: keycloak.tokenParsed.email,
         name: keycloak.tokenParsed.name,
         roles: keycloak.tokenParsed.bh_roles?.roles || [],
+        resources: keycloak.tokenParsed.bh_resources?.resources || [],
       };
     }
     return null;

@@ -35,7 +35,6 @@ export function Sidebar() {
   const navigation = useNavigation();
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
-  console.log("userInfo : ", userInfo);
   const location = useLocation();
   const queryClient = useQueryClient();
   const { navigationItems: dynamicBaseItems = [], loading: navLoading } = navigation;
@@ -53,7 +52,7 @@ export function Sidebar() {
   const [editingReportName, setEditingReportName] = useState("");
   const [xplorerSearchTerm, setXplorerSearchTerm] = useState("");
   const [isXplorerOpen, setIsXplorerOpen] = useState(true);
-  // Check if user has admin role
+ 
   const showAdminNavItems = shouldShowAdminNavItems(userInfo?.roles || []);
   
   const navItems = useMemo(() => {

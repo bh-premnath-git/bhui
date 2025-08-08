@@ -4,7 +4,7 @@ import { ChartType, ColorScheme } from '@/store/slices/dataops/dashboardStore';
 import { getColorPalette } from '@/lib/colorSchemes';
 
 interface ChartViewProps {
-  data: any[];
+  data: any[] | null | undefined;
   layout?: any;
   widgetId: string;
   chartType: ChartType;
@@ -13,8 +13,56 @@ interface ChartViewProps {
 
 export const ChartView = ({ data, layout, widgetId, chartType, color }: ChartViewProps) => {
   const plotRef = useRef<any>(null);
+  
+  // Handle null, undefined, or invalid data
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center text-sm text-muted-foreground">
+          No chart data available
+        </div>
+      </div>
+    );
+  }
+
+  // Check if data contains meaningful chart data
+  const hasValidData = data.some((trace: any) => {
+    if (!trace || typeof trace !== 'object') return false;
+    
+    // Check if trace has actual data points
+    const hasXData = trace.x && Array.isArray(trace.x) && trace.x.length > 0;
+    const hasYData = trace.y && Array.isArray(trace.y) && trace.y.length > 0;
+    const hasValues = trace.values && Array.isArray(trace.values) && trace.values.length > 0; // for pie charts
+    const hasLabels = trace.labels && Array.isArray(trace.labels) && trace.labels.length > 0; // for pie charts
+    
+    return hasXData || hasYData || hasValues || hasLabels;
+  });
+
+  // If no valid data, show empty state instead of empty chart
+  if (!hasValidData) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center text-sm text-muted-foreground">
+          No chart data available
+        </div>
+      </div>
+    );
+  }
+
   const palette = getColorPalette(color.scheme, color.customPalette);
+  
+  // Safely process data with error handling
   const processedData = data.map((trace: any, idx: number) => {
+    // Handle invalid trace objects
+    if (!trace || typeof trace !== 'object') {
+      return {
+        x: [],
+        y: [],
+        type: chartType,
+        marker: { color: palette[idx % palette.length] }
+      };
+    }
+
     const traceColor = palette[idx % palette.length];
     const marker = { ...(trace.marker || {}) };
 
@@ -23,6 +71,7 @@ export const ChartView = ({ data, layout, widgetId, chartType, color }: ChartVie
     } else {
       marker.color = traceColor;
     }
+    
     return {
       ...trace,
       type: chartType,

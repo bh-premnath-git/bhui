@@ -66,8 +66,6 @@ export const useRoleMatrixQuery = (
 
     const shouldFetch = enabled && (fetchAll || Boolean(projectId) || Boolean(environmentId));
     
-    // For debugging purposes
-    console.debug("Role matrix query params:", queryParams);
     const {
         data: response,
         isLoading,

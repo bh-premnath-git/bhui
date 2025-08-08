@@ -83,6 +83,10 @@ export const useRoleMatrixQuery = (
     return {
         roles: response?.data ?? [],
         total: response?.total ?? 0,
+        offset: response?.offset ?? 0,
+        limit: response?.limit ?? 0,
+        prev: response?.prev ?? false,
+        next: response?.next ?? false,
         isLoading,
         isFetching,
         isError,

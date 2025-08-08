@@ -13,7 +13,7 @@ import {
   ChatConfigFields,
   ApiKeyField,
 } from "./FormFields";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface LLMFormProps {
   initialData?: Partial<LLMFormData>;
@@ -39,45 +39,60 @@ export function LLMForm({
       model_type: "chat",
       api_key: "",
       init_vector: "",
-      embedding_config: {
+      default_embedding_config: {
         input_type: "text",
-        max_tokens: 512,
+        max_tokens: 5000,
       },
-      chat_config: {
+      default_chat_config: {
         input_type: "text",
-        max_tokens: 512,
+        max_tokens: 500,
         temperature: 0.7,
-        timeout: 30,
+        timeout: 120,
         max_retries: 3,
       },
     },
   });
 
   const modelType = form.watch("model_type");
+  
+  // Store the config values to preserve them when switching
+  const configStore = useRef({
+    chatConfig: initialData?.default_chat_config || {
+      input_type: "text",
+      max_tokens: 500,
+      temperature: 0.7,
+      timeout: 120,
+      max_retries: 3,
+    },
+    embeddingConfig: initialData?.default_embedding_config || {
+      input_type: "text",
+      max_tokens: 5000,
+    }
+  });
 
-  // Reset the unused config when model type changes
+  // Update stored configs when form values change
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name?.startsWith('default_chat_config') && value.default_chat_config) {
+        configStore.current.chatConfig = { ...value.default_chat_config };
+      }
+      if (name?.startsWith('default_embedding_config') && value.default_embedding_config) {
+        configStore.current.embeddingConfig = { ...value.default_embedding_config };
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Handle model type changes while preserving config values
   useEffect(() => {
     if (modelType === "chat") {
-      // Clear embedding config and set default chat config if not already set
-      form.setValue("embedding_config", undefined);
-      if (!form.getValues("chat_config")) {
-        form.setValue("chat_config", {
-          input_type: "text",
-          max_tokens: 512,
-          temperature: 0.7,
-          timeout: 30,
-          max_retries: 3,
-        });
-      }
+      // Clear embedding config and restore chat config
+      form.setValue("default_embedding_config", undefined);
+      form.setValue("default_chat_config", configStore.current.chatConfig);
     } else if (modelType === "embeddings") {
-      // Clear chat config and set default embedding config if not already set
-      form.setValue("chat_config", undefined);
-      if (!form.getValues("embedding_config")) {
-        form.setValue("embedding_config", {
-          input_type: "text",
-          max_tokens: 512,
-        });
-      }
+      // Clear chat config and restore embedding config
+      form.setValue("default_chat_config", undefined);
+      form.setValue("default_embedding_config", configStore.current.embeddingConfig);
     }
   }, [modelType, form]);
 

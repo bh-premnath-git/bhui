@@ -9,7 +9,7 @@ import { useLlms } from './hooks/useLlms';
 import { setSelectedLlm } from '@/store/slices/admin/llmSlice';
 import { LlmPageLayout } from './components/LlmPageLayout';
 import { encrypt_string } from '@/lib/encryption';
-import { useLlmOptions } from "@/features/admin/llm/hooks/useLlmOptions";
+import { LLMMutationUpdate } from '@/types/admin/llm';
 
 export function EditLlm() {
   const { id } = useParams();
@@ -41,14 +41,19 @@ export function EditLlm() {
     try {
       setIsSubmitting(true);
       setError(null);
-      const apiData = transformLlmFormToApiData(data);
-      const { initVector } = encrypt_string(data.api_key);
+
+     const { encryptedString, initVector } = encrypt_string(data.api_key);
+
+       const apiData = transformLlmFormToApiData({
+             ...data,
+             api_key: encryptedString,
+           });
      
       if (id) {
         await handleUpdateLlm(id, {
           ...apiData,
          init_vector: initVector
-  
+          
         });
         navigate(ROUTES.ADMIN.LLM.INDEX);
       }

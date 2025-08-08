@@ -5,8 +5,8 @@ export interface LLM {
     provider: string;
     model_type: string; // could be 'chat' | 'embedding' etc.
   
-    embedding_config?: LLMEmbeddingConfig;
-    chat_config?: LLMChatConfig;
+    default_embedding_config?: LLMEmbeddingConfig;
+    default_chat_config?: LLMChatConfig;
   
     created_at: string;
     updated_at: string;
@@ -28,22 +28,22 @@ export interface LLM {
   
   export interface LLMMutationCreate {
     llm_id: number; // ID required for creation
-    embedding_config?: LLMEmbeddingConfig;
-    chat_config?: LLMChatConfig;
+    default_embedding_config?: LLMEmbeddingConfig;
+    default_chat_config?: LLMChatConfig;
     llm_secret_url?: string; // optional secure URL
     api_key: string;
     init_vector: string;
   }
   
   export interface LLMMutationUpdate {
-    embedding_config?: LLMEmbeddingConfig;
-    chat_config?: LLMChatConfig;
+    default_embedding_config?: LLMEmbeddingConfig;
+    default_chat_config?: LLMChatConfig;
     api_key: string;
     init_vector: string;
   }
   
   export interface LLMChatConfig {
-    input_type: 'text' | 'json' | string;
+    input_type: 'text' | string;
     max_tokens: number;
     temperature: number;
     timeout: number;
@@ -51,14 +51,14 @@ export interface LLM {
   }
   
   export interface LLMEmbeddingConfig {
-    input_type: 'text' | 'json' | string;
+    input_type: 'text' | string;
     max_tokens: number;
   }
   
   export interface LLMConfig {
     llm_id: number;
-    embedding_config?: LLMEmbeddingConfig;
-    chat_config?: LLMChatConfig;
+    default_embedding_config?: LLMEmbeddingConfig;
+    default_chat_config?: LLMChatConfig;
     llm_secret_url?: string;
     api_key: string;
   }
@@ -73,8 +73,8 @@ export interface LLM {
     api_key: string;
     init_vector: string;
   
-    embedding_config?: LLMEmbeddingConfig;
-    chat_config?: LLMChatConfig;
+    default_embedding_config?: LLMEmbeddingConfig;
+    default_chat_config?: LLMChatConfig;
   
     llm_secret_url?: string;
   }  

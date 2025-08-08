@@ -7,7 +7,7 @@ export interface LlmManagementService {
     setSelectedLlm(llm: LLM | null): void;
 }
 
-export const useLlmManagementServive = (): LlmManagementService => {
+export const useLlmManagementService = (): LlmManagementService => {
     const dispatch = useAppDispatch();
     
     return {

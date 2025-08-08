@@ -1,4 +1,7 @@
 import * as z from "zod";
+import { LLMMutationData } from "@/types/admin/llm";
+
+// --- SCHEMA ---
 
 export const llmFormSchema = z
   .object({
@@ -11,18 +14,17 @@ export const llmFormSchema = z
     api_key: z.string().trim().nonempty("API Key is required"),
     init_vector: z.string().trim().optional(),
     llm_secret_url: z.string().optional(),
-    embedding_config: z
+
+    default_embedding_config: z
       .object({
-        input_type: z.enum(["text", "file"]),
+        input_type: z.string().trim().min(1, "Input type is required"),
         max_tokens: z.coerce.number().min(1, "Enter a valid token limit."),
       })
       .optional(),
 
-    chat_config: z
+    default_chat_config: z
       .object({
-        input_type: z.enum(["text", "file"], {
-          required_error: "Please select a input type.",
-        }),
+        input_type: z.string().trim().min(1, "Input type is required"),
         max_tokens: z.coerce
           .number()
           .min(1, "Number must be greater than or equal to 1"),
@@ -41,8 +43,7 @@ export const llmFormSchema = z
   })
   .superRefine((data, ctx) => {
     if (data.model_type === "chat") {
-      // Validate chat config fields only when model_type is "chat"
-      if (!data.chat_config) {
+      if (!data.default_chat_config) {
         ctx.addIssue({
           path: ["chat_config"],
           message: "Chat config is required for chat model type.",
@@ -51,8 +52,7 @@ export const llmFormSchema = z
         return;
       }
 
-      // Validate individual chat config fields
-      if (!data.chat_config.input_type) {
+      if (!data.default_chat_config.input_type) {
         ctx.addIssue({
           path: ["chat_config", "input_type"],
           message: "Chat input type is required.",
@@ -60,7 +60,7 @@ export const llmFormSchema = z
         });
       }
 
-      if (!data.chat_config.max_tokens || data.chat_config.max_tokens < 1) {
+      if (!data.default_chat_config.max_tokens || data.default_chat_config.max_tokens < 1) {
         ctx.addIssue({
           path: ["chat_config", "max_tokens"],
           message: "Number must be greater than or equal to 1",
@@ -69,9 +69,9 @@ export const llmFormSchema = z
       }
 
       if (
-        data.chat_config.temperature === undefined ||
-        data.chat_config.temperature < 0 ||
-        data.chat_config.temperature > 2
+        data.default_chat_config.temperature === undefined ||
+        data.default_chat_config.temperature < 0 ||
+        data.default_chat_config.temperature > 2
       ) {
         ctx.addIssue({
           path: ["chat_config", "temperature"],
@@ -80,7 +80,7 @@ export const llmFormSchema = z
         });
       }
 
-      if (!data.chat_config.timeout || data.chat_config.timeout < 1) {
+      if (!data.default_chat_config.timeout || data.default_chat_config.timeout < 1) {
         ctx.addIssue({
           path: ["chat_config", "timeout"],
           message: "Number must be greater than or equal to 1",
@@ -89,8 +89,8 @@ export const llmFormSchema = z
       }
 
       if (
-        data.chat_config.max_retries === undefined ||
-        data.chat_config.max_retries < 0
+        data.default_chat_config.max_retries === undefined ||
+        data.default_chat_config.max_retries < 0
       ) {
         ctx.addIssue({
           path: ["chat_config", "max_retries"],
@@ -99,9 +99,7 @@ export const llmFormSchema = z
         });
       }
     } else if (data.model_type === "embeddings") {
-      // Changed from "embedding" to "embeddings"
-      // Validate embedding config fields only when model_type is "embeddings"
-      if (!data.embedding_config) {
+      if (!data.default_embedding_config) {
         ctx.addIssue({
           path: ["embedding_config"],
           message: "Embedding config is required for embeddings model type.",
@@ -110,8 +108,7 @@ export const llmFormSchema = z
         return;
       }
 
-      // Validate individual embedding config fields
-      if (!data.embedding_config.input_type) {
+      if (!data.default_embedding_config.input_type) {
         ctx.addIssue({
           path: ["embedding_config", "input_type"],
           message: "Embedding input type is required.",
@@ -120,8 +117,8 @@ export const llmFormSchema = z
       }
 
       if (
-        !data.embedding_config.max_tokens ||
-        data.embedding_config.max_tokens < 1
+        !data.default_embedding_config.max_tokens ||
+        data.default_embedding_config.max_tokens < 1
       ) {
         ctx.addIssue({
           path: ["embedding_config", "max_tokens"],
@@ -132,78 +129,84 @@ export const llmFormSchema = z
     }
   });
 
-// Infer TypeScript type from schema
 export type LLMFormData = z.infer<typeof llmFormSchema>;
-
-import { LLMMutationData } from "@/types/admin/llm";
 
 export const transformLlmFormToApiData = (
   formData: LLMFormData
 ): LLMMutationData => {
   const base: Record<string, any> = {
-    llm_id: formData.llm_id ?? 0,
+    llm_id: formData.llm_id,
     model_name: formData.model_name,
+    provider: formData.provider,
     model_type: formData.model_type,
     api_key: formData.api_key,
     init_vector: formData.init_vector,
-    llm_secret_url: formData.llm_secret_url,
+    llm_secret_url: formData.llm_secret_url ?? "",
   };
 
-  if (formData.model_type === "embeddings" && formData.embedding_config) {
-    // Changed from "embedding" to "embeddings"
-    base.embedding_config = {
-      input_type: formData.embedding_config.input_type,
-      max_tokens: Number(formData.embedding_config.max_tokens),
-    };
+  // Only include the config for the selected model type
+  if (formData.model_type === "embeddings") {
+    base.embedding_config = formData.default_embedding_config
+      ? {
+          input_type: formData.default_embedding_config.input_type,
+          max_tokens: Number(formData.default_embedding_config.max_tokens),
+        }
+      : {
+          input_type: "text",
+          max_tokens: 5000,
+        };
+    // Don't include chat_config for embedding models
+  } else if (formData.model_type === "chat") {
+    base.chat_config = formData.default_chat_config
+      ? {
+          input_type: formData.default_chat_config.input_type,
+          max_tokens: Number(formData.default_chat_config.max_tokens),
+          temperature: Number(formData.default_chat_config.temperature),
+          timeout: Number(formData.default_chat_config.timeout),
+          max_retries: Number(formData.default_chat_config.max_retries),
+        }
+      : {
+          input_type: "text",
+          max_tokens: 5000,
+          temperature: 0.1,
+          timeout: 60,
+          max_retries: 2,
+        };
+    // Don't include embedding_config for chat models
   }
 
-  if (formData.model_type === "chat" && formData.chat_config) {
-    base.chat_config = {
-      input_type: formData.chat_config.input_type,
-      max_tokens: Number(formData.chat_config.max_tokens),
-      temperature: Number(formData.chat_config.temperature),
-      timeout: Number(formData.chat_config.timeout),
-      max_retries: Number(formData.chat_config.max_retries),
-    };
-  }
-
-  // Remove all undefined keys
-  return Object.fromEntries(
-    Object.entries(base).filter(([_, v]) => v !== undefined)
-  ) as LLMMutationData;
+  return base as LLMMutationData;
 };
 
-// Convert API data to form format - FIXED VERSION
+// --- TRANSFORM FROM API FORMAT ---
+
 export const transformApiToLlmFormData = (
   apiData: Partial<LLMMutationData>
 ): Partial<LLMFormData> => {
   const baseData: Partial<LLMFormData> = {
     llm_id: apiData.llm_id,
-    model_name: apiData.model_name || "",
-    model_type: apiData.model_type || "chat",
-    api_key: apiData.api_key || "",
-    init_vector: apiData.init_vector || "",
-    llm_secret_url: apiData.llm_secret_url || "",
+    model_name: apiData.model_name ?? "",
+    provider: apiData.provider ?? "",
+    model_type: apiData.model_type ?? "chat",
+    api_key: apiData.api_key ?? "",
+    init_vector: apiData.init_vector ?? "",
+    llm_secret_url: apiData.llm_secret_url ?? "",
   };
 
-  // Only include the config that matches the model type
-  if (apiData.model_type === "embeddings" && apiData.embedding_config) {
-    // Changed from "embedding" to "embeddings"
-    baseData.embedding_config = {
-      input_type: (apiData.embedding_config.input_type === "text" || apiData.embedding_config.input_type === "file")
-        ? apiData.embedding_config.input_type
-        : "text",
-      max_tokens: apiData.embedding_config.max_tokens ?? 10000,
+  if (apiData.model_type === "embeddings" && apiData.default_embedding_config) {
+    baseData.default_embedding_config = {
+      input_type: apiData.default_embedding_config.input_type ?? "text",
+      max_tokens: apiData.default_embedding_config.max_tokens ?? 5000,
     };
-  } else if (apiData.model_type === "chat" && apiData.chat_config) {
-    baseData.chat_config = {
-      input_type: (apiData.embedding_config.input_type === "text" || apiData.embedding_config.input_type === "file")
-        ? apiData.embedding_config.input_type
-        : "text",
-      max_tokens: apiData.chat_config.max_tokens ?? 0,
-      temperature: apiData.chat_config.temperature ?? 0.7,
-      timeout: apiData.chat_config.timeout ?? 30,
-      max_retries: apiData.chat_config.max_retries ?? 3,
+  }
+
+  if (apiData.model_type === "chat" && apiData.default_chat_config) {
+    baseData.default_chat_config = {
+      input_type: apiData.default_chat_config.input_type ?? "text",
+      max_tokens: apiData.default_chat_config.max_tokens ?? 5000,
+      temperature: apiData.default_chat_config.temperature ?? 0.1,
+      timeout: apiData.default_chat_config.timeout ?? 60,
+      max_retries: apiData.default_chat_config.max_retries ?? 2,
     };
   }
 

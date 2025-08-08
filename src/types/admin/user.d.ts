@@ -1,4 +1,4 @@
-import type { AppRoles, Role } from "./roles";
+import type { Role } from "./roles";
 
 export interface Pagination {
   total: number;
@@ -30,7 +30,9 @@ export interface User extends BaseUser {
     impersonate: boolean;
     manage: boolean;
   };
-  roles?: Role[];
+  attributes: Record<string, any>;
+  bh_roles: Role[];
+  bh_resources: any
 }
 
 export interface UsersPaginatedResponse extends Pagination {
@@ -42,19 +44,12 @@ export interface UserResponse {
   message?: string;
 }
 
-export interface RoleAssignment {
-  project: string | "*";
-  environment: string | "*";
-  role: AppRoles;
-}
-
 // Base form data type with common fields
 interface BaseUserFormData {
   first_name: string;
   last_name: string;
   email: string;
   is_tenant_admin?: boolean;
-  assignments?: RoleAssignment[];
 }
 
 // Create-specific form data

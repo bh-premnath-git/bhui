@@ -8,15 +8,16 @@ import { useUserUpdateMutation } from "./hooks/useUserUpdateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserFormValues } from "./components/userFormSchema";
 import type { UserUpdateData } from "@/types/admin/user";
-import type { Role } from "@/types/admin/roles";
 
 export function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams(); // id is actually the email from the URL
   const { user, isUserLoading, isUserFetching } = useUsersQuery({ shouldFetch: true, email: id });
-  const { handleUpdateUser, isUpdating, updateError } = useUserUpdateMutation();
+  const { isUpdating, updateError } = useUserUpdateMutation();
   const [error, setError] = useState<string | null>(null);
-
+  
+  console.log('User data:', user);
+  
   const onSubmit = async (data: UserFormValues) => {
     if (!id) return;
 
@@ -26,7 +27,7 @@ export function EditUser() {
       if (payload.is_tenant_admin) {
         delete (payload as any).assignments;
       }
-      await handleUpdateUser(id, payload);
+      //await handleUpdateUser(id, payload);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
@@ -42,62 +43,38 @@ export function EditUser() {
   }
 
   // Transform user data for form initialization
-  const isTenantAdmin = (user.roles as Role[] | undefined)?.some(
-    (r) => r.module_name === 'tenant_admin' && r.module_type === 'admin'
+  // Parse role information from attributes
+  let parsedRoles: any[] = [];
+  let parsedResources: any[] = [];
+  
+  try {
+    // Parse bh_roles from attributes
+    if (user.attributes?.bh_roles?.[0]) {
+      const rolesData = JSON.parse(user.attributes.bh_roles[0]);
+      parsedRoles = rolesData.roles || [];
+    }
+    
+    // Parse bh_resources from attributes
+    if (user.attributes?.bh_resources?.[0]) {
+      const resourcesData = JSON.parse(user.attributes.bh_resources[0]);
+      parsedResources = resourcesData.resources || [];
+    }
+  } catch (error) {
+    console.error('Error parsing role/resource data:', error);
+  }
+
+  // Check if user is tenant admin based on parsed roles
+  const isTenantAdmin = parsedRoles.some(
+    (r) => r.role === 'admin_role' || r.role === 'tenant_admin'
   ) ?? false
 
   // Map roles to project and environment assignments
   const projectAssignments: { project: string, roles: string[] }[] = [];
   const environmentAssignments: { environment: string, roles: string[] }[] = [];
 
-  // Group roles by project_id and environment_id
-  const roles = user.roles || [];
-  const projectRoles = new Map<string, string[]>();
-  const environmentRoles = new Map<string, string[]>();
-
-  // Process roles and organize by project/environment
-  roles.forEach(role => {
-    // Skip tenant_admin roles, they're handled separately
-    if (role.module_name === 'tenant_admin' && role.module_type === 'admin') {
-      return;
-    }
-
-    // For project-specific roles
-    if (role.project_id && role.project_id !== '*') {
-      if (!projectRoles.has(role.project_id)) {
-        projectRoles.set(role.project_id, []);
-      }
-      // Use role.id as the role identifier for consistency
-      projectRoles.get(role.project_id)?.push(String(role.id));
-    }
-    
-    // For environment-specific roles
-    if (role.environment_id && role.environment_id !== '*') {
-      if (!environmentRoles.has(role.environment_id)) {
-        environmentRoles.set(role.environment_id, []);
-      }
-      // Use role.id as the role identifier for consistency
-      environmentRoles.get(role.environment_id)?.push(String(role.id));
-    }
-  });
-
-  // Convert maps to arrays for form data
-  projectRoles.forEach((roles, projectId) => {
-    projectAssignments.push({
-      project: projectId,
-      roles: roles
-    });
-  });
-
-  environmentRoles.forEach((roles, environmentId) => {
-    environmentAssignments.push({
-      environment: environmentId,
-      roles: roles
-    });
-  });
-
-  console.log('Mapped project assignments:', projectAssignments);
-  console.log('Mapped environment assignments:', environmentAssignments);
+  // Note: The current attributes structure doesn't include project/environment information
+  // The roles are just: {role: "admin_role", permissions: ["edit", "view", "delete"]}
+  // So we'll initialize empty assignments for now
 
   const formInitialData: UserFormValues = {
     first_name: user.firstName,
@@ -107,11 +84,8 @@ export function EditUser() {
     enabled: user.enabled,
     emailVerified: user.emailVerified,
     is_tenant_admin: isTenantAdmin,
-    // Add role assignments mapped from user.roles
     project_assignments: projectAssignments,
     environment_assignments: environmentAssignments,
-    // Keeping legacy assignments field for backward compatibility
-    assignments: [],
   };
 
   return (

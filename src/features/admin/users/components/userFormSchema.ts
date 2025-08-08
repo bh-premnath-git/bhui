@@ -1,14 +1,6 @@
 import { z } from "zod";
 import type { Project } from "@/types/admin/project";
 import type { Environment } from "@/types/admin/environment";
-import { AVAILABLE_ROLES } from "@/types/admin/roles";
-
-// Shared schema for role assignments
-const roleAssignmentSchema = z.object({
-  project: z.union([z.literal('*'), z.string().min(1, 'Project is required')]),
-  environment: z.union([z.literal('*'), z.string().min(1, 'Environment is required')]),
-  role: z.enum(AVAILABLE_ROLES, { invalid_type_error: 'Role is required' }),
-});
 
 // Project role assignment schema
 const projectRoleAssignmentSchema = z.object({
@@ -28,8 +20,6 @@ const baseUserSchema = {
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
   is_tenant_admin: z.boolean().optional(),
-  // Legacy assignments field
-  assignments: z.array(roleAssignmentSchema).optional(),
   // New assignment fields used by the form
   project_assignments: z.array(projectRoleAssignmentSchema).optional(),
   environment_assignments: z.array(environmentRoleAssignmentSchema).optional(),
@@ -68,9 +58,6 @@ export interface SelectOption {
   label: string;
   value: string;
 }
-
-// Re-export RoleAssignment from types to avoid duplication
-export type { RoleAssignment } from "@/types/admin/user";
 
 export const getProjectOptions = (projects: Project[]): SelectOption[] => {
   if (!Array.isArray(projects)) return [];

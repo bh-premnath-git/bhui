@@ -86,11 +86,13 @@ console.log(initialValues,"initialValues")
     case 'Reader':
       return {
         ...baseValues,
-        reader_name: baseValues.reader_name || '',
-        source: baseValues.source || {},
-        select_columns: baseValues.select_columns || [],
-        drop_columns: baseValues.drop_columns || [],
-        rename_columns: baseValues.rename_columns || {}
+        reader_name: baseValues.reader_name || initialValues?.reader_name || '',
+        name: baseValues.name || initialValues?.name || baseValues.reader_name || '',
+        source: baseValues.source || initialValues?.source || {},
+        read_options: baseValues.read_options || initialValues?.read_options || { header: true },
+        select_columns: baseValues.select_columns || initialValues?.select_columns || [],
+        drop_columns: baseValues.drop_columns || initialValues?.drop_columns || [],
+        rename_columns: baseValues.rename_columns || initialValues?.rename_columns || {}
       };
 
       case 'Joiner':
@@ -184,7 +186,7 @@ console.log(initialValues,"initialValues")
         limit: initialValues?.limit || ''
       };
 
-    case 'SequenceGenerator':
+    case 'Sequence':
       return {
         ...baseValues,
         transformation: 'sequence_generator',
@@ -260,35 +262,112 @@ console.log(initialValues,"initialValues")
         dependent_on: initialValues?.dependent_on || []
       };
 
+    case 'Mapper':
+      return {
+        ...baseValues,
+        derived_fields: Array.isArray(initialValues?.derived_fields) && initialValues.derived_fields.length > 0
+          ? initialValues.derived_fields.map((field: any) => ({
+              name: field?.name || '',
+              expression: field?.expression || ''
+            }))
+          : [{
+              name: '',
+              expression: ''
+            }],
+        select_columns: Array.isArray(initialValues?.select_columns) 
+          ? initialValues.select_columns.filter((col: any) => 
+              col !== null && col !== undefined && col !== ''
+            )
+          : [],
+        drop_columns: Array.isArray(initialValues?.drop_columns) 
+          ? initialValues.drop_columns.filter((col: any) => 
+              col !== null && col !== undefined && col !== ''
+            )
+          : [],
+        rename_columns: initialValues?.rename_columns && typeof initialValues.rename_columns === 'object'
+          ? initialValues.rename_columns
+          : {},
+        column_list: Array.isArray(initialValues?.column_list) 
+          ? initialValues.column_list.filter((col: any) => 
+              col !== null && col !== undefined && col !== ''
+            )
+          : []
+      };
+
     case 'Target':
     case 'Writer':
       // Handle both resolved and unresolved target data
+      // Data can be in different structures:
+      // 1. initialValues.target (nested structure from form states)
+      // 2. initialValues directly (flat structure from transformationData)
       const targetData = initialValues?.target || {};
       const connectionData = targetData?.connection || {};
       
-      return {
+      console.log('🔧 generateInitialValues - Target/Writer case:', {
+        initialValues,
+        targetData,
+        connectionData,
+        hasNestedTarget: !!initialValues?.target,
+        hasFlatStructure: !initialValues?.target && (initialValues?.target_type || initialValues?.target_name)
+      });
+      
+      // Handle flat structure (from transformationData) vs nested structure (from form states)
+      const resolvedTargetData = {
+        target_type: targetData?.target_type || initialValues?.target_type || 'File',
+        target_name: targetData?.target_name || initialValues?.target_name || '',
+        table_name: targetData?.table_name || initialValues?.table_name || '',
+        file_name: targetData?.file_name || initialValues?.file_name || '',
+        load_mode: targetData?.load_mode || initialValues?.load_mode || 'append',
+        connection: {
+          ...connectionData,
+          // Also check for connection at root level
+          ...(initialValues?.connection || {}),
+          // Ensure connection_config_id is available for form validation
+          // Handle $ref format (e.g., "#/connections/output.csv") by extracting the connection name
+          connection_config_id: connectionData?.connection_config_id || 
+                               connectionData?.id || 
+                               initialValues?.connection?.connection_config_id ||
+                               initialValues?.connection?.id ||
+                               initialValues?.connection_config_id ||
+                               // Handle $ref format by extracting the connection name
+                               (connectionData?.$ref ? connectionData.$ref.split('/').pop() : null) ||
+                               (initialValues?.connection?.$ref ? initialValues.connection.$ref.split('/').pop() : null)
+        }
+      };
+      
+      console.log('🔧 generateInitialValues - Connection resolution details:', {
+        connectionData,
+        rootConnection: initialValues?.connection,
+        rootConnectionConfigId: initialValues?.connection_config_id,
+        resolvedConnectionConfigId: resolvedTargetData.connection.connection_config_id,
+        allConnectionSources: {
+          'connectionData.connection_config_id': connectionData?.connection_config_id,
+          'connectionData.id': connectionData?.id,
+          'initialValues.connection.connection_config_id': initialValues?.connection?.connection_config_id,
+          'initialValues.connection.id': initialValues?.connection?.id,
+          'initialValues.connection_config_id': initialValues?.connection_config_id
+        }
+      });
+      
+      // Normalize file_type to uppercase for consistency
+      const rawFileType = initialValues?.file_type || targetData?.file_type || 'CSV';
+      const normalizedFileType = typeof rawFileType === 'string' ? rawFileType.toUpperCase() : 'CSV';
+      
+      const result = {
         ...baseValues,
-        name: initialValues?.name || '',
-        target: {
-          target_type: targetData?.target_type || 'File',
-          target_name: targetData?.target_name || '',
-          table_name: targetData?.table_name || '',
-          file_name: targetData?.file_name || '',
-          load_mode: targetData?.load_mode || 'append',
-          connection: {
-            ...connectionData,
-            // Ensure connection_config_id is available for form validation
-            connection_config_id: connectionData?.connection_config_id || connectionData?.id
-          }
-        },
-        file_type: initialValues?.file_type || targetData?.file_type || 'CSV',
+        name: initialValues?.name || resolvedTargetData.target_name || '',
+        target: resolvedTargetData,
+        file_type: normalizedFileType,
         write_options: initialValues?.write_options || {
           header: true,
           sep: ",",
           createDisposition: 'CREATE_IF_NEEDED',
-          writeMethod: targetData?.target_type === 'Relational' ? 'direct' : 'APPEND'
+          writeMethod: resolvedTargetData?.target_type === 'Relational' ? 'direct' : 'APPEND'
         }
       };
+      
+      console.log('🔧 generateInitialValues - Target/Writer result:', result);
+      return result;
 
     default:
       return baseValues;

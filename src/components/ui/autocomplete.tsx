@@ -27,6 +27,16 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Debug logging
+  console.log('🔍 Autocomplete render:', {
+    options: options.length,
+    value,
+    placeholder,
+    className,
+    filteredSuggestions: filteredSuggestions.length,
+    isOpen
+  });
 
   // Filter suggestions based on input value
   useEffect(() => {

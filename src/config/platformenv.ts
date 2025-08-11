@@ -17,3 +17,10 @@ export const KEYCLOAK_REMOTE_URL = import.meta.env.VITE_KEYCLOAK_REMOTE_URL;
 export const CATALOG_LIVE_API_URL = import.meta.env.VITE_CATALOG_LIVE_API_URL;
 export const USE_SECURE = import.meta.env.VITE_USE_SECURE;
 export const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || 'production';
+
+/**
+ * Engine Ports
+ */
+export const SPARK_PORT = import.meta.env.VITE_SPARK_PORT || '15003';
+export const PANDAS_PORT = import.meta.env.VITE_PANDAS_PORT || '15004';
+export const FLINK_PORT = import.meta.env.VITE_FLINK_PORT || '15005';

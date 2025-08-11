@@ -51,10 +51,19 @@ import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 interface Pipeline {
   pipeline_id: number;
   pipeline_name: string;
-  created_at?: string;
-  updated_at?: string;
-  status?: string;
-  engine_type?: string;
+  pipeline_key: string;
+  bh_project_id: number;
+  notes: string;
+  tags: Record<string, any>;
+  pipeline_type: string;
+  engine_type: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string | null;
+  bh_project_name: string;
+  pipeline_json: Record<string, any>;
+  pipeline_parameters: any[];
 }
 
 interface PipelineSelectorProps {
@@ -119,13 +128,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
       });
 
       if (response) {
-        const enhancedPipelines = response.map((pipeline: Pipeline) => ({
-          ...pipeline,
-          created_at: pipeline.created_at || new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-          updated_at: pipeline.updated_at || new Date(Date.now() - Math.random() * 1000000000).toISOString(),
-          status: pipeline.status || Math.random() > 0.7 ? 'active' : 'draft'
-        }));
-        setPipelines(enhancedPipelines);
+        setPipelines(response);
       }
     } catch (error) {
       console.error('Error fetching pipelines:', error);
@@ -285,7 +288,7 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                   setIsEditing(false);
                 }
               }}
-              className="h-9 min-w-[200px]"
+              className="h-9 min-w-[250px]"
               autoFocus
               aria-label="Edit pipeline name"
             />
@@ -303,13 +306,21 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
-                  className="justify-between min-w-[200px] h-9"
+                  className="justify-between min-w-[250px] h-9"
                 >
                   <div className="flex items-center gap-2 truncate">
                     <Workflow size={14} />
                     <span className="truncate">
                       {initialName || currentPipeline?.pipeline_name || placeholder}
                     </span>
+                    {currentPipeline?.engine_type && (
+                      <Badge 
+                        variant="secondary"
+                        className="text-[10px] h-4 px-1 ml-1"
+                      >
+                        {currentPipeline.engine_type}
+                      </Badge>
+                    )}
                   </div>
                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -349,12 +360,12 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <Clock size={10} />
                                   <span>Updated {formatDate(pipeline.updated_at)}</span>
-                                  {pipeline.status && (
+                                  {pipeline.engine_type && (
                                     <Badge 
-                                      variant={pipeline.status === 'active' ? "default" : "outline"}
+                                      variant="secondary"
                                       className="text-[10px] h-4 px-1"
                                     >
-                                      {pipeline.status}
+                                      {pipeline.engine_type}
                                     </Badge>
                                   )}
                                 </div>
@@ -406,12 +417,12 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <Clock size={10} />
                                   <span>Updated {formatDate(pipeline.updated_at)}</span>
-                                  {pipeline.status && (
+                                  {pipeline.engine_type && (
                                     <Badge 
-                                      variant={pipeline.status === 'active' ? "default" : "outline"}
+                                      variant="secondary"
                                       className="text-[10px] h-4 px-1"
                                     >
-                                      {pipeline.status}
+                                      {pipeline.engine_type}
                                     </Badge>
                                   )}
                                 </div>

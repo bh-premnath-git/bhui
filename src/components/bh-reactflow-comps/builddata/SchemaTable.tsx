@@ -23,8 +23,8 @@ import { useAppSelector } from '@/hooks/useRedux';
 import { RootState } from '@/store';
 import { useReaderData } from '@/context/ReaderDataContext';
 
-function SchemaTable({ initialData, onSwitchToReaderOptions }: any) {
-    console.log('🔧 SchemaTable: Initializing SchemaTable with initialData:', initialData);
+function SchemaTable({ dataSourceId, onSwitchToReaderOptions }: any) {
+    console.log('🔧 SchemaTable: Initializing SchemaTable with dataSourceId:', dataSourceId);
     const [openDialog, setOpenDialog] = React.useState(false);
     const [inputValue, setInputValue] = React.useState('');
     const [selectedDataType, setSelectedDataType] = React.useState('');
@@ -36,23 +36,17 @@ function SchemaTable({ initialData, onSwitchToReaderOptions }: any) {
     // Ensure dataSourceTypes is an array
     const dataTypeOptions = Array.isArray(dataSourceTypes) ? dataSourceTypes : [];
 
-    // Use readerData from context if available, otherwise fall back to initialData
-    const currentData = readerData || initialData;
+    // Use readerData from context if available, otherwise fall back to dataSourceId
+    const currentData = readerData || dataSourceId;
 
     // Add debugging to understand what data we're receiving
     useEffect(() => {
-        console.log('🔧 SchemaTable: DEBUGGING DATA STRUCTURE');
-        console.log('🔧 SchemaTable: readerData:', readerData);
-        console.log('🔧 SchemaTable: initialData:', initialData);
-        console.log('🔧 SchemaTable: currentData:', currentData);
-        console.log('🔧 SchemaTable: currentData?.source:', currentData?.source);
-        console.log('🔧 SchemaTable: currentData?.source?.data_src_id:', currentData?.source?.data_src_id);
-        console.log('🔧 SchemaTable: currentData?.data_src_id:', currentData?.data_src_id);
-    }, [readerData, initialData, currentData]);
+        
+    }, [readerData, dataSourceId, currentData]);
 
     useEffect(() => {
         const fetchData = async () => {
-            const dataSourceId = currentData?.source?.data_src_id || currentData?.data_src_id;
+            // const dataSourceId = dataSourceId;
             console.log('🔧 SchemaTable: Using data_src_id:', dataSourceId);
             
             if (!dataSourceId) {
@@ -98,20 +92,14 @@ function SchemaTable({ initialData, onSwitchToReaderOptions }: any) {
             }
         };
 
-        const dataSourceId = currentData?.source?.data_src_id || currentData?.data_src_id;
+        // const dataSourceId = dataSourceId;
         if (dataSourceId) {
             console.log('🔧 SchemaTable: Found data_src_id, calling fetchData');
             fetchData();
         } else {
-            console.warn('🔧 SchemaTable: No data_src_id available, skipping fetch');
-            console.log('🔧 SchemaTable: Available data paths:');
-            console.log('  - currentData?.source?.data_src_id:', currentData?.source?.data_src_id);
-            console.log('  - currentData?.data_src_id:', currentData?.data_src_id);
-            console.log('  - currentData?.source:', currentData?.source);
-            console.log('  - currentData:', currentData);
             setIsLoading(false);
         }
-    }, [currentData?.source?.data_src_id, currentData?.data_src_id]);
+    }, [dataSourceId]);
 
     const columns = [
         {

@@ -15,6 +15,8 @@ import { ArrayField } from './ArrayField';
 import { NestedObjectRenderer } from './NestedObjectRenderer';
 import { getCustomComponent } from './custom-components/componentRegistry';
 import { formatFieldTitle } from './schemaUtils';
+import { apiService } from '@/lib/api/api-service';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 
@@ -27,6 +29,9 @@ interface FieldRendererProps {
   sourceColumns?: Array<{ name: string; dataType: string }>;
   onExpressionGenerate?: (fieldName: string) => Promise<void>;
   isFieldGenerating?: (fieldName: string) => boolean;
+  compact?: boolean;
+  hideLabel?: boolean;
+  customEndpointOptions?: any[]; // For overriding endpoint options (e.g., filtered connections)
 }
 
 // SQL keywords for Monaco editor autocomplete
@@ -130,9 +135,14 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   sourceColumns = [],
   onExpressionGenerate,
   isFieldGenerating,
+  compact = false,
+  hideLabel = false,
+  customEndpointOptions,
 }) => {
   const [isEditorReady, setIsEditorReady] = useState(false);
   const [editorHeight, setEditorHeight] = useState(40);
+  const [endpointOptions, setEndpointOptions] = useState<any[]>([]);
+  const [isLoadingEndpoint, setIsLoadingEndpoint] = useState(false);
   const completionProviderRef = useRef<monaco.IDisposable | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monaco | null>(null);
@@ -146,43 +156,84 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const isPythonEditor = uiHint === 'python_editor' || field.type === 'python_editor';
   const isAutoComplete = uiHint === 'auto-complete' || uiHint === 'autocomplete' || field.type === 'autocomplete';
   const isCustomComponent = uiHint === 'custom' && field.component;
+  const isEndpointField = uiHint === 'endpoint' && field.endpoint;
   
-  // Debug logging for expression fields
-  if (fieldKey === 'expression') {
-    console.log('🎯 Expression field debug:', {
+  // Debug field rendering for key fields
+  if (process.env.NODE_ENV === 'development' && (fieldKey === 'connection' || fieldKey === 'name' || fieldKey === 'source_type' || fieldKey === 'table_name')) {
+    const currentValue = form.getValues(fullFieldKey);
+    const isNestedField = parentKey === 'source';
+    console.log(`🔧 FieldRenderer: Field rendering debug for ${fieldKey} ${isNestedField ? '(NESTED)' : '(ROOT)'}`, {
       fieldKey,
-      uiHint,
-      fieldType: field.type,
-      isExpressionField,
       fullFieldKey,
-      currentValue: form.watch(fullFieldKey)
+      parentKey,
+      isNestedField,
+      currentValue,
+      fieldType: field.type,
+      uiHint,
+      hasEndpoint: !!field.endpoint,
+      endpoint: field.endpoint,
+      isEndpointField,
+      formControlExists: !!form.control,
+      fieldStructure: Object.keys(field)
     });
   }
   
-  // Debug logging for autocomplete fields
-  if (uiHint === 'auto-complete' || uiHint === 'autocomplete' || field.type === 'autocomplete') {
-    console.log('🔍 Autocomplete field detected:', {
-      fieldKey,
-      fullFieldKey,
-      uiHint,
-      fieldType: field.type,
-      isAutoComplete,
-      sourceColumns: sourceColumns?.length || 0,
-      sourceColumnsData: sourceColumns,
-      field
-    });
-  }
 
-  // Debug logging for custom components
-  if (isCustomComponent) {
-    console.log('🔧 Custom component field detected:', {
-      fieldKey,
-      fullFieldKey,
-      uiHint,
-      component: field.component,
-      field
-    });
-  }
+  // Fetch endpoint data for endpoint fields
+  useEffect(() => {
+    if (isEndpointField) {
+      console.log(`🔧 FieldRenderer: Fetching endpoint data for ${fieldKey}`, {
+        endpoint: field.endpoint,
+        customEndpointOptions: !!customEndpointOptions
+      });
+      // If custom endpoint options are provided, use them instead of fetching
+      if (customEndpointOptions) {
+        setEndpointOptions(customEndpointOptions);
+        setIsLoadingEndpoint(false);
+        return;
+      }
+
+      // Otherwise, fetch from the endpoint if available
+      if (field.endpoint) {
+        const fetchEndpointData = async () => {
+          setIsLoadingEndpoint(true);
+          try {
+            // Use ApiService to make the API call
+            const data : any= await apiService.get({
+              baseUrl: CATALOG_REMOTE_API_URL,
+              url: field.endpoint,
+              method: 'GET',
+              usePrefix: true // This will add /api/v1 prefix
+            });
+            
+            console.log(`🔧 FieldRenderer: API response for ${fieldKey}:`, data);
+            
+            // Handle different response formats
+            if (Array.isArray(data)) {
+              setEndpointOptions(data);
+              console.log(`🔧 FieldRenderer: Set ${data.length} options from array response`);
+            } else if (data.results && Array.isArray(data.results)) {
+              setEndpointOptions(data.results);
+              console.log(`🔧 FieldRenderer: Set ${data.results.length} options from data.results`);
+            } else if (data.data && Array.isArray(data.data)) {
+              setEndpointOptions(data.data);
+              console.log(`🔧 FieldRenderer: Set ${data.data.length} options from data.data`);
+            } else {
+              setEndpointOptions([]);
+              console.log(`🔧 FieldRenderer: No valid array found in response, set empty options`);
+            }
+          } catch (error) {
+            console.error('Error fetching endpoint data:', error);
+            setEndpointOptions([]);
+          } finally {
+            setIsLoadingEndpoint(false);
+          }
+        };
+
+        fetchEndpointData();
+      }
+    }
+  }, [isEndpointField, field.endpoint, customEndpointOptions]);
 
   // Monaco editor setup for expression fields
   useEffect(() => {
@@ -300,16 +351,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   const handleExpressionGenerate = useCallback(async () => {
     const isCurrentlyGenerating = isFieldGenerating ? isFieldGenerating(fullFieldKey) : false;
     
-    console.log('🎯 FieldRenderer handleExpressionGenerate called:', {
-      fieldKey,
-      parentKey,
-      fullFieldKey,
-      hasOnExpressionGenerate: !!onExpressionGenerate,
-      isCurrentlyGenerating,
-      isExpressionField,
-      uiHint: field['ui-hint']
-    });
-    
     if (onExpressionGenerate && !isCurrentlyGenerating) {
       try {
         await onExpressionGenerate(fullFieldKey);
@@ -320,7 +361,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   }, [onExpressionGenerate, isFieldGenerating, fullFieldKey, fieldKey, parentKey]);
 
   // Handle complex objects with properties or conditional logic outside of FormField
-  if (field.type === 'object' && (field.properties || field.allOf)) {
+  // But skip if it's an endpoint field (endpoint ui-hint overrides object type)
+  if (field.type === 'object' && (field.properties || field.allOf) && !isEndpointField) {
     return (
       <NestedObjectRenderer
         fieldKey={fieldKey}
@@ -388,7 +430,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         
         return (
         <FormItem>
-          {!isFieldTitleNumeric && (
+          {!compact && !isFieldTitleNumeric && !hideLabel && (
             <div className="flex items-center justify-between mb-2">
               <FormLabel className="text-sm font-medium">
                 {fieldTitle}
@@ -411,7 +453,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             {isPythonEditor ? (
               <PythonEditor
                 label={fieldTitle}
-                description={field.description}
                 value={formField.value || PYSPARK_TEMPLATE}
                 onChange={formField.onChange}
                 minHeight="400px"
@@ -437,7 +478,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                       theme="vs-light"
                       value={watchedValue || ''}
                       onChange={(newValue) => {
-                        console.log('🎯 Monaco Editor onChange:', { fullFieldKey, newValue, oldValue: formField.value });
                         formField.onChange(newValue || '');
                       }}
                       options={{
@@ -517,7 +557,6 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   );
                 }
 
-                console.log('🔧 Rendering custom component:', field.component);
                 
                 return (
                   <CustomComponent
@@ -532,17 +571,139 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   />
                 );
               })()
+            ) : /* Handle Endpoint UI hint */
+            isEndpointField ? (
+              <Select
+                value={(() => {
+                  // For complex connection objects, use connection_config_id
+                  if (formField.value && typeof formField.value === 'object' && formField.value.connection_config_id) {
+                    const val = formField.value.connection_config_id.toString();
+                    return val;
+                  }
+                  // For simple values (like connection_config_id fields), use the value directly
+                  const val = formField.value?.toString() || '';
+                  return val;
+                })()}
+                onValueChange={(value) => {
+                  // For specific connection fields that need full connection objects, we set the complete object
+                  // For general endpoint fields (like connection_config_id), we just set the ID value
+                  const isComplexConnectionField = (fieldKey === 'connection' || fullFieldKey.includes('connection')) && 
+                                                   !fieldKey.includes('connection_config_id') && 
+                                                   !fullFieldKey.includes('connection_config_id');
+                  
+                  if (isComplexConnectionField) {
+                    // Find the selected connection object
+                    const selectedConnection = endpointOptions.find((option: any) => {
+                      const optionValue = option.id || option.value || option.connection_config_id || option;
+                      const matches = optionValue.toString() === value;
+                      
+                      return matches;
+                    });
+                    
+                    if (selectedConnection) {
+                      // Create a complete connection object with the actual ID
+                      const baseConnectionObject = {
+                        connection_config_id: String(selectedConnection.id || selectedConnection.connection_config_id || value),
+                        connection_type: selectedConnection.custom_metadata?.connection_type || 
+                                       selectedConnection.connection_type || 
+                                       selectedConnection.custom_metadata?.type || 
+                                       selectedConnection.type,
+                        name: selectedConnection.connection_config_name || 
+                              selectedConnection.name || 
+                              selectedConnection.connection_name,
+                        id: selectedConnection.id, // Preserve the original database ID
+                      };
+                      
+                      // Add custom_metadata fields if they exist
+                      if (selectedConnection.custom_metadata && typeof selectedConnection.custom_metadata === 'object') {
+                        Object.keys(selectedConnection.custom_metadata).forEach(key => {
+                          if (selectedConnection.custom_metadata[key] !== undefined && selectedConnection.custom_metadata[key] !== null) {
+                            baseConnectionObject[key] = selectedConnection.custom_metadata[key];
+                          }
+                        });
+                      }
+                      
+                      // Remove any undefined or null values to prevent validation issues
+                      const connectionObject = {};
+                      Object.keys(baseConnectionObject).forEach(key => {
+                        if (baseConnectionObject[key] !== undefined && baseConnectionObject[key] !== null && baseConnectionObject[key] !== '') {
+                          connectionObject[key] = baseConnectionObject[key];
+                        }
+                      });
+                      
+                      try {
+                        formField.onChange(connectionObject);
+                        
+                        // Check form validation state after setting the connection
+                        setTimeout(() => {
+                          const formState = form?.formState;
+                        }, 100);
+                      } catch (error) {
+                        console.error('🔧 FieldRenderer: Error setting connection object:', error);
+                        console.error('🔧 FieldRenderer: Connection object that caused error:', connectionObject);
+                      }
+                    } else {
+                      // Fallback to just the connection_config_id
+                      formField.onChange({ connection_config_id: String(value) });
+                    }
+                  } else {
+                    // For endpoint fields (like connection_config_id), just set the ID value
+                    formField.onChange(value);
+                  }
+                }}
+                disabled={isLoadingEndpoint}
+              >
+                <SelectTrigger className={compact ? "h-9 text-sm" : "h-9 text-sm"}>
+                  <SelectValue placeholder={isLoadingEndpoint ? "Loading..." : `Select ${fieldTitle.toLowerCase()}...`} />
+                </SelectTrigger>
+                <SelectContent style={{ zIndex: 99999 }} className="max-h-48">
+                  {isLoadingEndpoint ? (
+                    <SelectItem value="loading" disabled>
+                      Loading options...
+                    </SelectItem>
+                  ) : endpointOptions.length > 0 ? (
+                    endpointOptions.map((option: any) => {
+                      // Handle different option formats
+                      const value = option.id || option.value || option.connection_config_id || option;
+                      // Prioritize connection_config_name for display, fallback to connection_name, then other options
+                      const label = option.connection_config_name || 
+                                  option.connection_name || 
+                                  option.name || 
+                                  option.label || 
+                                  option.title || 
+                                  value;
+                      
+                      // Debug logging for connection options
+                      const isComplexConnectionField = (fieldKey === 'connection' || fullFieldKey.includes('connection')) && 
+                                                       !fieldKey.includes('connection_config_id') && 
+                                                       !fullFieldKey.includes('connection_config_id');
+                      
+                      return (
+                        <SelectItem key={value} value={value.toString()}>
+                          {label || `[No Label - ${value}]`}
+                        </SelectItem>
+                      );
+                    })
+                  ) : (
+                    <SelectItem value="no-options" disabled>
+                      No options available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             ) : /* Handle Auto-complete UI hint */
             isAutoComplete ? (
               (() => {
-                console.log('🎯 Rendering Autocomplete for:', fieldKey, 'with options:', sourceColumns?.map(col => col.name) || []);
+                const columnOptions = sourceColumns?.map(col => col.name) || [];
                 return (
                   <Autocomplete
-                    options={sourceColumns?.map(col => col.name) || []}
+                    options={columnOptions}
                     value={formField.value || ''}
-                    onChange={formField.onChange}
+                    onChange={(newValue) => {
+                      formField.onChange(newValue);
+                    }}
                     placeholder={`Select ${fieldTitle}`}
-                    className="w-full"
+                    className={compact ? "w-full text-sm h-9" : "w-full h-9"}
                   />
                 );
               })()
@@ -553,61 +714,110 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   onCheckedChange={formField.onChange}
                 />
                 <span className="text-sm">
-                  {field.description || `Enable ${fieldTitle}`}
+                  {`Enable ${fieldTitle}`}
                 </span>
               </div>
             ) : field.enum ? (
               <Select
                 value={formField.value?.toString() || ''}
-                onValueChange={formField.onChange}
+                onValueChange={(value) => {
+                  if (process.env.NODE_ENV === 'development' && fieldKey.includes('source_type')) {
+                    console.log(`🔧 FieldRenderer: source_type changed to "${value}" for field key "${fieldKey}"`);
+                  }
+                  formField.onChange(value);
+                }}
               >
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className={compact ? "h-9 text-sm" : "h-9 text-sm"}>
                   <SelectValue placeholder={`Select ${fieldTitle.toLowerCase()}...`} />
                 </SelectTrigger>
                 <SelectContent style={{ zIndex: 99999 }} className="max-h-48">
-                  {field.enum.map((option: string) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
+                  {field.enum
+                    .filter((option: string) => option !== null && option !== undefined && option !== '')
+                    .map((option: string) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             ) : field.type === 'string' && (field.format === 'textarea' || field.minLength > 100 || fieldKey === 'expression') ? (
               <>
-                {fieldKey === 'expression' && console.log('🎯 Using Textarea for expression field:', { fullFieldKey, value: formField.value })}
                 <Textarea
                   {...formField}
                   placeholder={field.examples?.[0] || field.default || (fieldKey === 'expression' ? 'Enter SQL expression...' : '')}
-                  rows={fieldKey === 'expression' ? 2 : (field.format === 'textarea' ? 4 : 3)}
-                  className={`text-sm resize-none ${fieldKey === 'expression' ? 'font-mono' : ''}`}
+                  rows={compact ? 1 : (fieldKey === 'expression' ? 2 : (field.format === 'textarea' ? 4 : 3))}
+                  className={compact ? `text-sm resize-none h-9 ${fieldKey === 'expression' ? 'font-mono' : ''}` : `text-sm resize-none ${fieldKey === 'expression' ? 'font-mono' : ''}`}
                 />
               </>
             ) : field.type === 'array' ? (
-              // Handle array fields with simple textarea for now
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  Array field: {fieldTitle}
+              // Handle array fields - check if it's a simple string array or complex array
+              field.items?.type === 'string' ? (
+                // Simple string array - use a better UI for column selection
+                <div className="space-y-2">
+                  {!hideLabel && (
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {fieldTitle} (one per line)
+                    </div>
+                  )}
+                  <Textarea
+                    {...formField}
+                    value={Array.isArray(formField.value) ? formField.value.join('\n') : formField.value || ''}
+                    onChange={(e) => {
+                      const arrayValue = e.target.value.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line !== '');
+                      formField.onChange(arrayValue);
+                    }}
+                    placeholder={hideLabel ? `Enter ${fieldTitle.toLowerCase()}, one per line` : "Enter column names, one per line"}
+                    rows={compact ? 2 : Math.max(3, Math.min(8, (formField.value?.length || 0) + 2))}
+                    className={`font-mono text-sm ${compact ? 'text-xs' : ''}`}
+                  />
+                  {!hideLabel && sourceColumns && sourceColumns.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      Available columns: {sourceColumns.map(col => col.name).join(', ')}
+                    </div>
+                  )}
                 </div>
-                <Textarea
-                  {...formField}
-                  value={Array.isArray(formField.value) ? formField.value.join('\n') : formField.value || ''}
-                  onChange={(e) => {
-                    const arrayValue = e.target.value.split('\n').filter(line => line.trim() !== '');
-                    formField.onChange(arrayValue);
-                  }}
-                  placeholder="Enter one item per line"
-                  rows={3}
-                />
-              </div>
+              ) : (
+                // Complex array - fallback to simple textarea
+                <div className="space-y-2">
+                  {!hideLabel && (
+                    <div className="text-sm text-muted-foreground">
+                      Array field: {fieldTitle}
+                    </div>
+                  )}
+                  <Textarea
+                    {...formField}
+                    value={Array.isArray(formField.value) ? formField.value.join('\n') : formField.value || ''}
+                    onChange={(e) => {
+                      const arrayValue = e.target.value.split('\n').filter(line => line.trim() !== '');
+                      formField.onChange(arrayValue);
+                    }}
+                    placeholder={hideLabel ? `Enter ${fieldTitle.toLowerCase()}, one per line` : "Enter one item per line"}
+                    rows={compact ? 2 : 3}
+                    className={compact ? 'text-xs' : ''}
+                  />
+                </div>
+              )
             ) : field.type === 'object' ? (
               // Handle object fields - check if it's a key-value object or structured object
-              field.additionalProperties && !field.properties && !field.allOf ? (
-                // Key-value object (like parameters)
-                <KeyValueEditor
-                  value={formField.value || {}}
-                  onChange={formField.onChange}
-                  placeholder="Add parameter"
-                />
+              (() => {
+                const useKeyValueEditor = (field.additionalProperties && !field.properties && !field.allOf) || fieldKey === 'rename_columns';
+                return useKeyValueEditor;
+              })() ? (
+                // Key-value object (like parameters) or specifically rename_columns
+                (() => {
+                 
+                  return (
+                    <KeyValueEditor
+                      value={formField.value || {}}
+                      onChange={(newValue) => {
+                        formField.onChange(newValue);
+                      }}
+                      placeholder={fieldKey === 'rename_columns' ? "Add column rename" : "Add parameter"}
+                    />
+                  );
+                })()
               ) : field.properties || field.allOf ? (
                 // Complex structured object with properties or conditional logic
                 <div className="w-full">
@@ -653,15 +863,25 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     : 'text'
                 }
                 placeholder={field.examples?.[0] || field.default || ''}
-                className="h-9"
+                className={compact ? "h-9 text-sm" : "h-9"}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (field.type === 'number' || field.type === 'integer') {
+                    // Convert string to number for number/integer fields
+                    if (value === '' || value === null || value === undefined) {
+                      formField.onChange(undefined);
+                    } else {
+                      const numValue = field.type === 'integer' ? parseInt(value, 10) : parseFloat(value);
+                      formField.onChange(isNaN(numValue) ? value : numValue);
+                    }
+                  } else {
+                    formField.onChange(value);
+                  }
+                }}
               />
             )}
           </FormControl>
-          {field.description && (
-            <FormDescription>
-              {field.description}
-            </FormDescription>
-          )}
+
           <FormMessage className="text-xs" />
         </FormItem>
         );

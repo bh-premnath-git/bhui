@@ -17,12 +17,15 @@ export const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
 
+
+
   const addKeyValue = () => {
     if (newKey.trim() && newValue.trim()) {
       const updatedValue = {
         ...value,
         [newKey.trim()]: newValue.trim()
       };
+
       onChange(updatedValue);
       setNewKey('');
       setNewValue('');
@@ -44,6 +47,7 @@ export const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     }
     
     updatedValue[newKey] = newValue;
+
     onChange(updatedValue);
   };
 

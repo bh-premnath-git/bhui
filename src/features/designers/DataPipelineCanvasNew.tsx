@@ -237,7 +237,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
       {pipelineType?.toLowerCase() == "design" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
         
         {errorBanner && (
-          <div className="fixed top-0 left-0 right-0 z-50 p-4">
+          <div className="fixed top-20 left-20 right-10 z-50 p-4">
             <ErrorBanner
               title={errorBanner.title}
               description={errorBanner.description}
@@ -318,14 +318,70 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           )}
 
           {selectedSchema && selectedSchema.title === 'Target' && (() => {
-            const initialValues = selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {};
+            // Get the actual node data to extract transformationData
+            const targetNode = nodes.find(node => node.id === selectedSchema?.nodeId);
+            const nodeTransformationData = targetNode?.data?.transformationData || {};
             
-            console.log('🔧 DataPipelineCanvasNew - Target form data:', {
+            // Combine form states with node transformation data, prioritizing form states
+            const formStateData = formStates[selectedSchema?.nodeId] || {};
+            const rawInitialValues = {
+              ...nodeTransformationData,
+              ...formStateData,
+              ...selectedSchema.initialValues
+            };
+            
+            console.log('🔧 DataPipelineCanvasNew - Raw Target form data:', {
               selectedSchema,
-              initialValues,
-              formStates: formStates[selectedSchema?.nodeId],
+              targetNode: targetNode?.data,
+              nodeTransformationData,
+              formStateData,
+              rawInitialValues,
               nodeId: selectedSchema?.nodeId
             });
+            
+            // Properly structure the initial values to ensure connection and file_type are correctly mapped
+            const initialValues = {
+              ...rawInitialValues,
+              // Ensure target structure is properly formed
+              target: {
+                target_type: rawInitialValues?.target?.target_type || rawInitialValues?.target_type || 'File',
+                target_name: rawInitialValues?.target?.target_name || rawInitialValues?.target_name || '',
+                table_name: rawInitialValues?.target?.table_name || rawInitialValues?.table_name || '',
+                file_name: rawInitialValues?.target?.file_name || rawInitialValues?.file_name || '',
+                load_mode: rawInitialValues?.target?.load_mode || rawInitialValues?.load_mode || 'append',
+                // Ensure connection is properly structured
+                connection: {
+                  ...(rawInitialValues?.target?.connection || {}),
+                  ...(rawInitialValues?.connection || {}),
+                  // Ensure connection_config_id is available
+                  connection_config_id: rawInitialValues?.target?.connection?.connection_config_id || 
+                                       rawInitialValues?.target?.connection?.id ||
+                                       rawInitialValues?.connection?.connection_config_id ||
+                                       rawInitialValues?.connection?.id ||
+                                       rawInitialValues?.connection_config_id ||
+                                       // Handle $ref format by extracting the connection name
+                                       (rawInitialValues?.target?.connection?.$ref ? 
+                                         rawInitialValues.target.connection.$ref.split('/').pop() : null) ||
+                                       (rawInitialValues?.connection?.$ref ? 
+                                         rawInitialValues.connection.$ref.split('/').pop() : null)
+                }
+              },
+              // Ensure file_type is at root level for schema resolution and normalize to uppercase
+              file_type: (() => {
+                const rawFileType = rawInitialValues?.file_type || rawInitialValues?.target?.file_type || 'CSV';
+                return typeof rawFileType === 'string' ? rawFileType.toUpperCase() : 'CSV';
+              })(),
+              // Ensure write_options are properly structured
+              write_options: rawInitialValues?.write_options || {
+                header: true,
+                sep: ",",
+                createDisposition: 'CREATE_IF_NEEDED',
+                writeMethod: (rawInitialValues?.target?.target_type || rawInitialValues?.target_type) === 'Relational' ? 'direct' : 'APPEND'
+              },
+              // Add transformation and task_id to ensure proper form structure
+              transformation: rawInitialValues?.transformation || 'writer',
+              task_id: rawInitialValues?.task_id || selectedSchema?.nodeId || ''
+            };
             
             // Structure the source data the way TargetPopUp expects it
             const sourceData = {
@@ -341,17 +397,28 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                 file_type: initialValues?.file_type || 'CSV'
               },
               transformationData: {
-                write_options: initialValues?.write_options || {
-                  header: true,
-                  sep: ",",
-                  createDisposition: 'CREATE_IF_NEEDED',
-                  writeMethod: initialValues?.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
-                }
+                write_options: initialValues?.write_options
               },
               nodeId: selectedSchema?.nodeId
             };
             
-            console.log('🔧 DataPipelineCanvasNew - Structured sourceData:', sourceData);
+            console.log('🔧 DataPipelineCanvasNew - Processed initial values:', {
+              rawInitialValues,
+              processedInitialValues: initialValues,
+              sourceData,
+              connectionDetails: {
+                hasTargetConnection: !!initialValues?.target?.connection,
+                connectionConfigId: initialValues?.target?.connection?.connection_config_id,
+                connectionKeys: initialValues?.target?.connection ? Object.keys(initialValues.target.connection) : [],
+                rawConnectionData: initialValues?.target?.connection
+              },
+              targetTypeCheck: {
+                targetType: initialValues?.target?.target_type,
+                fileType: initialValues?.file_type,
+                transformation: initialValues?.transformation,
+                taskId: initialValues?.task_id
+              }
+            });
             
             return (
               <TargetPopUp

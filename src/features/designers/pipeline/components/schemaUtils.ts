@@ -1,11 +1,38 @@
 // Utility functions for handling complex JSON schemas
 
+// Debug control functions
+declare global {
+  interface Window {
+    enableVerboseSchemaDebug?: boolean;
+    lastLoggedSourceType?: string;
+    lastActiveFields?: string[];
+  }
+}
+
+// Helper function to enable verbose schema debugging
+export function enableVerboseSchemaDebug() {
+  if (typeof window !== 'undefined') {
+    window.enableVerboseSchemaDebug = true;
+  }
+}
+
+// Helper function to disable verbose schema debugging
+export function disableVerboseSchemaDebug() {
+  if (typeof window !== 'undefined') {
+    window.enableVerboseSchemaDebug = false;
+  }
+}
+
 /**
  * Convert underscore-separated field names to proper display names
  * e.g., "field_name" -> "Field Name", "some_long_field_name" -> "Some Long Field Name"
+ * Also handles nested field paths like "source.source_type" -> "Source Type"
  */
 export function formatFieldTitle(fieldKey: string): string {
-  return fieldKey
+  // Handle nested field paths by taking only the last part
+  const actualFieldName = fieldKey.includes('.') ? fieldKey.split('.').pop() || fieldKey : fieldKey;
+  
+  return actualFieldName
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
@@ -26,6 +53,7 @@ export interface SchemaProperty {
   oneOf?: SchemaProperty[];
   if?: SchemaProperty;
   then?: SchemaProperty;
+  else?: SchemaProperty;
   const?: any;
 }
 
@@ -77,7 +105,7 @@ export function extractPropertiesFromSchema(schema: SchemaProperty): ExtractedPr
   }
 
   // Remove duplicates from required array
-  required = [...new Set(required)];
+  required = Array.from(new Set(required));
 
   return { properties, required };
 }
@@ -101,12 +129,60 @@ export function getDefaultValueForField(field: SchemaProperty): any {
     case 'array':
       return [];
     case 'object':
+      // For objects with properties, initialize with default values for each property
+      if (field.properties) {
+        const obj: any = {};
+        Object.entries(field.properties).forEach(([key, propField]: [string, any]) => {
+          obj[key] = getDefaultValueForField(propField);
+        });
+        return obj;
+      }
+      // For endpoint fields (ui-hint: endpoint), return null to indicate no selection
+      if (field['ui-hint'] === 'endpoint') {
+        return null;
+      }
       // For objects with additionalProperties (key-value objects), return empty object
-      // For structured objects, could initialize with default properties
       return {};
     default:
       return '';
   }
+}
+
+/**
+ * Transform array values to the format expected by ArrayField component
+ * For primitive arrays, ArrayField expects objects with 'value' property
+ */
+export function transformArrayForForm(value: any, field: SchemaProperty): any {
+  if (!Array.isArray(value) || field.type !== 'array') {
+    return value;
+  }
+
+  // Check if this is a primitive array (string, number, boolean items)
+  const itemType = field.items?.type;
+  const isPrimitiveArray = itemType && ['string', 'number', 'integer', 'boolean'].includes(itemType);
+  
+  
+  if (isPrimitiveArray) {
+    // Transform simple array values to objects with 'value' property
+    const transformed = value.map((item: any, index: number) => {
+      // If it's already in the correct format, keep it
+      if (typeof item === 'object' && item !== null && 'value' in item) {
+        return item;
+      }
+      // Transform primitive value to object format
+      return {
+        value: item,
+        _key: `item_${index}_${Date.now()}`
+      };
+    });
+    return transformed;
+  }
+
+  // For object arrays, return as-is but ensure each item has a _key
+  return value.map((item: any, index: number) => ({
+    ...item,
+    _key: item._key || `item_${index}_${Date.now()}`
+  }));
 }
 
 /**
@@ -161,9 +237,9 @@ export function generateInitialValues(schema: SchemaProperty): Record<string, an
             }
             
             if (conditionField?.enum?.includes(condition.value)) {
-              // Only set if it's the first enum value or matches the default
-              if (conditionField.default === condition.value || 
-                  (conditionField.default === undefined && conditionField.enum[0] === condition.value)) {
+              // Only set if there's an explicit default that matches the condition value
+              // Don't automatically set to first enum value as this causes unwanted conditional fields to appear
+              if (conditionField.default === condition.value) {
                 setNestedValue(initialValues, condition.field, condition.value);
               }
             }
@@ -260,7 +336,7 @@ export function extractConditionalFields(schema: SchemaProperty): {
   }
 
   // Remove duplicates from required array
-  baseRequired = [...new Set(baseRequired)];
+  baseRequired = Array.from(new Set(baseRequired));
 
   return { baseFields, conditionalFields, baseRequired };
 }
@@ -337,10 +413,24 @@ export function extractAllConditionsFromIf(ifSchema: SchemaProperty, parentPath:
 
 /**
  * Get nested value from object using dot notation (e.g., "source.type")
+ * Handles multiple form structure patterns for maximum compatibility
  */
 export function getNestedValue(obj: any, path: string): any {
   if (!path.includes('.')) {
-    return obj[path];
+    // First try the direct path
+    let value = obj[path];
+    
+    // If not found and this looks like a root-level field that might be nested under 'source'
+    if (value === undefined && obj.source && typeof obj.source === 'object') {
+      // Try looking under 'source' for common fields
+      if (['source_type', 'file_name', 'table_name', 'file_type'].includes(path)) {
+        value = obj.source[path];
+        
+
+      }
+    }
+    
+    return value;
   }
   
   const parts = path.split('.');
@@ -351,6 +441,24 @@ export function getNestedValue(obj: any, path: string): any {
       return undefined;
     }
     current = current[part];
+  }
+  
+  // If we didn't find the nested path, try some common alternatives
+  if (current === undefined && path.includes('source.')) {
+    // Try alternative paths for common mismatches
+    if (path === 'source.source_type' && obj.source_type !== undefined) {
+      // Schema expects source.source_type but form has source_type at root
+      return obj.source_type;
+    }
+    if (path === 'source.type' && obj.source && obj.source.source_type !== undefined) {
+      // Schema expects source.type but form has source.source_type
+      return obj.source.source_type;
+    }
+    
+    // Handle double nesting: source.source.source_type
+    if (path === 'source.source_type' && obj.source && obj.source.source && obj.source.source.source_type !== undefined) {
+      return obj.source.source.source_type;
+    }
   }
   
   return current;
@@ -387,12 +495,19 @@ export function isConditionMet(condition: { field: string; value: any; operator?
   const operator = condition.operator || 'equals';
   
   let result = false;
+  
   switch (operator) {
     case 'equals':
       result = fieldValue === condition.value;
       break;
     case 'in':
-      result = Array.isArray(condition.value) && condition.value.includes(fieldValue);
+      result = Array.isArray(condition.value) ? condition.value.includes(fieldValue) : fieldValue === condition.value;
+      break;
+    case 'not_equals':
+      result = fieldValue !== condition.value;
+      break;
+    case 'not_in':
+      result = Array.isArray(condition.value) ? !condition.value.includes(fieldValue) : fieldValue !== condition.value;
       break;
     default:
       result = fieldValue === condition.value;
@@ -403,108 +518,53 @@ export function isConditionMet(condition: { field: string; value: any; operator?
     result = !result;
   }
   
-  // Debug logging for individual condition evaluation
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔍 Condition check:`, {
-      field: condition.field,
-      operator,
-      expectedValue: condition.value,
-      actualValue: fieldValue,
-      result,
-      negate: condition.negate,
-      isArray: Array.isArray(condition.value),
-      includes: Array.isArray(condition.value) ? condition.value.includes(fieldValue) : 'N/A'
-    });
-  }
-  
   return result;
 }
 
 /**
- * Check if all conditions are met (AND logic)
+ * Check if all conditions in an array are met
  */
 export function areAllConditionsMet(conditions: Array<{ field: string; value: any; operator?: string; negate?: boolean }>, formValues: any): boolean {
   return conditions.every(condition => isConditionMet(condition, formValues));
 }
 
 /**
- * Recursively process allOf conditions, handling nested allOf structures
+ * Process allOf conditionals in a schema
  */
-function processAllOfRecursively(
-  allOfArray: SchemaProperty[],
+function processAllOfConditionals(
+  allOfSchemas: SchemaProperty[],
   formValues: Record<string, any>,
   depth: number = 0
-): {
-  fields: Record<string, SchemaProperty>;
-  required: string[];
-} {
+): { fields: Record<string, SchemaProperty>; required: string[] } {
   let resultFields: Record<string, SchemaProperty> = {};
   let resultRequired: string[] = [];
 
-  const indent = '  '.repeat(depth);
-  
-  allOfArray.forEach((subSchema, index) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`${indent}🔄 Processing allOf[${index}] at depth ${depth}`);
-    }
-
+  allOfSchemas.forEach((subSchema, index) => {
     if (subSchema.if && subSchema.then) {
       // This is a conditional schema - evaluate the condition
       const conditions = extractAllConditionsFromIf(subSchema.if);
       const isConditionMet = areAllConditionsMet(conditions, formValues);
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`${indent}🔄 allOf[${index}] condition evaluation:`, {
-          conditions,
-          formValues,
-          isConditionMet,
-          thenProperties: subSchema.then?.properties ? Object.keys(subSchema.then.properties) : 'none',
-          hasNestedAllOf: !!(subSchema.then?.allOf),
-          conditionDetails: conditions.map(c => ({
-            field: c.field,
-            operator: c.operator,
-            expectedValue: c.value,
-            actualValue: getNestedValue(formValues, c.field),
-            matches: isConditionMet
-          }))
-        });
-      }
       
       if (isConditionMet) {
         // Process the 'then' schema
         const thenResult = processSchemaRecursively(subSchema.then, formValues, depth + 1);
         resultFields = { ...resultFields, ...thenResult.fields };
         resultRequired = [...resultRequired, ...thenResult.required];
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`${indent}✅ Added conditional fields:`, Object.keys(thenResult.fields));
-        }
       } else if (subSchema.else) {
         // Process the 'else' schema
         const elseResult = processSchemaRecursively(subSchema.else, formValues, depth + 1);
         resultFields = { ...resultFields, ...elseResult.fields };
         resultRequired = [...resultRequired, ...elseResult.required];
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`${indent}❌ Added else fields:`, Object.keys(elseResult.fields));
-        }
       }
     } else {
       // This is a base schema to be merged unconditionally
       const baseResult = processSchemaRecursively(subSchema, formValues, depth + 1);
       resultFields = { ...resultFields, ...baseResult.fields };
       resultRequired = [...resultRequired, ...baseResult.required];
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`${indent}📦 Added base fields:`, Object.keys(baseResult.fields));
-      }
     }
   });
 
-  return {
-    fields: resultFields,
-    required: [...new Set(resultRequired)]
-  };
+  return { fields: resultFields, required: resultRequired };
 }
 
 /**
@@ -514,57 +574,31 @@ function processSchemaRecursively(
   schema: SchemaProperty,
   formValues: Record<string, any>,
   depth: number = 0
-): {
-  fields: Record<string, SchemaProperty>;
-  required: string[];
-} {
+): { fields: Record<string, SchemaProperty>; required: string[] } {
   let schemaFields: Record<string, SchemaProperty> = {};
   let schemaRequired: string[] = [];
 
-  const indent = '  '.repeat(depth);
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`${indent}📋 Processing schema recursively at depth ${depth}:`, {
-      hasProperties: !!schema.properties,
-      hasRequired: !!schema.required,
-      hasAllOf: !!schema.allOf,
-      propertiesKeys: schema.properties ? Object.keys(schema.properties) : [],
-      requiredFields: schema.required || []
-    });
-  }
-
   // Extract direct properties
   if (schema.properties) {
-    schemaFields = { ...schema.properties };
+    schemaFields = { ...schemaFields, ...schema.properties };
   }
 
-  // Extract direct required fields
+  // Extract required fields
   if (schema.required) {
-    schemaRequired = [...schema.required];
+    schemaRequired = [...schemaRequired, ...schema.required];
   }
 
   // Process nested allOf if it exists
   if (schema.allOf && Array.isArray(schema.allOf)) {
-    const nestedAllOf = processAllOfRecursively(schema.allOf, formValues, depth);
+    const nestedAllOf = processAllOfConditionals(schema.allOf, formValues, depth + 1);
     schemaFields = { ...schemaFields, ...nestedAllOf.fields };
     schemaRequired = [...schemaRequired, ...nestedAllOf.required];
   }
 
-  const result = {
+  return {
     fields: schemaFields,
-    required: [...new Set(schemaRequired)]
+    required: Array.from(new Set(schemaRequired))
   };
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`${indent}✅ Schema processing result:`, {
-      fieldsCount: Object.keys(result.fields).length,
-      fieldNames: Object.keys(result.fields),
-      requiredCount: result.required.length,
-      requiredFields: result.required
-    });
-  }
-
-  return result;
 }
 
 /**
@@ -573,82 +607,160 @@ function processSchemaRecursively(
 export function getActiveFields(
   schema: SchemaProperty,
   formValues: Record<string, any>
-): {
-  fields: Record<string, SchemaProperty>;
-  required: string[];
-} {
-  // Start with ONLY base properties from the schema (not allOf)
+): { fields: Record<string, SchemaProperty>; required: string[] } {
+  // Only log if source_type is being processed to track initial value issues
+  if (schema?.title === 'Source' || formValues?.source?.source_type || formValues?.source_type) {
+    console.log('🔧 getActiveFields - Source processing:', {
+      schemaTitle: schema?.title,
+      sourceType: formValues?.source?.source_type,
+      rootSourceType: formValues?.source_type,
+      hasSourceObject: !!formValues?.source
+    });
+  }
+
   let activeFields: Record<string, SchemaProperty> = {};
   let activeRequired: string[] = [];
 
-  // Step 1: Extract base properties (these are always shown)
-  if (schema.properties) {
-    activeFields = { ...schema.properties };
-  }
+  // Process the schema recursively
+  const result = processSchemaRecursively(schema, formValues, 0);
+  activeFields = { ...activeFields, ...result.fields };
+  activeRequired = [...activeRequired, ...result.required];
 
-  // Step 2: Extract base required fields (these are always required)
-  if (schema.required) {
-    activeRequired = [...schema.required];
-  }
-
-  // Step 3: Process allOf conditions recursively
-  if (schema.allOf && Array.isArray(schema.allOf)) {
-    const processedAllOf = processAllOfRecursively(schema.allOf, formValues, 0);
-    activeFields = { ...activeFields, ...processedAllOf.fields };
-    activeRequired = [...activeRequired, ...processedAllOf.required];
-  }
-
-  // Step 4: Process nested objects with their own conditional logic
+  // Handle nested object fields (like source)
   Object.entries(activeFields).forEach(([fieldKey, field]) => {
-    if (field && typeof field === 'object') {
-      if (field.allOf || (field.type === 'object' && field.properties)) {
-        // Get the nested form values for this object
-        const nestedFormValues = formValues[fieldKey] || {};
-        
-        // Recursively get active fields for the nested object
-        const nestedActiveFields = getActiveFields(field, nestedFormValues);
-        
-        // Update the field with the active nested fields
-        activeFields[fieldKey] = {
-          ...field,
-          properties: nestedActiveFields.fields,
-          required: nestedActiveFields.required,
-        };
+    if (field.allOf || (field.type === 'object' && field.properties)) {
+      // Get the nested form values for this object
+      const nestedFormValues = formValues[fieldKey] || {};
+      
+      // Debug nested processing
+      if (fieldKey === 'source') {
+        console.log('🔧 getActiveFields - Processing nested source:', {
+          fieldKey,
+          nestedFormValues,
+          sourceType: nestedFormValues.source_type,
+          hasSourceType: 'source_type' in nestedFormValues,
+          nestedKeys: Object.keys(nestedFormValues)
+        });
       }
       
-      // Handle array items with conditional logic
-      if (field.type === 'array' && field.items && typeof field.items === 'object') {
-        if (field.items.allOf || field.items.properties) {
-          // For array items, we need to evaluate with empty values initially
-          // The actual values will be evaluated when array items are created
-          const itemsActiveFields = getActiveFields(field.items, {});
-          activeFields[fieldKey] = {
-            ...field,
-            items: {
-              ...field.items,
-              properties: itemsActiveFields.fields,
-              required: itemsActiveFields.required,
-            }
-          };
-        }
-      }
+      // Recursively get active fields for the nested object
+      const nestedActiveFields = getActiveFields(field, nestedFormValues);
+      
+      // Update the field with the active nested fields
+      activeFields[fieldKey] = {
+        ...field,
+        properties: nestedActiveFields.fields,
+        required: nestedActiveFields.required
+      };
     }
   });
 
   // Remove duplicates from required array
-  activeRequired = [...new Set(activeRequired)];
-
-  // Debug final result
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🎯 Final active fields:`, {
-      fields: Object.keys(activeFields),
-      required: activeRequired,
-      formValues
-    });
-  }
+  activeRequired = Array.from(new Set(activeRequired));
 
   return {
     fields: activeFields,
-    required: activeRequired,
+    required: activeRequired
   };
+}
+
+/**
+ * Extract all possible conditional values from a schema to discover all possible fields
+ * This is particularly useful for complex conditional schemas like DataQuality rules
+ */
+export function extractPossibleConditionalValues(schema: SchemaProperty): Record<string, any>[] {
+  const possibleValues: Record<string, any>[] = [];
+  
+  if (!schema.allOf || !Array.isArray(schema.allOf)) {
+    return [{}];
+  }
+  
+  // Extract all possible enum values from conditional schemas
+  const extractEnumValues = (condition: SchemaProperty): Record<string, any[]> => {
+    const enumValues: Record<string, any[]> = {};
+    
+    if (condition.if?.properties) {
+      Object.entries(condition.if.properties).forEach(([key, prop]: [string, any]) => {
+        if (prop.const !== undefined) {
+          if (!enumValues[key]) enumValues[key] = [];
+          enumValues[key].push(prop.const);
+        } else if (prop.enum) {
+          if (!enumValues[key]) enumValues[key] = [];
+          enumValues[key].push(...prop.enum);
+        }
+      });
+    }
+    
+    return enumValues;
+  };
+  
+  // Collect all possible enum values from all conditions
+  const allEnumValues: Record<string, Set<any>> = {};
+  
+  schema.allOf.forEach((condition: SchemaProperty) => {
+    const enumValues = extractEnumValues(condition);
+    Object.entries(enumValues).forEach(([key, values]) => {
+      if (!allEnumValues[key]) allEnumValues[key] = new Set();
+      values.forEach(value => allEnumValues[key].add(value));
+    });
+    
+    // Also check nested allOf conditions
+    if (condition.then?.allOf) {
+      condition.then.allOf.forEach((nestedCondition: SchemaProperty) => {
+        const nestedEnumValues = extractEnumValues(nestedCondition);
+        Object.entries(nestedEnumValues).forEach(([key, values]) => {
+          if (!allEnumValues[key]) allEnumValues[key] = new Set();
+          values.forEach(value => allEnumValues[key].add(value));
+        });
+      });
+    }
+  });
+  
+  // Generate all possible combinations
+  const keys = Object.keys(allEnumValues);
+  if (keys.length === 0) {
+    return [{}];
+  }
+  
+  // For DataQuality specifically, we know the structure, so let's create targeted combinations
+  if (keys.includes('column_type')) {
+    const columnTypes = Array.from(allEnumValues.column_type);
+    columnTypes.forEach(columnType => {
+      // Base combination with just column_type
+      possibleValues.push({ column_type: columnType });
+      
+      // If there are rule_type values, combine them
+      if (allEnumValues.rule_type) {
+        const ruleTypes = Array.from(allEnumValues.rule_type);
+        ruleTypes.forEach(ruleType => {
+          possibleValues.push({ 
+            column_type: columnType, 
+            rule_type: ruleType 
+          });
+        });
+      }
+    });
+  } else {
+    // Generic combination generation for other schemas
+    const generateCombinations = (keyIndex: number, currentCombination: Record<string, any>): void => {
+      if (keyIndex >= keys.length) {
+        possibleValues.push({ ...currentCombination });
+        return;
+      }
+      
+      const key = keys[keyIndex];
+      const values = Array.from(allEnumValues[key]);
+      
+      values.forEach(value => {
+        generateCombinations(keyIndex + 1, { ...currentCombination, [key]: value });
+      });
+    };
+    
+    generateCombinations(0, {});
+  }
+  
+  // Always include an empty combination
+  possibleValues.push({});
+  
+  return possibleValues;
 }

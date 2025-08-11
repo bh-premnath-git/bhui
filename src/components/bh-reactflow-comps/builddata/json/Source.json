@@ -10,7 +10,7 @@
             "minLength": 1,
             "order": 1
         },
-        "type": {
+        "source_type": {
             "type": "string",
             "enum": [
                 "File",
@@ -26,14 +26,14 @@
     },
     "required": [
         "source_name",
-        "type",
+        "source_type",
         "connection"
     ],
     "allOf": [
         {
             "if": {
                 "properties": {
-                    "type": {
+                    "source_type": {
                         "const": "File"
                     }
                 }
@@ -53,7 +53,7 @@
         {
             "if": {
                 "properties": {
-                    "type": {
+                    "source_type": {
                         "const": "Relational"
                     }
                 }

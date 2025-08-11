@@ -7,7 +7,6 @@ import { TargetWrapper } from './TargetWrapper';
 
 // Import existing components for fallback/direct use
 import OrderPopUp from '@/components/bh-reactflow-comps/builddata/OrderPopUp';
-import { ReaderOptionsForm } from '@/components/bh-reactflow-comps/builddata/ReaderOptionsForm';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import OrderPopUpContent from './OrderPopUpContent';
 
@@ -26,7 +25,6 @@ export const componentRegistry: Record<string, React.ComponentType<any>> = {
   'OrderPopUp': OrderPopUp,
   
   // Direct access to original components (if needed)
-  'ReaderOptionsForm.original': ReaderOptionsForm,
   'TargetPopUp.original': TargetPopUp,
   'ReaderWrapper': ReaderWrapper,
   

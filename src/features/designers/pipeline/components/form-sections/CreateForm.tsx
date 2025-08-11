@@ -246,6 +246,29 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       return readerFormValues;
     }
     
+    // Add specific initialization for Mapper form
+    if (schema?.title === 'Mapper') {
+      console.log("Initializing Mapper form with:", {
+        initialValues,
+        schema
+      });
+      
+      const mapperFormValues = {
+        derived_fields: initialValues?.derived_fields || [{ name: '', expression: '' }],
+        select_columns: Array.isArray(initialValues?.select_columns) 
+          ? initialValues.select_columns.filter(col => col !== null && col !== undefined && col !== '')
+          : [],
+        column_list: Array.isArray(initialValues?.column_list) 
+          ? initialValues.column_list.filter(col => col !== null && col !== undefined && col !== '')
+          : [],
+        dependent_on: initialValues?.dependent_on || [],
+        ...values
+      };
+      
+      console.log("Final Mapper form values:", mapperFormValues);
+      return mapperFormValues;
+    }
+    
     // Add specific initialization for Filter form
     if (schema?.title === 'Filter') {
       return {
@@ -297,8 +320,8 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
       };
     }
     
-    // Add specific initialization for SequenceGenerator form
-    if (schema?.title === 'SequenceGenerator') {
+    // Add specific initialization for Sequence form
+    if (schema?.title === 'Sequence') {
       return {
         transformation: 'sequence_generator', // Required field
         for_column_name: initialValues?.for_column_name || '',
@@ -853,6 +876,30 @@ console.log(initialFormValues,"initialFormValues")
         return acc;
       }
       
+      // Special handling for Mapper select_columns
+      if (key === 'select_columns' && Array.isArray(value) && schema.title === 'Mapper') {
+        // Filter out empty, null, and undefined values
+        const cleanedColumns = value.filter(item => 
+          item !== null && item !== undefined && item !== '' && 
+          (typeof item === 'string' ? item.trim() : true)
+        );
+        acc[key] = cleanedColumns;
+        return acc;
+      }
+      
+      // Special handling for Mapper column_list (if it exists as a simple array)
+      if (key === 'column_list' && Array.isArray(value) && schema.title === 'Mapper') {
+        // For simple string arrays, filter out empty values
+        if (value.length > 0 && typeof value[0] === 'string') {
+          const cleanedColumns = value.filter(item => 
+            item !== null && item !== undefined && item !== '' && 
+            (typeof item === 'string' ? item.trim() : true)
+          );
+          acc[key] = cleanedColumns;
+          return acc;
+        }
+      }
+      
       // Special handling for Aggregator fields
       if (key === 'aggregations' && Array.isArray(value) && schema.title === 'Aggregator') {
         // Filter out items where either target_column or expression is empty
@@ -918,8 +965,8 @@ console.log(initialFormValues,"initialFormValues")
         return acc;
       }
       
-      // Special handling for SequenceGenerator numeric fields
-      if (schema.title === 'SequenceGenerator') {
+      // Special handling for Sequence numeric fields
+      if (schema.title === 'Sequence') {
         if (key === 'start_with' || key === 'step') {
           // Convert string to number for numeric fields
           const numValue = parseFloat(value as string);
@@ -929,7 +976,7 @@ console.log(initialFormValues,"initialFormValues")
           return acc;
         }
         
-        // Special handling for order_by in SequenceGenerator
+        // Special handling for order_by in Sequence
         if (key === 'order_by' && Array.isArray(value)) {
           // Filter out items where column is empty
           const cleanedOrderBy = value.filter(item => 
@@ -2635,8 +2682,8 @@ const FormContent: React.FC<{
     );
   };
 
-  // Add specific handling for SequenceGenerator
-  const renderSequenceGeneratorFields = (control: any, sourceColumns: SourceColumn[], schema: any) => {
+  // Add specific handling for Sequence
+  const renderSequenceFields = (control: any, sourceColumns: SourceColumn[], schema: any) => {
     // Helper function to render individual fields based on schema
     const renderSchemaField = (fieldKey: string, fieldSchema: any) => {
       if (fieldSchema.type === 'array-container') {
@@ -2800,8 +2847,8 @@ const FormContent: React.FC<{
         renderDeduplicatorFields(control, schema)
       ) : schema.title === 'Select' ? (
         renderSelectFields(control, sourceColumns, schema)
-      ) : schema.title === 'SequenceGenerator' ? (
-        renderSequenceGeneratorFields(control, sourceColumns, schema)
+      ) : schema.title === 'Sequence' ? (
+        renderSequenceFields(control, sourceColumns, schema)
       ) : schema.ui_type === 'tab-container' ? (
         (() => {
           // Get all tabs for non-lookup forms

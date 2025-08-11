@@ -1,5 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { ReaderOptionsForm } from '@/components/bh-reactflow-comps/builddata/ReaderOptionsForm';
+import React, { useEffect, useState, Suspense } from 'react';
+
+// Lazy load ReaderOptionsForm to avoid circular dependency
+const ReaderOptionsForm = React.lazy(() => 
+  import('@/components/bh-reactflow-comps/builddata/ReaderOptionsForm').then(module => ({
+    default: module.ReaderOptionsForm
+  }))
+);
 
 interface ReaderWrapperProps {
   schema: any;
@@ -23,11 +29,18 @@ export const ReaderWrapper: React.FC<ReaderWrapperProps> = ({
   const { setValue, watch } = form;
   const formValues = watch();
   
+  // Get initial values from schema (this comes from the pipeline JSON)
+  const initialValues = schema?.initialValues;
+  
   useEffect(() => {
     console.log('🔧 ReaderWrapper successfully rendered!');
     console.log('🔧 Schema title:', schema?.title);
-    console.log('🔧 Form values:', formValues);
-  }, [schema, formValues]);
+    console.log('🔧 Schema object:', schema);
+    console.log('🔧 Initial values from schema:', initialValues);
+    console.log('🔧 Current form values:', formValues);
+    console.log('🔧 Data being passed to ReaderOptionsForm:', initialValues || formValues);
+    debugger; // Check what data ReaderWrapper is receiving and passing
+  }, [schema, formValues, initialValues]);
 
   // Handle form submission from ReaderOptionsForm
   const handleSubmit = (data: any) => {
@@ -62,13 +75,15 @@ export const ReaderWrapper: React.FC<ReaderWrapperProps> = ({
       </div>
       
       {/* Render the existing ReaderOptionsForm */}
-      <ReaderOptionsForm
-        onSubmit={handleSubmit}
-        onClose={handleClose}
-        initialData={formValues}
-        onSourceUpdate={handleSourceUpdate}
-        nodeId={parentKey}
-      />
+      <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Reader Form...</div>}>
+        <ReaderOptionsForm
+          onSubmit={handleSubmit}
+          onClose={handleClose}
+          initialData={initialValues || formValues}
+          onSourceUpdate={handleSourceUpdate}
+          nodeId={parentKey}
+        />
+      </Suspense>
       
       {/* Debug Information */}
       <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">

@@ -18,6 +18,8 @@
         },
         "connection": {
             "type": "object",
+            "ui-hint": "endpoint",
+            "endpoint": "connection_registry/connection_config/list/",
             "items": {
                 "$ref": "Connection.json"
             }
@@ -102,6 +104,30 @@
                     }
                 },
                 "required": ["file_name", "format"]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "target_type": {
+                        "const": "Relational"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Name of the target table",
+                        "minLength": 1
+                    },
+                    "schema_name": {
+                        "type": "string",
+                        "description": "Database schema name (optional)",
+                        "default": ""
+                    }
+                },
+                "required": ["table_name"]
             }
         }
     ]

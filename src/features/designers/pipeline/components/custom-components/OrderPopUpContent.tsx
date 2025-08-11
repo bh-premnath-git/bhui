@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import SchemaTable from "@/components/bh-reactflow-comps/builddata/SchemaTable";
 import OnboardTaggingStep from "@/components/bh-reactflow-comps/builddata/OnboardTaggingStep";
-import { ReaderOptionsForm } from "@/components/bh-reactflow-comps/builddata/ReaderOptionsForm";
+
+// Lazy load ReaderOptionsForm to avoid circular dependency
+const ReaderOptionsForm = React.lazy(() => 
+  import("@/components/bh-reactflow-comps/builddata/ReaderOptionsForm").then(module => ({
+    default: module.ReaderOptionsForm
+  }))
+);
 import { useDispatch, useSelector } from "react-redux";
 import { Search, HelpCircle } from "lucide-react";
 import { Popover, PopoverContent } from "@/components/ui/popover";
@@ -187,13 +193,15 @@ export default function OrderPopUpContent({ source, nodeId, onSourceUpdate }: Or
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
         {selected === 0 && (
-          <ReaderOptionsForm
-            onSubmit={handleSubmit}
-            onClose={() => console.log('Form closed')}
-            initialData={initialData}
-            onSourceUpdate={onSourceUpdate}
-            nodeId={nodeId}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center h-64">Loading...</div>}>
+            <ReaderOptionsForm
+              onSubmit={handleSubmit}
+              onClose={() => console.log('Form closed')}
+              initialData={initialData}
+              onSourceUpdate={onSourceUpdate}
+              nodeId={nodeId}
+            />
+          </Suspense>
         )}
         {selected === 1 && (
           <OnboardTaggingStep 

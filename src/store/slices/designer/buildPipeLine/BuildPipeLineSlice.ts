@@ -1,13 +1,27 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { jwtDecode } from "jwt-decode";
 import { apiService } from '@/lib/api/api-service';
-import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE } from '@/config/platformenv';
+import { AGENT_REMOTE_URL, CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE, SPARK_PORT, PANDAS_PORT, FLINK_PORT } from '@/config/platformenv';
 import { SerializedError } from "@reduxjs/toolkit";
 import { setPipeLineName } from "../features/autoSaveSlice";
 import { ValidEngineTypes, getAvailableEngineTypes } from '@/types/pipeline';
 
 const token: any = sessionStorage?.getItem("token");
 const decoded: any = token ? jwtDecode(token) : null;
+
+// Utility function to get port based on engine type
+const getPortByEngineType = (engineType: ValidEngineTypes): string => {
+  switch (engineType) {
+    case 'pyspark':
+      return SPARK_PORT;
+    case 'pandas':
+      return PANDAS_PORT;
+    case 'pyflink':
+      return FLINK_PORT;
+    default:
+      return SPARK_PORT; // Default fallback
+  }
+};
 
 // Define proper interfaces for the state and responses
 export interface Pipeline {
@@ -238,6 +252,10 @@ export const getTransformationCount: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     console.log(params)
     try {
+      const state = thunkAPI.getState() as any;
+      const engineType = state.buildPipeline.selectedEngineType;
+      const port = getPortByEngineType(engineType);
+      
       const response = await apiService.get({
         baseUrl: CATALOG_REMOTE_API_URL,
         url: `/pipeline/debug/get_transformation_count`,
@@ -246,7 +264,7 @@ export const getTransformationCount: any = createAsyncThunk(
         params: {
           pipeline_name: params.params,
           host: params.host,
-          port: 15003,
+          port: port,
           use_secure: USE_SECURE || 'false'
         }
       });
@@ -286,6 +304,10 @@ export const startPipeLine = createAsyncThunk(
     checkpoints: string[];
   }, thunkAPI) => {
     try {
+      const state = thunkAPI.getState() as any;
+      const engineType = state.buildPipeline.selectedEngineType;
+      const port = getPortByEngineType(engineType);
+      
       let checkpoints=await data.checkpoints.map(item => `checkpoints=${item}`).join('&');
       console.log(checkpoints,"checkpoints")
       // Create params in the correct order and format
@@ -299,7 +321,7 @@ export const startPipeLine = createAsyncThunk(
       // });
       params.append('checkpoints', checkpoints);
       params.append('host', 'host.docker.internal');
-      params.append('port', '15003');
+      params.append('port', port);
       console.log(Object.fromEntries(params),"Object.fromEntries(params)")
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
@@ -321,10 +343,14 @@ export const stopPipeLine: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       console.log(params)
+      const state = thunkAPI.getState() as any;
+      const engineType = state.buildPipeline.selectedEngineType;
+      const port = getPortByEngineType(engineType);
       const host = params.host || 'host.docker.internal';
+      
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/api/v1/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
+        url: `/api/v1/pipeline/debug/stop_pipeline?pipeline_name=${encodeURIComponent(params.params)}&host=${host}&port=${port}&use_secure=${USE_SECURE || 'false'}`,
         // usePrefix: true,
         method: 'POST',
       });
@@ -428,10 +454,14 @@ export const runNextCheckpoint = createAsyncThunk(
   'build-pipline/runNextCheckpoint',
   async (params: { pipeline_name: string, host?: string }, thunkAPI) => {
     try {
+      const state = thunkAPI.getState() as any;
+      const engineType = state.buildPipeline.selectedEngineType;
+      const port = getPortByEngineType(engineType);
       const host = params.host ;
+      
       const response = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=15003&use_secure=${USE_SECURE || 'false'}`,
+        url: `/pipeline/run-next-checkpoint?pipeline_name=${encodeURIComponent(params.pipeline_name)}&host=${host}&port=${port}&use_secure=${USE_SECURE || 'false'}`,
         usePrefix: true,
         method: 'POST'
       });

@@ -181,6 +181,10 @@ interface bnPipelineContextProps {
     detachCluster: () => void
     pipelines: Pipeline[];
     setPipelines: React.Dispatch<React.SetStateAction<Pipeline[]>>;
+    initialDataMap: { [key: string]: any };
+    setInitialDataMap: React.Dispatch<React.SetStateAction<{ [key: string]: any }>>;
+    getInitialDataForNode: (nodeId: string, source: any) => any;
+    createInitialDataForNode: (nodeId: string, source: any) => any;
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -229,6 +233,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
     const { zoomIn, zoomOut, fitView } = useReactFlow();
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+    const [initialDataMap, setInitialDataMap] = useState<{ [key: string]: any }>({});
 
     const [isSaving, setIsSaving] = useState(false); 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -665,7 +670,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Initialize form states for the new nodes
         const initialFormStates = {};
-        const getInitialFormState = (transformation: any, nodeId: string) => {
+        const getInitialFormState = (transformation: any, nodeId: string, matchingNode?: any) => {
             if (!transformation || !nodeId) {
                 return {};
             }
@@ -709,9 +714,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                                 break;
                             }
                         }
-                        
                         if (resolved) {
-                            resolvedConnection = resolved;
+                            resolvedConnection = {
+                                ...resolved,
+                                // Ensure connection_config_id is available for form validation
+                                connection_config_id: resolved.connection_config_id || 
+                                                    resolved.id || 
+                                                    resolved.name ||
+                                                    // Extract from $ref path if needed
+                                                    pathParts[pathParts.length - 1]
+                            };
                         }
                     }
                     
@@ -722,6 +734,99 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                             ...resolvedTarget,
                             connection: resolvedConnection
                         }
+                    };
+                }
+                
+                // Handle Reader transformations with reference resolution
+                if (transformation?.transformation === 'Reader') {
+                    // Resolve source reference if it exists
+                    let resolvedSource = transformation.source;
+                    if (resolvedSource && resolvedSource.$ref && result.pipeline_definition) {
+                        // Resolve the reference manually
+                        const refPath = resolvedSource.$ref.substring(2); // Remove '#/'
+                        const pathParts = refPath.split('/');
+                        let resolved = result.pipeline_definition;
+                        
+                        for (const part of pathParts) {
+                            if (resolved && resolved[part]) {
+                                resolved = resolved[part];
+                            } else {
+                                resolved = null;
+                                break;
+                            }
+                        }
+                        
+                        if (resolved) {
+                            resolvedSource = resolved;
+                        }
+                    }
+                    
+                    // Also resolve connection reference if it exists
+                    let resolvedConnection = resolvedSource?.connection;
+                    if (resolvedConnection && resolvedConnection.$ref && result.pipeline_definition) {
+                        const refPath = resolvedConnection.$ref.substring(2);
+                        const pathParts = refPath.split('/');
+                        let resolved = result.pipeline_definition;
+                        
+                        for (const part of pathParts) {
+                            if (resolved && resolved[part]) {
+                                resolved = resolved[part];
+                            } else {
+                                resolved = null;
+                                break;
+                            }
+                        }
+                        
+                        if (resolved) {
+                            resolvedConnection = {
+                                ...resolved,
+                                // Ensure connection_config_id is available for form validation
+                                connection_config_id: resolved.connection_config_id || 
+                                                    resolved.id || 
+                                                    resolved.name ||
+                                                    // Extract from $ref path if needed
+                                                    pathParts[pathParts.length - 1]
+                            };
+                        }
+                    }
+                    
+                    // Structure the data properly for the ReaderOptionsForm
+                    const readerFormData = {
+                        ...transformation,
+                        nodeId,
+                        // Nest source data under 'source' key as expected by the form schema
+                        source: {
+                            ...resolvedSource,
+                            connection: resolvedConnection,
+                            // Ensure source_type is properly set based on the source data
+                            source_type: resolvedSource?.source_type || 
+                                        (resolvedSource?.table_name ? 'Relational' : 
+                                         resolvedSource?.file_name ? 'File' : 'Relational'),
+                            // Add file_type if it's a file source
+                            file_type: resolvedSource?.file_name ? 
+                                      (resolvedSource.file_name.toLowerCase().endsWith('.csv') ? 'CSV' :
+                                       resolvedSource.file_name.toLowerCase().endsWith('.json') ? 'JSON' :
+                                       resolvedSource.file_name.toLowerCase().endsWith('.parquet') ? 'Parquet' : 'CSV') : undefined
+                        },
+                        // Ensure read_options is properly structured
+                        read_options: transformation.read_options || {},
+                        // Ensure column arrays are properly initialized
+                        select_columns: transformation.select_columns || [],
+                        drop_columns: transformation.drop_columns || [],
+                        rename_columns: transformation.rename_columns || {}
+                    };
+                    
+                    console.log(`🔧 DataPipelineContext: Structured Reader form data for ${nodeId}:`, readerFormData);
+                    return readerFormData;
+                }
+                
+                // Use the normalized transformation data from the matching node
+                const nodeTransformationData = matchingNode?.data?.transformationData;
+                if (nodeTransformationData) {
+                    console.log(`🔧 Using normalized data for ${transformation.transformation} (${nodeId}):`, nodeTransformationData);
+                    return {
+                        ...nodeTransformationData,
+                        nodeId
                     };
                 }
                 
@@ -753,7 +858,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             );
 
             if (matchingNode?.id) {
-                initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+                initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id, matchingNode);
             }
         });
 
@@ -842,6 +947,41 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, [onEdgesChange, dispatch, updateAllNodeDependencies]);
 
+    // Function to update pipeline JSON after form submission
+    const updatePipelineJsonAfterFormSubmit = useCallback(async (updatedNodes: any[], currentEdges: any[]) => {
+        try {
+            console.log('🔧 DataPipelineContext - Updating pipeline JSON after form submission');
+            console.log('🔧 DataPipelineContext - Updated nodes for conversion:', updatedNodes.map(n => ({
+                id: n.id,
+                label: n.data.label,
+                title: n.data.title,
+                hasSource: !!n.data.source,
+                hasTransformationData: !!n.data.transformationData
+            })));
+            
+            // Convert UI nodes to pipeline JSON format
+            const updatedPipelineJson = await convertOptimisedPipelineJsonToPipelineJson(
+                updatedNodes, 
+                currentEdges, 
+                pipelineDtl, 
+                pipelineName
+            );
+            
+            // Update the pipeline JSON state
+            setPipelineJson(updatedPipelineJson);
+            
+            console.log('🔧 DataPipelineContext - Pipeline JSON updated successfully');
+            console.log('🔧 DataPipelineContext - Pipeline JSON transformations:', updatedPipelineJson?.pipeline_json?.transformations?.map(t => ({
+                name: t.name,
+                transformation: t.transformation,
+                hasTarget: !!t.target,
+                hasWriteOptions: !!t.write_options
+            })));
+        } catch (error) {
+            console.error('🔧 DataPipelineContext - Error updating pipeline JSON:', error);
+        }
+    }, [pipelineDtl, pipelineName, setPipelineJson]);
+
     const handleFormSubmit = useCallback((data: any) => {
         console.log('🔧 DataPipelineContext - handleFormSubmit called with data:', data);
         console.log('🔧 DataPipelineContext - selectedSchema:', selectedSchema);
@@ -882,6 +1022,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // Special handling for Target nodes
                 if (currentNodes[nodeIndex].data.label === 'Target') {
                     console.log('🔧 DataPipelineContext - Handling Target node data:', data);
+                    console.log('🔧 DataPipelineContext - Current node before update:', {
+                        title: currentNodes[nodeIndex].data.title,
+                        source: currentNodes[nodeIndex].data.source,
+                        transformationData: currentNodes[nodeIndex].data.transformationData
+                    });
                     
                     // For Target nodes, use target_name as the title
                     updatedTitle = data.target?.target_name || 
@@ -908,6 +1053,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     
                     // Update transformation data name to match the title
                     transformationData.name = updatedTitle;
+                    
+                    console.log('🔧 DataPipelineContext - Final Target node update:', {
+                        updatedTitle,
+                        sourceData,
+                        transformationData
+                    });
                 } else if (currentNodes[nodeIndex].data.label === 'Filter') {
                     // For Filter nodes, use name as title
                     updatedTitle = data.name || currentNodes[nodeIndex].data.title;
@@ -943,6 +1094,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // Update the nodes in the context
                 setNodes(currentNodes);
                 
+                // Update pipeline JSON to reflect the changes
+                updatePipelineJsonAfterFormSubmit(currentNodes, edges);
+                
                 // Force a re-render by updating a timestamp
                 setHeaderUpdateTrigger(prev => prev + 1);
                 
@@ -956,7 +1110,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         
         setIsFormOpen(false);
-    }, [selectedSchema, nodes, setNodes, setHeaderUpdateTrigger]);
+    }, [selectedSchema, nodes, edges, setNodes, setHeaderUpdateTrigger, updatePipelineJsonAfterFormSubmit]);
 
     const handleDialogClose = useCallback(() => {
         setIsFormOpen(false);
@@ -972,6 +1126,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const targetNode = nodes.find(node => node.id === targetNodeId);
         if (targetNode) {
             const moduleName = targetNode.data.label.split(' ')[0];
+            console.log('🔧 DataPipelineContext: handleNodeForm called:', {
+                targetNodeId,
+                targetNode,
+                moduleName,
+                formStatesKeys: Object.keys(formStates),
+                formStatesForThisNode: formStates[targetNodeId]
+            });
             
             // Handle Target nodes specially since they don't have a schema in mdata.json
             if (moduleName === 'Target') {
@@ -994,6 +1155,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 const existingFormState = formStates[targetNodeId] ||
                     Object.entries(formStates).find(([key]) =>
                         key.toLowerCase().includes(moduleName.toLowerCase()))?.[1];
+
+                console.log(`🔧 DataPipelineContext: Opening form for ${moduleName} (${targetNodeId}):`, {
+                    targetNodeId,
+                    moduleName,
+                    existingFormState,
+                    allFormStates: formStates,
+                    formStateKeys: Object.keys(formStates)
+                });
 
                 setSelectedSchema({
                     ...moduleSchema,
@@ -1129,7 +1298,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, []);
 
-
+    // Clear error states and logs when pipeline changes
+    useEffect(() => {
+        setErrorBanner(null);
+        setValidationErrors([]);
+        setConversionLogs([]);
+        setTerminalLogs([]);
+        setShowLogs(false);
+    }, [id, pipeline_id]);
 
     const getTransformationName = (moduleName: string): string => {
         return moduleName.toLowerCase();
@@ -1352,9 +1528,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             x: 50+random(),
             y: 100
         };
-
+        let updatedSource = source;
+        if(updatedSource?.connection_config?.custom_metadata) {
+        updatedSource.connection_config.custom_metadata.connection_config_id=source?.connection_config_id;
+        }
+        // updatedSource.data_src_desc='dummy description';
+// debugger
         const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
-        // debugger
         // Create a more detailed node data structure
         const newNode = {
             id: uniqueId,
@@ -1370,7 +1550,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 requiredFields: node.ui_properties.operators?.map?.((op: any) => {
                     return ({ [op.type]: op.requiredFields })
                 }) || [],
-                source: source,
+                source: updatedSource,
                 title: source?.data_src_name.replace(/[-.\s]/g, '_') || nodeLabel.replace(/[-.\s]/g, '_'), // Also set the title with the numbered label
                 // Initialize an empty transformationData object to store form data
                 transformationData: {
@@ -1380,6 +1560,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 onUpdate: (updatedData: any) => handleNodeUpdate(uniqueId, updatedData)
             }
         };
+
         setNodes((prevNodes) => [...prevNodes, newNode]);
         setUnsavedChanges();
 

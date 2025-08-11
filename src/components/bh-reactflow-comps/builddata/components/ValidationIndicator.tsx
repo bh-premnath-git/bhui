@@ -54,20 +54,21 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
             if (!data?.label) return 'bg-gray-300';
 
             if (data.label.toLowerCase() === "reader") {
-                // console.log("data.source", data.source);
+
                 if (!data.source) return 'bg-red-500';
-                return (data?.source?.data_src_desc && data?.source?.connection_config_id)
+                console.log('Reader source:', data.source);
+                // debugger
+                return ( data?.source?.connection_config_id)
                     ? 'bg-green-500'
                     : (data?.source?.data_src_desc || data?.source?.connection_config_id)
                         ? 'bg-yellow-500'
                         : 'bg-red-500';
+
             }
 
             if (data.label.toLowerCase() === "target") {
-                console.log('🔧 ValidationIndicator - Target data:', data);
                 
                 if (!data.source) {
-                    console.log('🔧 ValidationIndicator - No source data found');
                     return 'bg-red-500';
                 }
                 
@@ -76,12 +77,7 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                                     data.source.connection_config_id;
                 const hasTargetType = data.source.target_type;
                 
-                console.log('🔧 ValidationIndicator - Target validation:', {
-                    hasConnection,
-                    hasTargetType,
-                    connection: data.source.connection,
-                    target_type: data.source.target_type
-                });
+                
                 
                 return (hasTargetType && hasConnection)
                     ? 'bg-green-500'
@@ -91,12 +87,9 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
             }
 
             if (data.label.toLowerCase() === "lookup") {
-                console.log('🔧 ValidationIndicator - Lookup data:', data);
-                
                 // Check if transformationData exists (where lookup form data is stored)
                 const lookupData = data.transformationData;
                 if (!lookupData) {
-                    console.log('🔧 ValidationIndicator - No lookup transformation data found');
                     return 'bg-red-500';
                 }
                 
@@ -106,15 +99,6 @@ export const ValidationIndicator: React.FC<ValidationIndicatorProps> = ({
                 const hasLookupConditions = lookupData.lookup_conditions && 
                     lookupData.lookup_conditions.column_name && lookupData.lookup_conditions.column_name.trim() !== '' &&
                     lookupData.lookup_conditions.lookup_with && lookupData.lookup_conditions.lookup_with.trim() !== '';
-                
-                console.log('🔧 ValidationIndicator - Lookup validation:', {
-                    hasLookupType,
-                    hasLookupColumns,
-                    hasLookupConditions,
-                    lookup_type: lookupData.lookup_type,
-                    lookup_columns: lookupData.lookup_columns,
-                    lookup_conditions: lookupData.lookup_conditions
-                });
                 
                 const allRequiredFieldsFilled = hasLookupType && hasLookupColumns && hasLookupConditions;
                 const someFieldsFilled = hasLookupType || hasLookupColumns || hasLookupConditions;

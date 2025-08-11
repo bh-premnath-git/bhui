@@ -183,7 +183,31 @@ export const ReaderFormField: React.FC<{
                         onChange={(e) => {
                             const newValue = e.target.value;
                             console.log('🔧 ReaderFormField: Connection changed to:', newValue);
-                            onChange(e, [...path, 'connection', 'connection_config_id']);
+                            
+                            // Find the selected connection object
+                            const selectedConn = connectionConfigList?.find(conn => conn.id === newValue);
+                            console.log('🔧 ReaderFormField: Selected connection object:', selectedConn);
+                            
+                            if (selectedConn) {
+                                // Create a synthetic event for the full connection object
+                                const connectionEvent = {
+                                    target: {
+                                        name: 'connection',
+                                        value: {
+                                            connection_config_id: selectedConn.id,
+                                            connection_type: selectedConn.custom_metadata?.type || selectedConn.connection_type,
+                                            name: selectedConn.connection_config_name || selectedConn.name,
+                                            ...selectedConn.custom_metadata
+                                        }
+                                    }
+                                };
+                                
+                                // Update the full connection object
+                                onChange(connectionEvent, [...path, 'connection']);
+                            } else {
+                                // Just update the connection_config_id if no connection found
+                                onChange(e, [...path, 'connection', 'connection_config_id']);
+                            }
                         }}
                         disabled={isFieldDisabled}
                         className="w-full h-8 text-sm px-3 border rounded bg-white shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"

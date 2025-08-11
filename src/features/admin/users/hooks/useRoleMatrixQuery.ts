@@ -4,8 +4,7 @@ import type { RoleMatrixEntry } from "@/types/admin/roles";
 import { KEYCLOAK_API_REMOTE_URL } from "@/config/platformenv";
 
 interface UseRoleMatrixQueryOptions {
-    projectId?: string;
-    environmentId?: string;
+    role_name?: string;
     offset?: number;
     limit?: number;
     orderBy?: string;
@@ -31,8 +30,7 @@ export const useRoleMatrixQuery = (
     options: UseRoleMatrixQueryOptions,
 ) => {
     const {
-        projectId,
-        environmentId,
+        role_name,
         offset = 0,
         limit = 100,
         orderBy = "created_at",
@@ -54,17 +52,14 @@ export const useRoleMatrixQuery = (
             order_by: orderBy,
             order_desc: orderDesc,
         };
-        if (fetchAll) {
-            params.project_id = "*";
-            params.environment_id = "*";
-        } else {
-            if (projectId) params.project_id = projectId;
-            if (environmentId) params.environment_id = environmentId;
+        if (role_name && role_name.trim() !== '') {
+            params.role_name = role_name;
         }
+        
         return params;
-    }, [projectId, environmentId, offset, limit, orderBy, orderDesc, fetchAll]);
+    }, [role_name, offset, limit, orderBy, orderDesc]);
 
-    const shouldFetch = enabled && (fetchAll || Boolean(projectId) || Boolean(environmentId));
+    const shouldFetch = enabled && (fetchAll || role_name !== undefined);
     
     const {
         data: response,

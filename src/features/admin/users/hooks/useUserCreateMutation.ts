@@ -30,7 +30,7 @@ export const useUserCreateMutation = () => {
 
   // Create user mutation
   const createUserMutation = createUser({
-    url: '/bh-user/create-tenant-user',
+    url: '/bh-user/create-user',
     mutationOptions: {
       onSuccess: () => toast.success('User created successfully'),
       onError: (error) => {

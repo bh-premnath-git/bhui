@@ -32,7 +32,7 @@ export interface User extends BaseUser {
   };
   attributes: Record<string, any>;
   bh_roles: Role[];
-  bh_resources: any
+  bh_resources: Record<string, any>[]
 }
 
 export interface UsersPaginatedResponse extends Pagination {
@@ -53,8 +53,10 @@ interface BaseUserFormData {
 }
 
 // Create-specific form data
-export interface UserCreateData extends BaseUserFormData {
-  // No additional fields for create, just using the base
+export interface UserCreateData extends Omit<BaseUserFormData, 'is_tenant_admin'> {
+  bh_roles: Array<Record<string, any>>;
+  bh_resources: Array<Record<string, any>>;
+  
 }
 
 // Update-specific form data
@@ -62,6 +64,8 @@ export interface UserUpdateData extends BaseUserFormData {
   username?: string;
   enabled?: boolean;
   emailVerified?: boolean;
+  bh_roles: Array<Record<string, any>>;
+  bh_resources: Array<Record<string, any>>;
 }
 
 // Type guard to check if form data is for update

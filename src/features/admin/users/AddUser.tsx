@@ -20,7 +20,7 @@ export function AddUser() {
   const environments = useAppSelector((state) => state.users.environments);
   
   // Get all roles for transformation
-  const { roles } = useRoleMatrixQuery({
+  const { roles, isLoading: rolesLoading, isError: rolesError } = useRoleMatrixQuery({
     fetchAll: true,
     enabled: true,
   });
@@ -50,8 +50,6 @@ export function AddUser() {
         bh_roles: bhRoles,
         bh_resources: bhResources,
       };
-      
-      console.log('User creation payload:', payload);
       await handleCreateUser(payload);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
@@ -68,6 +66,9 @@ export function AddUser() {
             mode="create"
             isSubmitting={isCreating}
             error={error || (createError ? String(createError) : null)}
+            roles={roles}
+            rolesLoading={rolesLoading}
+            rolesError={rolesError}
           />
         </div>
       </div>

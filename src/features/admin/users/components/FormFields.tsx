@@ -22,8 +22,8 @@ import { Badge } from "@/components/ui/badge"
 import { useAppSelector } from "@/hooks/useRedux"
 import type { User } from "@/types/admin/user"
 import { AlertCircle, Crown, Loader2, Palette, Shield, Wrench, Eye, Edit, Trash2, Settings } from "lucide-react"
-import { useRoleMatrixQuery } from "../hooks/useRoleMatrixQuery"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import type { RoleMatrixEntry } from "@/types/admin/roles"
 
 export const RequiredFormLabel = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="flex gap-1">
@@ -262,17 +262,21 @@ export const EnvironmentField = ({ form, user }: { form: any; user?: User }) => 
   )
 }
 
-export const RolesField = ({ form, isTenantAdmin, searchTerm }: { form: any; isTenantAdmin: boolean, searchTerm: string }) => {
-  const {
-    roles,
-    isLoading,
-    isError
-  } = useRoleMatrixQuery({
-    role_name: searchTerm || undefined,
-    fetchAll: true,
-    enabled: true,
-  });
-
+export const RolesField = ({ 
+  form, 
+  isTenantAdmin, 
+  searchTerm, 
+  roles, 
+  isLoading, 
+  isError 
+}: { 
+  form: any; 
+  isTenantAdmin: boolean; 
+  searchTerm: string;
+  roles?: RoleMatrixEntry[];
+  isLoading?: boolean;
+  isError?: boolean;
+}) => {
   const roleOptions = getRoleOptions(roles)
   
   // Watch current selected roles and permissions

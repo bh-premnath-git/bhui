@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
+import { TargetPopUp } from '@/components/bh-reactflow-comps/TargetPopUp';
 
 interface TargetWrapperProps {
   schema: any;

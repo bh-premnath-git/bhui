@@ -14,7 +14,7 @@ import { usePipelineModules } from '@/hooks/usePipelineModules';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { pipelineSchema } from "@bh-ai/schemas";
 import { ConditionalSchemaRenderer } from './ConditionalSchemaRenderer';
-import { generateInitialValues, getActiveFields, formatFieldTitle } from './schemaUtils';
+import { generateInitialValues, getActiveFields, formatFieldTitle, transformArrayForForm } from './schemaUtils';
 import { getColumnSuggestions } from '@/lib/pipelineAutoSuggestion';
 import { generatePipelineAgent } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { generateJoinPayload } from '@/lib/pipelineJoinPayload';
@@ -30,6 +30,24 @@ interface PipelineFormProps {
   currentNodeId?: string; // Current node ID (for editing existing nodes)
   inline?: boolean; // Whether to render inline (without dialog wrapper)
 }
+
+// Function to transform initial values for form components
+const transformInitialValuesForForm = (values: any, schema: any): any => {
+  if (!values || !schema || !schema.properties) {
+    return values;
+  }
+
+  const transformedValues = { ...values };
+
+  // Transform array fields to the format expected by ArrayField component
+  Object.entries(schema.properties).forEach(([key, field]: [string, any]) => {
+    if (field.type === 'array' && transformedValues[key] !== undefined) {
+      transformedValues[key] = transformArrayForForm(transformedValues[key], field);
+    }
+  });
+
+  return transformedValues;
+};
 
 // Function to enhance schema with missing UI hints for expression fields
 const enhanceSchemaWithUIHints = (schema: any, transformationName: string): any => {
@@ -225,10 +243,38 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             setSelectedTransformation(transformation);
             setTransformationSchema(enhancedSchema);
             
-            // Initialize configuration form with existing values or default values
-            const formInitialValues = initialValues || {};
-            console.log(`🔧 PipelineForm (${currentNodeId}) initializing with values:`, formInitialValues);
+            // Initialize configuration form with existing values merged with schema defaults
+            const schemaDefaults = generateInitialValues(enhancedSchema);
+            
+            // Transform array values in initialValues to the format expected by ArrayField
+            const transformedInitialValues = transformInitialValuesForForm(initialValues || {}, enhancedSchema);
+            
+            // Merge defaults first, then override with existing values
+            const formInitialValues = { ...schemaDefaults, ...transformedInitialValues };
+            
+            console.log(`🔧 PipelineForm (${currentNodeId}) schema defaults:`, schemaDefaults);
+            console.log(`🔧 PipelineForm (${currentNodeId}) transformed initial values:`, transformedInitialValues);
+            console.log(`🔧 PipelineForm (${currentNodeId}) final form values:`, formInitialValues);
+            console.log(`🔧 PipelineForm (${currentNodeId}) transformation name:`, transformationName);
+            
+            // Reset form with merged values and force update
             configurationForm.reset(formInitialValues);
+            
+            // Force form to update with default values after a short delay
+            setTimeout(() => {
+              const currentValues = configurationForm.getValues();
+              const updatedValues = { ...formInitialValues, ...currentValues };
+              
+              // Only update fields that are still empty/undefined
+              Object.entries(formInitialValues).forEach(([key, value]) => {
+                const currentValue = configurationForm.getValues(key as any);
+                if (currentValue === undefined || currentValue === '' || currentValue === null) {
+                  configurationForm.setValue(key as any, value);
+                }
+              });
+              
+              console.log(`🔧 PipelineForm (${currentNodeId}) form values after timeout:`, configurationForm.getValues());
+            }, 100);
             setIsFormInitialized(true);
             setHasUserInteracted(false);
             
@@ -642,12 +688,12 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
         const derivedFieldMatch = fieldName.match(/derived_fields\.(\d+)\.expression/);
         const columnListMatch = fieldName.match(/column_list\.(\d+)\.expression/);
         
-        let targetColumn = '';
+        let targetColumn = ''; 
         let index = -1;
         
         if (derivedFieldMatch) {
           index = parseInt(derivedFieldMatch[1]);
-          const derivedFields = configurationForm.watch('derived_fields');
+          const derivedFields:any = configurationForm.watch('derived_fields');
           targetColumn = derivedFields?.[index]?.name || '';
         } else if (columnListMatch) {
           index = parseInt(columnListMatch[1]);
@@ -1218,7 +1264,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
                       sourceColumns={columnSuggestions}
                       onExpressionGenerate={handleExpressionGenerate}
                       isFieldGenerating={(fieldName: string) => generatingFields.has(fieldName)}
-                      onClosePipelineForm={handleClose}
+                      useTableView={true} // Enable table view for arrays
                     />
                     
                     

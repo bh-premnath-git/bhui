@@ -9,8 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Popover, PopoverContent } from "@/components/ui/popover";
-import { usePipelineContext } from "@/context/designers/DataPipelineContext";
+
 import {
   Tooltip,
   TooltipContent,
@@ -20,33 +19,213 @@ import {
 import { toast } from "sonner";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
 import { AppDispatch } from "@/store";
-import { apiService } from '@/lib/api/api-service';
-import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+
 import { ReaderDataProvider, useReaderData } from '@/context/ReaderDataContext';
 import { setIsRightPanelOpen } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { apiService } from '@/lib/api/api-service';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
  
 // Internal component that uses the context
 function OrderPopUpContent({ isOpen, onClose, source, nodeId, onSourceUpdate }: any) {
   const [selected, setSelected] = React.useState(0);
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
-  const [initialData, setInitialData] = useState(null);
-  const [dataSources, setDataSources] = useState<any[]>([]);
-  const { pipelineJson } = usePipelineContext();
+  const [initialData, setInitialData] = React.useState<any>(null);
+  const [sourceColumns, setSourceColumns] = React.useState<any[]>([]);
+  const [isLoadingColumns, setIsLoadingColumns] = React.useState(false);
+const [dataSource, setDataSource] = React.useState<number | null>(null);
   const dispatch = useDispatch<AppDispatch>();
-  const { connectionConfigList } = useSelector((state: any) => state.datasource);
   const { readerData, setReaderData } = useReaderData();
+  const { pipelineJson } = usePipelineContext();
+  const {connectionConfigList} = useSelector((state: any) => state.datasource);
   
-console.log('🔧 OrderPopUp: Initializing OrderPopUpContent with source:', source);
+  console.log('🔧 OrderPopUp: Initializing OrderPopUpContent with source:', source);
+  console.log('🔧 OrderPopUp: NodeId:', nodeId);
+  console.log('🔧 OrderPopUp: Pipeline JSON available:', !!pipelineJson);
+
+  // Function to find transformation from pipeline JSON by data_src_id
+  const findTransformationFromPipeline = React.useCallback((dataSrcId: number) => {
+    if (!pipelineJson || !pipelineJson.transformations) {
+      return null;
+    }
+
+    // Find transformation that has a source with matching data_src_id
+    const transformation = pipelineJson.transformations.find((trans: any) => {
+      if (trans.transformation === 'Reader' && trans.source) {
+        // Handle $ref case
+        if (trans.source.$ref) {
+          const refPath = trans.source.$ref.replace('#/', '').split('/');
+          let sourceObj = pipelineJson;
+          for (const path of refPath) {
+            sourceObj = sourceObj[path];
+          }
+          return sourceObj && sourceObj.data_src_id === dataSrcId;
+        }
+        // Handle direct source case
+        return trans.source.data_src_id === dataSrcId;
+      }
+      return false;
+    });
+
+    return transformation;
+  }, [pipelineJson]);
+
+  // Function to resolve source reference from pipeline JSON
+  const resolveSourceFromPipeline = React.useCallback((sourceRef: any) => {
+    if (!pipelineJson) return null;
+
+    if (sourceRef.$ref) {
+      const refPath = sourceRef.$ref.replace('#/', '').split('/');
+      let sourceObj = pipelineJson;
+      for (const path of refPath) {
+        sourceObj = sourceObj[path];
+      }
+      return sourceObj;
+    }
+    return sourceRef;
+  }, [pipelineJson]);
+
+  // Function to fetch source layout fields
+  const fetchSourceLayoutFields = React.useCallback(async (dataSrcId: number) => {
+    if (!dataSrcId) {
+      console.log('🔧 OrderPopUp: No data_src_id provided for fetching layout fields');
+      return [];
+    }
+
+    setIsLoadingColumns(true);
+    try {
+      console.log('🔧 OrderPopUp: Fetching layout fields for data_src_id:', dataSrcId);
+      
+      const response: any = await apiService.get({
+        baseUrl: CATALOG_REMOTE_API_URL,
+        url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
+        usePrefix: true,
+        method: 'GET',
+        metadata: {
+          errorMessage: 'Failed to fetch source layout fields'
+        }
+      });
+
+      console.log('🔧 OrderPopUp: Raw API response:', response);
+setDataSource(response)
+      const columns = response?.layout_fields?.map((field: any) => ({
+        name: field.lyt_fld_name,
+        dataType: field.lyt_fld_data_type_cd
+      })) || [];
+
+      console.log('🔧 OrderPopUp: Processed columns:', columns);
+      setSourceColumns(columns);
+      return columns;
+    } catch (error) {
+      console.error(`🔧 OrderPopUp: Error fetching columns for data source ${dataSrcId}:`, error);
+      toast.error('Failed to fetch source layout fields');
+      setSourceColumns([]);
+      return [];
+    } finally {
+      setIsLoadingColumns(false);
+    }
+  }, []);
+
+  // Function to create proper initial data structure for ReaderOptionsForm
+  const createInitialData = React.useCallback(() => {
+    console.log('🔧 OrderPopUp: Creating initial data from source:', source);
+    console.log('🔧 OrderPopUp: Pipeline JSON:', pipelineJson);
+    
+    if (!source) {
+      console.log('🔧 OrderPopUp: No source data available');
+      return null;
+    }
+
+    const dataSrcId = source.data_src_id || source.source?.data_src_id;
+    console.log('🔧 OrderPopUp: Looking for data_src_id:', dataSrcId);
+
+    // Try to find existing transformation in pipeline JSON
+    let pipelineTransformation = null;
+    let pipelineSource = null;
+
+    if (dataSrcId && pipelineJson) {
+      pipelineTransformation = findTransformationFromPipeline(dataSrcId);
+      console.log('🔧 OrderPopUp: Found pipeline transformation:', pipelineTransformation);
+
+      if (pipelineTransformation && pipelineTransformation.source) {
+        pipelineSource = resolveSourceFromPipeline(pipelineTransformation.source);
+        console.log('🔧 OrderPopUp: Resolved pipeline source:', pipelineSource);
+      }
+    }
+    // debugger
+// let con_cof_id=connectionConfigList.find((config: any) => config.connection_config_name === dataSource[0].connection_config_name)?.connection_config_id || null;
+    // Create the structure that ReaderOptionsForm expects
+    // Priority: pipeline JSON data > current source data
+    const initialData = {
+      // Basic transformation info - prefer pipeline data
+      name: pipelineTransformation?.name || source.name || source.data_src_name || '',
+      transformation: 'Reader',
+      
+      // Source object structure that matches the schema
+      source: {
+        name: pipelineSource?.name || source.name || source.data_src_name || '',
+        source_type: pipelineSource?.source_type || (source.source?.source_type === 'File' ? 'File' : 'Relational'),
+        data_src_id: pipelineSource?.data_src_id || source.data_src_id || source.source?.data_src_id,
+        table_name: pipelineSource?.table_name || source.table_name || source.source?.table_name,
+        file_name: pipelineSource?.file_name || source.file_name || source.source?.file_name,
+        file_type: pipelineSource?.file_type || source.file_type || source.source?.file_type,
+        
+        // Connection info - prefer pipeline data
+        connection_config_id: pipelineSource?.connection?.connection_config_id || source?.source?.connection?.connection_config_id || source?.connection?.connection_config_id,
+        connection_type: pipelineSource?.connection_type || source.connection_type || source.source?.connection_type,
+        database: pipelineSource?.database || source.database || source.source?.database,
+        schema: pipelineSource?.schema || source.schema || source.source?.schema,
+        
+        // Connection object if available
+        connection: pipelineSource?.connection || source.connection || source.source?.connection
+      },
+      
+      // Reader-specific options - prefer pipeline data
+      read_options: pipelineTransformation?.read_options || source.read_options || {},
+      select_columns: pipelineTransformation?.select_columns || source.select_columns || [],
+      drop_columns: pipelineTransformation?.drop_columns || source.drop_columns || [],
+      rename_columns: pipelineTransformation?.rename_columns || source.rename_columns || {},
+      
+      // Additional metadata
+      nodeId: nodeId,
+      dependent_on: pipelineTransformation?.dependent_on || source.dependent_on || []
+    };
+    console.log('🔧 OrderPopUp: Created initial data:', dataSource);
+
+    console.log('🔧 OrderPopUp: Created initial data with pipeline priority:', initialData);
+    return initialData;
+  }, [source, nodeId, pipelineJson, findTransformationFromPipeline, resolveSourceFromPipeline]);
+
+  // Set up initial data when component mounts or source changes
+  React.useEffect(() => {
+    const data = createInitialData();
+    setInitialData(data);
+  }, [createInitialData]);
+
+  // Fetch source layout fields when component mounts or source changes
+  React.useEffect(() => {
+    const dataSrcId = source?.data_src_id || source?.source?.data_src_id;
+    if (dataSrcId && isOpen) {
+      fetchSourceLayoutFields(dataSrcId);
+    }
+  }, [source, isOpen, fetchSourceLayoutFields]);
+
   // Callback for ReaderOptionsForm to update global context
   const handleFormDataChange = (updatedFormData: any) => {
     setReaderData(updatedFormData);
   };
+
+  // Function to refresh columns - can be called externally
+  const refreshColumns = React.useCallback(() => {
+    const dataSrcId = source?.data_src_id || source?.source?.data_src_id;
+    if (dataSrcId) {
+      fetchSourceLayoutFields(dataSrcId);
+    }
+  }, [source, fetchSourceLayoutFields]);
   useEffect(() => {
     const fetchConnectionConfigs = async () => {
       try {
-        const response = await dispatch(getConnectionConfigList({ offset: 0, limit: 1000 })).unwrap();
-        // Remove the setTimeout and call initialSource directly after we have the data
-        initialSource();
+        await dispatch(getConnectionConfigList({ offset: 0, limit: 1000 })).unwrap();
       } catch (error) {
         console.error('Error fetching connection configs:', error);
         toast.error('Failed to load connection configurations');
@@ -56,194 +235,12 @@ console.log('🔧 OrderPopUp: Initializing OrderPopUpContent with source:', sour
     fetchConnectionConfigs();
   }, [dispatch]);
 
-  // Fetch data sources to try to match file names with data_src_id
-  useEffect(() => {
-    const fetchDataSources = async () => {
-      try {
-        const response:any = await apiService.get({
-          baseUrl: CATALOG_REMOTE_API_URL,
-          url: '/data_source/list/',
-          usePrefix: true,
-          method: 'GET',
-          params: { limit: 1000 }
-        });
-        const dataSourcesArray = response?.data || [];
-        setDataSources(dataSourcesArray);
-      } catch (error) {
-        console.error('🔧 OrderPopUp: Error fetching data sources:', error);
-      }
-    };
-
-    fetchDataSources();
-  }, []);
-
-  // Add a new useEffect to watch for changes in connectionConfigList, source, and dataSources
+  // Close right panel when component mounts
   useEffect(() => {
     dispatch(setIsRightPanelOpen(false))
-    if (connectionConfigList?.length > 0 && source) {
-      initialSource();
-    }
-  }, [connectionConfigList, source, dataSources]);
+  }, [dispatch]);
 
-  const initialSource = () => {
-    
-let data_src_id=dataSources.find((item: any) => item.data_src_name === source?.name||source?.source?.name )?.data_src_id;
-    if (source && connectionConfigList) {
-      // Try to find a matching data source if data_src_id is missing
-      let matchedDataSource = null;
-      if (!source?.data_src_id && !source?.source?.data_src_id && dataSources?.length > 0) {
-        const fileName = source?.file_name || source?.source?.file_name || source?.name || source?.reader_name;
-        const connectionId = source?.connection_config_id || source?.source?.connection_config_id || source?.source?.connection?.connection_config_id;
-        
-       
-        
-        matchedDataSource = dataSources.find((ds: any) => {
-          const nameMatch = ds.data_src_name === fileName || ds.file_name === fileName;
-          const connectionMatch = ds.connection_config_id === connectionId || ds.connection_config_id === parseInt(connectionId);
-         
-          return nameMatch && connectionMatch;
-        });
-        
-        if (matchedDataSource) {
-          source = {
-            ...source,
-            data_src_id: data_src_id,
-            source: {
-              ...source.source,
-              data_src_id: data_src_id
-            }
-          };
-        } else {
-        }
-      }
-      // Try multiple methods to find the correct connection
-      console.log('🔧 OrderPopUp: === CONNECTION SELECTION DEBUGGING ===');
-      console.log('🔧 OrderPopUp: Source data:', source);
-      console.log('🔧 OrderPopUp: Available connections:', connectionConfigList.map(c => ({ 
-        id: c.id, 
-        connection_config_name: c.connection_config_name,
-        connection_name: c.connection_name 
-      })));
-      
-      let connection = null;
-      
-      // Method 1: Try by source.connection_config_id
-      if (source?.connection_config_id) {
-        connection = connectionConfigList.find((item: any) => 
-          item.id === source.connection_config_id || 
-          item.id === parseInt(source.connection_config_id)
-        );
-        console.log('🔧 OrderPopUp: Method 1 (source.connection_config_id):', source.connection_config_id, '→', connection);
-      }
-      
-      // Method 2: Try by source.source.connection_config_id
-      if (!connection && source?.source?.connection_config_id) {
-        connection = connectionConfigList.find((item: any) => 
-          item.id === source.source.connection_config_id || 
-          item.id === parseInt(source.source.connection_config_id)
-        );
-        console.log('🔧 OrderPopUp: Method 2 (source.source.connection_config_id):', source.source.connection_config_id, '→', connection);
-      }
-      
-      // Method 3: Try by source.source.connection.connection_config_id
-      if (!connection && source?.source?.connection?.connection_config_id) {
-        connection = connectionConfigList.find((item: any) => 
-          item.id === source.source.connection.connection_config_id || 
-          item.id === parseInt(source.source.connection.connection_config_id)
-        );
-        console.log('🔧 OrderPopUp: Method 3 (source.source.connection.connection_config_id):', source.source.connection.connection_config_id, '→', connection);
-      }
-      
-      // Method 4: Try by connection name
-      if (!connection && source?.connection?.name) {
-        connection = connectionConfigList.find((item: any) => 
-          item.connection_config_name === source.connection.name ||
-          item.connection_name === source.connection.name
-        );
-        console.log('🔧 OrderPopUp: Method 4 (source.connection.name):', source.connection.name, '→', connection);
-      }
-      
-      // Method 5: Try by source.source.connection.name
-      if (!connection && source?.source?.connection?.name) {
-        connection = connectionConfigList.find((item: any) => 
-          item.connection_config_name === source.source.connection.name ||
-          item.connection_name === source.source.connection.name
-        );
-        console.log('🔧 OrderPopUp: Method 5 (source.source.connection.name):', source.source.connection.name, '→', connection);
-      }
-      
-      // Only use fallback if we have no source connection information at all
-      if (!connection && connectionConfigList.length > 0 && 
-          !source?.connection_config_id && 
-          !source?.source?.connection_config_id && 
-          !source?.source?.connection?.connection_config_id &&
-          !source?.connection?.name && 
-          !source?.source?.connection?.name) {
-        console.warn('🔧 OrderPopUp: No connection information found in source, using first available connection as fallback');
-        connection = connectionConfigList[0];
-      }
-      
-      console.log('🔧 OrderPopUp: Final selected connection:', connection);
-      console.log('🔧 OrderPopUp: === END CONNECTION SELECTION DEBUGGING ===');
-      
-      if (!connection) {
-        console.warn('🔧 OrderPopUp: No matching connection found and no fallback available');
-        console.warn('🔧 OrderPopUp: Source connection info:', {
-          connection_config_id: source?.connection_config_id,
-          source_connection_config_id: source?.source?.connection_config_id,
-          nested_connection_config_id: source?.source?.connection?.connection_config_id,
-          connection_name: source?.connection?.name,
-          source_connection_name: source?.source?.connection?.name
-        });
-        return;
-      }
 
-      const pipelineJsonData = pipelineJson?.sources?.find((item: any) => item.data_src_id === (source?.data_src_id || source?.source?.data_src_id));
-      
-      const initialData = {
-        reader_name: source?.reader_name || source?.name || source?.data_src_name || pipelineJsonData?.name || '',
-        name: source?.name || source?.reader_name || pipelineJsonData?.name || source?.data_src_name || '',
-        file_type: source?.file_type || pipelineJsonData?.connection?.file_type || source?.source?.file_type || 'CSV',
-
-        source: {
-          type: source?.source?.type || 
-                (connection.connection_name?.toLowerCase() === 'local' ||
-                 connection.connection_name?.toLowerCase() === 's3')
-                ? 'File'
-                : 'Relational',
-          source_name: source?.source?.source_name || source?.name || source?.reader_name || pipelineJsonData?.name || source?.data_src_name || '',
-          file_name: source?.source?.file_name || pipelineJsonData?.file_name || source?.file_name || source?.data_src_name || source?.name || '',
-          table_name: source?.source?.table_name || 
-                     pipelineJsonData?.connection?.table_name ||
-                     source?.data_src_name ||
-                     pipelineJsonData?.name || '',
-          bh_project_id: source?.source?.bh_project_id || pipelineJsonData?.bh_project_id || source?.bh_project_id || '',
-          data_src_id: data_src_id,
-          file_type: source?.source?.file_type || source?.file_type || pipelineJsonData?.connection?.file_type || 'CSV',
-          connection: {
-            ...(source?.source?.connection || pipelineJsonData?.connection || source?.custom_metadata?.custom_metadata || connection?.custom_metadata),
-            name: source?.source?.connection?.name || connection?.connection_config_name || connection?.connection_name || '',
-            connection_config_id: source?.source?.connection?.connection_config_id || 
-                                 pipelineJsonData?.connection?.connection_config_id || 
-                                 source?.connection_config_id || 
-                                 connection?.id || '',
-            file_path_prefix: source?.source?.connection?.file_path_prefix ||
-                             pipelineJsonData?.connection?.file_path_prefix || 
-                             source?.file_path_prefix || 
-                             connection?.custom_metadata?.file_path_prefix || '',
-          },
-          connection_config_id: source?.source?.connection_config_id || 
-                               pipelineJsonData?.connection?.connection_config_id || 
-                               source?.connection_config_id || '',
-        }
-      };
-
-      console.log('🔧 OrderPopUp: Setting initialData and readerData context:', initialData);
-      console.log('🔧 OrderPopUp: data_src_id being set:', initialData.source?.data_src_id);
-      setInitialData(initialData);
-      setReaderData(initialData); // Set global context for both components
-    }
-  };
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
 
@@ -332,51 +329,38 @@ let data_src_id=dataSources.find((item: any) => item.data_src_name === source?.n
           </div>
         </div>
 
-        {/* Popover */}
-        <Popover
-          open={open}
-          onOpenChange={handleClose2}
-        >
-          <PopoverContent>
-            <div className="flex flex-col">
-              <div className="bg-gradient-to-r from-violet-500 via-blue-500 via-purple-500 to-pink-300 text-white">
-                <p className="p-3 text-sm">How Can I Help You Today?</p>
-              </div>
-              <div className="m-3">
-                <div className="relative">
-                  <input
-                    autoFocus
-                    type="search"
-                    id="search"
-                    placeholder="Search By Keywords"
-                    className="w-full px-8 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
+      
         {/* Content Section - Fixed height container */}
         <div className="flex-1 overflow-auto">
           <div className="h-full">
-            {selected === 0 && (
+            {selected === 0 && initialData && (
               <ReaderOptionsForm
+                initialData={initialData} // Pass the properly structured initial data
                 onSubmit={() => { }}
                 onClose={onClose}
-                initialData={initialData}
                 nodeId={nodeId}
+                sourceColumns={sourceColumns} // Pass the fetched columns
+                isLoadingColumns={isLoadingColumns} // Pass loading state
+                refreshColumns={refreshColumns} // Pass refresh function
                 onSourceUpdate={(updatedSource) => {
+                  console.log('🔧 OrderPopUp: Received updatedSource from ReaderOptionsForm:', updatedSource);
+                  console.log('🔧 OrderPopUp: Calling parent onSourceUpdate with nodeId:', nodeId);
                   onSourceUpdate(updatedSource);
                   // The changes will be saved automatically by the auto-save mechanism
                 }}
                 onFormDataChange={handleFormDataChange} // Pass the callback
               />
             )}
+            {selected === 0 && !initialData && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500">
+                  {isLoadingColumns ? 'Loading reader options and columns...' : 'Loading reader options...'}
+                </div>
+              </div>
+            )}
             {selected === 1 && (
               <SchemaTable 
-                initialData={readerData || initialData} 
+                dataSourceId={source.source?.data_src_id} 
                 onSwitchToReaderOptions={() => setSelected(0)}
               />
             )}

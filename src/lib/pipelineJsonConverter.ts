@@ -249,7 +249,7 @@ const normalizeTransformationData = (transform: any, type: string): any => {
             // 2. Reference: transform.target.$ref (needs resolution)
             // 3. Embedded in transform itself
             
-            let targetInfo = {};
+            let targetInfo:any = {};
             if (transform.target && !transform.target.$ref) {
                 // Direct target object (already resolved)
                 targetInfo = transform.target;
@@ -360,7 +360,6 @@ export const convertFlowJsonToReactFlow = (flowJson: any,moduleTypes:any): { nod
                 }
             });
         }
-        console.log(processedTask)
         // Create the node with structure matching flowmode.json
         const node: Node = {
             id: nodeId,
@@ -457,7 +456,6 @@ export const convertFlowJsonToReactFlow = (flowJson: any,moduleTypes:any): { nod
  * Gets the appropriate node prefix based on operator type
  */
 const getNodePrefix = (operatorType: string): string => {
-    console.log(operatorType)
     const prefixMap: { [key: string]: string } = {
         'S3KeySensor': 'Sensor',
         'HttpSensor': 'Sensor',
@@ -470,7 +468,6 @@ const getNodePrefix = (operatorType: string): string => {
         'SFTPToS3Operator': 'Transfer',
         'SimpleHttpOperator': 'API'
     };
-    console.log(prefixMap[operatorType])
     return prefixMap[operatorType] || 'Custom';
 };
 
@@ -508,7 +505,6 @@ const getNodePortsForOperator = (operatorType: string): { inputs: number; output
 
 const getMeta = (operatorType: string,moduleTypes) => {
     let node = moduleTypes.find((type) => type.label.toLowerCase() === operatorType.toLowerCase());
-    console.log(node)
 
     return {
             type: node?.type,
@@ -533,14 +529,12 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     let xPosition = 50;
     let yPosition = 100;
     const yOffset = -117;
-    console.log(pipelineJson, "pipelineJson");
     
     // Extract engine type from pipeline JSON, default to 'pyspark'
     const selectedEngineType = pipelineJson.engine_type || 'pyspark';
 
     // Track existing titles to ensure uniqueness
     const existingTitles = new Set<string>();
-    console.log(pipelineJson);
 
     // Helper function to resolve references
     const resolveRef = (ref: string) => {
@@ -568,7 +562,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     const transformationNodes = new Map<string, string>(); // Map transformation names to node IDs
     let sourceIndex = 0;
 
-    console.log("Starting to process transformations:", pipelineJson.transformations);
 
     // First, process Reader transformations from the transformations array
     for (const transform of pipelineJson.transformations) {
@@ -598,7 +591,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 if (dataSourceId && dataSourceCache.has(dataSourceId)) {
                     // Use cached data
                     sourceDetails = dataSourceCache.get(dataSourceId);
-                    console.log(`Using cached data for source ID: ${dataSourceId}`);
                 } else if (dataSourceId) {
                     // Fetch data and cache it
                     sourceDetails = await apiService.get({
@@ -613,13 +605,10 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
                     // Cache the result for future use
                     dataSourceCache.set(dataSourceId, sourceDetails);
-                    console.log(`Fetched and cached data for source ID: ${dataSourceId}`);
                 } else {
                     // Handle case where no data_src_id is provided
                     sourceDetails = { data_src_name: sourceName };
-                    console.log('No data_src_id provided, using default values');
                 }
-
                 if (handleSourceUpdate) {
                     const nodeId = `Reader_${sourceIndex + 1}`;
                     const sourceUpdateData = {
@@ -654,7 +643,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
                 const nodeId = `Reader_${sourceIndex + 1}`;
                 transformationNodes.set(transform.name, nodeId);
-                console.log(`Mapped Reader transformation: ${transform.name} -> ${nodeId}`);
 
                 nodes.push({
                     id: nodeId,
@@ -772,7 +760,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         }
     }
 
-    console.log("Sorted transformations:", sortedTransformations.map((t: any) => t.name));
 
     // Process non-Reader, non-Writer transformations in sorted order
     // First pass: create all nodes
@@ -783,7 +770,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         // Use the original transformation name if it exists
         const nodeTitle = transform.name || generateUniqueTitle(type, existingTitles);
         transformationNodes.set(transform.name, nodeId);
-        console.log(`Mapped ${type} transformation: ${transform.name} -> ${nodeId}`);
 
         // Handle regular transformations
         nodes.push({
@@ -805,12 +791,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         xPosition += 130;
     }
 
-    // Log the complete transformation nodes map for debugging
-    console.log("Complete transformation nodes map:");
-    transformationNodes.forEach((nodeId, transformName) => {
-        console.log(`${transformName} -> ${nodeId}`);
-    });
-
     // Second pass: create all edges after all nodes have been created
     // This ensures that all node IDs are available in the transformationNodes map
     // Use the sorted transformations to maintain the correct order
@@ -822,13 +802,11 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
         // Create edges based on dependencies
         if (transform.dependent_on && Array.isArray(transform.dependent_on)) {
-            console.log(`Creating edges for ${transform.name} with dependencies:`, transform.dependent_on);
 
             transform.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = transformationNodes.get(dependentName);
 
                 if (sourceNodeId) {
-                    console.log(`Creating edge from ${dependentName} (${sourceNodeId}) to ${transform.name} (${nodeId})`);
 
                     edges.push({
                         source: sourceNodeId,
@@ -837,12 +815,8 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                         targetHandle: `input-${index}`,
                         id: `reactflow__edge-${sourceNodeId}output-0-${nodeId}input-${index}`
                     });
-                } else {
-                    console.warn(`Source node ID not found for dependency: ${dependentName}`);
                 }
             });
-        } else {
-            console.log(`No dependencies found for ${transform.name}`);
         }
     }
 
@@ -855,8 +829,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         const targetId = `Target_${nodes.length + 1}`;
         const targetTitle = writerTransformation.name || generateUniqueTitle('Target', existingTitles);
         transformationNodes.set(writerTransformation.name, targetId);
-        console.log(`Mapped Target transformation: ${writerTransformation.name} -> ${targetId}`);
-
         // Resolve target reference if it exists
         let targetData = writerTransformation.target || writerTransformation;
         if (targetData && targetData.$ref) {
@@ -883,7 +855,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
             }
         }
 
-        console.log(writerTransformation, "writerTransformation");
 
         nodes.push({
             id: targetId,
@@ -921,13 +892,11 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
 
         // Create edges based on dependencies
         if (writerTransformation.dependent_on && Array.isArray(writerTransformation.dependent_on)) {
-            console.log(`Creating edges for target ${writerTransformation.name} with dependencies:`, writerTransformation.dependent_on);
 
             writerTransformation.dependent_on.forEach((dependentName: string, index: number) => {
                 const sourceNodeId = transformationNodes.get(dependentName);
 
                 if (sourceNodeId) {
-                    console.log(`Creating edge from ${dependentName} (${sourceNodeId}) to target ${writerTransformation.name} (${targetId})`);
 
                     edges.push({
                         source: sourceNodeId,
@@ -940,13 +909,10 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                     console.warn(`Source node ID not found for target dependency: ${dependentName}`);
                 }
             });
-        } else {
-            console.log(`No dependencies found for target ${writerTransformation.name}`);
-        }
+        } 
     }
 
     // Log the final edges array for debugging
-    console.log("Final edges array:", edges);
 
     return await { nodes, edges };
 };
@@ -957,8 +923,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
  * @returns The optimized pipeline JSON with references
  */
 export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: string) => {
-    console.log(currentJson, "currentJson");
-    // Create the base structure for the optimized JSON
     const optimizedJson: any = {
         $schema: currentJson.$schema || "https://json-schema.org/draft-07/schema#",
         name: pipelineName || currentJson.name || "pipeline",
@@ -976,18 +940,15 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
 
     // Process sources and their connections
     if (Array.isArray(currentJson.sources)) {
-        console.log('🔧 Processing sources in convertToOptimizedPipelineJson:', currentJson.sources);
         currentJson.sources.forEach((source: any, index: number) => {
             const connectionKey = `${source.name}`;
-            console.log('🔧 Processing source:', source.name, 'connection:', source.connection);
-
             // Add connection to connections section
             if (source.connection) {
-                // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
-                const connectionData = source.connection.custom_metadata || source.connection;
-                console.log('🔧 Connection data for', source.name, ':', connectionData);
-                
-
+                // Extract connection details - merge custom_metadata with root level properties
+                const customMetadata = source.connection.custom_metadata || {};
+                const rootConnection = { ...source.connection };
+                delete rootConnection.custom_metadata; // Remove custom_metadata to avoid duplication
+                const connectionData = { ...customMetadata, ...rootConnection };
                 
                 // Only create connection if we have connection_type
                 if (connectionData && connectionData.connection_type) {
@@ -995,6 +956,13 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                         name: connectionData.name || connectionKey,
                         connection_type: connectionData.connection_type
                     };
+                    
+                    // Add connection_config_id if it exists
+                    if (connectionData.connection_config_id !== undefined && connectionData.connection_config_id !== null && connectionData.connection_config_id !== '') {
+                        // Try to parse as integer, but keep original if parsing fails
+                        const parsedId = parseInt(connectionData.connection_config_id, 10);
+                        cleanConnection.connection_config_id = isNaN(parsedId) ? connectionData.connection_config_id : parsedId;
+                    } 
                     
                     // Add file_path_prefix for file-based connections
                     if (connectionData.connection_type === 'Local' || connectionData.connection_type === 'S3') {
@@ -1046,9 +1014,11 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
 
             // Add connection to connections section
             if (target.connection) {
-                // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
-                const connectionData = target.connection.custom_metadata || target.connection;
-                
+                // Extract connection details - merge custom_metadata with root level properties
+                const customMetadata = target.connection.custom_metadata || {};
+                const rootConnection = { ...target.connection };
+                delete rootConnection.custom_metadata; // Remove custom_metadata to avoid duplication
+                const connectionData = { ...customMetadata, ...rootConnection };
 
                 
                 // Only create connection if we have connection_type
@@ -1057,6 +1027,13 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                         name: connectionData.name || connectionKey,
                         connection_type: connectionData.connection_type
                     };
+                    
+                    // Add connection_config_id if it exists
+                    if (connectionData.connection_config_id !== undefined && connectionData.connection_config_id !== null && connectionData.connection_config_id !== '') {
+                        // Try to parse as integer, but keep original if parsing fails
+                        const parsedId = parseInt(connectionData.connection_config_id, 10);
+                        cleanConnection.connection_config_id = isNaN(parsedId) ? connectionData.connection_config_id : parsedId;
+                    }
                     
                     // Add file_path_prefix for file-based connections
                     if (connectionData.connection_type === 'Local' || connectionData.connection_type === 'S3') {
@@ -1076,12 +1053,15 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                         if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
                     }
                     
+                    // Add additional fields for targets
+                    if (connectionData.type) cleanConnection.type = connectionData.type;
+                    if (connectionData.connection_name) cleanConnection.connection_name = connectionData.connection_name;
+                    
                     connections[connectionKey] = cleanConnection;
                 } else {
                     console.warn('Missing connection_type for target:', target.name, connectionData);
                 }
             }
-            console.log(target)
             // Determine target type based on connection
             const connectionData = target.connection?.custom_metadata || target.connection;
             const isFileTarget = connectionData?.connection_type?.toLowerCase() === 'local' || 
@@ -1118,8 +1098,11 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                 if (!optimizedJson.targets[targetKey]) {
                     // Add connection to connections section if it exists
                     if (transform.target.connection) {
-                        // Extract connection details from custom_metadata if it exists, otherwise use the connection directly
-                        const connectionData = transform.target.connection.custom_metadata || transform.target.connection;
+                        // Extract connection details - merge custom_metadata with root level properties
+                        const customMetadata = transform.target.connection.custom_metadata || {};
+                        const rootConnection = { ...transform.target.connection };
+                        delete rootConnection.custom_metadata; // Remove custom_metadata to avoid duplication
+                        const connectionData = { ...customMetadata, ...rootConnection };
                         
 
                         
@@ -1130,6 +1113,12 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                                 connection_type: connectionData.connection_type
                             };
                             
+                            // Add connection_config_id if it exists
+                            if (connectionData.connection_config_id !== undefined && connectionData.connection_config_id !== null && connectionData.connection_config_id !== '') {
+                                // Try to parse as integer, but keep original if parsing fails
+                                const parsedId = parseInt(connectionData.connection_config_id, 10);
+                                cleanConnection.connection_config_id = isNaN(parsedId) ? connectionData.connection_config_id : parsedId;
+                            }
                             // Add file_path_prefix for file-based connections
                             if (connectionData.connection_type === 'Local' || connectionData.connection_type === 'S3') {
                                 cleanConnection.file_path_prefix = connectionData.file_path_prefix || "";
@@ -1148,12 +1137,15 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                                 if (connectionData.secret_name) cleanConnection.secret_name = connectionData.secret_name;
                             }
                             
+                            // Add additional fields for targets
+                            if (connectionData.type) cleanConnection.type = connectionData.type;
+                            if (connectionData.connection_name) cleanConnection.connection_name = connectionData.connection_name;
+                            
                             connections[connectionKey] = cleanConnection;
                         } else {
                             console.warn('Missing connection_type for writer target:', transform.target.name, connectionData);
                         }
                     }
-                    console.log(transform)
                     // Determine target type based on connection
                     const connectionData = transform.target.connection?.custom_metadata || transform.target.connection;
                     const isFileTarget = connectionData?.connection_type?.toLowerCase() === 'local' || 

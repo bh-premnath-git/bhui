@@ -18,6 +18,7 @@ import {
 import { userEditSchema, userCreateSchema, type UserCreateValues, type UserFormValues } from "./userFormSchema";
 import type { User } from "@/types/admin/user";
 import { EnvironmentField, ProjectField, RolesField } from "./FormFields";
+import type { RoleMatrixEntry } from "@/types/admin/roles";
 
 // Base fields present in both create and edit forms
 interface BaseUserFields {
@@ -36,6 +37,9 @@ type UserFormProps<T extends BaseUserFields = AnyUserFormValues> = {
   isSubmitting: boolean;
   error: string | null;
   user?: User;
+  roles?: RoleMatrixEntry[];
+  rolesLoading?: boolean;
+  rolesError?: boolean;
 };
 
 // Create a union of all possible form values
@@ -53,6 +57,9 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
   isSubmitting,
   error,
   user,
+  roles,
+  rolesLoading,
+  rolesError,
 }: UserFormProps<T>) {
   const isEdit = mode === "edit";
   const schema = isEdit ? userEditSchema : userCreateSchema;
@@ -172,7 +179,14 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
           </Card>
 
           {/* Role Assignment Section */}
-          <RolesField form={form} isTenantAdmin={isTenantAdmin} searchTerm={""} />
+          <RolesField 
+            form={form} 
+            isTenantAdmin={isTenantAdmin} 
+            searchTerm={""} 
+            roles={roles}
+            isLoading={rolesLoading}
+            isError={rolesError}
+          />
 
           {/* Resource Section */}
           {!isTenantAdmin && (

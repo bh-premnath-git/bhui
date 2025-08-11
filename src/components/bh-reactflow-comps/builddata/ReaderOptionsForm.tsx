@@ -1,22 +1,25 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import sourceSchema from "./json/Source.json";
-import readerSchema from "./json/Reader.json";
-import csvOptionsSchema from "./json/CSVOptions.json";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-// import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
-
-import { FormData, ReaderFormField } from "./components/form/reader-form-field";
 import { getConnectionConfigList } from "@/store/slices/dataCatalog/datasourceSlice";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
+import { extractReaderSchema, resolveConditionalSchema, getSourceTypeFields, getFileTypeSchema, getReadOptionsSchema, debugReaderSchema } from "@/utils/schemaExtractor";
+import { DynamicFormField } from "./components/form/DynamicFormField";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ValidEngineTypes } from "@/types/pipeline";
+import { FileText, Database, Settings, Wrench } from "lucide-react";
 
 interface FormSchema {
     type: string;
     properties: Record<string, any>;
     allOf?: any[];
+    required?: string[];
+}
+
+interface FormData {
+    [key: string]: any;
 }
 
 interface ReaderOptionsFormProps {
@@ -29,6 +32,15 @@ interface ReaderOptionsFormProps {
 }
 
 
+
+// Utility function to debounce function calls
+const debounce = <T extends (...args: any[]) => any>(func: T, wait: number): T => {
+    let timeout: NodeJS.Timeout;
+    return ((...args: any[]) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    }) as T;
+};
 
 // Utility function to clean file names for data_src_id generation
 const cleanFileNameForId = (fileName: string): string => {
@@ -44,9 +56,11 @@ const cleanFileNameForId = (fileName: string): string => {
         .replace(/^_|_$/g, '');     // Remove leading/trailing underscores
 };
 
-const getSourceTypeFields = (sourceType: string) => {
-    const condition = sourceSchema.allOf?.find(
-        condition => condition.if.properties.type.const === sourceType
+const getSourceTypeFields = (sourceType: string, schema: any) => {
+    if (!schema?.allOf) return { properties: {}, required: [] };
+    
+    const condition = schema.allOf.find(
+        (condition: any) => condition.if?.properties?.source_type?.const === sourceType
     );
 
     const additionalProperties = condition?.then?.properties || {};
@@ -90,15 +104,52 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     const dispatch = useAppDispatch();
     const [formData, setFormData] = useState<FormData>(initialData || {});
-    const [currentSchema, setCurrentSchema] = useState<FormSchema>(readerSchema);
+    const [currentSchema, setCurrentSchema] = useState<FormSchema | null>(null);
+    const [baseReaderSchema, setBaseReaderSchema] = useState<FormSchema | null>(null);
+    const [isSchemaLoading, setIsSchemaLoading] = useState<boolean>(true);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [sourceTypeFields, setSourceTypeFields] = useState<any>(null);
+    const [fileTypeSchema, setFileTypeSchema] = useState<any>(null);
+    const [readOptionsSchema, setReadOptionsSchema] = useState<any>(null);
     const { connectionConfigList } = useAppSelector((state) => state.datasource);
-    const { isRightPanelOpen } = useAppSelector((state) => state.buildPipeline);
+    const { isRightPanelOpen, selectedEngineType } = useAppSelector((state) => state.buildPipeline) as { isRightPanelOpen: boolean; selectedEngineType: ValidEngineTypes };
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
-    const [isAdvance, setIsAdvanvce] = useState<boolean>(false);
+    const [activeTab, setActiveTab] = useState<string>("basic");
     const hasGeneratedDataSrcId = useRef<boolean>(false);
     console.log(connectionConfigList)
     console.log(initialData, "initialData")
+
+    // Load schema based on selected engine type
+    useEffect(() => {
+        const loadSchema = async () => {
+            setIsSchemaLoading(true);
+            try {
+                console.log('🔧 Loading Reader schema for engine type:', selectedEngineType);
+                const readerSchema = extractReaderSchema(selectedEngineType);
+                
+                if (readerSchema) {
+                    setBaseReaderSchema(readerSchema);
+                    setCurrentSchema(readerSchema);
+                    console.log('🔧 Reader schema loaded successfully:', readerSchema);
+                    
+                    // Debug the reader schema structure (comprehensive test)
+                    // debugReaderSchema(selectedEngineType);
+                } else {
+                    console.warn('🔧 No Reader schema found for engine type:', selectedEngineType);
+                    toast.error(`No Reader schema available for ${selectedEngineType}`);
+                }
+            } catch (error) {
+                console.error('🔧 Error loading Reader schema:', error);
+                toast.error('Failed to load Reader schema');
+            } finally {
+                setIsSchemaLoading(false);
+            }
+        };
+
+        if (selectedEngineType) {
+            loadSchema();
+        }
+    }, [selectedEngineType]);
 
     // Fetch connection list on component mount
     useEffect(() => {
@@ -178,7 +229,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     ...initialData.source,
                     source_name: cleanedSourceName,
                     name: cleanedSourceName,
-                    type: initialData.source?.type || 'File',
+                    source_type: initialData.source?.source_type || initialData.source?.type || 'File',
                     file_name: initialData.source?.file_name || initialData.source?.data_src_name || sourceName || '',
                     table_name: initialData.source?.table_name || sourceName,
                     bh_project_id: initialData.source?.bh_project_id || '',
@@ -216,73 +267,152 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     }, [initialData, connectionConfigList]);
 
 
-    const resolveFileTypeSchema = (schema: any) => {
-        const fileTypeCondition = readerSchema.allOf?.find(
-            (condition: any) => condition.if.properties.file_type?.const === formData.file_type
-        );
+    // Update source type specific fields when source type changes
+    useEffect(() => {
+        if (baseReaderSchema && formData.source?.source_type) {
+            const fields = getSourceTypeFields(baseReaderSchema, formData.source.source_type);
+            setSourceTypeFields(fields);
+            
+            console.log('🔧 Source type fields updated:', {
+                sourceType: formData.source.source_type,
+                fields
+            });
 
-        if (fileTypeCondition) {
-            return {
-                ...schema,
-                properties: {
-                    ...schema.properties,
-                    ...fileTypeCondition.then.properties,
-                }
-            };
+            // Update the current schema to include the source type specific fields
+            if (fields && baseReaderSchema.properties?.source) {
+                const updatedSourceSchema = {
+                    ...baseReaderSchema.properties.source,
+                    properties: {
+                        ...baseReaderSchema.properties.source.properties,
+                        ...fields.properties
+                    },
+                    required: [
+                        ...(baseReaderSchema.properties.source.required || []),
+                        ...(fields.required || [])
+                    ]
+                };
+
+                const updatedReaderSchema = {
+                    ...baseReaderSchema,
+                    properties: {
+                        ...baseReaderSchema.properties,
+                        source: updatedSourceSchema
+                    }
+                };
+
+                setCurrentSchema(updatedReaderSchema);
+            }
         }
-        return schema;
-    };
+    }, [baseReaderSchema, formData.source?.source_type]);
 
-    const resolveSourceTypeSchema = (schema: any) => {
-        const sourceTypeCondition = readerSchema.allOf?.find(
-            (condition) => condition.if.properties.source?.properties?.type?.const === formData.source?.type
-        );
-
-        if (sourceTypeCondition) {
-            return {
-                ...schema,
-                properties: {
-                    ...schema.properties,
-                    ...sourceTypeCondition.then.properties,
-                }
-            };
+    // Update file type schema when file_type changes
+    useEffect(() => {
+        if (baseReaderSchema && formData.file_type && formData.source?.source_type === 'File') {
+            const fileSchema = getFileTypeSchema(baseReaderSchema, formData.file_type);
+            setFileTypeSchema(fileSchema);
+            
+            // Extract read_options schema from the file type schema
+            const readOptsSchema = getReadOptionsSchema(fileSchema, formData.file_type);
+            setReadOptionsSchema(readOptsSchema);
+            
+            console.log('🔧 File type schema updated:', {
+                fileType: formData.file_type,
+                fileSchema,
+                readOptionsSchema: readOptsSchema
+            });
+        } else {
+            setFileTypeSchema(null);
+            setReadOptionsSchema(null);
         }
-        return schema;
-    };
+    }, [baseReaderSchema, formData.file_type, formData.source?.source_type]);
 
     const resolveSchema = useCallback(async () => {
-        let resolvedSchema = { ...readerSchema };
+        if (!baseReaderSchema) return;
 
-        if (formData.source?.type) {
-            resolvedSchema = resolveSourceTypeSchema(resolvedSchema);
+        try {
+            // Start with the base schema
+            let resolvedSchema = resolveConditionalSchema(baseReaderSchema, formData);
+            
+            // Add source type specific fields
+            if (sourceTypeFields && resolvedSchema.properties?.source) {
+                resolvedSchema.properties.source = {
+                    ...resolvedSchema.properties.source,
+                    properties: {
+                        ...resolvedSchema.properties.source.properties,
+                        ...sourceTypeFields.properties
+                    },
+                    required: [
+                        ...(resolvedSchema.properties.source.required || []),
+                        ...(sourceTypeFields.required || [])
+                    ]
+                };
+            }
+            
+            // Add file type specific fields
+            if (fileTypeSchema) {
+                resolvedSchema = {
+                    ...resolvedSchema,
+                    properties: {
+                        ...resolvedSchema.properties,
+                        ...fileTypeSchema.properties
+                    },
+                    required: [
+                        ...(resolvedSchema.required || []),
+                        ...(fileTypeSchema.required || [])
+                    ]
+                };
+            }
+
+            // Add read_options fields as individual form fields
+            if (readOptionsSchema && readOptionsSchema.properties) {
+                // Instead of adding read_options as an object, add each field individually with read_options prefix
+                const readOptionsFields = {};
+                Object.entries(readOptionsSchema.properties).forEach(([key, schema]) => {
+                    readOptionsFields[`read_options.${key}`] = schema;
+                });
+
+                resolvedSchema.properties = {
+                    ...resolvedSchema.properties,
+                    ...readOptionsFields
+                };
+
+                console.log('🔧 Added read_options fields:', {
+                    readOptionsFields: Object.keys(readOptionsFields),
+                    readOptionsSchema
+                });
+            }
+            
+            setCurrentSchema(resolvedSchema);
+            console.log('🔧 Schema resolved with form data:', {
+                baseSchema: baseReaderSchema,
+                sourceTypeFields,
+                fileTypeSchema,
+                resolvedSchema
+            });
+        } catch (error) {
+            console.error('🔧 Error resolving schema:', error);
         }
-
-        if (formData.source?.type === 'File' && formData.file_type) {
-            resolvedSchema = resolveFileTypeSchema(resolvedSchema);
-        }
-
-        setCurrentSchema(resolvedSchema);
-    }, [formData.source?.type, formData.file_type]);
+    }, [baseReaderSchema, formData, sourceTypeFields, fileTypeSchema, readOptionsSchema]);
 
     useEffect(() => {
         resolveSchema();
     }, [resolveSchema]);
 
-    // Auto-generate data_src_id when connection and file_name are available
+    // Auto-generate data_src_id when connection and file_name/table_name are available
     useEffect(() => {
         const shouldGenerateId = (!formData.source?.data_src_id || formData.source?.data_src_id === '') && 
                                 formData.source?.connection?.connection_config_id && 
-                                formData.source?.file_name &&
+                                (formData.source?.file_name || formData.source?.table_name) &&
                                 !hasGeneratedDataSrcId.current;
 
         if (shouldGenerateId) {
             const connectionId = formData.source.connection.connection_config_id;
-            const fileName = formData.source.file_name;
+            const sourceName = formData.source.file_name || formData.source.table_name;
             
-            const cleanFileName = cleanFileNameForId(fileName);
-            const generatedId = `${connectionId}_${cleanFileName}`;
+            const cleanSourceName = cleanFileNameForId(sourceName);
+            const generatedId = `${connectionId}_${cleanSourceName}`;
             
-            console.log('🔧 ReaderOptionsForm: Auto-generating data_src_id from:', fileName, '→', generatedId);
+            console.log('🔧 ReaderOptionsForm: Auto-generating data_src_id from:', sourceName, '→', generatedId);
             hasGeneratedDataSrcId.current = true;
             
             setFormData(prev => ({
@@ -293,98 +423,84 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                 }
             }));
         }
-    }, [formData.source?.connection?.connection_config_id, formData.source?.file_name]);
+    }, [formData.source?.connection?.connection_config_id, formData.source?.file_name, formData.source?.table_name]);
+
+    // Memoized debounced callback for form data changes
+    const debouncedOnFormDataChange = useCallback(
+        debounce((data: FormData) => {
+            if (onFormDataChange) {
+                console.log('🔧 ReaderOptionsForm: Calling onFormDataChange with:', data);
+                onFormDataChange(data);
+            }
+        }, 300),
+        [onFormDataChange]
+    );
 
     // Notify parent when formData changes (with debouncing to avoid excessive calls)
     useEffect(() => {
-        if (onFormDataChange && formData) {
-            const timeoutId = setTimeout(() => {
-                console.log('🔧 ReaderOptionsForm: Calling onFormDataChange with:', formData);
-                onFormDataChange(formData);
-            }, 100); // Small debounce to avoid excessive calls
-
-            return () => clearTimeout(timeoutId);
+        if (formData && Object.keys(formData).length > 0) {
+            debouncedOnFormDataChange(formData);
         }
-    }, [formData, onFormDataChange]);
+    }, [formData, debouncedOnFormDataChange]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, path: string[] = []) => {
-        const { name, value } = e.target;
-        setFormData(prev => {
-            const newData = { ...prev };
+    // Memoized helper function to organize form fields into tabs
+    const organizeFieldsIntoTabs = useCallback((schema: FormSchema) => {
+        if (!schema.properties) return { basic: {}, source: {}, readOptions: {}, advanced: {} };
 
-            if (name === 'connection_config_id') {
-                const selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
-                setSelectedConnection(selectedConn);
+        const tabs = {
+            basic: {} as Record<string, any>,
+            source: {} as Record<string, any>,
+            readOptions: {} as Record<string, any>,
+            advanced: {} as Record<string, any>
+        };
 
-                if (selectedConn) {
-                    newData.source = {
-                        ...newData.source,
-                        connection: {
-                            ...newData.source?.connection,
-                            connection_config_id: selectedConn.id,
-                            type: selectedConn.custom_metadata?.type || '',
-                            file_path_prefix: selectedConn.custom_metadata?.file_path_prefix || '',
-                            connection_name: selectedConn.connection_config_name || ''
-                        },
-                        connection_config_id: selectedConn.id // Also set at source level
-                    };
-                }
-            } else if (name === 'type') {
-                newData.source = {
-                    ...newData.source,
-                    type: value,
-                    connection: newData.source?.connection || {} // Preserve existing connection data
-                };
-            } else if (name === 'file_path_prefix') {
-                newData.source = {
-                    ...newData.source,
-                    connection: {
-                        ...newData.source?.connection,
-                        file_path_prefix: value
-                    }
-                };
-            } else if (name === 'file_name' || name === 'table_name') {
-                newData.source = {
-                    ...newData.source,
-                    [name]: value
-                };
-            } else if (name === 'name') {
-                const cleanedValue = cleanFileNameForId(value);
-                newData.source = {
-                    ...newData.source,
-                    name: cleanedValue,
-                    source_name: cleanedValue
-                };
-                newData.name = cleanedValue;
-                newData.reader_name = cleanedValue;
-            } else if (name === 'reader_name') {
-                const cleanedValue = cleanFileNameForId(value);
-                newData.reader_name = cleanedValue;
-                newData.name = cleanedValue;
-                newData.source = {
-                    ...newData.source,
-                    name: cleanedValue,
-                    source_name: cleanedValue
-                };
-            } else {
-                if (path.length === 0) {
-                    newData[name] = value;
-                } else {
-                    let current = newData;
-                    for (let i = 0; i < path.length - 1; i++) {
-                        current[path[i]] = { ...current[path[i]] };
-                        current = current[path[i]];
-                    }
-                    current[path[path.length - 1]] = value;
-                }
+        Object.entries(schema.properties).forEach(([fieldKey, fieldSchema]) => {
+            // Basic Info: reader name, transformation type, etc.
+            if (['reader_name', 'name', 'transformation', 'file_type'].includes(fieldKey)) {
+                tabs.basic[fieldKey] = fieldSchema;
             }
-            return newData;
+            // Source Configuration: all source-related fields
+            else if (fieldKey === 'source' || fieldKey.startsWith('source.')) {
+                tabs.source[fieldKey] = fieldSchema;
+            }
+            // Read Options: read_options and related processing fields
+            else if (['read_options', 'select_columns', 'drop_columns', 'rename_columns'].includes(fieldKey)) {
+                tabs.readOptions[fieldKey] = fieldSchema;
+            }
+            // Advanced Settings: everything else
+            else {
+                tabs.advanced[fieldKey] = fieldSchema;
+            }
         });
-    };
 
+        return tabs;
+    }, []);
+
+    // Memoized organized tabs
+    const organizedTabs = useMemo(() => {
+        return currentSchema ? organizeFieldsIntoTabs(currentSchema) : { basic: {}, source: {}, readOptions: {}, advanced: {} };
+    }, [currentSchema, organizeFieldsIntoTabs]);
+
+    // Memoized helper functions
+    const hasFields = useCallback((tabFields: Record<string, any>) => Object.keys(tabFields).length > 0, []);
+
+    const hasTabErrors = useCallback((tabFields: Record<string, any>) => {
+        return Object.keys(tabFields).some(fieldKey => {
+            // Check for direct field errors
+            if (errors[fieldKey]) return true;
+            // Check for nested field errors (e.g., source.connection_config_id)
+            return Object.keys(errors).some(errorKey => errorKey.startsWith(fieldKey + '.'));
+        });
+    }, [errors]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!currentSchema) {
+            toast.error('Schema not loaded. Please try again.');
+            return;
+        }
+
         const missingFields = validateFormData(currentSchema, formData);
 
         if (missingFields.length > 0) {
@@ -401,12 +517,12 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             let finalFormData = { ...formData };
             if ((!finalFormData.source?.data_src_id || finalFormData.source?.data_src_id === '') && 
                 finalFormData.source?.connection?.connection_config_id && 
-                finalFormData.source?.file_name) {
+                (finalFormData.source?.file_name || finalFormData.source?.table_name)) {
                 
                 const connectionId = finalFormData.source.connection.connection_config_id;
-                const fileName = finalFormData.source.file_name;
-                const cleanFileName = cleanFileNameForId(fileName);
-                const generatedId = `${connectionId}_${cleanFileName}`;
+                const sourceName = finalFormData.source.file_name || finalFormData.source.table_name;
+                const cleanSourceName = cleanFileNameForId(sourceName);
+                const generatedId = `${connectionId}_${cleanSourceName}`;
                 
                 finalFormData = {
                     ...finalFormData,
@@ -420,26 +536,26 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             const sourceData = {
                 nodeId,
                 sourceData: {
-                    data: {
-                        label: cleanFileNameForId(finalFormData.reader_name || finalFormData.source?.name || finalFormData.source?.data_src_name || ''),
-                        source: {
-                            data_src_id: finalFormData.source?.data_src_id,
-                            data_src_name: cleanFileNameForId(finalFormData.source?.name || finalFormData.reader_name || ''),
-                            source_name: cleanFileNameForId(finalFormData.source?.name || finalFormData.reader_name || ''),
-                            data_src_desc: finalFormData.reader_name,
-                            connection_type: finalFormData.source?.connection?.connection_type,
-                            connection_config_id: finalFormData.source?.connection?.connection_config_id,
-                            file_name: finalFormData.source?.file_name,
-                            file_path_prefix: finalFormData.source?.connection?.file_path_prefix,
-                            file_type: finalFormData?.file_type,
-                            table_name: finalFormData.source?.table_name,
-                            type: finalFormData.source?.type,
-                            connection_config: {
-                                custom_metadata: finalFormData.source?.connection,
-                                connection_config_name: finalFormData.source?.connection?.name
-                            },
-                            name: cleanFileNameForId(finalFormData.source?.name || finalFormData.reader_name || '')
-                        }
+                    name: cleanFileNameForId(finalFormData.source?.name || finalFormData.reader_name || ''),
+                    data_src_desc: finalFormData.reader_name,
+                    reader_name: finalFormData.source?.file_name || finalFormData.reader_name,
+                    source_type: finalFormData.source?.source_type,
+                    file_name: finalFormData.source?.file_name,
+                    data_src_id: finalFormData.source?.data_src_id,
+                    project_id: finalFormData.project_id,
+                    file_path_prefix: finalFormData.source?.connection?.file_path_prefix,
+                    connection_config_id: finalFormData.source?.connection?.connection_config_id,
+                    connection_config: {
+                        custom_metadata:{...finalFormData.source?.connection?.custom_metadata,
+                            connection_config_id: finalFormData.source?.connection?.connection_config_id
+                         }
+                    },
+                    connection: {
+                        name: finalFormData.source?.connection?.name,
+                        connection_type: finalFormData.source?.connection?.connection_type,
+                        file_path_prefix: finalFormData.source?.connection?.file_path_prefix,
+                        bucket: finalFormData.source?.connection?.bucket,
+                        secret_name: finalFormData.source?.connection?.secret_name
                     }
                 }
             };
@@ -453,115 +569,356 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         }
     };
 
+    // Memoized handle form field changes
+    const handleFieldChange = useCallback((fieldKey: string, value: any) => {
+        setFormData(prev => {
+            const newData = { ...prev };
+            
+            // Handle special cases for connection selection
+            if (fieldKey === 'source.connection_config_id' || fieldKey === 'connection_config_id' || fieldKey === 'source.connection') {
+                let selectedConn;
+                
+                if (typeof value === 'object' && value.connection_config_id) {
+                    // Value is already a connection object from the API endpoint
+                    selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value.connection_config_id));
+                    setSelectedConnection(selectedConn);
+                    
+                    newData.source = {
+                        ...newData.source,
+                        connection: value,
+                        connection_config_id: value.connection_config_id
+                    };
+                } else {
+                    // Value is just an ID
+                    selectedConn = connectionConfigList.find(conn => conn.id === parseInt(value));
+                    setSelectedConnection(selectedConn);
+
+                    if (selectedConn) {
+                        newData.source = {
+                            ...newData.source,
+                            connection: {
+                                ...newData.source?.connection,
+                                connection_config_id: selectedConn.id,
+                                name: selectedConn.connection_config_name || '',
+                                connection_type: selectedConn.custom_metadata?.connection_type || '',
+                                file_path_prefix: selectedConn.custom_metadata?.file_path_prefix || '',
+                            },
+                            connection_config_id: selectedConn.id
+                        };
+                    }
+                }
+                return newData;
+            }
+
+            // Handle source type change - clear opposite field
+            if (fieldKey === 'source.source_type') {
+                newData.source = {
+                    ...newData.source,
+                    source_type: value
+                };
+                
+                // Clear the opposite field when switching source types
+                if (value === 'File') {
+                    delete newData.source.table_name;
+                } else {
+                    delete newData.source.file_name;
+                }
+                
+                // Reset data_src_id generation flag
+                hasGeneratedDataSrcId.current = false;
+                
+                return newData;
+            }
+
+            // Handle file type change
+            if (fieldKey === 'file_type') {
+                newData.file_type = value;
+                
+                // Clear existing read_options when file type changes
+                if (newData.read_options) {
+                    delete newData.read_options;
+                }
+                
+                return newData;
+            }
+
+            // Handle read_options field changes
+            if (fieldKey.startsWith('read_options.')) {
+                const readOptionKey = fieldKey.replace('read_options.', '');
+                newData.read_options = {
+                    ...newData.read_options,
+                    [readOptionKey]: value
+                };
+                return newData;
+            }
+
+            // Handle name cleaning for specific fields
+            if (fieldKey === 'name' || fieldKey === 'reader_name') {
+                const cleanedValue = cleanFileNameForId(value);
+                newData.reader_name = cleanedValue;
+                newData.name = cleanedValue;
+                newData.source = {
+                    ...newData.source,
+                    name: cleanedValue,
+                    source_name: cleanedValue
+                };
+                return newData;
+            }
+
+            // Handle nested field updates
+            const keys = fieldKey.split('.');
+            if (keys.length === 1) {
+                newData[fieldKey] = value;
+            } else {
+                let current = newData;
+                for (let i = 0; i < keys.length - 1; i++) {
+                    if (!current[keys[i]]) {
+                        current[keys[i]] = {};
+                    }
+                    current[keys[i]] = { ...current[keys[i]] };
+                    current = current[keys[i]];
+                }
+                current[keys[keys.length - 1]] = value;
+            }
+            
+            return newData;
+        });
+    }, [connectionConfigList]);
+
+    // Memoized tab content components to prevent unnecessary rerenders
+    const TabContent = useMemo(() => ({
+        basic: (
+            <TabsContent value="basic" className="space-y-6 mt-0">
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {hasFields(organizedTabs.basic) ? (
+                                Object.entries(organizedTabs.basic).map(([fieldKey, fieldSchema]: [string, any]) => (
+                                    <div key={fieldKey} className={fieldSchema.type === 'object' ? 'md:col-span-2 xl:col-span-3' : ''}>
+                                        <DynamicFormField
+                                            fieldKey={fieldKey}
+                                            fieldSchema={fieldSchema}
+                                            value={formData[fieldKey]}
+                                            onChange={handleFieldChange}
+                                            errors={errors}
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center text-gray-500 py-12">
+                                    <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                                    <p className="text-lg font-medium">No basic configuration fields</p>
+                                    <p className="text-sm mt-1">All basic settings are configured automatically</p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        ),
+        source: (
+            <TabsContent value="source" className="space-y-6 mt-0">
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {hasFields(organizedTabs.source) ? (
+                                Object.entries(organizedTabs.source).map(([fieldKey, fieldSchema]: [string, any]) => (
+                                    <div key={fieldKey} className={fieldSchema.type === 'object' ? 'md:col-span-2 xl:col-span-3' : ''}>
+                                        <DynamicFormField
+                                            fieldKey={fieldKey}
+                                            fieldSchema={fieldSchema}
+                                            value={formData[fieldKey]}
+                                            onChange={handleFieldChange}
+                                            errors={errors}
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center text-gray-500 py-12">
+                                    <Database className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                                    <p className="text-lg font-medium">No source configuration fields</p>
+                                    <p className="text-sm mt-1">Source settings are configured automatically</p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        ),
+        readOptions: (
+            <TabsContent value="readOptions" className="space-y-6 mt-0">
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {hasFields(organizedTabs.readOptions) ? (
+                                Object.entries(organizedTabs.readOptions).map(([fieldKey, fieldSchema]: [string, any]) => (
+                                    <div key={fieldKey} className={fieldSchema.type === 'object' ? 'md:col-span-2 xl:col-span-3' : ''}>
+                                        <DynamicFormField
+                                            fieldKey={fieldKey}
+                                            fieldSchema={fieldSchema}
+                                            value={formData[fieldKey]}
+                                            onChange={handleFieldChange}
+                                            errors={errors}
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center text-gray-500 py-12">
+                                    <Settings className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                                    <p className="text-lg font-medium">No read options available</p>
+                                    <p className="text-sm mt-1">Default read settings will be used</p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        ),
+        advanced: (
+            <TabsContent value="advanced" className="space-y-6 mt-0">
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-3 gap-6">
+                            {hasFields(organizedTabs.advanced) ? (
+                                Object.entries(organizedTabs.advanced).map(([fieldKey, fieldSchema]: [string, any]) => (
+                                    <div key={fieldKey} className={fieldSchema.type === 'object' ? 'col-span-3' : ''}>
+                                        <DynamicFormField
+                                            fieldKey={fieldKey}
+                                            fieldSchema={fieldSchema}
+                                            value={formData[fieldKey]}
+                                            onChange={handleFieldChange}
+                                            errors={errors}
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-3 text-center text-gray-500 py-12">
+                                    <Wrench className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                                    <p className="text-lg font-medium">No advanced settings available</p>
+                                    <p className="text-sm mt-1">Standard configuration is sufficient</p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        )
+    }), [organizedTabs, formData, handleFieldChange, errors, hasFields]);
+
+    if (isSchemaLoading) {
+        return (
+            <div className="flex flex-col h-full w-full bg-white p-4">
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            </div>
+        );
+    }
+
+    if (!currentSchema) {
+        return (
+            <div className="flex flex-col h-full w-full bg-white p-4">
+                <div className="text-center text-gray-500">
+                    <p>No schema available for the selected engine type.</p>
+                    <p className="text-sm mt-2">Please select a different engine type or contact support.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <form onSubmit={handleSubmit} className="flex flex-col h-full w-full bg-white">
             <div className="flex-1 overflow-auto">
-                <div className="">
-                    {/* Form Content */}
-                    <div className="space-y-3">
-                        {isRightPanelOpen ? (
-                            /* Simplified view when right panel is open - only show reader_name and file_name */
-                            <div className="bg-gray-50 p-2.5 rounded-md">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
-                                    <h3 className="text-xs font-medium text-gray-700">Reader Configuration</h3>
+                <div className="p-4">
+                    {isRightPanelOpen ? (
+                        /* Simplified view when right panel is open */
+                        <Card>
+                            <CardContent className="p-4">
+                                <h3 className="text-sm font-medium text-gray-700 mb-4">Reader Configuration</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {currentSchema.properties && Object.entries(currentSchema.properties)
+                                        .filter(([key]) => ['reader_name', 'name'].includes(key))
+                                        .map(([fieldKey, fieldSchema]: [string, any]) => (
+                                            <DynamicFormField
+                                                key={fieldKey}
+                                                fieldKey={fieldKey}
+                                                fieldSchema={fieldSchema}
+                                                value={formData[fieldKey]}
+                                                onChange={handleFieldChange}
+                                                errors={errors}
+                                            />
+                                        ))}
                                 </div>
-                                <div className="space-y-3 px-2">
-                                    {/* Reader Name Field */}
-                                    {currentSchema.properties.reader_name && (
-                                        <div>{ReaderFormField({ fieldName: 'reader_name', fieldSchema: currentSchema.properties.reader_name, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        /* Elegant Tabbed Interface */
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                            <TabsList className="grid w-full grid-cols-4 mb-6 bg-gray-50 p-1 rounded-lg">
+                                <TabsTrigger 
+                                    value="basic" 
+                                    className={`flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 relative ${
+                                        hasTabErrors(organizedTabs.basic) ? 'text-red-600' : ''
+                                    }`}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Basic Info</span>
+                                    <span className="sm:hidden">Basic</span>
+                                    {hasTabErrors(organizedTabs.basic) && (
+                                        <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></div>
                                     )}
-                                    
-                                    {/* File Name Field - only show if source type is File */}
-                                    {formData.source?.type === 'File' && (
-                                        <div>
-                                            {Object.entries(getSourceTypeFields(formData.source.type).properties)
-                                                .filter(([fieldName]) => fieldName === 'file_name')
-                                                .map(([fieldName, schema]: [string, any]) => (
-                                                    <div key={fieldName}>
-                                                        {ReaderFormField({ fieldName, fieldSchema: schema, path: ['source'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
-                                                    </div>
-                                                ))}
-                                        </div>
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="source" 
+                                    className={`flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 relative ${
+                                        hasTabErrors(organizedTabs.source) ? 'text-red-600' : ''
+                                    }`}
+                                >
+                                    <Database className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Source Config</span>
+                                    <span className="sm:hidden">Source</span>
+                                    {hasTabErrors(organizedTabs.source) && (
+                                        <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></div>
                                     )}
-                                </div>
-                            </div>
-                        ) : (
-                            /* Full form when right panel is closed */
-                            <>
-                                {/* Basic Info Section */}
-                                <div className="bg-gray-50 p-2.5 rounded-md">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="h-4 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
-                                        <h3 className="text-xs font-medium text-gray-700">Basic Information</h3>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3 px-2">
-                                        {currentSchema.properties.reader_name && (
-                                            <div>{ReaderFormField({ fieldName: 'reader_name', fieldSchema: currentSchema.properties.reader_name, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
-                                        )}
-                                        {currentSchema.properties.name && (
-                                            <div>{ReaderFormField({ fieldName: 'name', fieldSchema: currentSchema.properties.name, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
-                                        )}
-                                    </div>
-                                </div>
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="readOptions" 
+                                    className={`flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 relative ${
+                                        hasTabErrors(organizedTabs.readOptions) ? 'text-red-600' : ''
+                                    }`}
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Read Options</span>
+                                    <span className="sm:hidden">Options</span>
+                                    {hasTabErrors(organizedTabs.readOptions) && (
+                                        <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></div>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="advanced" 
+                                    className={`flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200 relative ${
+                                        hasTabErrors(organizedTabs.advanced) ? 'text-red-600' : ''
+                                    }`}
+                                >
+                                    <Wrench className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Advanced</span>
+                                    <span className="sm:hidden">Adv</span>
+                                    {hasTabErrors(organizedTabs.advanced) && (
+                                        <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></div>
+                                    )}
+                                </TabsTrigger>
+                            </TabsList>
 
-                                {/* Source Configuration Section */}
-                                <div className="bg-gray-50 p-2.5 rounded-md">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="h-4 w-1 bg-gradient-to-b from-green-500 to-green-600 rounded-full" />
-                                        <h3 className="text-xs font-medium text-gray-700">Source Configuration</h3>
-                                    </div>
-                                    <div className="space-y-2 px-2">
-                                        <div>{ReaderFormField({ fieldName: 'source', fieldSchema: currentSchema.properties.source, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}</div>
-
-                                        {formData.source?.type && (
-                                            <>
-                                                {/* File Type Selection */}
-                                                {formData.source.type === 'File' && (
-                                                    <div className="mb-4">
-                                                        {ReaderFormField({ fieldName: 'file_type', fieldSchema: currentSchema.properties.file_type, path: [], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
-                                                    </div>
-                                                )}
-
-                                                {/* Source Type Fields */}
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    {Object.entries(getSourceTypeFields(formData.source.type).properties)
-                                                        .map(([fieldName, schema]: [string, any]) => (
-                                                            <div key={fieldName}>
-                                                                {ReaderFormField({ fieldName, fieldSchema: schema, path: ['source'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                                <Collapsible className="mt-2">
-                                                    <CollapsibleTrigger onClick={()=>setIsAdvanvce(!isAdvance)} className="flex items-center gap-1 text-blue-600 text-xs font-medium cursor-pointer">
-                                                        Advanced Options
-                                                        <span>{isAdvance ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</span>
-                                                    </CollapsibleTrigger>
-                                                    <CollapsibleContent>
-                                                        {formData.source.type === 'File' && formData.file_type === 'CSV' && (
-                                                            <div className="mt-3 bg-gray-50 p-2.5 rounded-md">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="h-4 w-1 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full" />
-                                                                    <h3 className="text-xs font-medium text-gray-700">CSV Options</h3>
-                                                                </div>
-                                                                <div className="grid grid-cols-3 gap-3 px-2">
-                                                                    {Object.entries(csvOptionsSchema.properties).map(([key, schema]: [string, any]) => (
-                                                                        <div key={key}>
-                                                                            {ReaderFormField({ fieldName: key, fieldSchema: schema, path: ['read_options'], formData, onChange: handleChange, errors, connectionConfigList, selectedConnection })}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </CollapsibleContent>
-                                                </Collapsible>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                            {/* Memoized Tab Content */}
+                            {TabContent.basic}
+                            {TabContent.source}
+                            {TabContent.readOptions}
+                            {TabContent.advanced}
+                        </Tabs>
+                    )}
                 </div>
             </div>
 

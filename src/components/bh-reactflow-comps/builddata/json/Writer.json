@@ -66,6 +66,46 @@
                         },
                         "required": ["write_options"]
                     }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "file_type": {
+                                "const": "JSON"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "write_options": {
+                                "type": "object",
+                                "items": {
+                                    "$ref": "transformations/writers/JSONOptions.json"
+                                }
+                            }
+                        },
+                        "required": ["write_options"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "file_type": {
+                                "const": "Parquet"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "write_options": {
+                                "type": "object",
+                                "items": {
+                                    "$ref": "transformations/writers/ParquetOptions.json"
+                                }
+                            }
+                        },
+                        "required": ["write_options"]
+                    }
                 }
             ]
         }

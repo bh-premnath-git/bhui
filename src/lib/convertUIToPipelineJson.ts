@@ -98,11 +98,10 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
         .map(node => {
             const source = node.data.source || {};
             const connectionConfig = source?.connection_config?.custom_metadata;
-            const fullConnectionConfig = source?.connection_config || { custom_metadata: connectionConfig };
+            let fullConnectionConfig:any = source?.connection_config?.custom_metadata?.custom_metadata || source?.connection_config?.custom_metadata || { custom_metadata: connectionConfig };
+            fullConnectionConfig.connection_config_id = source?.connection_config_id || source?.connection?.connection_config_id;
             const source_type = source.type || source.source_type;
             const isFileSource = connectionConfig?.connection_type == "Local" || connectionConfig?.connection_type == "S3";
-            
-
             
             return {
                 name: source.name || node.data.title || 'Unnamed Source',
@@ -193,7 +192,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                     source_type: capitalizeFirstLetter(node.data.source.type || node.data.source.source_type) || "Relational",
                     ...(isFileSource ? {} : { table_name: node.data?.source?.table_name || node.data.source.data_src_name }),
                     file_name: `${node.data.source.file_name}`,
-                    connection: fullConnectionConfig
+                    connection: fullConnectionConfig.custom_metadata
                 },
                 read_options: {
                     header: true
@@ -613,6 +612,8 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             console.log('🔧 convertUIToPipelineJson - Processing target node:', node.id);
             console.log('🔧 convertUIToPipelineJson - Target node data:', node.data);
             console.log('🔧 convertUIToPipelineJson - Target source data:', node.data.source);
+            console.log('🔧 convertUIToPipelineJson - Target source connection:', node.data.source?.connection);
+            console.log('🔧 convertUIToPipelineJson - Target source connection_config_id:', node.data.source?.connection?.connection_config_id);
             console.log('🔧 convertUIToPipelineJson - Target transformation data:', node.data.transformationData);
             
             // Determine the correct target_type
@@ -649,7 +650,22 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             
             return targetData;
         });
-    
+    console.log('🔧 Final targets array:', {
+            $schema: "https://json-schema.org/draft-07/schema#",
+            name: pipelineDtl?.pipeline_name||pipelineDtl?.name ,
+            description: pipelineDtl?.pipeline_description || " ",
+            version: "1.0.0",
+            // mode: "DEBUG",
+            parameters: [],
+            sources,
+            targets,
+            transformations: [
+                ...readerTransformations,
+                ...regularTransformations.filter(Boolean),
+                // ...writerTransformations
+            ]
+        });
+
     return {
         pipeline_json: {
             $schema: "https://json-schema.org/draft-07/schema#",

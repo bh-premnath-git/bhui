@@ -12,8 +12,23 @@ import {
 } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { convertOptimisedPipelineJsonToPipelineJson, convertUIToPipelineJsonUpToNode, resolveRefsPipelineJson } from '@/lib/convertUIToPipelineJson';
 import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
-import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE } from '@/config/platformenv';
+import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE, SPARK_PORT, PANDAS_PORT, FLINK_PORT } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
+import { ValidEngineTypes } from '@/types/pipeline';
+
+// Utility function to get port based on engine type
+const getPortByEngineType = (engineType: ValidEngineTypes): string => {
+  switch (engineType) {
+    case 'pyspark':
+      return SPARK_PORT;
+    case 'pandas':
+      return PANDAS_PORT;
+    case 'pyflink':
+      return FLINK_PORT;
+    default:
+      return SPARK_PORT; // Default fallback
+  }
+};
 
 interface UsePipelineActionsProps {
     nodes: any[];
@@ -164,12 +179,105 @@ export const usePipelineActions = ({
     }, []);
 
     // Add type safety for the getInitialFormState function
-    const getInitialFormState = useCallback((transformation: any, nodeId: string) => {
+    const getInitialFormState = useCallback((transformation: any, nodeId: string, matchingNode?: any, pipelineDefinition?: any) => {
         if (!transformation || !nodeId) {
             return {};
         }
 
         try {
+            // Handle Reader transformations with reference resolution
+            if (transformation?.transformation === 'Reader') {
+                // Resolve source reference if it exists
+                let resolvedSource = transformation.source;
+                if (resolvedSource && resolvedSource.$ref && pipelineDefinition) {
+                    // Resolve the reference manually
+                    const refPath = resolvedSource.$ref.substring(2); // Remove '#/'
+                    const pathParts = refPath.split('/');
+                    let resolved = pipelineDefinition;
+                    
+                    for (const part of pathParts) {
+                        if (resolved && resolved[part]) {
+                            resolved = resolved[part];
+                        } else {
+                            resolved = null;
+                            break;
+                        }
+                    }
+                    
+                    if (resolved) {
+                        resolvedSource = resolved;
+                    }
+                }
+                
+                // Also resolve connection reference if it exists
+                let resolvedConnection = resolvedSource?.connection;
+                if (resolvedConnection && resolvedConnection.$ref && pipelineDefinition) {
+                    const refPath = resolvedConnection.$ref.substring(2);
+                    const pathParts = refPath.split('/');
+                    let resolved = pipelineDefinition;
+                    
+                    for (const part of pathParts) {
+                        if (resolved && resolved[part]) {
+                            resolved = resolved[part];
+                        } else {
+                            resolved = null;
+                            break;
+                        }
+                    }
+                    
+                    if (resolved) {
+                        resolvedConnection = {
+                            ...resolved,
+                            // Ensure connection_config_id is available for form validation
+                            connection_config_id: resolved.connection_config_id || 
+                                                resolved.id || 
+                                                resolved.name ||
+                                                // Extract from $ref path if needed
+                                                pathParts[pathParts.length - 1]
+                        };
+                    }
+                }
+                
+                // Structure the data properly for the ReaderOptionsForm
+                const readerFormData = {
+                    ...transformation,
+                    nodeId,
+                    // Nest source data under 'source' key as expected by the form schema
+                    source: {
+                        ...resolvedSource,
+                        connection: resolvedConnection,
+                        // Ensure source_type is properly set based on the source data
+                        source_type: resolvedSource?.source_type || 
+                                    (resolvedSource?.table_name ? 'Relational' : 
+                                     resolvedSource?.file_name ? 'File' : 'Relational'),
+                        // Add file_type if it's a file source
+                        file_type: resolvedSource?.file_name ? 
+                                  (resolvedSource.file_name.toLowerCase().endsWith('.csv') ? 'CSV' :
+                                   resolvedSource.file_name.toLowerCase().endsWith('.json') ? 'JSON' :
+                                   resolvedSource.file_name.toLowerCase().endsWith('.parquet') ? 'Parquet' : 'CSV') : undefined
+                    },
+                    // Ensure read_options is properly structured
+                    read_options: transformation.read_options || {},
+                    // Ensure column arrays are properly initialized
+                    select_columns: transformation.select_columns || [],
+                    drop_columns: transformation.drop_columns || [],
+                    rename_columns: transformation.rename_columns || {}
+                };
+                
+                console.log(`🔧 usePipelineActions: Structured Reader form data for ${nodeId}:`, readerFormData);
+                return readerFormData;
+            }
+
+            // Use the normalized transformation data from the matching node if available
+            const nodeTransformationData = matchingNode?.data?.transformationData;
+            if (nodeTransformationData) {
+                console.log(`🔧 Using normalized data for ${transformation.transformation} (${nodeId}):`, nodeTransformationData);
+                return {
+                    ...nodeTransformationData,
+                    nodeId
+                };
+            }
+            
             return {
                 ...transformation,
                 nodeId
@@ -181,17 +289,22 @@ export const usePipelineActions = ({
     }, []);
 
     const handleSourceUpdate = useCallback(async ({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
+        console.log('🔧 usePipelineActions: handleSourceUpdate called with:', { nodeId, sourceData });
+        
         let data;
 
         if (sourceData.sourceData?.data) {
             // Structure from TargetPopUp
             data = sourceData.sourceData.data;
+            console.log('🔧 usePipelineActions: Using sourceData.sourceData.data structure');
         } else if (sourceData.data) {
             // Direct structure
             data = sourceData.data;
+            console.log('🔧 usePipelineActions: Using sourceData.data structure');
         } else {
             // Try to use sourceData directly as a fallback
             data = sourceData;
+            console.log('🔧 usePipelineActions: Using sourceData directly as fallback');
         }
 
         if (!data) {
@@ -206,15 +319,17 @@ export const usePipelineActions = ({
         }
 
         try {
-            setNodes(prevNodes =>
-                prevNodes.map((node: any) => {
+            console.log('🔧 usePipelineActions: About to update node with data:', data);
+            
+            setNodes(prevNodes => {
+                const updatedNodes = prevNodes.map((node: any) => {
                     if (node.id === nodeId) {
                         // Make sure we have all the required data
                         if (!data.label) {
-                            console.warn('Missing label in sourceData, using fallback');
+                            console.warn('🔧 usePipelineActions: Missing label in sourceData, using fallback');
                         }
 
-                        return {
+                        const updatedNode = {
                             ...node,
                             label: data.label || node.label || 'Unnamed Node',
                             data: {
@@ -224,10 +339,22 @@ export const usePipelineActions = ({
                                 transformationData: data.transformationData || node.data?.transformationData || {}
                             }
                         };
+                        
+                        console.log('🔧 usePipelineActions: Updated node:', {
+                            nodeId,
+                            oldNode: node,
+                            updatedNode,
+                            transformationData: updatedNode.data.transformationData
+                        });
+                        
+                        return updatedNode;
                     }
                     return node;
-                })
-            );
+                });
+                
+                console.log('🔧 usePipelineActions: All nodes after update:', updatedNodes);
+                return updatedNodes;
+            });
         } catch (error) {
             console.error('Error updating node:', error);
             console.error('Node ID:', nodeId);
@@ -280,7 +407,7 @@ export const usePipelineActions = ({
                 params.append('host', attachedCluster.master_ip);
             } else {
                 params.append('host', "host.docker.internal");
-                params.append('port', "15003");
+                params.append('port', getPortByEngineType(selectedEngineType));
             }
             
             debuggedNodesList.forEach(checkpoint => {
@@ -698,10 +825,15 @@ export const usePipelineActions = ({
                 );
 
                 if (matchingNode?.id) {
-                    initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id);
+                    initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id, matchingNode, response.pipeline_json);
                 }
             });
 
+            console.log('🔧 usePipelineActions: Setting form states:', {
+                initialFormStates,
+                transformationsCount: response.pipeline_json.transformations?.length || 0,
+                nodesCount: nodesWithTitles.length
+            });
             setFormStates(initialFormStates);
 
         } catch (error) {

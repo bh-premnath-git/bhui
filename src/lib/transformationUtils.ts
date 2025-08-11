@@ -106,7 +106,7 @@ export const getInitialFormState = (
                 order_by: transformation.order_by || []
             };
 
-        case 'SequenceGenerator':
+        case 'Sequence':
             return {
                 ...baseState,
                 for_column_name: transformation.for_column_name || '',
@@ -146,6 +146,26 @@ export const getInitialFormState = (
                 transformation: transformation.transformation || ''
             };
         
+        case 'Mapper':
+            return {
+                ...baseState,
+                derived_fields: Array.isArray(transformation.derived_fields) 
+                    ? transformation.derived_fields.map((field: any) => ({
+                        name: field.name || '',
+                        expression: field.expression || ''
+                    }))
+                    : [{ name: '', expression: '' }],
+                select_columns: Array.isArray(transformation.select_columns) 
+                    ? transformation.select_columns.filter((col: any) => 
+                        col !== null && col !== undefined && col !== ''
+                    )
+                    : [],
+                column_list: Array.isArray(transformation.column_list) 
+                    ? transformation.column_list.filter((col: any) => 
+                        col !== null && col !== undefined && col !== ''
+                    )
+                    : []
+            };
 
         default:
             return transformation.name ? {

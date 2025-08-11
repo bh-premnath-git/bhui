@@ -24,6 +24,23 @@ export const NestedObjectRenderer: React.FC<NestedObjectRendererProps> = ({
 }) => {
   const fullFieldKey = parentKey ? `${parentKey}.${fieldKey}` : fieldKey;
   const displayTitle = title || field.title || formatFieldTitle(fieldKey);
+  
+  // Watch the nested form values to make them reactive
+  const nestedFormValues = form.watch(fullFieldKey);
+  
+  // Debug nested object rendering
+  if (process.env.NODE_ENV === 'development' && fieldKey === 'source') {
+    console.log('🔧 NestedObjectRenderer: Rendering source object', {
+      fieldKey,
+      fullFieldKey,
+      parentKey,
+      nestedFormValues,
+      hasAllOf: !!field.allOf,
+      allOfLength: field.allOf?.length || 0,
+      hasProperties: !!field.properties,
+      propertiesKeys: field.properties ? Object.keys(field.properties) : []
+    });
+  }
 
   // If the object has conditional logic (allOf), use ConditionalSchemaRenderer
   if (field.allOf) {
@@ -42,6 +59,7 @@ export const NestedObjectRenderer: React.FC<NestedObjectRendererProps> = ({
           <ConditionalSchemaRenderer
             schema={field}
             parentKey={fullFieldKey}
+            scopedFormValues={nestedFormValues}
           />
         </CardContent>
       </Card>

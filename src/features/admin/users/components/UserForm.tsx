@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, UseFormReturn, DefaultValues, Path, useWatch } from "react-hook-form";
+import { useForm, UseFormReturn, DefaultValues, Path } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, CheckCircle2, AlertCircle, Shield, User as UserIcon, UserPlus, Settings } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, User as UserIcon, UserPlus, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Accordion,
@@ -18,8 +17,7 @@ import {
 } from "@/components/ui/accordion";
 import { userEditSchema, userCreateSchema, type UserCreateValues, type UserFormValues } from "./userFormSchema";
 import type { User } from "@/types/admin/user";
-import { EnvironmentRolesField, ProjectRolesField } from "./FormFields";
-import { useRoleMatrixQuery } from "../hooks/useRoleMatrixQuery";
+import { EnvironmentField, ProjectField, RolesField } from "./FormFields";
 
 // Base fields present in both create and edit forms
 interface BaseUserFields {
@@ -78,29 +76,13 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
   // Watch tenant admin status to conditionally fetch all roles
   const isTenantAdmin = Boolean(form.watch('is_tenant_admin' as Path<T>));
 
-  // Fetch all roles when tenant admin is enabled
-  const { roles: allRoles = [], isLoading: isLoadingRoles } = useRoleMatrixQuery({
-    fetchAll: isTenantAdmin,
-    enabled: isTenantAdmin
-  });
-
   const handleSubmit = async (data: T) => {
     try {
       setFormState("submitting");
-      const payload: any = { ...data };
 
-      if (payload.is_tenant_admin) {
-        // For tenant admin, include ALL role matrix IDs
-        if (allRoles.length > 0) {
-          // Add bh_role_matrix_ids field to payload for tenant admin
-          payload.bh_role_matrix_ids = allRoles.map(role => role.id);
-        }
-        delete payload.assignments;
-        delete payload.project_assignments;
-        delete payload.environment_assignments;
-      }
-
-      await onSubmit(payload as T);
+      // Pass the complete form data to onSubmit
+      // The AddUser/EditUser components will handle the transformation
+      await onSubmit(data);
       setFormState("success");
     } catch (err) {
       setFormState("error");
@@ -190,65 +172,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
           </Card>
 
           {/* Role Assignment Section */}
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-orange-500" />
-                Role Assignment
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Tenant Admin Toggle */}
-              <FormField
-                control={form.control}
-                name={"is_tenant_admin" as Path<T>}
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <FormLabel className="text-sm font-medium">
-                        Tenant Admin
-                      </FormLabel>
-                      <p className="text-xs text-muted-foreground">
-                        Full administrative access across all projects and environments
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value as boolean}
-                        onCheckedChange={field.onChange}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {/* Role Assignment Status */}
-              {isTenantAdmin ? (
-                <div className="space-y-2">
-                  <Badge variant="destructive" className="w-fit">
-                    Admin Access Enabled
-                  </Badge>
-                  {isLoadingRoles ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading all available roles...
-                    </div>
-                  ) : allRoles.length > 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {allRoles.length} roles available across all projects and environments
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="p-4 border rounded-lg bg-muted/20">
-                  <p className="text-sm text-muted-foreground">
-                    User will be assigned specific roles based on resource assignments below
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <RolesField form={form} isTenantAdmin={isTenantAdmin} searchTerm={""} />
 
           {/* Resource Section */}
           {!isTenantAdmin && (
@@ -280,11 +204,9 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                       <p className="text-sm text-muted-foreground">
                         Grant access to entire projects (includes all environments)
                       </p>
-                      <ProjectRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
+                      <ProjectField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
                     </div>
-
                     <Separator />
-
                     {/* Environment-Specific Access */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -295,7 +217,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                         Assign roles for specific environments
                       </p>
                       <div className="border rounded-lg p-4">
-                        <EnvironmentRolesField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
+                        <EnvironmentField form={form as unknown as UseFormReturn<UserFormValues>} user={user} />
                       </div>
                     </div>
 

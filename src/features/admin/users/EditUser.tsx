@@ -8,26 +8,62 @@ import { useUserUpdateMutation } from "./hooks/useUserUpdateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserFormValues } from "./components/userFormSchema";
 import type { UserUpdateData } from "@/types/admin/user";
+import { transformToBhRoles, transformToBhResources } from "./components/userFormSchema";
+import { useAppSelector } from "@/hooks/useRedux";
+import { useRoleMatrixQuery } from "./hooks/useRoleMatrixQuery";
 
 export function EditUser() {
   const navigate = useNavigate();
   const { id } = useParams(); // id is actually the email from the URL
   const { user, isUserLoading, isUserFetching } = useUsersQuery({ shouldFetch: true, email: id });
-  const { isUpdating, updateError } = useUserUpdateMutation();
+  const { handleUpdateUser, isUpdating, updateError } = useUserUpdateMutation();
   const [error, setError] = useState<string | null>(null);
   
-  console.log('User data:', user);
+  // Get projects and environments from Redux store
+  const projects = useAppSelector((state) => state.users.projects);
+  const environments = useAppSelector((state) => state.users.environments);
+  
+  // Get all roles for transformation
+  const { roles } = useRoleMatrixQuery({
+    fetchAll: true,
+    enabled: true,
+  });
   
   const onSubmit = async (data: UserFormValues) => {
     if (!id) return;
 
     try {
       setError(null);
-      const payload = { ...data } as UserUpdateData;
-      if (payload.is_tenant_admin) {
-        delete (payload as any).assignments;
-      }
-      //await handleUpdateUser(id, payload);
+      
+      // Transform form data into required format
+      const bhRoles = transformToBhRoles(
+        data.selected_roles || [],
+        data.role_permissions || {},
+        roles || []
+      );
+      
+      const bhResources = transformToBhResources(
+        data.project_assignments || [],
+        data.environment_assignments || [],
+        projects || [],
+        environments || []
+      );
+      
+      // Create clean payload with only the fields that should be sent to API
+      const payload: UserUpdateData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        is_tenant_admin: data.is_tenant_admin,
+        username: data.username,
+        enabled: data.enabled,
+        emailVerified: data.emailVerified,
+        bh_roles: bhRoles,
+        bh_resources: bhResources,
+      };
+      
+      console.log('User update payload:', payload);
+      await handleUpdateUser(id, payload);
       navigate(ROUTES.ADMIN.USERS.INDEX);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
@@ -68,13 +104,10 @@ export function EditUser() {
     (r) => r.role === 'admin_role' || r.role === 'tenant_admin'
   ) ?? false
 
-  // Map roles to project and environment assignments
-  const projectAssignments: { project: string, roles: string[] }[] = [];
-  const environmentAssignments: { environment: string, roles: string[] }[] = [];
-
-  // Note: The current attributes structure doesn't include project/environment information
-  // The roles are just: {role: "admin_role", permissions: ["edit", "view", "delete"]}
-  // So we'll initialize empty assignments for now
+  // Initialize empty assignments - these are form-only fields for UI purposes
+  // The actual role assignments are managed by the RoleAssignment system
+  const projectAssignments: string[] = [];
+  const environmentAssignments: string[] = [];
 
   const formInitialData: UserFormValues = {
     first_name: user.firstName,

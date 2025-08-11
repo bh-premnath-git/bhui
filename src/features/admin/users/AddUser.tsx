@@ -6,50 +6,50 @@ import { useUserCreateMutation } from "./hooks/useUserCreateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserCreateData } from "@/types/admin/user";
 import type { UserCreateValues } from "./components/userFormSchema";
+import { transformToBhRoles, transformToBhResources } from "./components/userFormSchema";
+import { useAppSelector } from "@/hooks/useRedux";
+import { useRoleMatrixQuery } from "./hooks/useRoleMatrixQuery";
 
 export function AddUser() {
   const navigate = useNavigate();
   const { handleCreateUser, isCreating, createError } = useUserCreateMutation();
   const [error, setError] = useState<string | null>(null);
   
+  // Get projects and environments from Redux store
+  const projects = useAppSelector((state) => state.users.projects);
+  const environments = useAppSelector((state) => state.users.environments);
+  
+  // Get all roles for transformation
+  const { roles } = useRoleMatrixQuery({
+    fetchAll: true,
+    enabled: true,
+  });
+  
   const onSubmit = async (data: UserCreateValues) => {
     try {
       setError(null);
-      const payload = { ...data } as UserCreateData;
       
-      // Handle regular users with role assignments
-      if (!payload.is_tenant_admin) {
-        // Extract role matrix IDs from project and environment assignments
-        const roleMatrixIds: string[] = [];
-        
-        // Process project assignments if they exist
-        if (data.project_assignments?.length) {
-          data.project_assignments.forEach(assignment => {
-            if (assignment.roles?.length) {
-              roleMatrixIds.push(...assignment.roles);
-            }
-          });
-        }
-        
-        // Process environment assignments if they exist
-        if (data.environment_assignments?.length) {
-          data.environment_assignments.forEach(assignment => {
-            if (assignment.roles?.length) {
-              roleMatrixIds.push(...assignment.roles);
-            }
-          });
-        }
-        
-        // Add deduplicated role IDs to payload
-        if (roleMatrixIds.length > 0) {
-          (payload as any).bh_role_matrix_ids = [...new Set(roleMatrixIds)];
-        }
-      }
-      // For tenant admins, bh_role_matrix_ids will be set by UserForm
+      // Transform form data into required format
+      const bhRoles = transformToBhRoles(
+        data.selected_roles || [],
+        data.role_permissions || {},
+        roles || []
+      );
       
-      // Remove form-specific fields that aren't part of the API payload
-      delete (payload as any).project_assignments;
-      delete (payload as any).environment_assignments;
+      const bhResources = transformToBhResources(
+        data.project_assignments || [],
+        data.environment_assignments || [],
+        projects || [],
+        environments || []
+      );
+      
+      const payload: UserCreateData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        bh_roles: bhRoles,
+        bh_resources: bhResources,
+      };
       
       console.log('User creation payload:', payload);
       await handleCreateUser(payload);

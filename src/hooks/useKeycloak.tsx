@@ -30,11 +30,6 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const redirectUri = isBrowser 
     ? (import.meta.env.VITE_KEYCLOAK_REDIRECT_URI || window.location.origin)
     : '';
-    
-  if (isBrowser) {
-    console.log('Using redirect URI:', redirectUri);
-  }
-
   // Initialize Keycloak only in browser environment
   useEffect(() => {
     // Skip initialization if not in browser with Web Crypto API
@@ -46,15 +41,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
     
     const initKeycloak = async () => {
       try {
-        if (!mounted) return;        
-        
-        console.log('🔐 Starting Keycloak initialization...');
-        console.log('🔐 Keycloak config:', {
-          url: keycloak.authServerUrl,
-          realm: keycloak.realm,
-          clientId: keycloak.clientId
-        });
-        
+        if (!mounted) return;         
         const authenticated = await keycloak.init({
           onLoad: 'check-sso',
           silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
@@ -63,16 +50,11 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
           checkLoginIframe: false
         });
 
-        console.log('🔐 Keycloak init completed, authenticated:', authenticated);
-        console.log('🔐 Keycloak token present:', !!keycloak.token);
-        console.log('🔐 Keycloak refresh token present:', !!keycloak.refreshToken);
-
         if (!mounted) return;
         setInitialized(true);
         setAuthenticated(authenticated);
         
         if (authenticated) {
-          console.log('🔐 User is authenticated, setting up tokens...');
           setToken(keycloak.token);
           setRefreshToken(keycloak.refreshToken);
           
@@ -110,7 +92,6 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         if (!mounted) return;
         
-        console.error('🔐 Keycloak initialization error:', error);
         console.error('🔐 Error details:', {
           message: error.message,
           stack: error.stack,
@@ -136,7 +117,6 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
   const login = useCallback(async () => {
     // Verify browser environment with Web Crypto API before attempting login
     if (!isBrowser) {
-      console.error('Login error: Web Crypto API is not available');
       toast.error('Login not available in this environment');
       return;
     }

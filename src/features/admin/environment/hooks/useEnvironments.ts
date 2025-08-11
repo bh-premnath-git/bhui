@@ -122,7 +122,7 @@ export const useEnvironments = (options: UseEnvironmentsOptions = { shouldFetch:
     });
   }, [createEnvironmentMutation]);
 
-  const handleUpdateEnvironment = useCallback(async (id: string, data: EnvironmentMutationData) => {
+  const handleUpdateEnvironment = useCallback(async (id: string, data: EnvironmentMutationData | any) => {
     await updateEnvironmentMutation.mutateAsync({
       data,
       url: `/environment/environment/${id}`

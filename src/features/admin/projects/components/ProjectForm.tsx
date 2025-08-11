@@ -39,7 +39,6 @@ export function ProjectForm({
   onNameChange
 }: ProjectFormProps) {
   const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
-
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     mode: "onChange", // Show validation errors instantly on change

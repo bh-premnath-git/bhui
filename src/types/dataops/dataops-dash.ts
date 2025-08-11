@@ -38,7 +38,7 @@ export interface FilterState {
 export type TimeRangeOption = 'today' | 'yesterday' | '7days' | '30days' | '90days' | null;
 export type ProjectOption = string | null;
 
-export type ChartType = 'line_chart' | 'bar_chart' | 'pie_chart' | 'area_chart' | 'column_chart' | 'grouped_bar_chart';
+export type ChartType = 'line_chart' | 'bar_chart' | 'pie_chart' | 'area_chart' | 'column_chart' | 'grouped_bar_chart' | string;
 
 export interface ChartConfig {
   type: ChartType;

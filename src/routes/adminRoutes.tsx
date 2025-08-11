@@ -27,6 +27,10 @@ const ComputeClusterAdd = lazy(() => import("@/pages/admin/compute-cluster/Compu
 const ComputeClusterEdit = lazy(() => import("@/pages/admin/compute-cluster/ComputeClusterEdit"));
 //PII
 const ManagePII = lazy(() => import("@/pages/admin/pii/ManagePII"));
+//LLM
+const Llms = lazy(() => import("@/pages/admin/llm/LlmList"));
+const AddLlm = lazy(() => import("@/pages/admin/llm/LlmAdd"));
+const EditLlm = lazy(() => import("@/pages/admin/llm/LlmEdit"));
 
 export const AdminRoutes = (
   <>
@@ -188,6 +192,30 @@ export const AdminRoutes = (
       element={
         <Suspense fallback={<LoadingFallback />}>
           <ManagePII />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={ROUTES.ADMIN.LLM.INDEX} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <Llms />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path={ROUTES.ADMIN.LLM.ADD} 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <AddLlm />
+        </Suspense>
+      } 
+    />
+    <Route 
+      path="/admin-console/llm/edit/:id" 
+      element={
+        <Suspense fallback={<LoadingFallback />}>
+          <EditLlm />
         </Suspense>
       } 
     />

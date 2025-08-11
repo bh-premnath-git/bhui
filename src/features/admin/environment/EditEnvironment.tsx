@@ -1,108 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { RootState } from "@/store";
 import { useAppSelector } from "@/hooks/useRedux";
+import { RootState } from "@/store";
 import { useEnvironments } from "./hooks/useEnvironments";
 import { ROUTES } from '@/config/routes';
 import { EnvironmentForm } from "./components/EnvironmentForm";
-import type { EnvironmentMutationData, EnvironmentTags } from "@/types/admin/environment";
-import { type EnvironmentFormValues, environments, regions } from "./components/environmentFormSchema";
 import { LazyLoading } from "@/components/shared/LazyLoading";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { EnvironmentPageLayout } from "./components/EnvironmentPageLayout";
 import { encrypt_string } from "@/lib/encryption";
 import { toast } from "sonner";
-
-const transformEnvironmentToFormData = (environment: any): EnvironmentFormValues => {
-  const transformedTags = Object.entries(environment.tags || {}).map(([key, value]) => ({
-    key,
-    value: value as string
-  }));
-
-  // Get environment value from the environments array
-  const environmentValue = environment.bh_env_provider?.toString() || 
-                           environment.bh_env_provider_name?.toString() || '';
-
-  // Map cloud provider name to platform type code
-  const getPlatformTypeCode = (providerName: string): string => {
-    if (providerName === 'Amazon Web Services' || providerName === 'AWS') {
-      return '101';
-    }
-    if (providerName === 'Google Cloud Platform' || providerName === 'GCP') {
-      return '102';
-    }
-    // If it's already a code, use it
-    return environment.cloud_provider_cd?.toString() || '';
-  };
-
-  return {
-    environmentName: environment.bh_env_name || '',
-    environment: environmentValue,
-    platform: {
-      type: getPlatformTypeCode(environment.cloud_provider_name || ''),
-      region: environment.cloud_region_cd?.toString() || '',
-      zone: environment.location || '',
-    },
-    credentials: {
-      publicId: environment.project_id || '',
-      accessKey: environment.access_key || '',
-      secretKey: environment.secret_access_key || '',
-      pvtKey: environment.pvt_key || '',
-    },
-    advancedSettings: {
-      airflowName: environment.airflow_env_name || '',
-      airflowBucketName: environment.airflow_bucket_name || '',
-      airflowBucketUrl: environment.airflow_url || '',
-    },
-    tags: transformedTags.length ? transformedTags : []
-  };
-};
-
-const transformFormToApiData = (data: EnvironmentFormValues, existingEnvironment: any): EnvironmentMutationData => {
-  const regionValue = regions.find(region => region.value === data.platform.region)?.label || ''
-  // Transform tags from form format to API format
-  const tags: EnvironmentTags = {};
-  data.tags.forEach(tag => {
-    if (tag.key) {
-      tags[tag.key] = tag.value || '';
-    }
-  });
-
-  return {
-    ...existingEnvironment,
-    bh_env_name: data.environmentName,
-    bh_env_provider_name: data.environment,
-    cloud_provider_name: data.platform.type,
-    cloud_region_cd: parseInt(data.platform.region) || existingEnvironment.cloud_region_cd || 0,
-    location: regionValue,
-    access_key: data.credentials.accessKey,
-    secret_access_key: data.credentials.secretKey,
-    pvt_key: data.credentials.pvtKey,
-    airflow_url: data.advancedSettings.airflowBucketUrl,
-    airflow_bucket_name: data.advancedSettings.airflowBucketName,
-    airflow_env_name: data.advancedSettings.airflowName,
-    status: existingEnvironment.status || "active",
-    tags,
-    // Ensure these required fields are present
-    created_at: existingEnvironment.created_at || null,
-    updated_at: existingEnvironment.updated_at || null,
-    created_by: existingEnvironment.created_by || null,
-    updated_by: existingEnvironment.updated_by || null,
-    is_deleted: existingEnvironment.is_deleted || false,
-    deleted_by: existingEnvironment.deleted_by || null,
-    bh_env_id: existingEnvironment.bh_env_id || 0,
-    bh_env_provider: existingEnvironment.bh_env_provider || 0,
-    cloud_provider_cd: existingEnvironment.cloud_provider_cd || 0,
-    project_id: existingEnvironment.project_id || null,
-    bh_project_id: existingEnvironment.bh_project_id || null
-  };
-};
+import { EnvironmentFormValues, transforFormToAPiData, transformApiDataToForm } from "@/features/admin/environment/components/environmentFormSchema";
 
 export function EditEnvironment() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { selectedEnvironment } = useAppSelector((state: RootState) => state.environments);
-  
+
   const {
     handleUpdateEnvironment,
     handleAWSValidation,
@@ -110,26 +24,12 @@ export function EditEnvironment() {
     isEnvironmentLoading,
     isEnvironmentError,
   } = useEnvironments({
-    environmentId: id, // Always use the ID from params to fetch
-    shouldFetch: !!id && !selectedEnvironment, // Only fetch if ID exists and there's no selected environment
+    environmentId: id,
+    shouldFetch: !!id && !selectedEnvironment,
   });
 
-  // Use selectedEnvironment if available, otherwise use fetched environment
   const environment = selectedEnvironment || fetchedEnvironment;
-  
-  // Transform environment data to form values format
-  const [formInitialData, setFormInitialData] = useState<EnvironmentFormValues | undefined>(undefined);
-
-  useEffect(() => {
-    if (environment) {
-      console.log("Original environment data:", environment);
-      const transformedData = transformEnvironmentToFormData(environment);
-      console.log("Transformed Environment Data:", transformedData);
-      console.log("Platform type set to:", transformedData.platform.type);
-      setFormInitialData(transformedData);
-    }
-  }, [environment]);
-
+  console.log("environment", environment);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isTokenValidated, setIsTokenValidated] = useState(false);
@@ -141,23 +41,25 @@ export function EditEnvironment() {
     pvtKey?: string;
   } | null>(null);
 
+  const formData = environment ? transformApiDataToForm(environment) : undefined;
+
   const handleValidate = async (data: EnvironmentFormValues) => {
     try {
       setIsValidating(true);
       setError(null);
 
-      const { encryptedString, initVector } = encrypt_string(data.credentials.secretKey || "");
-      const { encryptedString: encryptedString1 } = encrypt_string(data.credentials.accessKey || "", initVector);
+      const { encryptedString: encryptedSecret, initVector } = encrypt_string(data.credentials.secretKey || "");
+      const { encryptedString: encryptedAccess } = encrypt_string(data.credentials.accessKey || "", initVector);
 
       setEncryptedCredentials({
-        accessKey: encryptedString1,
-        secretKey: encryptedString,
+        accessKey: encryptedAccess,
+        secretKey: encryptedSecret,
         initVector,
       });
 
       const result = await handleAWSValidation(data.environmentName, {
-        aws_access_key_id: encryptedString1,
-        aws_secret_access_key: encryptedString,
+        aws_access_key_id: encryptedAccess,
+        aws_secret_access_key: encryptedSecret,
         init_vector: initVector,
         location: data.platform.region || "",
       });
@@ -187,26 +89,22 @@ export function EditEnvironment() {
       setIsSubmitting(true);
       setError(null);
 
-      if (id && environment) {
-        const updatedFormData = {
-          ...formData,
-          credentials: {
-            ...formData.credentials,
-            accessKey: encryptedCredentials.accessKey,
-            secretKey: encryptedCredentials.secretKey,
-            pvtKey: encryptedCredentials.pvtKey,
-          },
-        };
+      const updatedFormData: EnvironmentFormValues = {
+        ...formData,
+        credentials: {
+          ...formData.credentials,
+          accessKey: encryptedCredentials.accessKey,
+          secretKey: encryptedCredentials.secretKey,
+          pvtKey: encryptedCredentials.pvtKey,
+          init_vector: encryptedCredentials.initVector,
+        },
+      };
 
-        // Convert form data to API format
-        const apiData = transformFormToApiData(updatedFormData, environment);
-        
-        // Call the update function with the ID and transformed data
-        await handleUpdateEnvironment(id, apiData);
-        
-        toast.success("Environment updated successfully");
-        navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX);
-      }
+      const apiData = transforFormToAPiData(updatedFormData);
+      await handleUpdateEnvironment(id!, apiData);
+
+      toast.success("Environment updated successfully");
+      navigate(ROUTES.ADMIN.ENVIRONMENT.INDEX);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update environment";
       setError(errorMessage);
@@ -246,9 +144,9 @@ export function EditEnvironment() {
   return (
     <EnvironmentPageLayout description="Modify environment details and configuration">
       <div className="p-3">
-        {formInitialData && (
+        {formData && (
           <EnvironmentForm
-            initialData={formInitialData}
+            initialData={formData}
             onSubmit={onSubmit}
             onValidate={handleValidate}
             mode="edit"

@@ -13,8 +13,8 @@ export const useGithubProviders = () => {
     error: string | null;
   }>((state) => state.global);
 
-  const formattedProviders: FormattedProvider[] = (githubProviders?.codes_dtl ?? []).map((provider: GithubProvider) => ({
-    label: provider.dtl_desc,
+  const formattedProviders: FormattedProvider[] = (githubProviders?.codes_dtl ?? []).slice(0, 2).map((provider: GithubProvider) => ({
+    label: (provider.dtl_desc).toLowerCase(),
     value: provider.id.toString(),
   }));
 

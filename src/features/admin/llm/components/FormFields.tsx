@@ -167,7 +167,7 @@ export const EmbeddingConfigFields = ({
   <div className="grid gap-4 md:grid-cols-2">
     <FormField
       control={control}
-      name="default_embedding_config.input_type"
+      name="embedding_config.input_type"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Embedding Input Type</RequiredFormLabel>
@@ -182,7 +182,7 @@ export const EmbeddingConfigFields = ({
     />
     <FormField
       control={control}
-      name="default_embedding_config.max_tokens"
+      name="embedding_config.max_tokens"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Max Tokens</RequiredFormLabel>
@@ -204,7 +204,7 @@ export const ChatConfigFields = ({
   <div className="grid gap-4 md:grid-cols-3">
     <FormField
       control={control}
-      name="default_chat_config.input_type"
+      name="chat_config.input_type"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Chat Input Type</RequiredFormLabel>
@@ -220,7 +220,7 @@ export const ChatConfigFields = ({
     />
     <FormField
       control={control}
-      name="default_chat_config.max_tokens"
+      name="chat_config.max_tokens"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Max Tokens</RequiredFormLabel>
@@ -232,7 +232,7 @@ export const ChatConfigFields = ({
     />
     <FormField
       control={control}
-      name="default_chat_config.temperature"
+      name="chat_config.temperature"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Temperature</RequiredFormLabel>
@@ -244,7 +244,7 @@ export const ChatConfigFields = ({
     />
     <FormField
       control={control}
-      name="default_chat_config.timeout"
+      name="chat_config.timeout"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Timeout (sec)</RequiredFormLabel>
@@ -256,7 +256,7 @@ export const ChatConfigFields = ({
     />
     <FormField
       control={control}
-      name="default_chat_config.max_retries"
+      name="chat_config.max_retries"
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Max Retries</RequiredFormLabel>

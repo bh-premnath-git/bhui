@@ -9,7 +9,6 @@ import { useLlms } from './hooks/useLlms';
 import { setSelectedLlm } from '@/store/slices/admin/llmSlice';
 import { LlmPageLayout } from './components/LlmPageLayout';
 import { encrypt_string } from '@/lib/encryption';
-import { LLMMutationUpdate } from '@/types/admin/llm';
 
 export function EditLlm() {
   const { id } = useParams();
@@ -44,7 +43,7 @@ export function EditLlm() {
 
      const { encryptedString, initVector } = encrypt_string(data.api_key);
 
-       const apiData = transformLlmFormToApiData({
+       const apiData = transformApiToLlmFormData({
              ...data,
              api_key: encryptedString,
            });

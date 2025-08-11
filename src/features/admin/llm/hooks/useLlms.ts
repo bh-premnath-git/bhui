@@ -104,7 +104,7 @@ export const useLlms = (options: UseLlmsOptions = { shouldFetch: true }) => {
   const updateLlmMutation = updateLlm('/bh_llms/llm_config/', {
     mutationOptions: {
       onSuccess: () => toast.success('Llm Updated successfully'),
-      onError: (error) => handleApiError(error, { action: 'create', context: 'llm'}),
+      onError: (error) => handleApiError(error, { action: 'update', context: 'llm'}),
     },
   });
 
@@ -112,7 +112,7 @@ export const useLlms = (options: UseLlmsOptions = { shouldFetch: true }) => {
   const deleteLlmMutation = removeLlm('/bh_llms/llm_config/', {
     mutationOptions: {
       onSuccess: () => toast.success('Llm Deleted successfully'),
-      onError: (error) => handleApiError(error, { action: 'create', context: 'llm'}),
+      onError: (error) => handleApiError(error, { action: 'delete', context: 'llm'}),
     },
   });
 

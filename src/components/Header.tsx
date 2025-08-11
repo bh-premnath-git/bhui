@@ -7,35 +7,11 @@ import { PlaygroundHeader } from "./headers/playground-header";
 import { AIChatButton } from "@/components/shared/ai-chat-button";
 import { useDispatch } from "react-redux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
-import { useEffect, useState } from "react";
-import {pipelineSchema} from "@bh-ai/schemas"
+
 export const Header = () => {
   const { isExpanded, isRightAsideOpen } = useSidebar();
   const location = useLocation();
   const dispatch = useDispatch();
-  const [forceUpdate, setForceUpdate] = useState(0);
-  const dataPipelineSchema = pipelineSchema
-  console.log(dataPipelineSchema)
-  // Listen for resize events to update the header when the RightAside panel is resized
-  useEffect(() => {
-    const handleResize = () => {
-      setForceUpdate(prev => prev + 1);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    
-    // Also listen for a custom event that might be triggered when the RightAside panel is resized
-    const handleRightAsideResize = () => {
-      setForceUpdate(prev => prev + 1);
-    };
-    
-    document.addEventListener('rightAsideResize', handleRightAsideResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('rightAsideResize', handleRightAsideResize);
-    };
-  }, []);
 
   // Route-check helpers
   const isBuildPlaygroundRoute = (path: string) =>

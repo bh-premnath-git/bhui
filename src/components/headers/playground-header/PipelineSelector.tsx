@@ -115,6 +115,15 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     fetchPipelineList()
   }, [initialName]);
 
+  // Handle when pipelines become empty
+  useEffect(() => {
+    if (pipelines.length === 0 && id) {
+      // If we have an ID but no pipelines, clear the selected state
+      dispatch(setSelectedPipeline(null));
+      localStorage.removeItem("pipeline_id");
+    }
+  }, [pipelines.length, id, dispatch]);
+
   // Fetch pipeline list
   const fetchPipelineList = async () => {
     setIsLoading(true);
@@ -166,8 +175,19 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
           
           // Check if we're deleting the currently selected pipeline
           if (id === pipelineToDelete.pipeline_id.toString()) {
-            // Navigate to dashboard
-            navigate(ROUTES.DASHBOARD);
+            // Find the next available pipeline to switch to
+            const remainingPipelines = pipelines.filter(p => p.pipeline_id !== pipelineToDelete.pipeline_id);
+            
+            if (remainingPipelines.length > 0) {
+              // Switch to the next available pipeline
+              const nextPipeline:any = remainingPipelines[0];
+              handlePipelineSelect(nextPipeline);
+            } else {
+              // No pipelines left, clear the selected pipeline and navigate to the build pipeline page to show empty state
+              dispatch(setSelectedPipeline(null));
+              localStorage.removeItem("pipeline_id");
+              navigate(ROUTES.DESIGNERS.BUILD_PIPELINE, { replace: true });
+            }
           }
           
           // Refresh the pipelines list
@@ -307,13 +327,14 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                   role="combobox"
                   aria-expanded={open}
                   className="justify-between min-w-[250px] h-9"
+                  disabled={pipelines.length === 0}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <Workflow size={14} />
                     <span className="truncate">
-                      {initialName || currentPipeline?.pipeline_name || placeholder}
+                      {pipelines.length === 0 ? 'No pipelines available' : (initialName || currentPipeline?.pipeline_name || placeholder)}
                     </span>
-                    {currentPipeline?.engine_type && (
+                    {pipelines.length > 0 && currentPipeline?.engine_type && (
                       <Badge 
                         variant="secondary"
                         className="text-[10px] h-4 px-1 ml-1"

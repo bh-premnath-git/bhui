@@ -59,7 +59,7 @@ export function TableContent<TData>({ table, onRowClick }: TableContentProps<TDa
                 onClick={() => onRowClick && onRowClick(row)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  <TableCell key={cell.id} className="py-2 px-4">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                 ))}
               </TableRow>
             ))

@@ -304,6 +304,24 @@ class ApiService {
 
     return this.request<any>(config).then((res) => res.data);
   }
+  /**
+   * Delete chat history for a specific pipeline
+   * @param pipelineId The pipeline ID
+   * @returns Promise with the delete response
+   */
+  async deletePipelineChatHistory(pipelineId: string): Promise<any> {
+    const config: ApiConfig = {
+      baseUrl: CATALOG_REMOTE_API_URL,
+      url: `/api/v1/pipeline/${pipelineId}/chat-history`,
+      method: 'DELETE',
+      metadata: {
+        successMessage: 'Chat history deleted successfully',
+        errorMessage: 'Failed to delete chat history'
+      }
+    };
+
+    return this.request<any>(config).then((res) => res.data);
+  }
 }
 
 export const apiService = new ApiService();

@@ -20,12 +20,16 @@ import { RootState } from '@/store';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import OrderPopUp from '@/components/bh-reactflow-comps/builddata/OrderPopUp';
 import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { Workflow } from 'lucide-react';
+import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
   const { id } = useParams();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // No sidebar width needed since we removed the sidebar
   const { pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
@@ -73,7 +77,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     setShowLeavePrompt,
     fetchPipelineDetails,
     errorBanner,
-    setErrorBanner
+    setErrorBanner,
+    pipelines
   } = usePipelineContext();
 
   // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
@@ -234,7 +239,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   };
   return (
     <>
-      {pipelineType?.toLowerCase() == "design" ? (<div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+      {/* {pipelineType?.toLowerCase() == "design" ? ( */}
+        <div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
         
         {errorBanner && (
           <div className="fixed top-20 left-20 right-10 z-50 p-4">
@@ -250,47 +256,68 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           className={`flex-1 relative p-1 transition-all duration-300 ${errorBanner ? 'mt-24' : ''}`}
           style={getMainContentStyle()}>
 
-          <div
-            className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              flex: '1 1 auto',
-              height: '100%'
-            }}>
+          {/* Check if there are no pipelines and no current pipeline ID */}
+          {Array.isArray(pipelines) && pipelines.length === 0 && !id ? (
+            <div className="flex items-center justify-center h-full w-full">
+              <div className="p-6">
+                <EmptyState
+                  Icon={Workflow}
+                  title="No Pipeline Found"
+                  description="Get started by creating a new pipeline."
+                  action={
+                    <Button 
+                      onClick={() => setCreateDialogOpen(true)}
+                      className="mt-4"
+                    >
+                      Create Pipeline
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`flex-1 relative transition-all duration-300 ${isRightAsideOpen ? 'with-right-panel' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-panel' : ''}`}
+              style={{
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: '1 1 auto',
+                height: '100%'
+              }}>
 
-            <ComposableCanvas
-              className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-canvas' : ''}`}
-              type="pipeline"
-              nodeTypes={memoizedNodeTypes}
-              edgeTypes={edgeTypes}
-              renderControls={true}
-              controls={
-                <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
-                  <FlowControls
-                    onZoomIn={handleZoomIn}
-                    onZoomOut={handleZoomOut}
-                    onCenter={handleCenter}
-                    onAlignHorizontal={handleAlignHorizontal}
-                    onAlignVertical={handleAlignVertical}
-                    onAlignTopLeft={handleAlignTopLeft}
-                    handleRunClick={handleRun}
-                    onStop={handleStop}
-                    onNext={handleNext}
-                    isPipelineRunning={isPipelineRunning}
-                    isLoading={isCanvasLoading}
-                    pipelineConfig={handleRunClick}
-                    terminalLogs={terminalLogs}
-                    proplesLogs={conversionLogs}
-                  />
-                </div>}
-              loading={isCanvasLoading}
-              defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
-              minZoom={0.2}
-              maxZoom={1.5}
-            />
-          </div>
+              <ComposableCanvas
+                className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-canvas' : ''}`}
+                type="pipeline"
+                nodeTypes={memoizedNodeTypes}
+                edgeTypes={edgeTypes}
+                renderControls={true}
+                controls={
+                  <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                    <FlowControls
+                      onZoomIn={handleZoomIn}
+                      onZoomOut={handleZoomOut}
+                      onCenter={handleCenter}
+                      onAlignHorizontal={handleAlignHorizontal}
+                      onAlignVertical={handleAlignVertical}
+                      onAlignTopLeft={handleAlignTopLeft}
+                      handleRunClick={handleRun}
+                      onStop={handleStop}
+                      onNext={handleNext}
+                      isPipelineRunning={isPipelineRunning}
+                      isLoading={isCanvasLoading}
+                      pipelineConfig={handleRunClick}
+                      terminalLogs={terminalLogs}
+                      proplesLogs={conversionLogs}
+                    />
+                  </div>}
+                loading={isCanvasLoading}
+                defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
+                minZoom={0.2}
+                maxZoom={1.5}
+              />
+            </div>
+          )}
 
           {selectedSchema && selectedSchema.title === 'Lookup' && (
             <Dialog
@@ -518,10 +545,18 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             terminalLogs={terminalLogs}
             proplesLogs={conversionLogs}
           />
+
+          {/* Create Pipeline Dialog */}
+          <CreatePipelineDialog
+            open={createDialogOpen}
+            handleClose={() => setCreateDialogOpen(false)}
+          />
         </div>
-      </div>) : (<>
-        <RequirementForm  />
-         </>)}
+      </div>
+      {/* )  */}
+      {/* // : (<>
+      //   <RequirementForm  />
+      //    </>)} */}
     </>
   );
 };

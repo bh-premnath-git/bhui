@@ -64,7 +64,9 @@ AWS_CODEARTIFACT_REPOSITORY=bh-npm-repo
 VITE_KEYCLOAK_PORT=5000
 VITE_ALLOWED_HOSTS=localhost
 VITE_ENV=development
-
+VITE_SPARK_PORT=15003
+VITE_PANDAS_PORT=15004
+VITE_FLINK_PORT=15005
 # Add any other required environment variables
 ```
 

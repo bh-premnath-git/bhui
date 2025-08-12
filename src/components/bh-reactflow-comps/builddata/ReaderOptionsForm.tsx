@@ -116,21 +116,17 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<string>("basic");
     const hasGeneratedDataSrcId = useRef<boolean>(false);
-    console.log(connectionConfigList)
-    console.log(initialData, "initialData")
 
     // Load schema based on selected engine type
     useEffect(() => {
         const loadSchema = async () => {
             setIsSchemaLoading(true);
             try {
-                console.log('🔧 Loading Reader schema for engine type:', selectedEngineType);
                 const readerSchema = extractReaderSchema(selectedEngineType);
                 
                 if (readerSchema) {
                     setBaseReaderSchema(readerSchema);
                     setCurrentSchema(readerSchema);
-                    console.log('🔧 Reader schema loaded successfully:', readerSchema);
                     
                     // Debug the reader schema structure (comprehensive test)
                     // debugReaderSchema(selectedEngineType);
@@ -158,53 +154,25 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
 
     useEffect(() => {
         if (initialData && connectionConfigList && connectionConfigList.length > 0) {
-            console.log('🔧 === READEROPTIONSFORM CONNECTION DEBUGGING ===');
-            console.log('🔧 ReaderOptionsForm received initialData:', initialData);
-            console.log('🔧 initialData.source:', initialData.source);
-            console.log('🔧 initialData.source?.connection:', initialData.source?.connection);
-            console.log('🔧 Looking for connection with name:', initialData.source?.connection?.name);
-            console.log('🔧 Looking for connection with connection_config_id:', initialData.source?.connection?.connection_config_id);
-            console.log('🔧 Looking for connection with source connection_config_id:', initialData.source?.connection_config_id);
-            console.log('🔧 Available connections:', connectionConfigList);
-            console.log('🔧 Available connections summary:', connectionConfigList.map(c => ({ 
-                id: c.id, 
-                connection_config_name: c.connection_config_name,
-                connection_name: c.connection_name 
-            })));
-            
+         
             // Try each lookup method step by step with improved priority order
-            console.log('🔧 Trying lookup method 1: by source.connection_config_id');
             const method1 = connectionConfigList.find(
                 conn => conn.id === initialData.source?.connection_config_id || 
                         conn.id === parseInt(initialData.source?.connection_config_id)
             );
-            console.log('🔧 Method 1 result:', method1);
-            
-            console.log('🔧 Trying lookup method 2: by connection.connection_config_id');
             const method2 = connectionConfigList.find(
                 conn => conn.id === initialData.source?.connection?.connection_config_id ||
                         conn.id === parseInt(initialData.source?.connection?.connection_config_id)
             );
-            console.log('🔧 Method 2 result:', method2);
-            
-            console.log('🔧 Trying lookup method 3: by connection_config_name');
             const method3 = connectionConfigList.find(
                 conn => conn.connection_config_name === initialData.source?.connection?.name
             );
-            console.log('🔧 Method 3 result:', method3);
-            
-            console.log('🔧 Trying lookup method 4: by connection_name');
             const method4 = connectionConfigList.find(
                 conn => conn.connection_name === initialData.source?.connection?.name
             );
-            console.log('🔧 Method 4 result:', method4);
-            
-            console.log('🔧 Trying lookup method 5: by numeric connection_config_id (fallback)');
             const method5 = connectionConfigList.find(
                 conn => conn.id === parseInt(initialData.source?.connection?.connection_config_id)
             );
-            console.log('🔧 Method 5 result:', method5);
-            
             // Prioritize ID-based matches over name-based matches
             const selectedConn = method1 || method2 || method5 || method3 || method4;
             
@@ -272,12 +240,7 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
         if (baseReaderSchema && formData.source?.source_type) {
             const fields = getSourceTypeFields(baseReaderSchema, formData.source.source_type);
             setSourceTypeFields(fields);
-            
-            console.log('🔧 Source type fields updated:', {
-                sourceType: formData.source.source_type,
-                fields
-            });
-
+         
             // Update the current schema to include the source type specific fields
             if (fields && baseReaderSchema.properties?.source) {
                 const updatedSourceSchema = {
@@ -314,12 +277,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             // Extract read_options schema from the file type schema
             const readOptsSchema = getReadOptionsSchema(fileSchema, formData.file_type);
             setReadOptionsSchema(readOptsSchema);
-            
-            console.log('🔧 File type schema updated:', {
-                fileType: formData.file_type,
-                fileSchema,
-                readOptionsSchema: readOptsSchema
-            });
         } else {
             setFileTypeSchema(null);
             setReadOptionsSchema(null);
@@ -376,19 +333,10 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
                     ...readOptionsFields
                 };
 
-                console.log('🔧 Added read_options fields:', {
-                    readOptionsFields: Object.keys(readOptionsFields),
-                    readOptionsSchema
-                });
             }
             
             setCurrentSchema(resolvedSchema);
-            console.log('🔧 Schema resolved with form data:', {
-                baseSchema: baseReaderSchema,
-                sourceTypeFields,
-                fileTypeSchema,
-                resolvedSchema
-            });
+          
         } catch (error) {
             console.error('🔧 Error resolving schema:', error);
         }
@@ -412,7 +360,6 @@ export const ReaderOptionsForm: React.FC<ReaderOptionsFormProps> = ({
             const cleanSourceName = cleanFileNameForId(sourceName);
             const generatedId = `${connectionId}_${cleanSourceName}`;
             
-            console.log('🔧 ReaderOptionsForm: Auto-generating data_src_id from:', sourceName, '→', generatedId);
             hasGeneratedDataSrcId.current = true;
             
             setFormData(prev => ({

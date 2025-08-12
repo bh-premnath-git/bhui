@@ -1311,94 +1311,94 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return moduleName.toLowerCase();
     };
 
-    const fetchSourceColumns = useCallback(async (nodes: any) => {
-        try {
-            // Add null check to prevent error when nodes is undefined
-            if (!nodes || !Array.isArray(nodes)) {
-                console.warn('fetchSourceColumns: nodes is undefined or not an array:', nodes);
-                return;
-            }
+    // const fetchSourceColumns = useCallback(async (nodes: any) => {
+    //     try {
+    //         // Add null check to prevent error when nodes is undefined
+    //         if (!nodes || !Array.isArray(nodes)) {
+    //             console.warn('fetchSourceColumns: nodes is undefined or not an array:', nodes);
+    //             return;
+    //         }
             
-            // Get only source nodes that have a data_src_id and haven't been fetched yet
-            const sourceNodes = nodes.filter(node => {
-                const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
-                const hasDataSrcId = node.data?.source?.data_src_id;
-                const notFetched = hasDataSrcId && !fetchedIdsRef.current.has(node.data.source.data_src_id);
-                return isSourceNode && notFetched;
-            });
+    //         // Get only source nodes that have a data_src_id and haven't been fetched yet
+    //         const sourceNodes = nodes.filter(node => {
+    //             const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
+    //             const hasDataSrcId = node.data?.source?.data_src_id;
+    //             const notFetched = hasDataSrcId && !fetchedIdsRef.current.has(node.data.source.data_src_id);
+    //             return isSourceNode && notFetched;
+    //         });
 
-            if (sourceNodes.length === 0) return;
+    //         if (sourceNodes.length === 0) return;
 
-            // Get unique unfetched data source IDs
-            const uniqueDataSrcIds = Array.from(
-                new Set(
-                    sourceNodes
-                        .map(node => node.data?.source?.data_src_id)
-                        .filter(Boolean)
-                )
-            );
+    //         // Get unique unfetched data source IDs
+    //         const uniqueDataSrcIds = Array.from(
+    //             new Set(
+    //                 sourceNodes
+    //                     .map(node => node.data?.source?.data_src_id)
+    //                     .filter(Boolean)
+    //             )
+    //         );
 
-            if (uniqueDataSrcIds.length === 0) return;
+    //         if (uniqueDataSrcIds.length === 0) return;
 
-            // Process each unique data source ID
-            const results = await Promise.all(
-                uniqueDataSrcIds.map(async (dataSrcId: any) => {
-                    try {
-                        // Mark as fetched before the API call
-                        fetchedIdsRef.current.add(dataSrcId);
+    //         // Process each unique data source ID
+    //         const results = await Promise.all(
+    //             uniqueDataSrcIds.map(async (dataSrcId: any) => {
+    //                 try {
+    //                     // Mark as fetched before the API call
+    //                     fetchedIdsRef.current.add(dataSrcId);
 
-                        const response:any = await apiService.get({
-                            baseUrl: CATALOG_REMOTE_API_URL,
-                            url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
-                            usePrefix: true,
-                            method: 'GET',
-                            metadata: {
-                                errorMessage: 'Failed to fetch source layout fields'
-                            }
-                        });
+    //                     const response:any = await apiService.get({
+    //                         baseUrl: CATALOG_REMOTE_API_URL,
+    //                         url: `/data_source_layout/list_full/?data_src_id=${dataSrcId}`,
+    //                         usePrefix: true,
+    //                         method: 'GET',
+    //                         metadata: {
+    //                             errorMessage: 'Failed to fetch source layout fields'
+    //                         }
+    //                     });
 
-                        return {
-                            dataSrcId,
-                            columns: response?.layout_fields?.map((field: any) => ({
-                                name: field.lyt_fld_name,
-                                dataType: field.lyt_fld_data_type_cd
-                            })) || []
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching columns for data source ${dataSrcId}:`, error);
-                        return { dataSrcId, columns: [] };
-                    }
-                })
-            );
+    //                     return {
+    //                         dataSrcId,
+    //                         columns: response?.layout_fields?.map((field: any) => ({
+    //                             name: field.lyt_fld_name,
+    //                             dataType: field.lyt_fld_data_type_cd
+    //                         })) || []
+    //                     };
+    //                 } catch (error) {
+    //                     console.error(`Error fetching columns for data source ${dataSrcId}:`, error);
+    //                     return { dataSrcId, columns: [] };
+    //                 }
+    //             })
+    //         );
 
-            // Safely update source columns
-            setSourceColumns((prevColumns) => {
-                const existingColumnNames = new Set(prevColumns.map(col => col.name));
-                const newColumns = results
-                    .flatMap(result => result.columns)
-                    .filter(col => !existingColumnNames.has(col.name));
+    //         // Safely update source columns
+    //         setSourceColumns((prevColumns) => {
+    //             const existingColumnNames = new Set(prevColumns.map(col => col.name));
+    //             const newColumns = results
+    //                 .flatMap(result => result.columns)
+    //                 .filter(col => !existingColumnNames.has(col.name));
 
-                return [...prevColumns, ...newColumns];
-            });
+    //             return [...prevColumns, ...newColumns];
+    //         });
 
-        } catch (error) {
-            console.error('Error in fetchSourceColumns:', error);
-        }
-    }, []);
+    //     } catch (error) {
+    //         console.error('Error in fetchSourceColumns:', error);
+    //     }
+    // }, []);
 
-    // Update the useEffect to be more precise
-    useEffect(() => {
-        const unfetchedSourceNodes = nodes.filter(node => {
-            const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
-            const hasDataSrcId = node.data?.source?.data_src_id;
-            const notFetched = hasDataSrcId && !fetchedIdsRef.current.has(node.data.source.data_src_id);
-            return isSourceNode && hasDataSrcId && notFetched;
-        });
+    // // Update the useEffect to be more precise
+    // useEffect(() => {
+    //     const unfetchedSourceNodes = nodes.filter(node => {
+    //         const isSourceNode = node.data?.label?.toLowerCase().includes("source") || node.data?.source;
+    //         const hasDataSrcId = node.data?.source?.data_src_id;
+    //         const notFetched = hasDataSrcId && !fetchedIdsRef.current.has(node.data.source.data_src_id);
+    //         return isSourceNode && hasDataSrcId && notFetched;
+    //     });
 
-        if (unfetchedSourceNodes.length > 0) {
-            fetchSourceColumns(nodes);
-        }
-    }, [nodes, fetchSourceColumns]);
+    //     if (unfetchedSourceNodes.length > 0) {
+    //         fetchSourceColumns(nodes);
+    //     }
+    // }, [nodes, fetchSourceColumns]);
 
     const handleSearch = useCallback((term: string) => {
         setSearchTerm(term);
@@ -1632,7 +1632,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleRun,
         handleStop,
         handleNext,
-        fetchSourceColumns,
+        // fetchSourceColumns,
         handleLeavePage,
         getTransformationName,
         addNodeToHistory,
@@ -1757,7 +1757,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleRun,
         handleStop,
         handleNext,
-        fetchSourceColumns,
+        // fetchSourceColumns,
         handleLeavePage,
         getTransformationName,
         addNodeToHistory,

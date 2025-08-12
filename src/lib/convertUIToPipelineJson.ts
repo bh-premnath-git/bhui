@@ -650,6 +650,17 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             
             return targetData;
         });
+    // Clean transformations to remove UI-only fields like nodeId and type
+    const transformationsCleaned = [
+        ...readerTransformations,
+        ...regularTransformations.filter(Boolean),
+        // ...writerTransformations
+    ].map((t: any) => {
+        if (!t) return t;
+        const { nodeId, type, ...rest } = t;
+        return rest;
+    });
+
     console.log('🔧 Final targets array:', {
             $schema: "https://json-schema.org/draft-07/schema#",
             name: pipelineDtl?.pipeline_name||pipelineDtl?.name ,
@@ -659,11 +670,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             parameters: [],
             sources,
             targets,
-            transformations: [
-                ...readerTransformations,
-                ...regularTransformations.filter(Boolean),
-                // ...writerTransformations
-            ]
+            transformations: transformationsCleaned
         });
 
     return {
@@ -676,11 +683,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
             parameters: [],
             sources,
             targets,
-            transformations: [
-                ...readerTransformations,
-                ...regularTransformations.filter(Boolean),
-                // ...writerTransformations
-            ]
+            transformations: transformationsCleaned
         }
     };
 };

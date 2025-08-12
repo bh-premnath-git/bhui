@@ -64,6 +64,7 @@ import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
 import { getCodesValue } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { apiService } from "@/lib/api/api-service";
 import { Histogram } from "@/components/ui/Histogram";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ROWS_PER_PAGE = 10;
 
@@ -75,8 +76,9 @@ interface ColumnMetadata {
     maxValue?: number | string;
 }
 
-export default function ImportDataSourceStepper(props: { gitProjectList: any; closeImportSection: () => void }) {
+export default function ImportDataSourceStepper(props: { gitProjectList: any; closeImportSection: () => void; onRefetch?: () => void }) {
     const dispatch = useAppDispatch()
+    const queryClient = useQueryClient()
     const [currentStep, setCurrentStep] = useState(1);
     const [file, setFile] = useState<File | null>(null);
     const [fileName, setFileName] = useState<string>("");
@@ -84,6 +86,7 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
     const [headers, setHeaders] = useState<string[]>([]);
     const [columnMetadata, setColumnMetadata] = useState<ColumnMetadata[]>([]);
     const [loading, setLoading] = useState(false);
+    const [importLoading, setImportLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [delimiter, setDelimiter] = useState<string>(",");
@@ -106,7 +109,7 @@ export default function ImportDataSourceStepper(props: { gitProjectList: any; cl
     const [escapeTypes, setEscapeTypes] = useState<any>(null);
 const {connectionConfigList} = useAppSelector((state) => state.datasource);
 console.log(props.gitProjectList)
-    const { closeImportSection } = props;
+    const { closeImportSection, onRefetch } = props;
 
     const handleTypeChange = useCallback(async (value: string) => {
         return await dispatch(getCodesValue({ value }));
@@ -195,6 +198,19 @@ console.log(props.gitProjectList)
         } catch (error) {
             console.error("Error creating layout fields:", error);
             return null
+        }
+    }
+
+    const getDataSourceList = async () => {
+        try {
+            return await apiService.get({
+                url: '/data_source/list',
+                usePrefix: true,
+                baseUrl: CATALOG_REMOTE_API_URL,
+            });
+        } catch (error) {
+            console.error("Error fetching data source list:", error);
+            return null;
         }
     }
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -334,6 +350,8 @@ console.log(props.gitProjectList)
     };
 
     const importSection = async () => {
+        setImportLoading(true);
+        setError(null);
         try {
             // First API call - Create Data Source 
             console.log(bhConnection)
@@ -416,11 +434,26 @@ console.log(props.gitProjectList)
                 throw new Error("Failed to create layout fields");
             }
 
+            // After successful completion, fetch the updated data source list
+            const dataSourceListResponse = await getDataSourceList();
+            console.log("Updated data source list:", dataSourceListResponse);
+
+            // Invalidate React Query cache for data sources
+            await queryClient.invalidateQueries({ queryKey: ['data_source'] });
+            await queryClient.invalidateQueries({ queryKey: ['data_source', 'list'] });
+
+            // Trigger refetch in parent component to update UI
+            if (onRefetch) {
+                onRefetch();
+            }
+
             // Success - close the import section
             closeImportSection();
         } catch (error) {
             console.error("Error in import process:", error);
             setError(error instanceof Error ? error.message : "An error occurred during import");
+        } finally {
+            setImportLoading(false);
         }
     };
 
@@ -919,8 +952,9 @@ console.log(props.gitProjectList)
                             <Button
                                 variant="outline"
                                 onClick={() => setCurrentStep(3)}
+                                disabled={importLoading}
                                 aria-label="Go Back to Preview and Edit"
-                                className="text-black border-gray-400 hover:bg-gray-100"
+                                className="text-black border-gray-400 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
                             </Button>
@@ -929,11 +963,21 @@ console.log(props.gitProjectList)
                                     console.log("Data imported successfully");
                                     importSection();
                                 }}
-                                className="bg-black hover:bg-gray-800 text-white flex items-center"
+                                disabled={importLoading}
+                                className="bg-black hover:bg-gray-800 text-white flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label="Confirm and Import Data"
                             >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Confirm Import
+                                {importLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Importing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Confirm Import
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -943,16 +987,20 @@ console.log(props.gitProjectList)
         }
     }
     return (
-        <Card className="w-full max-w-6xl mx-auto">
+        <Card className="w-full max-w-6xl mx-auto relative">
             <CardHeader className="relative">
                 <CardTitle>Import Data Source</CardTitle>
                 <CardDescription>
                     Import and preview XML, JSON, CSV, or XLSX files
                 </CardDescription>
                 <div className="absolute top-4 right-4">
-                    <Button variant="ghost" size="icon" aria-label="Close"
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        aria-label="Close"
                         onClick={() => closeImportSection()}
-                        className="text-black hover:bg-gray-100"
+                        disabled={importLoading}
+                        className="text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <X className="h-4 w-4" />
                     </Button>
@@ -1015,6 +1063,21 @@ console.log(props.gitProjectList)
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            {/* Import Loading Overlay */}
+            {importLoading && (
+                <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 rounded-lg">
+                    <div className="text-center">
+                        <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-black" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Importing Data Source
+                        </h3>
+                        <p className="text-gray-600 max-w-sm">
+                            Your datasource is importing, it will take some time. Please wait...
+                        </p>
+                    </div>
+                </div>
+            )}
         </Card>
     );
 }

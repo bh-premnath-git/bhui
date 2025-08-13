@@ -16,7 +16,7 @@ import {
   BookMarked,
   Server,
   ShieldCheck,
-  Keyboard
+  Bot
 } from "lucide-react";
 import type { NavItem, NavigationItem } from "@/types/navigation";
 import { ROUTES } from "./routes";
@@ -146,7 +146,7 @@ export const navigationItems: NavItem[] = [
       },
       {
        title: "Manage LLM",
-       icon: Keyboard,
+       icon: Bot,
        path: ROUTES.ADMIN.LLM.INDEX,
        parent: ROUTES.ADMIN.INDEX
      }

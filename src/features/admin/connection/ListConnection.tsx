@@ -3,7 +3,7 @@ import { DataTable } from '@/components/bh-table/data-table';
 import { Row } from '@tanstack/react-table';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
-import { columns, getToolbarConfig } from './config/Columns.Config';
+import { createColumns, getToolbarConfig } from './config/Columns.Config';
 import { Connection } from '@/types/admin/connection';
 import { useConnectionManagementService } from './services/connMgtSrv';
 import { DeleteConnectionDialog } from './components/DeleteConnectionDialog';
@@ -31,23 +31,17 @@ export function ListConnection({ connections, pageCount, pageIndex, pageSize, on
     handleNavigation(ROUTES.ADMIN.CONNECTION.EDIT(row.original.id.toString()));
   }, [connMgtSrv, handleNavigation]);
 
-  useEffect(() => {
-    const handleOpenDelete = (event: Event) => {
-      const customEvent = event as CustomEvent<Connection>;
-      connMgtSrv.selectatedConnection(customEvent.detail);
-      setDeleteDialogOpen(true);
-    };
-    window.addEventListener("openConnectionDeleteDialog", handleOpenDelete);
-
-    return() => {
-      window.removeEventListener("openConnectionDeleteDialog", handleOpenDelete);
-    }
+  const handleDeleteClick = useCallback((connection: Connection) => {
+    connMgtSrv.selectatedConnection(connection);
+    setDeleteDialogOpen(true);
   }, [connMgtSrv]);
+
+   const tableColumns = createColumns({ onDelete: handleDeleteClick });
 
   return (
     <>
     <DataTable<Connection>
-      columns={columns}
+      columns={tableColumns}
       data={connections || []}
       topVariant="simple"
       onRowClick={onRowClickHandler}

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigation } from '@/hooks/useNavigation';
 import { ROUTES } from '@/config/routes';
 import { useLlms } from '@/features/admin/llm/hooks/useLlms';
-import { useLlmManagementServive } from '@/features/admin/llm/services/llmMgtSrv';
+import { useLlmManagementService } from '@/features/admin/llm/services/llmMgtSrv';
 import { LlmsList } from '@/features/admin/llm/Llms';
 
 function LlmsListPage() {
@@ -21,7 +21,7 @@ function LlmsListPage() {
     limit: pageSize,
     offset: offset,
   });
-  const llmMgntSrv = useLlmManagementServive();
+  const llmMgntSrv = useLlmManagementService();
   const { handleNavigation } = useNavigation();
 
   const pageIndex = Math.floor(offset / pageSize);

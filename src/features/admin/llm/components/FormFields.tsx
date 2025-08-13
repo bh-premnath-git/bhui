@@ -6,7 +6,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Control, useWatch } from "react-hook-form";
+import { Control } from "react-hook-form";
 import {
   Select,
   SelectContent,
@@ -31,7 +31,7 @@ export const ModelTypeField = ({
     name="model_type"
     render={({ field }) => (
       <FormItem>
-        <FormLabel>Model Type</FormLabel>
+        <RequiredFormLabel>Model Type</RequiredFormLabel>
         <FormControl>
           <Select onValueChange={field.onChange} value={field.value}>
             <SelectTrigger>
@@ -43,7 +43,6 @@ export const ModelTypeField = ({
             </SelectContent>
           </Select>
         </FormControl>
-        <FormMessage />
       </FormItem>
     )}
   />
@@ -55,10 +54,9 @@ export const ProviderField = ({
   modelType,
 }: {
   control: Control<LLMFormData>;
-  modelType?: 'chat' | 'embeddings';
+  modelType?: "chat" | "embeddings";
 }) => {
   const { providers, loading, error } = useLlmOptions({ modelType });
-  console.log("providers", providers);
   return (
     <FormField
       control={control}
@@ -91,7 +89,6 @@ export const ProviderField = ({
               )}
             </SelectContent>
           </Select>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -105,7 +102,7 @@ export const ModelNameField = ({
   provider,
 }: {
   control: Control<LLMFormData>;
-  modelType?: 'chat' | 'embeddings';
+  modelType?: "chat" | "embeddings";
   provider?: string;
 }) => {
   const { modelNames, loading, error } = useLlmOptions({ modelType, provider });
@@ -117,7 +114,7 @@ export const ModelNameField = ({
       rules={{ required: "Please select a model name" }}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Model Name</FormLabel>
+          <RequiredFormLabel>Model Name</RequiredFormLabel>
           <Select
             onValueChange={field.onChange}
             value={field.value}
@@ -133,8 +130,8 @@ export const ModelNameField = ({
                       !provider
                         ? "Select Provider first"
                         : modelType === "chat"
-                          ? "Select Chat Model"
-                          : "Select Embedding Model"
+                        ? "Select Chat Model"
+                        : "Select Embedding Model"
                     }
                   />
                 )}
@@ -155,7 +152,6 @@ export const ModelNameField = ({
               )}
             </SelectContent>
           </Select>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -175,18 +171,12 @@ export const EmbeddingConfigFields = ({
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Embedding Input Type</RequiredFormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Type" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="text">Text</SelectItem>
-              <SelectItem value="file">File</SelectItem>
-            </SelectContent>
-          </Select>
-          <FormMessage />
+          <FormControl>
+            <Input
+              placeholder="Enter input type (e.g. text)"
+              {...field}
+            />
+          </FormControl>
         </FormItem>
       )}
     />
@@ -199,7 +189,6 @@ export const EmbeddingConfigFields = ({
           <FormControl>
             <Input type="number" {...field} />
           </FormControl>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -219,17 +208,12 @@ export const ChatConfigFields = ({
       render={({ field }) => (
         <FormItem>
           <RequiredFormLabel>Chat Input Type</RequiredFormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Type" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="text">Text</SelectItem>
-              <SelectItem value="file">File</SelectItem>
-            </SelectContent>
-          </Select>
+          <FormControl>
+            <Input
+              placeholder="Enter input type (e.g. text)"
+              {...field}
+            />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -243,7 +227,6 @@ export const ChatConfigFields = ({
           <FormControl>
             <Input type="number" {...field} />
           </FormControl>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -256,7 +239,6 @@ export const ChatConfigFields = ({
           <FormControl>
             <Input type="number" step="0.1" {...field} />
           </FormControl>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -269,7 +251,6 @@ export const ChatConfigFields = ({
           <FormControl>
             <Input type="number" {...field} />
           </FormControl>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -282,7 +263,6 @@ export const ChatConfigFields = ({
           <FormControl>
             <Input type="number" {...field} />
           </FormControl>
-          <FormMessage />
         </FormItem>
       )}
     />
@@ -299,7 +279,7 @@ export const ApiKeyField = ({ control }: { control: Control<LLMFormData> }) => {
       name="api_key"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>API Key</FormLabel>
+          <RequiredFormLabel>API Key</RequiredFormLabel>
           <FormControl>
             <div className="relative">
               <Input
@@ -320,7 +300,6 @@ export const ApiKeyField = ({ control }: { control: Control<LLMFormData> }) => {
               </button>
             </div>
           </FormControl>
-          <FormMessage />
         </FormItem>
       )}
     />

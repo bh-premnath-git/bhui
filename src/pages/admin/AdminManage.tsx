@@ -1,5 +1,5 @@
 
-import { Users, FolderGit2, Settings2, ArrowRight, Cable, BookMarked, ShieldCheck } from 'lucide-react';
+import { Users, FolderGit2, Settings2, ArrowRight, Cable, BookMarked, ShieldCheck, BotIcon, Bot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ROUTES } from '@/config/routes';
@@ -59,7 +59,17 @@ const adminOptions = [
     buttonText: 'Manage PII',
     link: ROUTES.ADMIN.PII.INDEX.toString(),
     gradient: "from-cyan-500/20 via-teal-300/20 to-blue-500/20"
-  }
+  },
+  {
+  id: 7,
+  icon: <Bot className="w-6 h-6 text-foreground" />,
+  title: "Manage LLMs",
+  desc: "Configure and manage Large Language Models (LLMs) for chat and embeddings.",
+  buttonText: "Manage LLMs",
+  link: ROUTES.ADMIN.LLM.INDEX.toString(),
+  gradient: "from-indigo-500/20 via-purple-400/20 to-pink-500/20"
+}
+
 ];
 
 function AdminDashboard() {

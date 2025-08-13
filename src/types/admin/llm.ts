@@ -3,7 +3,9 @@ export interface LLM {
     llm_id: number;
     model_name: string;
     provider: string;
-    model_type: string; // could be 'chat' | 'embedding' etc.
+    // model_type: string; // could be 'chat' | 'embedding' etc.
+    model_type: 'chat' | 'embeddings';
+
   
     embedding_config?: LLMEmbeddingConfig;
     chat_config?: LLMChatConfig;
@@ -43,7 +45,7 @@ export interface LLM {
   }
   
   export interface LLMChatConfig {
-    input_type: 'text' | 'json' | string;
+    input_type: 'text' | string;
     max_tokens: number;
     temperature: number;
     timeout: number;
@@ -51,7 +53,7 @@ export interface LLM {
   }
   
   export interface LLMEmbeddingConfig {
-    input_type: 'text' | 'json' | string;
+    input_type: 'text' | string;
     max_tokens: number;
   }
   

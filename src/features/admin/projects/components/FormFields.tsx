@@ -87,6 +87,19 @@ export function GithubFields({
   const form = useFormContext<ProjectFormData>();
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Watch all required fields for validation button state
+  const watchedFields = form.watch([
+    "bh_github_provider",
+    "bh_github_username", 
+    "bh_github_email",
+    "bh_default_branch",
+    "bh_github_url",
+    "bh_github_token_url"
+  ]);
+
+  // Check if all required fields are filled
+  const areAllFieldsFilled = watchedFields.every(field => field && field.trim() !== "");
+
   const handleValidation = async () => {
     try {
       setValidationError(null);
@@ -202,28 +215,33 @@ export function GithubFields({
           render={({ field }) => (
             <FormItem className="relative">
               <RequiredFormLabel>GitHub Token</RequiredFormLabel>
-              <div className="flex gap-2">
-                <FormControl>
-                  <Input type="password" placeholder={isEditMode ? "••••••••••••••••" : "Enter token"} 
-
-                  {...field} />
-                </FormControl>
-                <ValidationButton
-                  onValidate={handleValidation}
-                  isValidating={isValidating}
-                  isValidated={isTokenValidated}
-                  error={validationError}
-                  onValidationChange={(state: ValidationState) => {
-                    if (state === 'not-validated') {
-                      setValidationError('Validation failed. Please check your token and try again.');
-                    }
-                  }}
-                />
-              </div>
+              <FormControl>
+                <Input type="password" placeholder={isEditMode ? "••••••••••••••••" : "Enter token"} 
+                {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+      </div>
+
+      {/* Validation button row - aligned with token field */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div></div> {/* Empty space to align with URL field */}
+        <div className="flex justify-end">
+          <ValidationButton
+            onValidate={handleValidation}
+            isValidating={isValidating}
+            isValidated={isTokenValidated}
+            error={validationError}
+            disabled={!areAllFieldsFilled}
+            onValidationChange={(state: ValidationState) => {
+              if (state === 'not-validated') {
+                setValidationError('Validation failed. Please check your token and try again.');
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   )

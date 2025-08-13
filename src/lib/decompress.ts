@@ -2,8 +2,8 @@ import pako from "pako";
 
 export function decompressValue(base64GzipStr: string | null): any {
     try {
-        // check null and not string
-        if (!base64GzipStr && typeof base64GzipStr !== 'string') {
+        // check null, undefined, empty string, or not string
+        if (!base64GzipStr || typeof base64GzipStr !== 'string' || base64GzipStr.trim() === '') {
             return null;
         }
         const binaryString = atob(base64GzipStr);

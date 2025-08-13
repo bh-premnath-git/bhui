@@ -1,19 +1,23 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
 import { ROUTES } from '@/config/routes';
-import { PlusIcon, Users } from 'lucide-react';
+import { PlusIcon, Users, Trash2 } from 'lucide-react';
 import { User } from '@/types/admin/user';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { getInitials } from '@/lib/utils';
 import { useNavigation } from "@/hooks/useNavigation";
 
 const columnHelper = createColumnHelper<User>()
 
-const columns: ColumnDefWithFilters<User>[] = [
+interface ColumnsProps {
+  onDelete?: (user: User) => void;
+}
+
+const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<User>[] => [
   columnHelper.accessor('username', {
     header: 'Name',
-
     cell: (info) => {
       const intials = getInitials(info.getValue())
       return (
@@ -66,6 +70,52 @@ const columns: ColumnDefWithFilters<User>[] = [
     },
     enableColumnFilter: false,
   }),
+  columnHelper.display({
+    id: 'actions',
+    header: 'Actions',
+    cell: (info) => {
+      const user = info.row.original;
+      
+      // Check if user has admin role
+      const hasAdminRole = user.bh_roles?.some(
+        (role) => role.role_name === 'admin_role' || role.role_name === 'tenant_admin'
+      ) ?? false;
+      
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!hasAdminRole) {
+                    props?.onDelete?.(user);
+                  }
+                }}
+                disabled={hasAdminRole}
+                className={`h-8 w-8 p-0 ${
+                  hasAdminRole 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                }`}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">
+                  {hasAdminRole ? 'Cannot delete admin user' : `Delete ${user.username}`}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{hasAdminRole ? 'Cannot delete admin user' : 'Delete user'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
+    enableColumnFilter: false,
+  })
 ];
 
 const getToolbarConfig = (): TToolbarConfig => {
@@ -81,7 +131,7 @@ const getToolbarConfig = (): TToolbarConfig => {
         },
       }]
   }
-
 }
 
-export { columns, getToolbarConfig }
+const columns = createColumns();
+export { columns, createColumns, getToolbarConfig }

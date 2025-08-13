@@ -60,10 +60,7 @@ export interface UserCreateData extends Omit<BaseUserFormData, 'is_tenant_admin'
 }
 
 // Update-specific form data
-export interface UserUpdateData extends BaseUserFormData {
-  username?: string;
-  enabled?: boolean;
-  emailVerified?: boolean;
+export interface UserUpdateData {
   bh_roles: Array<Record<string, any>>;
   bh_resources: Array<Record<string, any>>;
 }

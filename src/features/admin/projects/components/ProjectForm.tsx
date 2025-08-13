@@ -83,6 +83,16 @@ export function ProjectForm({
     }
   }
 
+  // Watch provider selection to enable/disable submit button
+  const selectedProvider = form.watch("bh_github_provider")
+  const isProviderSelected = selectedProvider && selectedProvider.trim() !== ""
+
+  // Button should be disabled if:
+  // 1. No provider is selected, OR
+  // 2. Token is not validated (for create mode), OR  
+  // 3. Form is currently submitting
+  const isSubmitDisabled = !isProviderSelected || (!isEditMode && !isTokenValidated) || isSubmitting
+
   return (
     <Card className="w-full max-w-6xl mx-auto border-none shadow-none">
       <CardContent>
@@ -107,7 +117,7 @@ export function ProjectForm({
               <div className="flex justify-center">
                 <Button
                   type="submit"
-                  // disabled={!isTokenValidated}
+                  disabled={isSubmitDisabled}
                   className={isSubmitting ? "bg-blue-500 hover:bg-blue-600" : "bg-primary hover:bg-primary/90"}
                   size="lg"
                 >

@@ -2,11 +2,13 @@ import { createColumnHelper } from '@tanstack/react-table';
 import type { TToolbarConfig, ColumnDefWithFilters } from "@/types/table"
 import { DataSource } from '@/types/data-catalog/dataCatalog';
 import { formatDate } from "@/lib/date-format";
+import { format } from 'date-fns';
 import {
   Database,
   PlusIcon,
   ImportIcon,
-  Trash2
+  Trash2,
+  Info
 } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -46,17 +48,44 @@ const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<DataSource>[]
             )}
           </div>
           <div>
-            <p className="text-base font-medium text-foreground mb-1">
+            <span className="text-base font-medium text-foreground">
               {value || "Never"}
-            </p>
-            <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-              {rowData.data_src_desc || "No description available"}
-            </p>
+            </span>
           </div>
         </div>
       );
     }
     ,
+    enableColumnFilter: true,
+  }),
+  columnHelper.accessor('data_src_desc', {
+    header: 'Description',
+    cell: (info) => {
+      const description = info.getValue();
+      if (!description) return <span className="text-muted-foreground">No description</span>;
+      
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-foreground">
+            {description.length > 50 
+              ? `${description.substring(0, 50)}...` 
+              : description}
+          </span>
+          {description.length > 100 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="whitespace-pre-wrap">{description}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      );
+    },
     enableColumnFilter: true,
   }),
   columnHelper.accessor('bh_project_name', {
@@ -70,7 +99,33 @@ const createColumns = (props?: ColumnsProps): ColumnDefWithFilters<DataSource>[]
   }),
   columnHelper.accessor('updated_at', {
     header: 'Last Updated',
-    cell: (info) => formatDate(info.getValue()),
+    cell: (info) => {
+      const dateValue = info.getValue();
+      if (!dateValue) return "Never";
+      
+      try {
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return "Invalid date";
+        
+        const shortFormat = format(date, 'MMM d'); // e.g., "Aug 12"
+        const fullFormat = format(date, 'dd MMM yyyy, h:mm a'); // e.g., "12 Aug 2025, 9:21 AM"
+        
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="cursor-help">{shortFormat}</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{fullFormat}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      } catch (error) {
+        return "Invalid date";
+      }
+    },
     enableColumnFilter: false,
   }),
   columnHelper.display({

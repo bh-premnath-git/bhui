@@ -117,7 +117,7 @@ export function DataCatalog({
   return (
     <>
      {showImportSection ? (
-      <ImportDataSourceStepper gitProjectList={gitProjectList} closeImportSection={closeImportSection} />
+      <ImportDataSourceStepper gitProjectList={gitProjectList} closeImportSection={closeImportSection} onRefetch={onRefetch} />
      ): (
       <>
       <DataTable<DataSource>

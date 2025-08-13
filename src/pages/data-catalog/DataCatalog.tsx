@@ -106,6 +106,7 @@ function DataCatalogPage() {
               Project_Name: project.bh_project_name
             })) : []}
             closeImportSection={closeImportSection}
+            onRefetch={refetch}
           />
         ) : (
           <EmptyState

@@ -13,7 +13,6 @@ import {
   ChatConfigFields,
   ApiKeyField,
 } from "./FormFields";
-import { useEffect, useRef } from "react";
 
 interface LLMFormProps {
   initialData?: Partial<LLMFormData>;
@@ -45,7 +44,7 @@ export function LLMForm({
       },
       chat_config: {
         input_type: "text",
-        max_tokens: 500,
+        max_tokens: 5000,
         temperature: 0.7,
         timeout: 120,
         max_retries: 3,
@@ -54,47 +53,6 @@ export function LLMForm({
   });
 
   const modelType = form.watch("model_type");
-  
-  // Store the config values to preserve them when switching
-  const configStore = useRef({
-    chatConfig: initialData?.chat_config || {
-      input_type: "text",
-      max_tokens: 500,
-      temperature: 0.7,
-      timeout: 120,
-      max_retries: 3,
-    },
-    embeddingConfig: initialData?.embedding_config || {
-      input_type: "text",
-      max_tokens: 5000,
-    }
-  });
-
-  // Update stored configs when form values change
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name?.startsWith('default_chat_config') && value.embedding_config) {
-        configStore.current.chatConfig = { ...value.embedding_config };
-      }
-      if (name?.startsWith('default_embedding_config') && value.embedding_config) {
-        configStore.current.embeddingConfig = { ...value.embedding_config };
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  // Handle model type changes while preserving config values
-  useEffect(() => {
-    if (modelType === "chat") {
-      // Clear embedding config and restore chat config
-      form.setValue("embedding_config", undefined);
-      form.setValue("chat_config", configStore.current.chatConfig);
-    } else if (modelType === "embeddings") {
-      // Clear chat config and restore embedding config
-      form.setValue("chat_config", undefined);
-      form.setValue("embedding_config", configStore.current.embeddingConfig);
-    }
-  }, [modelType, form]);
 
   const handleSubmit = async (data: LLMFormData) => {
     await onSubmit(data);

@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { LLMMutationData } from "@/types/admin/llm";
+import { LLMMutationCreate, LLMMutationData } from "@/types/admin/llm";
 
 // --- SCHEMA ---
 
@@ -133,49 +133,42 @@ export type LLMFormData = z.infer<typeof llmFormSchema>;
 
 export const transformLlmFormToApiData = (
   formData: LLMFormData
-): LLMMutationData => {
+): LLMMutationCreate => {
   const base: Record<string, any> = {
-    llm_id: formData.llm_id,
-    model_name: formData.model_name,
-    provider: formData.provider,
-    model_type: formData.model_type,
+    llm_id: formData.llm_id ?? 0,
+    llm_secret_url: formData.llm_secret_url ?? "",
     api_key: formData.api_key,
     init_vector: formData.init_vector,
-    llm_secret_url: formData.llm_secret_url ?? "",
   };
 
-  // Only include the config for the selected model type
-  if (formData.model_type === "embeddings") {
-    base.embedding_config = formData.embedding_config
-      ? {
-          input_type: formData.embedding_config.input_type,
-          max_tokens: Number(formData.embedding_config.max_tokens),
-        }
-      : {
-          input_type: "text",
-          max_tokens: 5000,
-        };
-    // Don't include chat_config for embedding models
-  } else if (formData.model_type === "chat") {
-    base.chat_config = formData.chat_config
-      ? {
-          input_type: formData.chat_config.input_type,
-          max_tokens: Number(formData.chat_config.max_tokens),
-          temperature: Number(formData.chat_config.temperature),
-          timeout: Number(formData.chat_config.timeout),
-          max_retries: Number(formData.chat_config.max_retries),
-        }
-      : {
-          input_type: "text",
-          max_tokens: 5000,
-          temperature: 0.1,
-          timeout: 60,
-          max_retries: 2,
-        };
-    // Don't include embedding_config for chat models
-  }
+  // Always include both configs
+  base.embedding_config = formData.embedding_config
+    ? {
+        input_type: formData.embedding_config.input_type,
+        max_tokens: Number(formData.embedding_config.max_tokens),
+      }
+    : {
+        input_type: "text",
+        max_tokens: 5000,
+      };
 
-  return base as LLMMutationData;
+  base.chat_config = formData.chat_config
+    ? {
+        input_type: formData.chat_config.input_type,
+        max_tokens: Number(formData.chat_config.max_tokens),
+        temperature: Number(formData.chat_config.temperature),
+        timeout: Number(formData.chat_config.timeout),
+        max_retries: Number(formData.chat_config.max_retries),
+      }
+    : {
+        input_type: "text",
+        max_tokens: 5000,
+        temperature: 0.1,
+        timeout: 60,
+        max_retries: 2,
+      };
+
+  return base as LLMMutationCreate;
 };
 
 // --- TRANSFORM FROM API FORMAT ---

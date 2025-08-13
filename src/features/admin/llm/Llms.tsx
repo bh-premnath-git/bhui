@@ -39,7 +39,7 @@ export function LlmsList({
   const onRowClickHandler = useCallback(
     (row: Row<LLM>) => {
       llmMgtSrv.setSelectedLlm(row.original);
-      handleNavigation(ROUTES.ADMIN.LLM.EDIT(row.original.llm_id.toString()));
+      handleNavigation(ROUTES.ADMIN.LLM.EDIT(row.original.id.toString()));
     },
     [llmMgtSrv, handleNavigation]);
 

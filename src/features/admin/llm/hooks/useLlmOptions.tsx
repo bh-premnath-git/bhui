@@ -26,11 +26,11 @@ export interface LLMDataItem {
   model_name: string;
   provider: string;
   model_type: 'chat' | 'embeddings';
-  default_embedding_config: {
+  embedding_config: {
     input_type: string;
     max_tokens: number;
   };
-  default_chat_config: any;
+  chat_config: any;
   created_at: string;
   updated_at: string;
   created_by: any;

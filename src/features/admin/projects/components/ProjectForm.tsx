@@ -89,9 +89,9 @@ export function ProjectForm({
 
   // Button should be disabled if:
   // 1. No provider is selected, OR
-  // 2. Token is not validated (for create mode), OR  
+  // 2. Token is not validated (for both create and edit modes), OR  
   // 3. Form is currently submitting
-  const isSubmitDisabled = !isProviderSelected || (!isEditMode && !isTokenValidated) || isSubmitting
+  const isSubmitDisabled = !isProviderSelected || !isTokenValidated || isSubmitting
 
   return (
     <Card className="w-full max-w-6xl mx-auto border-none shadow-none">

@@ -155,7 +155,7 @@ export function DataCatalogSchema({ dataSourceId, selectedSource }: { dataSource
       const response: any = await apiService.post({
         baseUrl: AGENT_REMOTE_URL,
         method: 'POST',
-        url: '/pipeline_agent/generate',
+        url: '/generic/',
         data: body,
         usePrefix: true,
         metadata: {

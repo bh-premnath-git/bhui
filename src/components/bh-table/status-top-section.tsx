@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 
-export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status", fullData }: TopSectionProps<TData>) {
+export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="status", fullData, showSearch = true }: TopSectionProps<TData>) {
   const statusColumn = table.getColumn(headerFilter)
 
   const metrics = React.useMemo(() => {
@@ -137,12 +137,14 @@ export function StatusTopSection<TData>({ table, toolbarConfig, headerFilter="st
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <Input
-          placeholder="Search..."
-          className="w-[200px]"
-          value={(table.getState().globalFilter as string) ?? ""}
-          onChange={(event) => table.setGlobalFilter(event.target.value)}
-        />
+        {showSearch && (
+          <Input
+            placeholder="Search..."
+            className="w-[200px]"
+            value={(table.getState().globalFilter as string) ?? ""}
+            onChange={(event) => table.setGlobalFilter(event.target.value)}
+          />
+        )}
         {toolbarConfig?.buttons && toolbarConfig?.buttons.map((button, index) => {
           if (button.dropdownItems && button.dropdownItems.length > 0) {
             // Render dropdown button

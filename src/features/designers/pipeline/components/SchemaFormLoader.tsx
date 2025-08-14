@@ -759,9 +759,7 @@ const fallbackSchemas = {}
               "file_type": formData.file_type,
               "write_options": formData.write_options || {
                 "header": true,
-                "sep": ",",
-                "createDisposition": "CREATE_IF_NEEDED",
-                "writeMethod": "APPEND"
+                "sep": ","
               }
             };
             

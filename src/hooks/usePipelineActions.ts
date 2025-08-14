@@ -15,6 +15,7 @@ import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
 import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE, SPARK_PORT, PANDAS_PORT, FLINK_PORT } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 import { ValidEngineTypes } from '@/types/pipeline';
+import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 // Utility function to get port based on engine type
 const getPortByEngineType = (engineType: ValidEngineTypes): string => {
@@ -755,34 +756,31 @@ export const usePipelineActions = ({
 
     const fetchPipelineDetails = useCallback(async () => {
         try {
-            // Check if id exists and is valid
-            if (!id) {
-                return;
-            }
+            // Determine effective pipeline ID from multiple sources
+            const effectiveId = id || pipelineDtl?.pipeline_id || selectedPipeline?.pipeline_id || localStorage.getItem("pipeline_id")
+
+         
+            // Set loading state
+            setIsCanvasLoading(true);
 
             // Fetch pipeline details
-            const response = await dispatch(getPipelineById({ id })).unwrap();
+if(effectiveId){
+                const response = await dispatch(getPipelineById({ id: effectiveId })).unwrap();
+            console.log('🔧 fetchPipelineDetails: Received response:', response);
             if (!response || !response.pipeline_json) {
                 setNodes([]);
                 setEdges([]);
                 throw new Error('Invalid pipeline data received');
             }
-            
-            // Update pipeline name and JSON safely
-            setPipeLineName(selectedPipeline?.pipeline_name || response.pipeline_json.name);
+             const pipelineName = response.pipeline_json.name || response.pipeline_name || selectedPipeline?.pipeline_name || `Pipeline ${effectiveId}`;
+            console.log('🔧 fetchPipelineDetails: Setting pipeline name:', pipelineName);
+            setPipeLineName(pipelineName);
             dispatch(setBuildPipeLineDtl(response.pipeline_json));
+            // dispatch(setSelectedPipeline(response.));
             dispatch(setPipeLineType(response.pipeline_type || null));
             let optimised = await resolveRefsPipelineJson(response?.pipeline_json, response?.pipeline_json);
             setPipelineJson(optimised);
-
-            // Convert pipeline to UI JSON
-            const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
-
-            if (!uiJson || !uiJson.nodes) {
-                setNodes([]);
-                setEdges([]);
-                throw new Error('Failed to convert pipeline to UI format');
-            }
+ const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
 
             // Map nodes with titles safely
             const nodesWithTitles = uiJson.nodes.map(node => {
@@ -816,7 +814,7 @@ export const usePipelineActions = ({
             }
 
             // Initialize form states
-            const initialFormStates = {};
+            const initialFormStates: { [key: string]: any } = {};
             response.pipeline_json.transformations?.forEach((transformation: any) => {
                 const matchingNode = nodesWithTitles.find(
                     (node: any) =>
@@ -832,13 +830,40 @@ export const usePipelineActions = ({
             console.log('🔧 usePipelineActions: Setting form states:', {
                 initialFormStates,
                 transformationsCount: response.pipeline_json.transformations?.length || 0,
-                nodesCount: nodesWithTitles.length
+                nodesCount: nodesWithTitles.length,
+                pipelineId: effectiveId,
+                pipelineName: pipelineName
             });
             setFormStates(initialFormStates);
+}
+            
+            // Update pipeline name and JSON safely - prioritize response data
+           
+            // Convert pipeline to UI JSON
+           
+            
+
+            // Clear loading state on success
+            setIsCanvasLoading(false);
 
         } catch (error) {
             console.error("Error fetching pipeline details:", error);
-            // Optionally set an error state or show a notification
+            
+            // Clear states on error to prevent stale data
+            setNodes([]);
+            setEdges([]);
+            setFormStates({});
+            
+            // Clear loading state on error
+            setIsCanvasLoading(false);
+            
+            // Show error banner if available
+            if (setErrorBanner) {
+                setErrorBanner({
+                    title: "Failed to Load Pipeline",
+                    description: `Unable to load pipeline details. ${error instanceof Error ? error.message : 'Please try again.'}`
+                });
+            }
         }
     }, [
         id,

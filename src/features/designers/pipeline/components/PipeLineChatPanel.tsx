@@ -560,6 +560,30 @@ const PipeLineChatPanel = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [showReaderForm, setShowReaderForm] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
+
+  // Function to handle message deletion
+  const handleDeleteMessage = (messageIndex: number) => {
+    setMessageToDelete(messageIndex);
+    setDeleteDialogOpen(true);
+  };
+
+  // Function to confirm message deletion
+  const confirmDeleteMessage = () => {
+    if (messageToDelete !== null) {
+      setMessages(prevMessages => prevMessages.filter((_, index) => index !== messageToDelete));
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
+      toast.success("Message deleted successfully");
+    }
+  };
+
+  // Function to cancel message deletion
+  const cancelDeleteMessage = () => {
+    setDeleteDialogOpen(false);
+    setMessageToDelete(null);
+  };
   const [showReaderOptionsForm, setShowReaderOptionsForm] = useState(false);
   const [selectedSourceType, setSelectedSourceType] = useState<"File" | "Relational" | null>(null);
   const [showTransformationDropdown, setShowTransformationDropdown] = useState(false);
@@ -1791,18 +1815,33 @@ const PipeLineChatPanel = () => {
         id: `reader-${Date.now()}`
       };
 
+      // Build initial source payload for immediate node rendering
+      const initialSourcePayload = {
+        data_src_id: item.data_src_id,
+        data_src_name: item.data_src_name,
+        source_name: item.data_src_name,
+        data_src_desc: item.data_src_desc || item.data_src_name,
+        connection_type: item.connection_config?.custom_metadata?.connection_type ||
+          (item.connection_config?.connection_name?.toLowerCase() === 's3' ? 'S3' : 'Local'),
+        connection_config_id: item.connection_config_id,
+        file_name: item.file_name,
+        file_path_prefix: item.file_path_prefix || item.connection_config?.custom_metadata?.file_path_prefix,
+        file_type: item.connection_config?.custom_metadata?.file_type || 'CSV',
+        table_name: item.connection_config?.custom_metadata?.table_name || item.data_src_name,
+        type: item.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 'local' ||
+          item.connection_config?.custom_metadata?.connection_type?.toLowerCase() === 's3'
+          ? 'File' : 'Relational',
+        name: item.data_src_name
+      };
 
-      // Auto-configure the source without showing the form
+      // Add a fresh Reader node with initial payload so it shows proper defaults
+      handleNodeClick(newReaderNode, initialSourcePayload);
+
+      // Configure the newly added node
       setTimeout(() => {
-        // Find the most recently added Reader node to get the nodeId
-        const readerNodes = nodes.filter(node =>
-          node.data.label === "Reader" || node.data.label.startsWith("Reader ")
-        );
-        const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : newReaderNode.id;
-
         // Structure the data in the format expected by handleReaderOptionsSubmit
         const formattedSourceData = {
-          nodeId: latestReaderNodeId,
+          nodeId: newReaderNode.id,
           sourceData: {
             data: {
               label: item.data_src_name,
@@ -1982,12 +2021,7 @@ const PipeLineChatPanel = () => {
 
   // Function to handle single dependency selection
   const handleSingleDependencySubmit = (selectedDependency: any, targetNodeType: any, targetNodeId: string, maxInputs: number | string) => {
-    console.log('handleSingleDependencySubmit called with:', {
-      selectedDependency,
-      targetNodeType: targetNodeType.ui_properties.module_name,
-      targetNodeId,
-      maxInputs
-    });
+  
 
     // Add user message showing the selection
     addMessageWithFormData({
@@ -2105,7 +2139,7 @@ const PipeLineChatPanel = () => {
                 formId: `form_${targetNodeId}_${Date.now()}`, // Add unique form identifier
                 initialValues: {
                   nodeId: targetNodeId,
-                  name: `Target_${targetNodeId}`,
+                  name: "output",
                   dependent_on: dependentOnData
                 }
               }
@@ -2226,7 +2260,7 @@ const PipeLineChatPanel = () => {
       // Call the API to get data sources
       const response: any = await apiService.get({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/data_source/list/`,
+        url: `/data_source/search/`,
         usePrefix: true,
         method: 'GET',
         params: {
@@ -2238,10 +2272,10 @@ const PipeLineChatPanel = () => {
       });
 
       // Check if we got results
-      if (response?.data && response?.data.length > 0) {
+      if (response && response?.length > 0) {
         // If only one source found, directly add it
-        if (response?.data.length === 1) {
-          const item = response?.data[0];
+        if (response.length === 1) {
+          const item = response[0];
 
           // Directly add the single source
           setTimeout(() => {
@@ -2254,7 +2288,7 @@ const PipeLineChatPanel = () => {
               role: 'assistant',
               content:"",
               formData: {
-                schema: { type: 'multiselect', sources: response?.data },
+                schema: { type: 'multiselect', sources: response },
                 sourceColumns: [],
                 currentNodeId: 'multi-source-select',
                 initialValues: { selectedSources: [] },
@@ -2460,14 +2494,46 @@ const PipeLineChatPanel = () => {
 
   // Handle the submission of the ReaderOptionsForm
   const handleReaderOptionsSubmit = (sourceData: any) => {
-    // Find the most recently added Reader node to get the nodeId
-    const readerNodes = nodes.filter(node =>
-      node.data.label === "Reader" || node.data.label.startsWith("Reader ")
-    );
-    const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : `reader-${Date.now()}`;
+    // Always add a new Reader node when adding via chat unless we're explicitly editing an existing one
+    const providedNodeId = sourceData?.nodeId as string | undefined;
+    const existingNode = providedNodeId ? nodes.find(n => n.id === providedNodeId) : null;
+    const sourcePayload = sourceData?.sourceData?.data?.source || sourceData?.source || sourceData;
+
+    // Hide the form
+    setShowReaderOptionsForm(false);
+
+    if (!readerNode) {
+      toast.error("Reader node not found. Please try again.");
+      return;
+    }
+
+    // Mark unsaved changes and add to history
+    setUnsavedChanges();
+    addNodeToHistory();
+
+    // If caller provided a nodeId, use it; otherwise create a new node
+    let targetNodeId: string;
+    if (providedNodeId) {
+      targetNodeId = providedNodeId;
+      // Update the provided node with the new source data
+      handleSourceUpdate({ nodeId: targetNodeId, sourceData });
+    } else {
+      const newReaderNode = { ...readerNode, id: `reader-${Date.now()}` };
+      targetNodeId = newReaderNode.id;
+      // Add the node to the canvas with the initial source payload
+      handleNodeClick(newReaderNode, sourcePayload);
+      // Ensure the node gets the full configuration structure as well
+      setTimeout(() => {
+        handleSourceUpdate({ nodeId: targetNodeId, sourceData });
+      }, 0);
+    }
 
     // Add assistant message to show the configuration was saved
-    const sourceName = sourceData.sourceData?.data?.source?.source_name || sourceData.sourceData?.data?.label || 'data source';
+    const sourceName = sourceData.sourceData?.data?.source?.source_name ||
+                       sourceData.sourceData?.data?.label ||
+                       sourcePayload?.source_name ||
+                       sourcePayload?.name || 'data source';
+
     const readerMessages = [
       {
         role: 'assistant' as const,
@@ -2481,82 +2547,50 @@ const PipeLineChatPanel = () => {
             type: 'reader_configuration'
           },
           sourceColumns: [],
-          currentNodeId: latestReaderNodeId,
+          currentNodeId: targetNodeId,
           isTarget: false,
           isConfirmation: true, // Flag to indicate this is a confirmation message, not a form message
           initialValues: {
-            nodeId: latestReaderNodeId,
-            reader_name: sourceData.sourceData?.data?.source?.source_name || sourceData.sourceData?.data?.label || '',
-            name: sourceData.sourceData?.data?.source?.source_name || sourceData.sourceData?.data?.label || '',
-            source_type: sourceData.sourceData?.data?.source?.type || 'File',
-            file_type: sourceData.sourceData?.data?.source?.file_type || 'CSV',
-            connection_config_id: sourceData.sourceData?.data?.source?.connection_config_id || 0,
-            data_src_id: sourceData.sourceData?.data?.source?.data_src_id || '',
+            nodeId: targetNodeId,
+            reader_name: sourceName,
+            name: sourceName,
+            source_type: sourcePayload?.type || 'File',
+            file_type: sourcePayload?.file_type || 'CSV',
+            connection_config_id: sourcePayload?.connection_config_id || 0,
+            data_src_id: sourcePayload?.data_src_id || '',
             // Store the complete source configuration for reference
-            sourceConfiguration: sourceData.sourceData?.data?.source || sourceData.sourceData?.data || {}
+            sourceConfiguration: sourcePayload || {}
           }
         }
       }
     ];
 
-    // Remove setMessages and directly call saveChatHistoryBatchWithMessages
+    // Persist chat history with the new confirmation message
     const updatedMessages = [...messages, ...readerMessages];
     setTimeout(() => {
       saveChatHistoryBatchWithMessages(updatedMessages);
     }, 1000);
 
+    // Apply horizontal alignment after adding the node with improved timing
+    setTimeout(() => {
+      if (pipelineContext.handleAlignHorizontal) {
+        pipelineContext.handleAlignHorizontal();
 
-    // Hide the form
-    setShowReaderOptionsForm(false);
+        // Force a re-render of the ReactFlow component
+        window.dispatchEvent(new Event('resize'));
 
-    if (readerNode) {
-      // Mark unsaved changes
-      setUnsavedChanges();
-
-      // Add node to history for undo functionality
-      addNodeToHistory();
-      const readerNodes = nodes.filter(node =>
-        node.data.label === "Reader" || node.data.label.startsWith("Reader ")
-      );
-
-      // Get the most recently added reader node (last in the array)
-      const latestReaderNodeId = readerNodes.length > 0 ? readerNodes[readerNodes.length - 1].id : null;
-
-      if (latestReaderNodeId) {
-        // Update the existing node with the new source data
-        handleSourceUpdate({
-          nodeId: latestReaderNodeId,
-          sourceData: sourceData
-        });
-      } else {
-        // If no reader node exists yet, add a new one
-        handleNodeClick(readerNode, sourceData.sourceData?.data?.source || sourceData);
-      }
-
-      // Apply horizontal alignment after adding the node with improved timing
-      setTimeout(() => {
-        if (pipelineContext.handleAlignHorizontal) {
+        // Call alignment again after a short delay to ensure proper positioning
+        setTimeout(() => {
           pipelineContext.handleAlignHorizontal();
-
-          // Force a re-render of the ReactFlow component
           window.dispatchEvent(new Event('resize'));
+        }, 200);
+      }
+    }, 500);
 
-          // Call alignment again after a short delay to ensure proper positioning
-          setTimeout(() => {
-            pipelineContext.handleAlignHorizontal();
-            window.dispatchEvent(new Event('resize'));
-          }, 200);
-        }
-      }, 500);
-
-      // Show transformations dropdown after reader configuration
-      setTimeout(() => {
-        handleShowTransformations();
-      }, 800);
-
-    } else {
-      toast.error("Reader node not found. Please try again.");
-    }
+    // Show transformations dropdown after reader configuration
+    setTimeout(() => {
+      handleShowTransformations();
+    }, 800);
   };
 
   // Function to handle adding another source
@@ -2710,7 +2744,7 @@ const PipeLineChatPanel = () => {
                   
                   {/* Only render message bubble if there's content */}
                   {message.content && message.content.trim() !== '' && (
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-2 group">
                       <div
                         className="w-6 h-6 mt-1 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-medium"
                         style={{ backgroundColor: message.role === 'assistant' ? '#009459' : '#000000' }}
@@ -2725,6 +2759,14 @@ const PipeLineChatPanel = () => {
                       >
                         <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
                       </div>
+                      {/* Delete button - only show on hover */}
+                      <button
+                        onClick={() => handleDeleteMessage(index)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-100 rounded-full mt-1"
+                        title="Delete message"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500 hover:text-red-700" />
+                      </button>
                     </div>
                   )}
 
@@ -2780,7 +2822,7 @@ const PipeLineChatPanel = () => {
 
 
                   {message.role === 'assistant' && message.formData && !message.formData.isConfirmation && !message.formData.isEmbeddedForm && (
-                    <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm">
+                    <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm group relative">
                       <div className="space-y-3">
 
                         {(message.formData.schema?.module_name === 'Reader' || message.formData.initialValues?.reader_name || message.formData.initialValues?.sourceConfiguration || message.formData.initialValues?.source) ? (
@@ -2884,9 +2926,7 @@ const PipeLineChatPanel = () => {
                                     transformationData: {
                                       write_options: {
                                         header: true,
-                                        sep: ",",
-                                        createDisposition: 'CREATE_IF_NEEDED',
-                                        writeMethod: 'APPEND'
+                                        sep: ","
                                       }
                                     }
                                   };
@@ -2895,7 +2935,7 @@ const PipeLineChatPanel = () => {
                                 // Create a safe form state object with fallbacks for missing properties
                                 const updatedFormState = {
                                   ...(data.transformationData || {}),
-                                  name: data.title || data.label || 'Unnamed Target',
+                                  name: "output",
                                   target: {
                                     target_type: data.source?.target_type || 'File',
                                     target_name: data.source?.target_name || '',
@@ -2907,9 +2947,7 @@ const PipeLineChatPanel = () => {
                                   file_type: data.source?.file_type || 'CSV',
                                   write_options: data.transformationData?.write_options || {
                                     header: true,
-                                    sep: ",",
-                                    createDisposition: 'CREATE_IF_NEEDED',
-                                    writeMethod: data.source?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                                    sep: ","
                                   }
                                 };
 
@@ -2988,7 +3026,7 @@ const PipeLineChatPanel = () => {
                                         ...message.formData.initialValues,
                                         ...updatedFormState,
                                         nodeId: message.formData.currentNodeId,
-                                        name: updatedFormState.name || `Target_${message.formData.currentNodeId}`
+                                        name: updatedFormState.name || "output"
                                       }
                                     }
                                   }
@@ -3105,10 +3143,99 @@ const PipeLineChatPanel = () => {
                               initialValues={message.formData.initialValues}
                               currentNodeId={message.formData.currentNodeId}
                               inline={true}
+                              onSubmit={(formData: any) => {
+                                console.log('🔧 PipelineForm onSubmit called with:', formData);
+                                
+                                // Handle form submission by updating the node data
+                                handleSourceUpdate({
+                                  nodeId: message.formData.currentNodeId,
+                                  sourceData: formData
+                                });
+
+                                // Mark unsaved changes
+                                setUnsavedChanges();
+
+                                // Update form states
+                                setFormStates(prevStates => ({
+                                  ...prevStates,
+                                  [message.formData.currentNodeId]: formData
+                                }));
+
+                                // Update local form states
+                                setformsHanStates(prevStates => ({
+                                  ...prevStates,
+                                  [message.formData.currentNodeId]: formData
+                                }));
+
+                                // Update the chat message's formData.initialValues with the submitted data
+                                setMessages(prevMessages => {
+                                  return prevMessages.map(msg => {
+                                    if (msg.formData && msg.formData.currentNodeId === message.formData.currentNodeId) {
+                                      const updatedInitialValues = {
+                                        ...msg.formData.initialValues,
+                                        ...formData
+                                      };
+                                      return {
+                                        ...msg,
+                                        formData: {
+                                          ...msg.formData,
+                                          initialValues: updatedInitialValues
+                                        }
+                                      };
+                                    }
+                                    return msg;
+                                  });
+                                });
+
+                                // Add confirmation messages
+                                const transformationType = message.formData.schema?.title || message.formData.initialValues?.type || 'transformation';
+                                const newConfirmationMessages = [
+                                  {
+                                    role: 'user' as const,
+                                    content: `Configured ${transformationType}`,
+                                    id: generateMessageId()
+                                  },
+                                  {
+                                    role: 'assistant' as const,
+                                    content: `Great! Your ${transformationType} has been configured successfully.`,
+                                    id: generateMessageId(),
+                                    formData: {
+                                      schema: message.formData.schema,
+                                      sourceColumns: message.formData.sourceColumns || [],
+                                      currentNodeId: message.formData.currentNodeId,
+                                      isTarget: message.formData.isTarget || false,
+                                      isConfirmation: true,
+                                      initialValues: {
+                                        ...message.formData.initialValues,
+                                        ...formData,
+                                        nodeId: message.formData.currentNodeId
+                                      }
+                                    }
+                                  }
+                                ];
+
+                                setMessages(prevMessages => [
+                                  ...prevMessages,
+                                  ...newConfirmationMessages
+                                ]);
+
+                                // Save chat history after form submission
+                                setTimeout(() => {
+                                  saveChatHistoryBatchWithMessages(newConfirmationMessages);
+                                }, 500);
+                              }}
                             />
                           </div>
                         )}
                       </div>
+                      {/* Delete button for form messages */}
+                      <button
+                        onClick={() => handleDeleteMessage(index)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-100 rounded-full"
+                        title="Delete message"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500 hover:text-red-700" />
+                      </button>
                     </div>
                   )}
 
@@ -3228,6 +3355,17 @@ const PipeLineChatPanel = () => {
         />
       </div>
       
+      {/* Delete Message Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Message"
+        description="Are you sure you want to delete this message? This action cannot be undone."
+        confirmText="DELETE"
+        isLoading={false}
+        onConfirm={confirmDeleteMessage}
+      />
+
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
         open={showDeleteConfirm}

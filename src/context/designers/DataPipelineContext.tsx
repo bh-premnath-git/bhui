@@ -185,6 +185,7 @@ interface bnPipelineContextProps {
     setInitialDataMap: React.Dispatch<React.SetStateAction<{ [key: string]: any }>>;
     getInitialDataForNode: (nodeId: string, source: any) => any;
     createInitialDataForNode: (nodeId: string, source: any) => any;
+    triggerManualSave: () => Promise<void>;
 }
 
 const PipelineContext = createContext<bnPipelineContextProps | undefined>(undefined);
@@ -199,7 +200,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [debuggedNodesList, setDebuggedNodesList] = useState<Array<{ id: string; title: string }>>([]);
     const [isPipelineRunning, setIsPipelineRunning] = useState(false);
     const [transformationCounts, setTransformationCounts] = useState<Array<{ transformationName: string; rowCount: string }>>([]);
-    const id = localStorage.getItem("pipeline_id");
+    // Prefer URL param id on initial load; fall back to localStorage
+    const { id: routeId } = useParams<{ id?: string }>();
+    const id = routeId || localStorage.getItem("pipeline_id");
     const dispatch = useDispatch<AppDispatch>();
 
     const ctrlDTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -393,6 +396,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     const setUnsavedChanges = useCallback(() => {
+        console.log('🔧 AutoSave - Setting unsaved changes flag');
         setHasUnsavedChanges(true);
         setIsSaving(false);
         setLastSaved(null);
@@ -402,6 +406,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsSaving(false);
         setSaveErrorState(error);
     }, []);
+
+    // Manual trigger for testing autosave
+    const triggerManualSave = useCallback(async () => {
+        console.log('🔧 AutoSave - Manual save triggered');
+        if (!hasUnsavedChanges) {
+            setUnsavedChanges(); // Force unsaved changes to trigger save
+        }
+    }, [hasUnsavedChanges, setUnsavedChanges]);
 
     const handleRunClick = useCallback(async (e: React.MouseEvent) => {
 
@@ -452,7 +464,28 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
 
         const intervalId = setInterval(async () => {
+            console.log('🔧 AutoSave - Interval triggered:', {
+                hasUnsavedChanges,
+                id,
+                nodesLength: nodes?.length,
+                edgesLength: edges?.length,
+                pipelineName,
+                
+                isFlow
+            });
+            
             if (hasUnsavedChanges) {
+                console.log('🔧 AutoSave - Starting save process...',selectedPipeline);
+                
+                // Check if there's meaningful content to save
+                const pipelineId = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
+                if (!pipelineId) {
+                    console.warn('🔧 AutoSave - No pipeline ID available, cannot save');
+                    setSaveError('No pipeline ID available for saving');
+                    return;
+                }
+                
+                
                 try {
                     setSaving();
 
@@ -469,27 +502,54 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         }
                     }));
                     // Your save logic here
+                    console.log('🔧 AutoSave - Converting pipeline JSON...');
                     const pipeline_json: any = await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl, pipelineName);
+                    console.log('🔧 AutoSave - Pipeline JSON converted:', !!pipeline_json);
 
-                    pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json?.transformations?.map(transform => {
-                        if (transform.transformation.toLowerCase() === "target") {
-                            return {
-                                ...transform,
-                                transformation: "Writer"
-                            };
-                        }
-                        return transform;
-                    });
+                    if (pipeline_json?.pipeline_json?.transformations) {
+                        pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json.transformations.map(transform => {
+                            if (transform.transformation.toLowerCase() === "target") {
+                                return {
+                                    ...transform,
+                                    transformation: "Writer"
+                                };
+                            }
+                            return transform;
+                        });
+                    }
 
-                    if(id){
-                      await apiService.patch({
-                        baseUrl: CATALOG_REMOTE_API_URL,
-                        url: `/pipeline/${id}`,
-                        usePrefix: true,
-                        method: 'PATCH',
-                        data: pipeline_json
-                    });
-                }
+                    // Try to get pipeline ID from multiple sources
+                    const pipelineId = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
+                    
+                    if(pipelineId){
+                        console.log('🔧 AutoSave - Making API call to save pipeline...', {
+                            pipelineId,
+                            url: `/pipeline/${pipelineId}`,
+                            dataSize: JSON.stringify(pipeline_json).length,
+                            nodesCount: serializedNodes.length,
+                            edgesCount: edges.length
+                        });
+                        
+                        await apiService.patch({
+                            baseUrl: CATALOG_REMOTE_API_URL,
+                            url: `/pipeline/${pipelineId}`,
+                            usePrefix: true,
+                            method: 'PATCH',
+                            data: pipeline_json
+                        });
+                        
+                        console.log('🔧 AutoSave - API call completed successfully');
+                    } else {
+                        console.warn('🔧 AutoSave - No pipeline ID available in any source:', {
+                            id,
+                            pipeline_id,
+                            pipelineDtl_id: pipelineDtl?.pipeline_id,
+                            localStorage_id: localStorage.getItem("pipeline_id")
+                        });
+                        // Don't mark as saved if we couldn't save
+                        setSaveError('No pipeline ID available for saving');
+                        return;
+                    }
                     if ('pipeline_json' in pipeline_json) {
                         let optimised = await resolveRefsPipelineJson(pipeline_json.pipeline_json, pipeline_json.pipeline_json)
                         setPipelineJson(optimised);
@@ -499,19 +559,49 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     // Add a small delay to ensure UI updates properly
                     // setTimeout(() => {
                     setLastSaved(new Date());
-
                     setSaved();
+                    console.log('🔧 AutoSave - Save completed successfully at:', new Date().toISOString());
                     // }, 100);
 
                 } catch (error) {
-                    console.error('Error in auto-save:', error);
-                    setSaveError(error.message);
+                    console.error('🔧 AutoSave - Error in auto-save:', error);
+                    console.error('🔧 AutoSave - Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                    });
+                    setSaveError(error.message || 'Unknown error occurred during save');
                 }
+            } else {
+                console.log('🔧 AutoSave - No unsaved changes, skipping save');
             }
         }, autoSaveInterval);
 
         return () => clearInterval(intervalId);
-    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow]);
+    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow, formStates]);
+    
+    // Track formStates changes to trigger autosave
+    useEffect(() => {
+        // Skip if this is the initial load or if it's a flow
+        if (isFlow || Object.keys(formStates).length === 0) {
+            console.log('🔧 AutoSave - Skipping formStates change tracking:', { 
+                isFlow, 
+                formStatesCount: Object.keys(formStates).length 
+            });
+            return;
+        }
+        
+        console.log('🔧 AutoSave - FormStates changed, marking as unsaved:', {
+            formStatesKeys: Object.keys(formStates),
+            formStatesCount: Object.keys(formStates).length
+        });
+        
+        // Mark as unsaved when formStates change (except during initial load)
+        const timer = setTimeout(() => {
+            setUnsavedChanges();
+        }, 100); // Small delay to avoid triggering on initial load
+        
+        return () => clearTimeout(timer);
+    }, [formStates, isFlow, setUnsavedChanges]);
     // Update sanitizeNode function
     const sanitizeNode = useCallback((node: any) => {
         if (!node) return node;
@@ -1696,7 +1786,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         attachCluster,
         detachCluster,
         pipelines,
-        setPipelines
+        setPipelines,
+        triggerManualSave
     }), [
         nodes,
         setSanitizedNodes,
@@ -1830,7 +1921,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleZoomIn,
         handleZoomOut,
         pipelines,
-        setPipelines
+        setPipelines,
+        triggerManualSave
     ]);
 
     return (

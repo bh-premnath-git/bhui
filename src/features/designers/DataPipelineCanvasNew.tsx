@@ -161,7 +161,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     };
   }, [handleCenter]);
   useEffect(() => {
-    if (id && id !== currentPipelineId) {
+    // debugger
+    if (id ) {
       setIsLoadingPipeline(true);
       setCurrentPipelineId(id);
 
@@ -174,7 +175,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           setIsLoadingPipeline(false);
         });
     }
-  }, [id]);
+  }, [id, fetchPipelineDetails]);
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
 
   const memoizedNodeTypes = useMemo(() => ({
@@ -401,9 +402,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               // Ensure write_options are properly structured
               write_options: rawInitialValues?.write_options || {
                 header: true,
-                sep: ",",
-                createDisposition: 'CREATE_IF_NEEDED',
-                writeMethod: (rawInitialValues?.target?.target_type || rawInitialValues?.target_type) === 'Relational' ? 'direct' : 'APPEND'
+                sep: ","
               },
               // Add transformation and task_id to ensure proper form structure
               transformation: rawInitialValues?.transformation || 'writer',

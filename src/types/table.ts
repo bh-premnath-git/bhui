@@ -51,6 +51,7 @@ export interface TopSectionProps<TData> {
   headerFilter?: string;
   importSrcFn?: () => void;
   fullData?: TData[];
+  showSearch?: boolean; // allow hiding the global search input
 }
 
 export interface StatusMetric {

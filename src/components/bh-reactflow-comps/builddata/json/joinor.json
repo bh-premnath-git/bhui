@@ -10,28 +10,36 @@
           "uniqueItems": true,
           "minItems": 1,
           "items": {
-            "join_input": {
-              "type": "string",
-              "minLength": 1,
-              "description": "The name of input dataframe to join"
+            "type": "object",
+            "properties": {
+              "join_input": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name of input dataframe to join"
+              },
+              "join_condition": {
+                "type": "string",
+                "minLength": 1,
+                "ui-hint": "expression"
+              },
+              "join_type": {
+                "type": "string",
+                "minLength": 1,
+                "enum": [
+                  "inner",
+                  "left",
+                  "right",
+                  "full",
+                  "left_semi",
+                  "left_anti"
+                ]
+              }
             },
-            "join_condition": {
-              "type": "string",
-              "minLength": 1,
-              "ui-hint": "expression"
-            },
-            "join_type": {
-              "type": "select",
-              "minLength": 1,
-              "enum": [
-                "inner",
-                "left",
-                "right",
-                "full",
-                "left_semi",
-                "left_anti"
-              ]
-            }
+            "required": [
+              "join_input",
+              "join_condition", 
+              "join_type"
+            ]
           }
         },
         "expressions": {
@@ -39,39 +47,58 @@
           "uniqueItems": true,
           "minItems": 1,
           "items": {
-            "name": {
-              "type": "string",
-              "minLength": 1
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "ui-hint": "expression"
+              }
             },
-            "expression": {
-              "type": "string",
-              "minLength": 1,
-              "ui-hint": "expression"
-            }
+            "required": [
+              "name",
+              "expression"
+            ]
           }
         },
         "advanced": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "join_input": {
-              "type": "string",
-              "minLength": 1
-            },
-            "hint_type": {
-              "type": "select",
-              "minLength": 1,
-              "enum": [
-                "broadcast",
-                "merge",
-                "shuffle_hash",
-                "shuffle_replicate_nl",
-                "None"
-              ]
-            },
-            "propagate_all_columns": {
-              "type": "boolean",
-              "default": false
+          "type": "object",
+          "properties": {
+            "hints": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "join_input": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "hint_type": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "broadcast",
+                      "merge",
+                      "shuffle_hash",
+                      "shuffle_replicate_nl",
+                      "None"
+                    ]
+                  },
+                  "propagate_all_columns": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "join_input",
+                  "hint_type"
+                ]
+              }
             }
           },
           "required": [

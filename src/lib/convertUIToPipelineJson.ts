@@ -585,9 +585,7 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                         file_name: node.data.source?.file_name,
                         write_options: node.data.transformationData?.write_options || {
                             header: true,
-                            sep: ",",
-                            createDisposition: 'CREATE_IF_NEEDED',
-                            writeMethod: targetType === 'Relational' ? 'direct' : 'APPEND'
+                            sep: ","
                         },
                     };
                 case 'CustomPySpark':

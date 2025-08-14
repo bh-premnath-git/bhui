@@ -120,6 +120,10 @@ export function getDefaultValueForField(field: SchemaProperty): any {
 
   switch (field.type) {
     case 'string':
+      // For enum fields, use the first enum value as default
+      if (field.enum && field.enum.length > 0) {
+        return field.enum[0];
+      }
       return '';
     case 'number':
     case 'integer':
@@ -133,7 +137,38 @@ export function getDefaultValueForField(field: SchemaProperty): any {
       if (field.properties) {
         const obj: any = {};
         Object.entries(field.properties).forEach(([key, propField]: [string, any]) => {
-          obj[key] = getDefaultValueForField(propField);
+          if (propField.type === 'array' && field.required?.includes(key)) {
+            // For required arrays within objects, initialize with at least one default item
+            const arrayValue = getDefaultValueForField(propField);
+            if (Array.isArray(arrayValue) && arrayValue.length === 0) {
+              // Create a default item for the array
+              if (propField.items?.type === 'object' && propField.items.properties) {
+                const defaultItem: any = {};
+                Object.entries(propField.items.properties).forEach(([itemPropKey, itemPropField]: [string, any]) => {
+                  defaultItem[itemPropKey] = getDefaultValueForField(itemPropField);
+                });
+                // Add unique key for React reconciliation
+                defaultItem._key = `item_${Date.now()}_${Math.random()}`;
+                arrayValue.push(defaultItem);
+              }
+            }
+            obj[key] = arrayValue;
+          } else if (key === 'hints' && propField.type === 'array') {
+            // Special handling for hints array - always initialize with one hint object
+            const hintsArray = getDefaultValueForField(propField);
+            if (Array.isArray(hintsArray) && hintsArray.length === 0) {
+              const defaultHint = {
+                join_input: '',
+                hint_type: 'broadcast',
+                propagate_all_columns: false,
+                _key: `item_${Date.now()}_${Math.random()}`
+              };
+              hintsArray.push(defaultHint);
+            }
+            obj[key] = hintsArray;
+          } else {
+            obj[key] = getDefaultValueForField(propField);
+          }
         });
         return obj;
       }
@@ -197,6 +232,22 @@ export function generateInitialValues(schema: SchemaProperty): Record<string, an
       if (field.type === 'object' && field.properties) {
         // Recursively handle nested objects
         initialValues[key] = generateInitialValues(field);
+      } else if (field.type === 'array' && field.required && schema.required?.includes(key)) {
+        // For required arrays, initialize with at least one default item
+        const arrayValue = getDefaultValueForField(field);
+        if (Array.isArray(arrayValue) && arrayValue.length === 0) {
+          // Create a default item for the array
+          if (field.items?.type === 'object' && field.items.properties) {
+            const defaultItem: any = {};
+            Object.entries(field.items.properties).forEach(([propKey, propField]: [string, any]) => {
+              defaultItem[propKey] = getDefaultValueForField(propField);
+            });
+            // Add unique key for React reconciliation
+            defaultItem._key = `item_${Date.now()}`;
+            arrayValue.push(defaultItem);
+          }
+        }
+        initialValues[key] = arrayValue;
       } else {
         initialValues[key] = getDefaultValueForField(field);
       }

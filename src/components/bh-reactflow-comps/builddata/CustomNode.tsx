@@ -84,7 +84,6 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     
     // Get dynamic pipeline modules
     const pipelineModules = usePipelineModules(selectedEngineType || 'pyspark');
-    
     // Helper function to find dynamic schema for a node
     const findDynamicSchema = useCallback((nodeLabel: string) => {
         try {

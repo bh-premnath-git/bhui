@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -110,22 +110,8 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     localStorage.setItem('favoritePipelines', JSON.stringify(favorites));
   }, [favorites]);
 
-  useEffect(() => {
-    setTempName(initialName);
-    fetchPipelineList()
-  }, [initialName]);
-
-  // Handle when pipelines become empty
-  useEffect(() => {
-    if (pipelines.length === 0 && id) {
-      // If we have an ID but no pipelines, clear the selected state
-      dispatch(setSelectedPipeline(null));
-      localStorage.removeItem("pipeline_id");
-    }
-  }, [pipelines.length, id, dispatch]);
-
   // Fetch pipeline list
-  const fetchPipelineList = async () => {
+  const fetchPipelineList = useCallback(async () => {
     setIsLoading(true);
     try {
       const response: any = await apiService.get({
@@ -144,7 +130,58 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setPipelines]);
+
+  useEffect(() => {
+    setTempName(initialName);
+    // Always fetch pipeline list when initialName changes or on mount
+    fetchPipelineList()
+  }, [initialName, fetchPipelineList]);
+
+  // Set initial pipeline name when pipelines are loaded and we have a current pipeline ID
+  useEffect(() => {
+    if (pipelines.length > 0 && id) {
+      const currentPipeline = pipelines.find(p => p.pipeline_id.toString() === id);
+      if (currentPipeline) {
+        handlePipelineSelect(currentPipeline)
+        // Always update the Redux store with the current pipeline to ensure consistency
+        // This handles cases where the Redux state might be stale or empty
+        dispatch(setSelectedPipeline(currentPipeline));
+        
+        // Update engine type if pipeline has engine_type
+        if (currentPipeline.engine_type) {
+          dispatch(setSelectedEngineType(currentPipeline.engine_type));
+        }
+      } else if (pipelines.length > 0) {
+        // If we have pipelines but can't find the current one, it might not exist
+        // Clear the invalid pipeline ID and navigate to build pipeline page
+        console.warn(`Pipeline with ID ${id} not found in the pipeline list`);
+        dispatch(setSelectedPipeline(null));
+        localStorage.removeItem("pipeline_id");
+        navigate(ROUTES.DESIGNERS.BUILD_PIPELINE, { replace: true });
+      }
+    }
+  }, [pipelines, id, dispatch, navigate]);
+
+  // Ensure pipeline ID is stored in localStorage when we have a valid ID from URL
+  useEffect(() => {
+    if (id) {
+      const storedPipelineId = localStorage.getItem("pipeline_id");
+      if (storedPipelineId !== id) {
+        localStorage.setItem("pipeline_id", id);
+      }
+    }
+  }, [id]);
+
+  // Handle when pipelines become empty
+  useEffect(() => {
+    if (pipelines.length === 0 && id) {
+      // If we have an ID but no pipelines, clear the selected state
+      dispatch(setSelectedPipeline(null));
+      localStorage.removeItem("pipeline_id");
+    }
+  }, [pipelines.length, id, dispatch]);
+
 
   // Toggle favorite status
   const toggleFavorite = (e: React.MouseEvent, pipelineId: number) => {
@@ -165,49 +202,8 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     setDeleteDialogOpen(true);
     setOpen(false); // Close the popover
   };
-
-  const handleDeleteConfirm = () => {
-    if (pipelineToDelete) {
-      deletePipelineMutation.mutate(pipelineToDelete.pipeline_id, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setPipelineToDelete(null);
-          
-          // Check if we're deleting the currently selected pipeline
-          if (id === pipelineToDelete.pipeline_id.toString()) {
-            // Find the next available pipeline to switch to
-            const remainingPipelines = pipelines.filter(p => p.pipeline_id !== pipelineToDelete.pipeline_id);
-            
-            if (remainingPipelines.length > 0) {
-              // Switch to the next available pipeline
-              const nextPipeline:any = remainingPipelines[0];
-              handlePipelineSelect(nextPipeline);
-            } else {
-              // No pipelines left, clear the selected pipeline and navigate to the build pipeline page to show empty state
-              dispatch(setSelectedPipeline(null));
-              localStorage.removeItem("pipeline_id");
-              navigate(ROUTES.DESIGNERS.BUILD_PIPELINE, { replace: true });
-            }
-          }
-          
-          // Refresh the pipelines list
-          fetchPipelineList();
-        },
-        onError: (error) => {
-          console.error('Delete failed:', error);
-          // Dialog stays open on error so user can try again
-        }
-      });
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setPipelineToDelete(null);
-  };
-
-  // Handle pipeline selection
-  const handlePipelineSelect = async (pipeline: Pipeline) => {
+// Handle pipeline selection
+  const handlePipelineSelect = useCallback(async (pipeline: Pipeline) => {
     const pipelineIdStr = pipeline.pipeline_id.toString();
     
     // Don't do anything if we're already on this pipeline
@@ -242,7 +238,42 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     }
     
     setOpen(false);
-  };
+  }, [id, dispatch, location.pathname, navigate]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (pipelineToDelete) {
+      deletePipelineMutation.mutate(pipelineToDelete.pipeline_id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setPipelineToDelete(null);
+          
+          // Check if we're deleting the currently selected pipeline
+          if (id === pipelineToDelete.pipeline_id.toString()) {
+            // Find the next available pipeline to switch to
+            const remainingPipelines = pipelines.filter(p => p.pipeline_id !== pipelineToDelete.pipeline_id);
+            
+            if (remainingPipelines.length > 0) {
+              // Switch to the next available pipeline
+              const nextPipeline:any = remainingPipelines[0];
+              handlePipelineSelect(nextPipeline);
+            } else {
+              // No pipelines left, clear the selected pipeline and navigate to the build pipeline page to show empty state
+              dispatch(setSelectedPipeline(null));
+              localStorage.removeItem("pipeline_id");
+              navigate(ROUTES.DESIGNERS.BUILD_PIPELINE, { replace: true });
+            }
+          }
+          
+          // Refresh the pipelines list
+          fetchPipelineList();
+        },
+        onError: (error) => {
+          console.error('Delete failed:', error);
+          // Dialog stays open on error so user can try again
+        }
+      });
+    }
+  }, [pipelineToDelete, deletePipelineMutation, id, pipelines, dispatch, navigate, fetchPipelineList, handlePipelineSelect]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTempName(e.target.value);
@@ -261,12 +292,12 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
+  const handleOpenChange = useCallback((newOpen: boolean) => {
     if (newOpen && pipelines.length === 0) {
       fetchPipelineList();
     }
     setOpen(newOpen);
-  };
+  }, [pipelines.length, fetchPipelineList]);
 
   // Format date for display
   const formatDate = (dateString?: string) => {
@@ -332,7 +363,10 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
                   <div className="flex items-center gap-2 truncate">
                     <Workflow size={14} />
                     <span className="truncate">
-                      {pipelines.length === 0 ? 'No pipelines available' : (initialName || currentPipeline?.pipeline_name || placeholder)}
+                      {pipelines.length === 0 
+                        ? 'No pipelines available' 
+                        : (initialName || currentPipeline?.pipeline_name || (isLoading ? 'Loading...' : placeholder))
+                      }
                     </span>
                     {pipelines.length > 0 && currentPipeline?.engine_type && (
                       <Badge 

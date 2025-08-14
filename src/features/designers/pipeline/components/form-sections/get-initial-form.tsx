@@ -355,14 +355,12 @@ console.log(initialValues,"initialValues")
       
       const result = {
         ...baseValues,
-        name: initialValues?.name || resolvedTargetData.target_name || '',
+        name: "output", // Always use "output" for target nodes
         target: resolvedTargetData,
         file_type: normalizedFileType,
         write_options: initialValues?.write_options || {
           header: true,
-          sep: ",",
-          createDisposition: 'CREATE_IF_NEEDED',
-          writeMethod: resolvedTargetData?.target_type === 'Relational' ? 'direct' : 'APPEND'
+          sep: ","
         }
       };
       

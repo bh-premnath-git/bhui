@@ -8,6 +8,9 @@ import { useUserUpdateMutation } from "./hooks/useUserUpdateMutation";
 import { UserPageLayout } from "./components/UserPageLayout";
 import type { UserFormValues } from "./components/userFormSchema";
 import type { UserUpdateData } from "@/types/admin/user";
+import { transformToBhRoles, transformToBhResources } from "./components/userFormSchema";
+import { useAppSelector } from "@/hooks/useRedux";
+import { useRoleMatrixQuery } from "./hooks/useRoleMatrixQuery";
 
 export function EditUser() {
   const navigate = useNavigate();
@@ -16,26 +19,39 @@ export function EditUser() {
   const { handleUpdateUser, isUpdating, updateError } = useUserUpdateMutation();
   const [error, setError] = useState<string | null>(null);
   
+  // Get projects and environments from Redux store
+  const projects = useAppSelector((state) => state.users.projects);
+  const environments = useAppSelector((state) => state.users.environments);
+  
+  // Get all roles for proper role selection (like AddUser)
+  const { roles, isLoading: rolesLoading, isError: rolesError } = useRoleMatrixQuery({
+    fetchAll: true,
+    enabled: true,
+  });
+  
   const onSubmit = async (data: UserFormValues) => {
     if (!id || !user) return;
 
     try {
       setError(null);
       
-      // Transform form data using existing user's bh_roles and bh_resources as base
-      // Update only the fields that can be modified through the form
+      // Transform form data into required format
+      const bhRoles = transformToBhRoles(
+        data.selected_roles || [],
+        data.role_permissions || {},
+        roles || []
+      );
+      
+      const bhResources = transformToBhResources(
+        data.project_assignments || [],
+        data.environment_assignments || [],
+        projects || [],
+        environments || []
+      );
+      
       const payload: UserUpdateData = {
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: data.email,
-        is_tenant_admin: data.is_tenant_admin,
-        username: data.username,
-        enabled: data.enabled,
-        emailVerified: data.emailVerified,
-        // Preserve existing bh_roles and bh_resources from the user data
-        // These should be managed through the role assignment system, not the form
-        bh_roles: user.bh_roles || [],
-        bh_resources: user.bh_resources || [],
+        bh_roles: bhRoles,
+        bh_resources: bhResources,
       };
       
       console.log('User update payload:', payload);
@@ -120,19 +136,9 @@ export function EditUser() {
             isSubmitting={isUpdating}
             error={error || (updateError ? String(updateError) : null)}
             user={user}
-            // Pass the roles from user data instead of fetching separately
-            roles={user.bh_roles?.map(bhRole => ({
-              id: bhRole.bh_role_matrix_id || 0,
-              role_name: bhRole.role_name || '',
-              created_at: bhRole.created_at || '',
-              updated_at: bhRole.updated_at || '',
-              created_by: bhRole.created_by || '',
-              updated_by: bhRole.updated_by || null,
-              is_deleted: bhRole.is_deleted || false,
-              deleted_by: bhRole.deleted_by || null,
-            })) || []}
-            rolesLoading={false}
-            rolesError={false}
+            roles={roles}
+            rolesLoading={rolesLoading}
+            rolesError={rolesError}
           />
         </div>
       </div>

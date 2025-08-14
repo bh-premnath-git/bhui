@@ -10,6 +10,7 @@ interface ValidationButtonProps {
   isValidating: boolean;
   isValidated: boolean;
   error?: string | null;
+  disabled?: boolean;
   onValidationChange?: (state: ValidationState) => void;
 }
 
@@ -18,6 +19,7 @@ export function ValidationButton({
   isValidating,
   isValidated,
   error,
+  disabled = false,
   onValidationChange 
 }: ValidationButtonProps) {
   const [validationState, setValidationState] = useState<ValidationState>('initial')
@@ -32,8 +34,8 @@ export function ValidationButton({
     onValidationChange?.(newState)
   }, [isValidating, isValidated, error, onValidationChange])
 
-  // Set the background color based on the state
   const getCheckboxColor = () => {
+    if (disabled) return 'bg-muted'
     switch (validationState) {
       case 'initial':
         return 'bg-secondary hover:bg-secondary/80'
@@ -46,22 +48,22 @@ export function ValidationButton({
     }
   }
 
-  // Set the text color based on the state
   const getTextColor = () => {
+    if (disabled) return 'text-muted-foreground'
     switch (validationState) {
       case 'initial':
-        return 'text-secondary-foreground' // Dark text for light background
+        return 'text-secondary-foreground'
       case 'validating':
-        return 'text-white' // White text for dark blue
+        return 'text-white'
       case 'validated':
-        return 'text-white' // White text for dark green
+        return 'text-white'
       case 'not-validated':
-        return 'text-destructive-foreground' // Contrasting text for red
+        return 'text-destructive-foreground'
     }
   }
 
-  // Set the button label text
   const getLabelText = () => {
+    if (disabled) return 'Fill all fields to validate'
     switch (validationState) {
       case 'initial': return 'Validate'
       case 'validating': return 'Validating...'
@@ -70,51 +72,71 @@ export function ValidationButton({
     }
   }
 
-  const isButtonDisabled = validationState === 'validating'
+  const isButtonDisabled = disabled || validationState === 'validating'
+
+  const handleClick = () => {
+    if (!isButtonDisabled) {
+      onValidate()
+    }
+  }
 
   return (
     <div className="flex flex-col gap-2">
       <motion.button
         type="button"
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium
+          flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all
           ${getCheckboxColor()}
           ${isButtonDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
         `}
-        onClick={() => !isButtonDisabled && onValidate()}
-        animate={{ scale: validationState === 'validating' ? [1, 1.02, 1] : 1 }}
-        transition={{ repeat: validationState === 'validating' ? Infinity : 0, duration: 0.5 }}
+        onClick={handleClick}
+        animate={{ 
+          scale: validationState === 'validating' && !disabled ? [1, 1.02, 1] : 1 
+        }}
+        transition={{ 
+          repeat: validationState === 'validating' && !disabled ? Infinity : 0, 
+          duration: 0.5 
+        }}
         disabled={isButtonDisabled}
       >
         <motion.div className="flex items-center justify-center w-4 h-4">
-          {validationState === 'validating' && <Loader2 className="animate-spin" size={16} />}
-          {validationState === 'validated' && <Check size={16} />}
-          {validationState === 'not-validated' && <X size={16} />}
+          {validationState === 'validating' && !disabled && <Loader2 className="animate-spin" size={16} />}
+          {validationState === 'validated' && !disabled && <Check size={16} />}
+          {validationState === 'not-validated' && !disabled && <X size={16} />}
+          {disabled && <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />}
         </motion.div>
+
+        {/* Animated label text */}
         <Label className={`cursor-pointer ${getTextColor()}`}>
-          <motion.span
-            key={validationState}
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 5 }}
-            transition={{ duration: 0.2 }}
-          >
-            {getLabelText()}
-          </motion.span>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={`${validationState}-${disabled}`}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              transition={{ duration: 0.2 }}
+            >
+              {getLabelText()}
+            </motion.span>
+          </AnimatePresence>
         </Label>
       </motion.button>
 
-      {error && (
-        <motion.div
-          className="text-xs text-destructive"
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -5 }}
-          transition={{ duration: 0.2 }}
-        >
-          {error}
-        </motion.div>
-      )}
+      {/* Animated error message */}
+      <AnimatePresence>
+        {error && !disabled && (
+          <motion.div
+            key="error-message"
+            className="text-xs text-destructive"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

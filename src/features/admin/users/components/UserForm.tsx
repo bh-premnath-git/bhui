@@ -265,7 +265,7 @@ export function UserForm<T extends BaseUserFields = AnyUserFormValues>({
                   {isEdit ? (
                     <>
                       <Settings className="mr-2 h-4 w-4" />
-                      User List
+                      Update User
                     </>
                   ) : (
                     <>

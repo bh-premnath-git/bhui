@@ -479,7 +479,7 @@ export const generatePipelineAgent = createAsyncThunk(
     try {
       const response = await apiService.post({
         baseUrl:AGENT_REMOTE_URL,
-        url: '/pipeline_agent/generate',
+        url: '/generic/',
         usePrefix: true,
         method: 'POST',
         data: {

@@ -13,7 +13,6 @@ import {
   ChatConfigFields,
   ApiKeyField,
 } from "./FormFields";
-import { useEffect } from "react";
 
 interface LLMFormProps {
   initialData?: Partial<LLMFormData>;
@@ -41,45 +40,19 @@ export function LLMForm({
       init_vector: "",
       embedding_config: {
         input_type: "text",
-        max_tokens: 512,
+        max_tokens: 5000,
       },
       chat_config: {
         input_type: "text",
-        max_tokens: 512,
+        max_tokens: 5000,
         temperature: 0.7,
-        timeout: 30,
+        timeout: 120,
         max_retries: 3,
       },
     },
   });
 
   const modelType = form.watch("model_type");
-
-  // Reset the unused config when model type changes
-  useEffect(() => {
-    if (modelType === "chat") {
-      // Clear embedding config and set default chat config if not already set
-      form.setValue("embedding_config", undefined);
-      if (!form.getValues("chat_config")) {
-        form.setValue("chat_config", {
-          input_type: "text",
-          max_tokens: 512,
-          temperature: 0.7,
-          timeout: 30,
-          max_retries: 3,
-        });
-      }
-    } else if (modelType === "embeddings") {
-      // Clear chat config and set default embedding config if not already set
-      form.setValue("chat_config", undefined);
-      if (!form.getValues("embedding_config")) {
-        form.setValue("embedding_config", {
-          input_type: "text",
-          max_tokens: 512,
-        });
-      }
-    }
-  }, [modelType, form]);
 
   const handleSubmit = async (data: LLMFormData) => {
     await onSubmit(data);

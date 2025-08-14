@@ -6,15 +6,12 @@ import { LLMForm } from './components/LLMForm';
 import { LLMFormData, transformApiToLlmFormData, transformLlmFormToApiData } from './components/llmFormSchema';
 import { ROUTES } from '@/config/routes';
 import { useLlms } from './hooks/useLlms';
-import { setSelectedLlm } from '@/store/slices/admin/llmSlice';
 import { LlmPageLayout } from './components/LlmPageLayout';
 import { encrypt_string } from '@/lib/encryption';
-import { useLlmOptions } from "@/features/admin/llm/hooks/useLlmOptions";
 
 export function EditLlm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { selectedLlm} = useAppSelector((state: RootState) => state.llms);
 
   const {
@@ -23,42 +20,48 @@ export function EditLlm() {
     isLlmLoading,
     isLlmError
   } = useLlms({
-    llmId: selectedLlm?.llm_id ? undefined : id,
+    llmId: id,
   });
 
   const llm = selectedLlm || fetchedLLM;
-
-  useEffect(() => {
-    if (!selectedLlm && fetchedLLM?.llm_id) {
-      dispatch(setSelectedLlm(fetchedLLM));
-    }
-  }, [fetchedLLM?.llm_id]);
+  console.log("llm", llm)
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = async (data: LLMFormData) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      const apiData = transformLlmFormToApiData(data);
-      const { initVector } = encrypt_string(data.api_key);
-     
-      if (id) {
-        await handleUpdateLlm(id, {
-          ...apiData,
-         init_vector: initVector
-  
-        });
-        navigate(ROUTES.ADMIN.LLM.INDEX);
-      }
-    } catch (err) {
-      console.error("Failed to update LLM config:", err);
-      setError(err instanceof Error ? err.message : "Failed to update LLM config");
-    } finally {
-      setIsSubmitting(false);
+const onSubmit = async (data: LLMFormData) => {
+  try {
+    setIsSubmitting(true);
+    setError(null);
+
+    const { encryptedString, initVector } = encrypt_string(data.api_key);
+
+    // Convert form data to API schema
+    const apiData = transformLlmFormToApiData({
+      ...data,
+      api_key: encryptedString,
+    });
+
+    // Keep only schema fields for update
+    const updatePayload = {
+      embedding_config: apiData.embedding_config,
+      chat_config: apiData.chat_config,
+      api_key: apiData.api_key,
+      init_vector: initVector
+    };
+    
+
+    if (id) {
+      await handleUpdateLlm(id, updatePayload);
+      navigate(ROUTES.ADMIN.LLM.INDEX);
     }
-  };
+  } catch (err) {
+    console.error("Failed to update LLM config:", err);
+    setError(err instanceof Error ? err.message : "Failed to update LLM config");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (!selectedLlm && isLlmLoading) {
     return <div className="p-6">Loading LLM config...</div>;

@@ -7,6 +7,7 @@ import {
   LLMMutationUpdate,
   LLMPaginatedResponse,
 } from '@/types/admin/llm';
+import { toast } from 'sonner';
 
 interface UseLlmsOptions {
   shouldFetch?: boolean;
@@ -59,6 +60,7 @@ export const useLlms = (options: UseLlmsOptions = { shouldFetch: true }) => {
     isLoading,
     isFetching,
     isError,
+    refetch
   } = getAllLlms<LLMPaginatedResponse>({
     url: '/bh_llms/llm_config/list/',
     queryOptions: {
@@ -93,21 +95,24 @@ export const useLlms = (options: UseLlmsOptions = { shouldFetch: true }) => {
   const createLlmMutation = createLlm({
     url: '/bh_llms/llm_config/',
     mutationOptions: {
-      onError: (error) => handleApiError(error, { action: 'create' }),
+      onSuccess: () => toast.success('Llm created successfully'),
+      onError: (error) => handleApiError(error, { action: 'create', context: 'llm'}),
     },
   });
 
   // Update Mutation
   const updateLlmMutation = updateLlm('/bh_llms/llm_config/', {
     mutationOptions: {
-      onError: (error) => handleApiError(error, { action: 'update' }),
+      onSuccess: () => toast.success('Llm Updated successfully'),
+      onError: (error) => handleApiError(error, { action: 'update', context: 'llm'}),
     },
   });
 
   // Delete Mutation
   const deleteLlmMutation = removeLlm('/bh_llms/llm_config/', {
     mutationOptions: {
-      onError: (error) => handleApiError(error, { action: 'delete' }),
+      onSuccess: () => toast.success('Llm Deleted successfully'),
+      onError: (error) => handleApiError(error, { action: 'delete', context: 'llm'}),
     },
   });
 
@@ -122,17 +127,16 @@ export const useLlms = (options: UseLlmsOptions = { shouldFetch: true }) => {
   const handleUpdateLlm = useCallback(
     async (id: string, data: LLMMutationUpdate): Promise<void> => {
       await updateLlmMutation.mutateAsync({
+      url: `/bh_llms/llm_config/${id}`, 
         data,
-        params: { id },
       });
     },
     [updateLlmMutation]
   );
-
   const handleDeleteLlm = useCallback(
     async (id: string): Promise<void> => {
       await deleteLlmMutation.mutateAsync({
-        params: { id },
+         url: `/bh_llms/llm_config/${id}`, 
       });
     },
     [deleteLlmMutation]
@@ -163,5 +167,6 @@ export const useLlms = (options: UseLlmsOptions = { shouldFetch: true }) => {
     handleCreateLlm,
     handleUpdateLlm,
     handleDeleteLlm,
+    refetch
   } as const;
 };

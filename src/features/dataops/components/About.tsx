@@ -533,7 +533,7 @@ export default function About({ initialData = {} as AboutData, selectedSource, c
         {
           baseUrl: AGENT_REMOTE_URL,
           method: 'POST',
-          url: '/pipeline_agent/generate',
+          url: '/generic/',
           data: body,
           usePrefix: true,
           metadata: {

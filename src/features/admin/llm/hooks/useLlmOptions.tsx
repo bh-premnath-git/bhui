@@ -26,11 +26,11 @@ export interface LLMDataItem {
   model_name: string;
   provider: string;
   model_type: 'chat' | 'embeddings';
-  default_embedding_config: {
+  embedding_config: {
     input_type: string;
     max_tokens: number;
   };
-  default_chat_config: any;
+  chat_config: any;
   created_at: string;
   updated_at: string;
   created_by: any;
@@ -122,17 +122,18 @@ export const useLlmOptions = ({
     },
     params: modelsParams,
   });
-
+  
   // Extract unique providers from the API response
-  const providers = useMemo(() => {
+   const providers = useMemo(() => {
     if (!providersData?.data) return [];
     
     const uniqueProviders = new Map<string, LLMProvider>();
     
-    providersData.data.forEach((item, index) => {
+    // Use the actual LLM record ID as the provider ID
+    providersData.data.forEach((item) => {
       if (!uniqueProviders.has(item.provider)) {
         uniqueProviders.set(item.provider, {
-          id: index + 1, // Generate ID since API doesn't provide provider ID
+          id: item.id, // ✅ Use the actual LLM record ID from database
           name: item.provider,
         });
       }

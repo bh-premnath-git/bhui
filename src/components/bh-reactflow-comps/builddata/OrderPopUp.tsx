@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import SchemaTable from "./SchemaTable";
 import { ReaderOptionsForm } from "./ReaderOptionsForm";
 import { useDispatch, useSelector } from "react-redux";
@@ -36,11 +36,16 @@ function OrderPopUpContent({ isOpen, onClose, source, nodeId, onSourceUpdate }: 
 const [dataSource, setDataSource] = React.useState<number | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   const { readerData, setReaderData } = useReaderData();
-  const { pipelineJson } = usePipelineContext();
+  const { pipelineJson,nodes } = usePipelineContext();
   const {connectionConfigList} = useSelector((state: any) => state.datasource);
   
   console.log('🔧 OrderPopUp: Initializing OrderPopUpContent with source:', source);
   console.log('🔧 OrderPopUp: NodeId:', nodeId);
+  console.log('🔧 OrderPopUp: ReaderData:', nodes);
+  const currentNode = useMemo(() => {
+    return nodes.find(node => node.id === nodeId); // Assuming each node has an 'id' property
+  }, [nodes, nodeId]);
+  console.log(currentNode)
   console.log('🔧 OrderPopUp: Pipeline JSON available:', !!pipelineJson);
 
   // Function to find transformation from pipeline JSON by data_src_id
@@ -128,15 +133,17 @@ setDataSource(response)
 
   // Function to create proper initial data structure for ReaderOptionsForm
   const createInitialData = React.useCallback(() => {
-    console.log('🔧 OrderPopUp: Creating initial data from source:', source);
+    console.log('🔧 OrderPopUp: Creating initial data from currentNode:', currentNode);
     console.log('🔧 OrderPopUp: Pipeline JSON:', pipelineJson);
     
-    if (!source) {
-      console.log('🔧 OrderPopUp: No source data available');
+    if (!currentNode?.data) {
+      console.log('🔧 OrderPopUp: No currentNode data available');
       return null;
     }
 
-    const dataSrcId = source.data_src_id || source.source?.data_src_id;
+    const nodeData = currentNode.data;
+    const nodeSource = nodeData.source;
+    const dataSrcId = nodeSource?.data_src_id;
     console.log('🔧 OrderPopUp: Looking for data_src_id:', dataSrcId);
 
     // Try to find existing transformation in pipeline JSON
@@ -155,46 +162,46 @@ setDataSource(response)
     // debugger
 // let con_cof_id=connectionConfigList.find((config: any) => config.connection_config_name === dataSource[0].connection_config_name)?.connection_config_id || null;
     // Create the structure that ReaderOptionsForm expects
-    // Priority: pipeline JSON data > current source data
+    // Priority: pipeline JSON data > currentNode data > fallback values
     const initialData = {
       // Basic transformation info - prefer pipeline data
-      name: pipelineTransformation?.name || source.name || source.data_src_name || '',
+      name: pipelineTransformation?.name || nodeData.transformationData?.name || nodeSource?.data_src_name || nodeData.title || '',
       transformation: 'Reader',
       
       // Source object structure that matches the schema
       source: {
-        name: pipelineSource?.name || source.name || source.data_src_name || '',
-        source_type: pipelineSource?.source_type || (source.source?.source_type === 'File' ? 'File' : 'Relational'),
-        data_src_id: pipelineSource?.data_src_id || source.data_src_id || source.source?.data_src_id,
-        table_name: pipelineSource?.table_name || source.table_name || source.source?.table_name,
-        file_name: pipelineSource?.file_name || source.file_name || source.source?.file_name,
-        file_type: pipelineSource?.file_type || source.file_type || source.source?.file_type,
+        name: pipelineSource?.name || nodeSource?.data_src_name || nodeData.title || '',
+        source_type: pipelineSource?.source_type || (nodeSource?.connection_config?.connection_name === 'File' ? 'File' : 'Relational'),
+        data_src_id: pipelineSource?.data_src_id || nodeSource?.data_src_id,
+        table_name: pipelineSource?.table_name || nodeSource?.data_src_name,
+        file_name: pipelineSource?.file_name || nodeSource?.file_name,
+        file_type: pipelineSource?.file_type || nodeSource?.file_type,
         
         // Connection info - prefer pipeline data
-        connection_config_id: pipelineSource?.connection?.connection_config_id || source?.source?.connection?.connection_config_id || source?.connection?.connection_config_id,
-        connection_type: pipelineSource?.connection_type || source.connection_type || source.source?.connection_type,
-        database: pipelineSource?.database || source.database || source.source?.database,
-        schema: pipelineSource?.schema || source.schema || source.source?.schema,
+        connection_config_id: pipelineSource?.connection?.connection_config_id || nodeSource?.connection_config?.id || nodeSource?.connection_config_id,
+        connection_type: pipelineSource?.connection_type || nodeSource?.connection_config?.connection_name || nodeSource?.connection_type,
+        database: pipelineSource?.database || nodeSource?.connection_config?.custom_metadata?.database,
+        schema: pipelineSource?.schema || nodeSource?.connection_config?.custom_metadata?.schema,
         
         // Connection object if available
-        connection: pipelineSource?.connection || source.connection || source.source?.connection
+        connection: pipelineSource?.connection || nodeSource?.connection_config
       },
       
-      // Reader-specific options - prefer pipeline data
-      read_options: pipelineTransformation?.read_options || source.read_options || {},
-      select_columns: pipelineTransformation?.select_columns || source.select_columns || [],
-      drop_columns: pipelineTransformation?.drop_columns || source.drop_columns || [],
-      rename_columns: pipelineTransformation?.rename_columns || source.rename_columns || {},
+      // Reader-specific options - prefer pipeline data, then currentNode data
+      read_options: pipelineTransformation?.read_options || nodeData.read_options || {},
+      select_columns: pipelineTransformation?.select_columns || nodeData.select_columns || [],
+      drop_columns: pipelineTransformation?.drop_columns || nodeData.drop_columns || [],
+      rename_columns: pipelineTransformation?.rename_columns || nodeData.rename_columns || {},
       
       // Additional metadata
       nodeId: nodeId,
-      dependent_on: pipelineTransformation?.dependent_on || source.dependent_on || []
+      dependent_on: pipelineTransformation?.dependent_on || nodeData.dependent_on || []
     };
     console.log('🔧 OrderPopUp: Created initial data:', dataSource);
 
     console.log('🔧 OrderPopUp: Created initial data with pipeline priority:', initialData);
     return initialData;
-  }, [source, nodeId, pipelineJson, findTransformationFromPipeline, resolveSourceFromPipeline]);
+  }, [currentNode, nodeId, pipelineJson, findTransformationFromPipeline, resolveSourceFromPipeline]);
 
   // Set up initial data when component mounts or source changes
   React.useEffect(() => {
@@ -202,13 +209,27 @@ setDataSource(response)
     setInitialData(data);
   }, [createInitialData]);
 
-  // Fetch source layout fields when component mounts or source changes
+  // Fetch source layout fields only when dataSrcId changes while dialog is open.
+  const lastFetchRef = React.useRef<{id: number | null, open: boolean}>({ id: null, open: false });
+
   React.useEffect(() => {
-    const dataSrcId = source?.data_src_id || source?.source?.data_src_id;
-    if (dataSrcId && isOpen) {
-      fetchSourceLayoutFields(dataSrcId);
+    const currentId = currentNode?.data?.source?.data_src_id || null;
+    const shouldFetch =
+      Boolean(currentId && isOpen) &&
+      (lastFetchRef.current.id !== currentId || !lastFetchRef.current.open);
+
+    if (shouldFetch) {
+      lastFetchRef.current = { id: currentId, open: true };
+      fetchSourceLayoutFields(currentId as number);
     }
-  }, [source, isOpen, fetchSourceLayoutFields]);
+  }, [currentNode?.data?.source?.data_src_id, isOpen, fetchSourceLayoutFields]);
+
+  // Reset ref when dialog closes so reopening triggers a fetch again
+  React.useEffect(() => {
+    if (!isOpen) {
+      lastFetchRef.current.open = false;
+    }
+  }, [isOpen]);
 
   // Callback for ReaderOptionsForm to update global context
   const handleFormDataChange = (updatedFormData: any) => {
@@ -217,11 +238,11 @@ setDataSource(response)
 
   // Function to refresh columns - can be called externally
   const refreshColumns = React.useCallback(() => {
-    const dataSrcId = source?.data_src_id || source?.source?.data_src_id;
+    const dataSrcId = currentNode?.data?.source?.data_src_id;
     if (dataSrcId) {
       fetchSourceLayoutFields(dataSrcId);
     }
-  }, [source, fetchSourceLayoutFields]);
+  }, [currentNode, fetchSourceLayoutFields]);
   useEffect(() => {
     const fetchConnectionConfigs = async () => {
       try {
@@ -290,16 +311,16 @@ setDataSource(response)
         <DialogHeader className="py-2 px-2 shrink-0">
           <DialogTitle className="flex items-center">
             <div className="mr-2 font-semibold text-base">
-              {source?.data_src_name || source?.name }
+              {currentNode?.data?.source?.data_src_name || currentNode?.data?.title || currentNode?.data?.source?.name }
             </div>
-            {source?.data_src_desc && (
+            {currentNode?.data?.source?.data_src_desc && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
                     <HelpCircle className="h-4 w-4 text-gray-500" />
                   </TooltipTrigger>
                   <TooltipContent side="right" align="start">
-                    <p className="text-sm w-72">{source?.data_src_desc}</p>
+                    <p className="text-sm w-72">{currentNode?.data?.source?.data_src_desc}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

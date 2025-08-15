@@ -4,7 +4,6 @@ import { patchFlowOperation } from '@/store/slices/designer/flowSlice';
 import { patchPipelineOperation } from '@/store/slices/designer/pipelineSlice';
 import { Flow } from "@/types/designer/flow";
 import { Pipeline } from "@/types/designer/pipeline";
-import { NameEditor } from "./HeaderInput";
 import { PipelineSelector } from "./PipelineSelector";
 import { FlowSelector } from "./FlowSelector";
 import { AutoSaveStatus } from "./AutoSave";
@@ -38,9 +37,38 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
   const { pipelineDtl, pipelineType, selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
-  const autoSaveStatus = 'saved';
-  const lastSavedTime = new Date().toISOString();
-  const toggleAutoSave = () => { };
+  
+  // Get actual autosave status from pipeline context (only for pipeline mode)
+  let pipelineContext = null;
+  try {
+    if (!isFlow) {
+      pipelineContext = usePipelineContext();
+    }
+  } catch (error) {
+    // Pipeline context not available
+    console.warn('Pipeline context not available:', error);
+  }
+  
+  const { 
+    isSaving, 
+    hasUnsavedChanges, 
+    lastSaved, 
+    saveError 
+  } = pipelineContext || {};
+  
+  // Calculate the autosave status based on actual state (only for pipeline mode)
+  const autoSaveStatus = !isFlow ? (
+    saveError 
+      ? 'error' 
+      : isSaving 
+        ? 'saving' 
+        : hasUnsavedChanges 
+          ? 'unsaved' 
+          : 'saved'
+  ) : 'saved'; // Default to saved for flows
+  
+  const lastSavedTime = lastSaved?.toISOString() || new Date().toISOString();
+  const toggleAutoSave = () => { }; // Keep as no-op for now
   const [isPipelineParamOpen, setIsPipelineParamOpen] = useState(false);
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
   const [isSparkParamOpen, setIsSparkParamOpen] = useState(false);
@@ -114,8 +142,10 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const {
     handleNodeClick, addNodeToHistory,
     isPipelineRunning, handleNext, handleStop, handleRun,
-    isPipelineValid, pipelineValidationErrors, pipelineValidationWarnings
-  } = usePipelineContext();
+    isPipelineValid, pipelineValidationErrors, pipelineValidationWarnings,
+    attachedCluster,
+  } = pipelineContext || {};
+  const isClusterAttached = !!attachedCluster;
   const { isRightAsideOpen } = useSidebar();
 
   const currentItem = isFlow ? selectedFlow : (selectedPipeline || pipelineDtl);
@@ -169,10 +199,10 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => setCreateFlowDialogOpen(true)}
-                    className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                    className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
                     aria-label="Create new flow"
                   >
-                    <PlusCircle size={16} />
+                    <PlusCircle className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -193,10 +223,10 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => setCreatePipelineDialogOpen(true)}
-                    className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                    className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
                     aria-label="Create new pipeline"
                   >
-                    <PlusCircle size={16} />
+                    <PlusCircle className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -221,15 +251,39 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <Button
-                        aria-label="Parameters"
-                        className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
+                        aria-label={isClusterAttached ? `Cluster: ${attachedCluster?.name ?? ''}` : "Attach cluster"}
+                        className={
+                          `h-9 px-2 flex items-center gap-2 text-white ` +
+                          (isClusterAttached
+                            ? "bg-emerald-600 hover:bg-emerald-500"
+                            : "bg-gray-800 hover:bg-gray-700")
+                        }
                       >
-                        <Server className="h-5 w-5" />
+                        <div className="relative">
+                          <Server className="h-5 w-5" />
+                          {!isClusterAttached && (
+                            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-400 opacity-75 animate-ping" />
+                          )}
+                          <span
+                            className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-white ${
+                              isClusterAttached ? "bg-emerald-400" : "bg-amber-500"
+                            }`}
+                          />
+                        </div>
+                        {isClusterAttached && (
+                          <span className="hidden xl:block text-xs font-medium truncate max-w-[160px]">
+                            {attachedCluster?.name}
+                          </span>
+                        )}
                       </Button>
                     </PopoverTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Detach Cluster</p>
+                    {isClusterAttached ? (
+                      <p>Attached: {attachedCluster?.name}</p>
+                    ) : (
+                      <p>Attach cluster</p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
                 <PopoverContent className="w-[400px] p-6" align="start">
@@ -242,6 +296,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-9 w-9"
                     onClick={() => setIsPipelineParamOpen(true)}
                     aria-label="Parameters"
                   >

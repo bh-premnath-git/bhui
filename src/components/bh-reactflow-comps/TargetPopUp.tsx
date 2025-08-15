@@ -808,8 +808,16 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
     
     useEffect(() => {
         const subscription = form.watch((value, { name: fieldName }) => {
-            if (fieldName === 'name' || fieldName === 'target.target_name') {
-                const nameValue = value.target?.target_name || value.name;
+            // React Hook Form sometimes emits with undefined fieldName. Handle that too.
+            if (!fieldName || fieldName === 'name' || fieldName === 'target.target_name') {
+                // Prefer the field that actually changed when available
+                const computedName = fieldName === 'name' 
+                    ? value?.name 
+                    : fieldName === 'target.target_name'
+                    ? value?.target?.target_name 
+                    : (value?.name ?? value?.target?.target_name);
+
+                const nameValue = computedName ?? '';
                 
                 // Clear previous timeout
                 if (syncTimeoutRef.current) {
@@ -823,18 +831,23 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                         lastSyncedValuesRef.current.targetName !== nameValue ||
                         lastSyncedValuesRef.current.targetType !== watchedValues.targetType
                     )) {
-                        // Sync both name fields to keep them in sync
-                        if (fieldName === 'name' && value.target?.target_name !== nameValue) {
-                            form.setValue('target.target_name', nameValue, { shouldValidate: false });
-                        } else if (fieldName === 'target.target_name' && value.name !== nameValue) {
-                            form.setValue('name', nameValue, { shouldValidate: false });
+                        // Keep name and target.target_name in sync (bidirectional)
+                        if ((fieldName === 'name' || !fieldName) && value?.target?.target_name !== nameValue) {
+                            form.setValue('target.target_name', nameValue, { shouldValidate: false, shouldDirty: true });
+                        }
+                        if ((fieldName === 'target.target_name' || !fieldName) && value?.name !== nameValue) {
+                            form.setValue('name', nameValue, { shouldValidate: false, shouldDirty: true });
                         }
                         
                         // Sync file/table names based on target type
                         if (watchedValues.targetType === 'File') {
-                            form.setValue('target.file_name', nameValue, { shouldValidate: false });
+                            if (form.getValues('target.file_name') !== nameValue) {
+                                form.setValue('target.file_name', nameValue, { shouldValidate: false, shouldDirty: true });
+                            }
                         } else if (watchedValues.targetType === 'Relational') {
-                            form.setValue('target.table_name', nameValue, { shouldValidate: false });
+                            if (form.getValues('target.table_name') !== nameValue) {
+                                form.setValue('target.table_name', nameValue, { shouldValidate: false, shouldDirty: true });
+                            }
                         }
                         
                         // Update last synced values
@@ -844,7 +857,7 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                             targetType: watchedValues.targetType
                         };
                     }
-                }, 150); // 150ms debounce
+                }, 120); // slight debounce to avoid excessive rerenders
             }
         });
 
@@ -1057,29 +1070,6 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                     console.log('🔧 TARGET CONNECTION DEBUG - Comparing IDs:', { connId, formId, match: connId === formId });
                     return connId === formId;
                 }) : null;
-            console.log('🔧 TARGET CONNECTION DEBUG - Found connection data:', JSON.stringify(connectionData, null, 2));
-            console.log('🔧 TARGET CONNECTION DEBUG - Connection data custom_metadata:', JSON.stringify(connectionData?.custom_metadata, null, 2));
-            console.log('🔧 TARGET CONNECTION DEBUG - Connection data connection_type:', connectionData?.connection_type);
-            console.log('🔧 TARGET CONNECTION DEBUG - Connection data keys:', connectionData ? Object.keys(connectionData) : []);
-            console.log('🔧 TARGET CONNECTION DEBUG - All connectionConfigList:', JSON.stringify(connectionConfigList?.map(conn => ({
-                id: conn.id,
-                name: conn.connection_config_name || conn.name,
-                connection_type: conn.connection_type,
-                custom_metadata: conn.custom_metadata
-            })), null, 2));
-            console.log('🔧 TARGET CONNECTION DEBUG - Looking for connection ID:', formData.target?.connection?.connection_config_id);
-            console.log('🔧 TARGET CONNECTION DEBUG - Connection data properties:', {
-                name: connectionData?.connection_config_name || connectionData?.name,
-                connection_type: connectionData?.connection_type,
-                database: connectionData?.database,
-                schema: connectionData?.schema,
-                secret_name: connectionData?.secret_name,
-                host: connectionData?.host,
-                port: connectionData?.port,
-                bucket: connectionData?.bucket,
-                file_path_prefix: connectionData?.file_path_prefix
-            });
-            
             // Create connection object directly from custom_metadata and add connection_config_id
             let connection = {};
             
@@ -1111,7 +1101,6 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                                            connectionData?.type ||
                                            // Fallback based on target type
                                            (formData.target?.target_type === 'Relational' ? 'PostgreSQL' : 'Local');
-                console.log('🔧 TARGET CONNECTION DEBUG - Added fallback connection_type:', connection.connection_type);
             }
             
             // Clean up the connection object - remove undefined values
@@ -1120,15 +1109,6 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                     delete connection[key];
                 }
             });
-            
-            console.log('🔧 TARGET CONNECTION DEBUG - Prepared connection data:', JSON.stringify(connection, null, 2));
-            console.log('🔧 TARGET CONNECTION DEBUG - Final connection keys:', Object.keys(connection));
-            console.log('🔧 TARGET CONNECTION DEBUG - Final connection connection_type:', connection.connection_type);
-            console.log('🔧 TARGET CONNECTION DEBUG - Final connection connection_config_id:', connection.connection_config_id);
-            console.log('🔧 TARGET CONNECTION DEBUG - Final connection database:', connection.database);
-            console.log('🔧 TARGET CONNECTION DEBUG - Final connection schema:', connection.schema);
-            console.log('🔧 TARGET CONNECTION DEBUG - Final connection secret_name:', connection.secret_name);
-            
             // Create a properly structured source data object that matches the expected initialization format
             const targetTitle = formData.target?.target_name || formData.name || 'Unnamed Target';
             
@@ -1156,9 +1136,7 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                 transformationData: {
                     write_options: formData.write_options || {
                         header: true,
-                        sep: ",",
-                        createDisposition: 'CREATE_IF_NEEDED',
-                        writeMethod: formData.target?.target_type === 'Relational' ? 'direct' : 'APPEND'
+                        sep: ","
                     }
                 }
             };
@@ -1786,30 +1764,8 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    console.log('🔧 DEBUG - Current form values:', form.getValues());
-                                    console.log('🔧 DEBUG - Form state:', form.formState);
-                                    console.log('🔧 DEBUG - Form errors:', form.formState.errors);
-                                }}
-                                className="px-4 py-1.5 text-sm font-medium border-blue-200 hover:bg-blue-50 text-blue-600"
-                            >
-                                Debug
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    const formValues = form.getValues();
-                                    console.log('🔧 MANUAL SUBMIT - Form values:', formValues);
-                                    handleSubmit(formValues);
-                                }}
-                                className="px-4 py-1.5 text-sm font-medium border-green-200 hover:bg-green-50 text-green-600"
-                            >
-                                Manual Submit
-                            </Button>
+                           
+                         
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}

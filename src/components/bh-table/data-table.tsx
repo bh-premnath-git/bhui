@@ -28,6 +28,7 @@ export interface DataTableProps<TData> {
   fullData?: TData[]
   hasNextPage?: boolean
   hasPreviousPage?: boolean
+  showSearch?: boolean // show or hide the global search input in top section
 }
 
 export function DataTable<TData>({
@@ -45,7 +46,8 @@ export function DataTable<TData>({
   onPageSizeChange,
   fullData,
   hasNextPage,
-  hasPreviousPage
+  hasPreviousPage,
+  showSearch = true
 }: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([])
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -108,13 +110,14 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4 w-full">
       {topVariant === "simple" ? (
-        <SimpleTopSection table={table} toolbarConfig={toolbarConfig} />
+        <SimpleTopSection table={table} toolbarConfig={toolbarConfig} showSearch={showSearch} />
       ) : (
         <StatusTopSection 
           table={table} 
           toolbarConfig={toolbarConfig} 
           headerFilter={headerFilter}
           fullData={fullData}
+          showSearch={showSearch}
         />
       )}
 

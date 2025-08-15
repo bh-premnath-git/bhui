@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 
-export function SimpleTopSection<TData>({ table, toolbarConfig}: TopSectionProps<TData>) {
+export function SimpleTopSection<TData>({ table, toolbarConfig, showSearch = true}: TopSectionProps<TData>) {
   const data = table.getCoreRowModel().rows.map((row) => row.original)
   const columns = table.getAllColumns()
   const hasFilters = table.getState().columnFilters.length > 0 || table.getState().globalFilter
@@ -43,12 +43,14 @@ export function SimpleTopSection<TData>({ table, toolbarConfig}: TopSectionProps
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Input
-          placeholder="Search..."
-          className="w-[200px]"
-          value={(table.getState().globalFilter as string) ?? ""}
-          onChange={(event) => table.setGlobalFilter(event.target.value)}
-        />
+        {showSearch && (
+          <Input
+            placeholder="Search..."
+            className="w-[200px]"
+            value={(table.getState().globalFilter as string) ?? ""}
+            onChange={(event) => table.setGlobalFilter(event.target.value)}
+          />
+        )}
         {toolbarConfig?.buttons && toolbarConfig?.buttons.map((button, index) => {
           if (button.dropdownItems && button.dropdownItems.length > 0) {
             // Render dropdown button

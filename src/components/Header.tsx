@@ -7,11 +7,13 @@ import { PlaygroundHeader } from "./headers/playground-header";
 import { AIChatButton } from "@/components/shared/ai-chat-button";
 import { useDispatch } from "react-redux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
+import { pipelineSchema } from "@bh-ai/schemas";
 
 export const Header = () => {
   const { isExpanded, isRightAsideOpen } = useSidebar();
   const location = useLocation();
   const dispatch = useDispatch();
+    console.log(pipelineSchema, "pipelineSchema")
 
   // Route-check helpers
   const isBuildPlaygroundRoute = (path: string) =>

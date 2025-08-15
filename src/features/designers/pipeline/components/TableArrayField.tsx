@@ -8,6 +8,7 @@ import { FieldRenderer } from './FieldRenderer';
 import { ArrayField } from './ArrayField';
 import { ConditionalSchemaRenderer } from './ConditionalSchemaRenderer';
 import { getActiveFields, getDefaultValueForField, formatFieldTitle, extractPropertiesFromSchema } from './schemaUtils';
+import { cn } from '@/lib/utils';
 
 interface TableArrayFieldProps {
   field: any;
@@ -271,6 +272,17 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
             // For object arrays, add an empty object with default values
             let properties = field.items?.properties;
             
+            // Debug logging for hints array specifically 
+            if (process.env.NODE_ENV === 'development' && (fieldKey === 'hints' || fullFieldKey.includes('hints'))) {
+              console.log(`🆕 TableArrayField: Adding new hints item:`, {
+                fullFieldKey,
+                fieldItems: field.items,
+                hasDirectProperties: !!field.items?.properties,
+                directPropertiesKeys: field.items?.properties ? Object.keys(field.items.properties) : [],
+                hasAllOf: !!field.items?.allOf
+              });
+            }
+            
             // If the field has conditional logic, get base fields first
             if (field.items?.allOf || !properties) {
               // Get active fields with empty values to get base fields
@@ -295,6 +307,16 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
               Object.entries(properties).forEach(([propKey, propField]:any) => {
                 newItem[propKey] = getDefaultValueForField(propField);
               });
+              
+              // Debug logging for hints array item creation
+              if (process.env.NODE_ENV === 'development' && (fieldKey === 'hints' || fullFieldKey.includes('hints'))) {
+                console.log(`🆕 TableArrayField: Created hints item with properties:`, {
+                  fullFieldKey,
+                  newItem,
+                  propertiesUsed: Object.keys(properties),
+                  itemKeys: Object.keys(newItem)
+                });
+              }
             }
           } else {
             // For primitive arrays, use the simple approach
@@ -329,8 +351,10 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
           const currentFormValue = formField.value || [];
           
           if (currentFormValue.length === 0) {
-            // Only add item if truly empty
-            addItem();
+            // For required arrays or arrays that should start with an item, add one
+            if (isRequired || field.minItems > 0) {
+              addItem();
+            }
           } else if (currentFormValue.length > 0) {
             // Ensure existing values have _key properties
             const hasKeysAlready = currentFormValue.every((item: any) => 
@@ -345,11 +369,14 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
               formField.onChange(valuesWithKeys);
             }
           }
-        }, [formField.value]);
+        }, [formField.value, isRequired, field.minItems]);
 
         // Simple table view for primitive arrays only (not object arrays)
         // Object arrays should always use the advanced table view to show proper column names
         if (allColumns.length <= 3 && !field.items?.allOf && field.items?.type !== 'object' && !field.items?.properties) {
+          const canRemoveItems = values.length > 1 && (!isRequired || values.length > (field.minItems || 1));
+          const showActionsColumn = canRemoveItems || values.length > 1;
+          
           return (
             <FormItem className="col-span-2 w-full">
               <div className="flex items-center justify-between mb-3">
@@ -358,18 +385,20 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                   {isRequired && <span className="text-destructive ml-1">*</span>}
                 </FormLabel>
               </div>
-              <div className="rounded-md">
+              <div className="rounded-md border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Value</TableHead>
-                      <TableHead className="w-16">Actions</TableHead>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="py-3 px-3 text-xs font-medium">Value</TableHead>
+                      {showActionsColumn && (
+                        <TableHead className="w-16 py-3 px-3 text-xs font-medium text-center">Actions</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {values.map((item: any, index: number) => (
                       <TableRow key={item._key}>
-                        <TableCell className="p-2">
+                        <TableCell className="py-3 px-3">
                           <FieldRenderer
                             fieldKey="value"
                             field={field.items}
@@ -383,31 +412,34 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                             compact={true}
                           />
                         </TableCell>
-                        <TableCell className="p-2">
-                          {values.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(index)}
-                              className="text-destructive hover:text-destructive h-8 w-8 p-0 hover:bg-destructive/10"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </TableCell>
+                        {showActionsColumn && (
+                          <TableCell className="py-3 px-3 text-center w-16">
+                            {canRemoveItems && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeItem(index)}
+                                className="text-destructive hover:text-destructive h-8 w-8 p-0 hover:bg-destructive/10 transition-colors"
+                                title="Remove item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-center pt-3">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={addItem}
-                  className="flex items-center gap-1 h-8 px-3 text-xs border-dashed"
+                  className="flex items-center gap-1 h-8 px-3 text-xs border-dashed hover:border-solid transition-all"
                 >
                   <Plus className="w-3 h-3" />
                   Add Another {(title || formatFieldTitle(fieldKey)).slice(0, -1)}
@@ -417,6 +449,16 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
             </FormItem>
           );
         }
+
+        // Check if we need to show actions column (when multiple rows exist or can be added/deleted)
+        const canRemoveItems = values.length > 1 && (!isRequired || values.length > (field.minItems || 1));
+        const showActionsColumn = canRemoveItems || values.length > 1;
+        
+        // Calculate column widths for better alignment
+        const totalColumns = allColumns.length + (showActionsColumn ? 1 : 0);
+        const columnWidth = showActionsColumn 
+          ? `calc((100% - 4rem) / ${allColumns.length})` // Reserve 4rem for actions column
+          : `calc(100% / ${allColumns.length})`;
 
         // Advanced table view for complex arrays with multiple columns
         return (
@@ -440,10 +482,10 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
               </div>
             </div>
             
-            <div className="overflow-hidden">
+            <div className="overflow-hidden rounded-md border">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className={cn(showActionsColumn ? "" : "")}>
+                  <TableRow className="bg-muted/50">
                     {allColumns.map((columnKey) => {
                       // Get field definition for this column
                       let columnField = field.items?.properties?.[columnKey];
@@ -457,12 +499,20 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                       const columnTitle = columnField?.title || formatFieldTitle(columnKey);
                       
                       return (
-                        <TableHead key={columnKey} className="text-xs font-medium">
+                        <TableHead 
+                          key={columnKey} 
+                          className="text-xs font-medium py-3 px-3 text-left"
+                          style={{ width: columnWidth, minWidth: '120px' }}
+                        >
                           {columnTitle}
                         </TableHead>
                       );
                     })}
-                    <TableHead className="w-16 text-xs font-medium">Actions</TableHead>
+                    {showActionsColumn && (
+                      <TableHead className="w-16 text-xs font-medium py-3 px-3 text-center">
+                        Actions
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -509,9 +559,13 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                           }
                           
                           return (
-                            <TableCell key={columnKey} className="p-2">
+                            <TableCell 
+                              key={columnKey} 
+                              className="py-3 px-3 align-top"
+                              style={{ width: columnWidth, minWidth: '120px' }}
+                            >
                               {columnField ? (
-                                <div className="min-w-0 max-w-xs">
+                                <div className="min-w-0 w-full">
                                   {columnField.type === 'object' ? (
                                     // Special handling for object fields in table cells
                                     <div className="space-y-1">
@@ -549,19 +603,22 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                             </TableCell>
                           );
                         })}
-                        <TableCell className="p-2">
-                          {values.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(index)}
-                              className="text-destructive hover:text-destructive h-8 w-8 p-0 hover:bg-destructive/10"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </TableCell>
+                        {showActionsColumn && (
+                          <TableCell className="py-3 px-3 text-center align-top w-16">
+                            {canRemoveItems && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeItem(index)}
+                                className="text-destructive hover:text-destructive h-8 w-8 p-0 hover:bg-destructive/10 transition-colors"
+                                title="Remove item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -569,13 +626,13 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
               </Table>
             </div>
             
-            <div className="flex justify-center pt-2">
+            <div className="flex justify-center pt-3">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addItem}
-                className="flex items-center gap-1 h-8 px-3 text-xs border-dashed"
+                className="flex items-center gap-1 h-8 px-3 text-xs border-dashed hover:border-solid transition-all"
               >
                 <Plus className="w-3 h-3" />
                 Add Another {(title || formatFieldTitle(fieldKey)).slice(0, -1)}

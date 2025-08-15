@@ -71,7 +71,7 @@ function SchemaTable({ dataSourceId, onSwitchToReaderOptions }: any) {
                 if (response && response[0]?.layout_fields) {
                     const transformedData = response[0].layout_fields.map((field: any) => ({
                         name: field.lyt_fld_name,
-                        datatype: String(field.lyt_fld_data_type_cd),
+                        datatype: String(field.lyt_fld_data_type),
                         primarykey: Boolean(field.lyt_fld_is_pk),
                         optional: true,
                         description: field.lyt_fld_desc || '',
@@ -110,12 +110,7 @@ function SchemaTable({ dataSourceId, onSwitchToReaderOptions }: any) {
         {
             accessorKey: 'datatype',
             header: 'Data Type',
-            enableColumnFilter: false,
-            cell: ({ row }) => {
-                // Ensure dataSourceTypes is an array before using find
-                const dataType = dataTypeOptions.find(type => type.id.toString() === row.datatype);
-                return <span>{dataType?.dtl_desc || 'unknown'}</span>;
-            }
+            enableColumnFilter: false
         },
         {
             accessorKey: 'primarykey',
@@ -169,6 +164,7 @@ function SchemaTable({ dataSourceId, onSwitchToReaderOptions }: any) {
                         columns={columns}
                         topVariant="simple"
                         pagination={true}
+                        showSearch={false}
                     />
 
                     {/* Checkboxes Section */}

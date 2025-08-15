@@ -257,7 +257,6 @@ const normalizeTransformationData = (transform: any, type: string): any => {
                 // Target info is directly in the transform
                 targetInfo = {
                     target_type: transform.target_type,
-                    target_name: transform.target_name,
                     table_name: transform.table_name,
                     file_name: transform.file_name,
                     load_mode: transform.load_mode,
@@ -270,7 +269,6 @@ const normalizeTransformationData = (transform: any, type: string): any => {
                 name: transform.name || '',
                 target: {
                     target_type: targetInfo.target_type || 'File',
-                    target_name: targetInfo.target_name || '',
                     table_name: targetInfo.table_name || '',
                     file_name: targetInfo.file_name || '',
                     load_mode: targetInfo.load_mode || 'append',
@@ -279,9 +277,7 @@ const normalizeTransformationData = (transform: any, type: string): any => {
                 file_type: transform.file_type || targetInfo.file_type || 'CSV',
                 write_options: transform.write_options || {
                     header: true,
-                    sep: ",",
-                    createDisposition: 'CREATE_IF_NEEDED',
-                    writeMethod: 'APPEND'
+                    sep: ","
                 }
             };
         
@@ -878,7 +874,6 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                 source: {
                     name: targetData?.name || 'output',
                     target_type: connection?.connection_type === "PostgreSQL" ? 'Relational' : targetData?.target_type || 'File',
-                    target_name: targetData?.target_name || 'output',
                     table_name: targetData?.table_name,
                     connection: connection,
                     file_name: targetData?.file_name || 'output.csv',
@@ -1071,7 +1066,6 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
             optimizedJson.targets[targetKey] = {
                 name: target.name || targetKey,
                 target_type: isFileTarget ? 'File' : 'Relational',
-                target_name: target.target_name,
                 table_name: target.table_name || target.name || targetKey,
                 load_mode: target.load_mode || 'append',
                 file_name: target.file_name
@@ -1155,7 +1149,6 @@ export const convertToOptimizedPipelineJson = (currentJson: any, pipelineName?: 
                     optimizedJson.targets[targetKey] = {
                         name: transform.target.name || targetKey,
                         target_type: isFileTarget ? 'File' : 'Relational',
-                        target_name: transform.target.target_name,
                         table_name: transform.target.table_name,
                         load_mode: transform.target.load_mode || 'append',
                         file_name: transform.target.file_name

@@ -366,9 +366,9 @@ export const getPipelineById: any = createAsyncThunk(
   async (params: any, thunkAPI) => {
     try {
       // alert(JSON.stringify(params))
-      if (!params.id) {
-        return thunkAPI.rejectWithValue('Pipeline ID is required');
-      }
+      // if (!params.id) {
+      //   return thunkAPI.rejectWithValue('Pipeline ID is required');
+      // }
 
       const response = await apiService.get({
         baseUrl: CATALOG_REMOTE_API_URL,

@@ -32,7 +32,10 @@ export const useDataOpsDashboards = (options: UseDataOpsDashOptions = { shouldFe
   const dashboardType = options.type || 'data-ops';
 
   // Build query string based on provided options
-  const queryString = options.id !== undefined && options.id !== null
+  const queryString = options.id !== undefined && 
+                     options.id !== null && 
+                     !isNaN(Number(options.id)) && 
+                     Number(options.id) > 0
     ? `dashboard_type=${dashboardType}&id=${options.id}`
     : `dashboard_type=${dashboardType}`;
 

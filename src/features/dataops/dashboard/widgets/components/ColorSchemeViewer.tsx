@@ -1,7 +1,7 @@
 import {
   COLOR_SCHEME_ORDER,
   ColorScheme,
-} from '@/store/slices/dataops/dashboardStore';
+} from '@/store/slices/dataops/dashboardSlice';
 import { Button } from '@/components/ui/button';
 
 interface ColorSchemeViewerProps {

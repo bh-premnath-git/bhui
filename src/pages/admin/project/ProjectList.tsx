@@ -90,7 +90,7 @@ function ProjectsListPage() {
       <div className="relative">
         {isFetching && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
-            <LoadingState className="w-40 h-40" />
+            <LoadingState classNameContainer="w-40 h-40" />
           </div>
         )}
         <ProjectsList 

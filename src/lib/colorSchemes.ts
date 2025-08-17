@@ -1,4 +1,4 @@
-import { ColorScheme } from '@/store/slices/dataops/dashboardStore';
+import { ColorScheme } from '@/store/slices/dataops/dashboardSlice';
 
 export const COLOR_PALETTES: Record<Exclude<ColorScheme, 'custom'>, string[]> = {
   default: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'],

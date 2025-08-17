@@ -1,4 +1,4 @@
-import { CHART_TYPE_ORDER, ChartType } from '@/store/slices/dataops/dashboardStore';
+import { CHART_TYPE_ORDER, ChartType } from '@/store/slices/dataops/dashboardSlice';
 import { Button } from '@/components/ui/button';
 
 interface ChartTypeViewerProps {

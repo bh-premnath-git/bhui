@@ -15,7 +15,7 @@ import connectionReducer from './slices/admin/connectionSlice'
 import buildPipelineReducer from './slices/designer/buildPipeLine/BuildPipeLineSlice'
 import clusterReducer from './slices/designer/buildPipeLine/clusterSlice'
 import promptsReducer from './slices/admin/promptsSlice';
-import dashboardReducer from './slices/dataops/dashboardStore';
+import dashboardReducer from './slices/dataops/dashboardSlice';
 import llmReducer from './slices/admin/llmSlice';
 import gitReducer from './slices/gitSlice';
 

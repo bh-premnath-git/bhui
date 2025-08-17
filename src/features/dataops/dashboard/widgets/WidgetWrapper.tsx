@@ -7,7 +7,7 @@ import {
   toggleColorSchemePicker,
   flipWidget,
   toggleMaximize,
-} from '@/store/slices/dataops/dashboardStore';
+} from '@/store/slices/dataops/dashboardSlice';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WidgetHeader } from './WidgetHeader';
@@ -18,8 +18,9 @@ import { SqlViewer } from './components/SqlViewer';
 import { ChartTypeViewer } from './components/ChartTypeViewer';
 import { ColorSchemeViewer } from './components/ColorSchemeViewer';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Terminal } from 'lucide-react'
+import { Terminal, RefreshCcw, Code } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { decompressValue } from '@/lib/decompress';
 
 interface WidgetWrapperProps {
@@ -39,20 +40,25 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
 
   const dispatch = useAppDispatch();
   const widgetState = useAppSelector((state) => state.dashboard.widgets[widgetId]);
+
   const plotlyData = decompressValue(data?.plotly_data);
-  const { isFlipped, isMaximized, isChartTypePickerOpen, isColorSchemePickerOpen, chartType, color } = widgetState;
-  
-  // Check for errors in executed_query
-  const hasExecutedQueryError = data?.executed_query && 
-    Array.isArray(data.executed_query) && 
-    data.executed_query.length > 0 && 
-    data.executed_query[0]?.error;
-  
+  const { isFlipped, isMaximized, isChartTypePickerOpen, isColorSchemePickerOpen, chartType, color } = widgetState ?? {};
+
+  const hasExecutedQueryError =
+    !!(data?.executed_query &&
+      Array.isArray(data.executed_query) &&
+      data.executed_query.length > 0 &&
+      data.executed_query[0]?.error);
+
+  const errorSummary = hasExecutedQueryError
+    ? String(data!.executed_query[0].error).split('\n')[0].slice(0, 300)
+    : 'Failed to load widget data.';
+
   const headerProps = {
     widgetId,
-    title: plotlyData?.layout?.title?.text as string || title,
-    isFlipped,
-    isMaximized,
+    title: (plotlyData?.layout?.title?.text as string) || title,
+    isFlipped: !!isFlipped,
+    isMaximized: !!isMaximized,
     isRefreshing: isLoading || isFetching,
     onFlip: () => dispatch(flipWidget(widgetId)),
     onMaximize: () => dispatch(toggleMaximize(widgetId)),
@@ -61,6 +67,7 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
     onRefresh: refetch,
   };
 
+  // Loading skeleton in card shell (so layout doesn't jump)
   if (isLoading || isFetching) {
     const skeleton = (
       <Card id={`widget-${widgetId}`} className={`bg-background border shadow-sm h-full ${className}`}>
@@ -80,18 +87,37 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
       : skeleton;
   }
 
+  // Polished error state inside the same card (keeps consistent chrome)
   if (!widgetState || isError || !data || !plotlyData) {
-    const errorMessage = hasExecutedQueryError 
-      ? `Query Error: ${data.executed_query[0].error.split('\n')[0]}` 
-      : 'Failed to load widget data.';
-    
-    return (
-      <Alert variant="destructive">
-        <Terminal className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{errorMessage}</AlertDescription>
-      </Alert>
+    const errorCard = (
+      <Card id={`widget-${widgetId}`} className={`bg-background border shadow-sm h-full ${className}`}>
+        <WidgetHeader {...headerProps} />
+        <div className="p-3 h-[calc(100%-50px)] overflow-auto">
+          <Alert variant="destructive" className="mb-3">
+            <Terminal className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription className="whitespace-pre-wrap break-words">
+              {errorSummary}
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button variant="default" onClick={() => refetch()}>
+              <RefreshCcw className="h-4 w-4 mr-2" /> Retry
+            </Button>
+          </div>
+        </div>
+      </Card>
     );
+    return isMaximized
+      ? createPortal(
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
+            <div className="min-h-screen p-4 flex items-center justify-center">
+              <div className="w-full max-w-6xl h-[80vh]">{errorCard}</div>
+            </div>
+          </div>,
+          document.body
+        )
+      : errorCard;
   }
 
   const pickerBody = isChartTypePickerOpen ? (
@@ -126,7 +152,14 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
           style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
         >
           <div className="p-2 h-full">
-            <ChartView data={plotlyData?.data} layout={plotlyData?.layout.template} widgetId={widgetId} chartType={chartType} color={color} />
+            {/* IMPORTANT: pass the full layout, not layout.template */}
+            <ChartView
+              data={plotlyData?.data}
+              layout={plotlyData?.layout}
+              widgetId={widgetId}
+              chartType={chartType}
+              color={color}
+            />
           </div>
         </div>
 
@@ -170,12 +203,12 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
 
   return isMaximized
     ? createPortal(
-      <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
-        <div className="min-h-screen p-4 flex items-center justify-center">
-          <div className="w-full max-w-6xl h-[80vh]">{card}</div>
-        </div>
-      </div>,
-      document.body,
-    )
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
+          <div className="min-h-screen p-4 flex items-center justify-center">
+            <div className="w-full max-w-6xl h-[80vh]">{card}</div>
+          </div>
+        </div>,
+        document.body
+      )
     : card;
 };

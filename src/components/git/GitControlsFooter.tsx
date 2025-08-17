@@ -69,80 +69,82 @@ function GitControlsFooter() {
   };
 
   return (
-    <div className="border-t backdrop-enhanced">
-      <div className="flex items-center justify-between px-6 py-3">
-        {/* Left: Branch & actions */}
-        <div className="flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 focus-enhanced font-mono">
-                <GitBranch className="h-4 w-4 text-git-primary" />
-                <span className="text-git-primary font-semibold">
-                  {statusLoading ? "Loading..." : branch}
-                </span>
-                <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 backdrop-enhanced">
-              <DropdownMenuItem 
-                className="gap-2 focus-enhanced" 
-                onClick={handleCommit}
-                disabled={changedCount === 0 || operationLoading}
-              >
-                <GitCommit className="h-4 w-4 text-git-primary" />
-                Commit Changes
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="gap-2 focus-enhanced"
-                onClick={handleCheckoutBranch}
-                disabled={operationLoading}
-              >
-                <GitBranch className="h-4 w-4" />
-                Checkout Branch
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="gap-2 focus-enhanced" 
-                onClick={handlePull}
-                disabled={operationLoading}
-              >
-                <Download className="h-4 w-4" />
-                {operationLoading ? "Pulling..." : "Pull from Origin"}
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="gap-2 focus-enhanced"
-                onClick={handleSquashRebase}
-                disabled={operationLoading}
-              >
-                <GitMerge className="h-4 w-4" />
-                Squash and Rebase
-                <ChevronRight className="h-3 w-3 ml-auto" />
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="gap-2 text-destructive focus-enhanced"
-                onClick={handleDeleteBranch}
-                disabled={operationLoading}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Branch
-                <ChevronRight className="h-3 w-3 ml-auto" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <div className="text-sm text-muted-foreground font-mono">
-            {operationLoading ? "Syncing..." : "Ready to commit • Last sync 2m ago"}
+    <div className="fixed bottom-0 left-0 right-0 z-[1200] pointer-events-auto">
+      <div className="border-t backdrop-enhanced">
+        <div className="flex items-center justify-between px-6 py-3">
+          {/* Left: Branch & actions */}
+          <div className="flex items-center gap-6 ml-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 focus-enhanced font-mono">
+                  <GitBranch className="h-4 w-4 text-git-primary" />
+                  <span className="text-git-primary font-semibold">
+                    {statusLoading ? "Loading..." : branch}
+                  </span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 backdrop-enhanced">
+                <DropdownMenuItem 
+                  className="gap-2 focus-enhanced" 
+                  onClick={handleCommit}
+                  disabled={changedCount === 0 || operationLoading}
+                >
+                  <GitCommit className="h-4 w-4 text-git-primary" />
+                  Commit Changes
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="gap-2 focus-enhanced"
+                  onClick={handleCheckoutBranch}
+                  disabled={operationLoading}
+                >
+                  <GitBranch className="h-4 w-4" />
+                  Checkout Branch
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="gap-2 focus-enhanced" 
+                  onClick={handlePull}
+                  disabled={operationLoading}
+                >
+                  <Download className="h-4 w-4" />
+                  {operationLoading ? "Pulling..." : "Pull from Origin"}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="gap-2 focus-enhanced"
+                  onClick={handleSquashRebase}
+                  disabled={operationLoading}
+                >
+                  <GitMerge className="h-4 w-4" />
+                  Squash and Rebase
+                  <ChevronRight className="h-3 w-3 ml-auto" />
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="gap-2 text-destructive focus-enhanced"
+                  onClick={handleDeleteBranch}
+                  disabled={operationLoading}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Branch
+                  <ChevronRight className="h-3 w-3 ml-auto" />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <div className="text-sm text-muted-foreground font-mono">
+              {operationLoading ? "Syncing..." : "Ready to commit • Last sync 2m ago"}
+            </div>
           </div>
-        </div>
 
-        {/* Right: Commit changes */}
-        <Button 
-          onClick={handleCommit} 
-          className="btn-git-primary gap-2 font-semibold"
-          disabled={changedCount === 0 || operationLoading}
-        >
-          <GitCommit className="h-4 w-4" />
-          {operationLoading ? "Processing..." : `Commit Changes (${uncommittedFiles} files)`}
-        </Button>
+          {/* Right: Commit changes */}
+          <Button 
+            onClick={handleCommit} 
+            className="btn-git-primary gap-2 font-semibold"
+            disabled={changedCount === 0 || operationLoading}
+          >
+            <GitCommit className="h-4 w-4" />
+            {operationLoading ? "Processing..." : `Commit Changes (${uncommittedFiles} files)`}
+          </Button>
+        </div>
       </div>
     </div>
   );

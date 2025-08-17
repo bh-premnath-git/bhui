@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { apiService } from '@/lib/api/api-service';
+import { savePipelineChatHistory, getPipelineChatHistory, deletePipelineChatHistory } from './pipelineChatApi';
 import { toast } from 'sonner';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { usePipelineModules } from '@/hooks/usePipelineModules';
@@ -690,7 +691,7 @@ const PipeLineChatPanel = () => {
         pipelineId: id,
         apiUrl: `${CATALOG_REMOTE_API_URL}/api/v1/pipeline/${id}/chat-history`
       });
-      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      const result = await savePipelineChatHistory(id, chatHistoryData);
       
       // Update saved message tracking
       if (message.id) {
@@ -1060,7 +1061,7 @@ const PipeLineChatPanel = () => {
         updated_at: new Date().toISOString()
       };
 
-      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      const result = await savePipelineChatHistory(id, chatHistoryData);
 
       // Update saved message tracking - keep messages in UI, just track what's been saved
       const newSavedIds = new Set([...savedMessageIds, ...formDataMessages.map(m => m.id)]);
@@ -1164,7 +1165,7 @@ const PipeLineChatPanel = () => {
         updated_at: new Date().toISOString()
       };
 
-      const result = await apiService.savePipelineChatHistory(id, chatHistoryData);
+      const result = await savePipelineChatHistory(id, chatHistoryData);
       // Update saved message tracking - keep messages in UI, just track what's been saved
       const newSavedIds = new Set([...savedMessageIds, ...formDataMessages.map(m => m.id)]);
       setSavedMessageIds(newSavedIds);
@@ -1513,7 +1514,7 @@ const PipeLineChatPanel = () => {
       setIsLoadingChatHistory(true);
 
       try {
-        const response = await apiService.getPipelineChatHistory(id);
+        const response = await getPipelineChatHistory(id);
 
         // Check if component was unmounted or id changed during the async operation
         if (isCancelled) {
@@ -3382,7 +3383,7 @@ const PipeLineChatPanel = () => {
           
           setIsDeleting(true);
           try {
-            await apiService.deletePipelineChatHistory(id);
+            await deletePipelineChatHistory(id);
             setMessages([]);
             setSavedMessageIds(new Set());
             if (saveTimeoutRef.current) {

@@ -110,16 +110,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         }
       }, 350);
 
-      // Enable git integration when component mounts
-      useEffect(() => {
-        dispatch(setEnabled(true));
-        
-        // Cleanup: disable git when component unmounts
-        return () => {
-          dispatch(setEnabled(false));
-        };
-      }, [dispatch]);
-
       // Add a second fitView attempt after a longer delay
       const secondFitViewTimer = setTimeout(() => {
         try {
@@ -144,6 +134,14 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
       clearTimeout(thirdTimer);
     };
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
+
+  // Enable git integration when component mounts (top-level hook)
+  useEffect(() => {
+    dispatch(setEnabled(true));
+    return () => {
+      dispatch(setEnabled(false));
+    };
+  }, [dispatch]);
 
   // Listen for RightAside panel resize events
   useEffect(() => {

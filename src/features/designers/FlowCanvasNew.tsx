@@ -8,7 +8,11 @@ import { nodeTypes } from '@/components/bh-reactflow-comps/flow/nodeTypes';
 import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
+import { setEnabled } from '@/store/slices/gitSlice';
 import { Controls } from 'reactflow';
+import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
+import { CommitModal } from '@/components/git/CommitModal';
+
 
 export const FlowCanvasNew = () => {
   const { id } = useParams();
@@ -26,8 +30,18 @@ export const FlowCanvasNew = () => {
     }
   }, [flow, dispatch]);
 
+   // Enable git integration when component mounts
+   useEffect(() => {
+    dispatch(setEnabled(true));
+    
+    // Cleanup: disable git when component unmounts
+    return () => {
+      dispatch(setEnabled(false));
+    };
+  }, [dispatch]);
+
   return (
-    <ComposableCanvas
+   <><ComposableCanvas
       type="flow"
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
@@ -48,6 +62,9 @@ export const FlowCanvasNew = () => {
         <CustomControls />
       </Controls>
     </ComposableCanvas>
+    <GitControlsFooterPortal />
+    <CommitModal />
+    </>
   );
 };
 

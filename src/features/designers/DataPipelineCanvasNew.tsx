@@ -7,15 +7,13 @@ import { CustomNode } from '@/components/bh-reactflow-comps/builddata/CustomNode
 import { CustomEdge } from '@/components/bh-reactflow-comps/builddata/customEdge';
 import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
-import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { PipelineForm } from '@/features/designers/pipeline/components/PipelineForm';
 import LookupForm from '@/features/designers/pipeline/components/form-sections/LookupForm';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
 import { useParams } from 'react-router-dom';
-import RequirementForm from '@/pages/designers/requirements/RequirementForm';
-import { useAppSelector } from '@/hooks/useRedux';
+import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 import { RootState } from '@/store';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import OrderPopUp from '@/components/bh-reactflow-comps/builddata/OrderPopUp';
@@ -23,10 +21,14 @@ import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Workflow } from 'lucide-react';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
+import { setEnabled } from '@/store/slices/gitSlice';
+import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
+import { CommitModal } from '@/components/git/CommitModal';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
   const { id } = useParams();
+  const dispatch = useAppDispatch();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -107,6 +109,16 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           console.error('Error calling handleCenter:', error);
         }
       }, 350);
+
+      // Enable git integration when component mounts
+      useEffect(() => {
+        dispatch(setEnabled(true));
+        
+        // Cleanup: disable git when component unmounts
+        return () => {
+          dispatch(setEnabled(false));
+        };
+      }, [dispatch]);
 
       // Add a second fitView attempt after a longer delay
       const secondFitViewTimer = setTimeout(() => {
@@ -552,10 +564,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           />
         </div>
       </div>
-      {/* )  */}
-      {/* // : (<>
-      //   <RequirementForm  />
-      //    </>)} */}
+      <GitControlsFooterPortal />
+      <CommitModal />
     </>
   );
 };

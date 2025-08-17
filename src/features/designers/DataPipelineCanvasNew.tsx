@@ -38,7 +38,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
 
   const {
     pipelineDtl,
-    nodes, 
+    nodes,
     edges,
     formStates,
     setNodes,
@@ -172,7 +172,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   }, [handleCenter]);
   useEffect(() => {
     // debugger
-    if (id ) {
+    if (id) {
       setIsLoadingPipeline(true);
       setCurrentPipelineId(id);
 
@@ -251,8 +251,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   return (
     <>
       {/* {pipelineType?.toLowerCase() == "design" ? ( */}
-        <div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
-        
+      <div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
+
         {errorBanner && (
           <div className="fixed top-20 left-20 right-10 z-50 p-4">
             <ErrorBanner
@@ -262,7 +262,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             />
           </div>
         )}
-        
+
         <div
           className={`flex-1 relative p-1 transition-all duration-300 ${errorBanner ? 'mt-24' : ''}`}
           style={getMainContentStyle()}>
@@ -276,7 +276,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                   title="No Pipeline Found"
                   description="Get started by creating a new pipeline."
                   action={
-                    <Button 
+                    <Button
                       onClick={() => setCreateDialogOpen(true)}
                       className="mt-4"
                     >
@@ -359,7 +359,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
             // Get the actual node data to extract transformationData
             const targetNode = nodes.find(node => node.id === selectedSchema?.nodeId);
             const nodeTransformationData = targetNode?.data?.transformationData || {};
-            
+
             // Combine form states with node transformation data, prioritizing form states
             const formStateData = formStates[selectedSchema?.nodeId] || {};
             const rawInitialValues = {
@@ -367,7 +367,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               ...formStateData,
               ...selectedSchema.initialValues
             };
-            
+
             console.log('🔧 DataPipelineCanvasNew - Raw Target form data:', {
               selectedSchema,
               targetNode: targetNode?.data,
@@ -376,7 +376,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               rawInitialValues,
               nodeId: selectedSchema?.nodeId
             });
-            
+
             // Properly structure the initial values to ensure connection and file_type are correctly mapped
             const initialValues = {
               ...rawInitialValues,
@@ -392,16 +392,16 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                   ...(rawInitialValues?.target?.connection || {}),
                   ...(rawInitialValues?.connection || {}),
                   // Ensure connection_config_id is available
-                  connection_config_id: rawInitialValues?.target?.connection?.connection_config_id || 
-                                       rawInitialValues?.target?.connection?.id ||
-                                       rawInitialValues?.connection?.connection_config_id ||
-                                       rawInitialValues?.connection?.id ||
-                                       rawInitialValues?.connection_config_id ||
-                                       // Handle $ref format by extracting the connection name
-                                       (rawInitialValues?.target?.connection?.$ref ? 
-                                         rawInitialValues.target.connection.$ref.split('/').pop() : null) ||
-                                       (rawInitialValues?.connection?.$ref ? 
-                                         rawInitialValues.connection.$ref.split('/').pop() : null)
+                  connection_config_id: rawInitialValues?.target?.connection?.connection_config_id ||
+                    rawInitialValues?.target?.connection?.id ||
+                    rawInitialValues?.connection?.connection_config_id ||
+                    rawInitialValues?.connection?.id ||
+                    rawInitialValues?.connection_config_id ||
+                    // Handle $ref format by extracting the connection name
+                    (rawInitialValues?.target?.connection?.$ref ?
+                      rawInitialValues.target.connection.$ref.split('/').pop() : null) ||
+                    (rawInitialValues?.connection?.$ref ?
+                      rawInitialValues.connection.$ref.split('/').pop() : null)
                 }
               },
               // Ensure file_type is at root level for schema resolution and normalize to uppercase
@@ -418,7 +418,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               transformation: rawInitialValues?.transformation || 'writer',
               task_id: rawInitialValues?.task_id || selectedSchema?.nodeId || ''
             };
-            
+
             // Structure the source data the way TargetPopUp expects it
             const sourceData = {
               source: {
@@ -437,7 +437,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               },
               nodeId: selectedSchema?.nodeId
             };
-            
+
             console.log('🔧 DataPipelineCanvasNew - Processed initial values:', {
               rawInitialValues,
               processedInitialValues: initialValues,
@@ -455,7 +455,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                 taskId: initialValues?.task_id
               }
             });
-            
+
             return (
               <TargetPopUp
                 isOpen={isFormOpen}
@@ -468,20 +468,20 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               />
             );
           })()}
-          
+
           {selectedSchema && selectedSchema.title === 'Reader' && (() => {
             const sourceData = {
               // Use initialValues from selectedSchema if available, otherwise fallback to formStates
               ...(selectedSchema.initialValues || formStates[selectedSchema?.nodeId] || {}),
               nodeId: selectedSchema?.nodeId
             };
-            
+
             return (
               <OrderPopUp
                 isOpen={isFormOpen}
                 onClose={handleDialogClose}
                 source={sourceData}
-                nodeId={selectedSchema.nodeId}  
+                nodeId={selectedSchema.nodeId}
                 initialData={sourceData}
                 onSourceUpdate={handleSourceUpdate}
               />
@@ -489,7 +489,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           })()}
 
 
-          {selectedSchema && selectedSchema.title !== 'Lookup' && selectedSchema.title !== 'Target'&& selectedSchema.title !== 'Reader' && (
+          {selectedSchema && selectedSchema.title !== 'Lookup' && selectedSchema.title !== 'Target' && selectedSchema.title !== 'Reader' && (
             <PipelineForm
               isOpen={isFormOpen}
               onClose={handleDialogClose}

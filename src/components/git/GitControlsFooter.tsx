@@ -11,6 +11,8 @@ import {
   fetchChangedEntities, 
 } from "@/store/slices/gitSlice";
 import { useEffect } from "react";
+import { useSidebar } from "@/context/SidebarContext";
+import { cn } from "@/lib/utils";
 
 export function GitControlsFooterPortal() {
   const mount = document.getElementById("git-footer-portal");
@@ -20,6 +22,7 @@ export function GitControlsFooterPortal() {
 
 function GitControlsFooter() {
   const dispatch = useAppDispatch();
+  const { isExpanded } = useSidebar();
   const {
     enabled,
     status,
@@ -73,7 +76,10 @@ function GitControlsFooter() {
       <div className="border-t backdrop-enhanced">
         <div className="flex items-center justify-between px-6 py-3">
           {/* Left: Branch & actions */}
-          <div className="flex items-center gap-6 ml-10">
+          <div className={cn(
+            "flex items-center gap-6 transition-all duration-300",
+            isExpanded ? "ml-64" : "ml-16"
+          )}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 focus-enhanced font-mono">

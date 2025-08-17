@@ -82,13 +82,13 @@ export function Sidebar() {
       if (item.path.startsWith(ROUTES.ADMIN.INDEX) && !showAdminNavItems) {
         return;
       }
-      const showIconForParent = item.title === "Data Catalog" || item.title === "Data Xplorer";
+      const showIconForParent = item.title === "Data Catalog" || item.title === "Agent Explore";
       push({
         ...item,
         showIcon: showIconForParent,
         isParent: true
       });
-      if (item.subItems && item.subItems.length > 0 && item.title !== "Data Xplorer") {
+      if (item.subItems && item.subItems.length > 0 && item.title !== "Agent Explore") {
         item.subItems.forEach(subItem => {
           push({
             ...subItem,
@@ -305,7 +305,7 @@ export function Sidebar() {
                     ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white",
                   !isExpanded && item.showIcon ? "p-2 justify-center" : "px-3 py-2",
-                  isExpanded && item.title === "Data Xplorer" && "justify-between",
+                  isExpanded && item.title === "Agent Explore" && "justify-between",
                   isExpanded && item.isSubItem && "pl-9 text-sm py-1.5"
                 )}
               >
@@ -331,7 +331,7 @@ export function Sidebar() {
                   </span>
                 )}
 
-                {isExpanded && item.title === "Data Xplorer" && (
+                {isExpanded && item.title === "Agent Explore" && (
                   <ChevronDown
                     className={cn(
                       "h-4 w-4 shrink-0 transition-transform duration-200 text-gray-400",
@@ -365,7 +365,7 @@ export function Sidebar() {
                     navElement
                   )}
 
-                  {isExpanded && item.actions && !item.isSubItem && item.title !== "Data Xplorer" && (
+                  {isExpanded && item.actions && !item.isSubItem && (
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                       {item.actions.map((action, index) => (
                         action.icon === 'ellipsis' ? (
@@ -383,15 +383,13 @@ export function Sidebar() {
                               align="end"
                               className="z-[110] w-auto min-w-[8rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                             >
-                              {item.title !== "Data Xplorer" && (
-                                <DropdownMenuItem
-                                  className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300"
-                                  onClick={() => setSearchOpen(true)}
-                                >
-                                  <Search className="h-4 w-4" />
-                                  <span>Search</span>
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuItem
+                                className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300"
+                                onClick={() => setSearchOpen(true)}
+                              >
+                                <Search className="h-4 w-4" />
+                                <span>Search</span>
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-300"
                                 onClick={handleCreateNewReport}
@@ -423,7 +421,7 @@ export function Sidebar() {
                 </div>
 
                 {/* Data Xplorer subitems */}
-                {isExpanded && item.title === "Data Xplorer" && isXplorerOpen && (
+                {isExpanded && item.title === "Agent Explore" && isXplorerOpen && (
                   <div className="mt-2 ml-3 border-l border-gray-200 dark:border-gray-700 pl-3">
                     <div className="mb-2 flex items-center gap-2 px-2">
                       <Input
@@ -545,13 +543,6 @@ export function Sidebar() {
                                               <Trash2 className="h-3 w-3" />
                                             )}
                                             <span>Delete</span>
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            className="cursor-pointer flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300"
-                                            onClick={() => setSearchOpen(true)}
-                                          >
-                                            <Search className="h-3 w-3" />
-                                            <span>Search</span>
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
                                       </DropdownMenu>

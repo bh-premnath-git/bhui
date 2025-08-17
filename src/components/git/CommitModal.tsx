@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { X, GitBranch, ArrowDown, Clock, AlertTriangle, Circle, FileText, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { 
   closeCommitModal, 
@@ -45,9 +46,9 @@ export function CommitModal() {
     dispatch(setCommitMessage(e.target.value));
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCloseModal} />
+  const modal = (
+    <div className="fixed inset-0 flex" style={{zIndex:999999}}>
+      <div className="absolute inset-0 " onClick={handleCloseModal} />
 
       <div className="ml-auto w-[85%] bg-card border-l shadow-2xl flex flex-col backdrop-enhanced">
         {/* Header */}
@@ -228,4 +229,7 @@ export function CommitModal() {
       </div>
     </div>
   );
+
+  const mount = document.getElementById("git-footer-portal") || document.body;
+  return createPortal(modal, mount);
 }

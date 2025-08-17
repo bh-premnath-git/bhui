@@ -25,6 +25,9 @@ import { convertFlowJsonToReactFlow } from '@/lib/pipelineJsonConverter';
 import { useModules } from '@/hooks/useModules';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';
+import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
+import { CommitModal } from '@/components/git/CommitModal';
+import { setEnabled } from '@/store/slices/gitSlice';
 
  
 const BuildPlayGround: React.FC = () => {
@@ -93,6 +96,14 @@ const BuildPlayGround: React.FC = () => {
     const [createFlowDialogOpen, setCreateFlowDialogOpen] = useState(false);
 
     const dispatch = useAppDispatch();
+
+    // Enable git integration when component mounts
+    useEffect(() => {
+        dispatch(setEnabled(true));
+        return () => {
+            dispatch(setEnabled(false));
+        };
+    }, [dispatch]);
     const { id } = useParams();
     const { useFetchFlowById, fetchFlowsList } = useFlowApi();
     const { data: flowList, isLoading: isFlowListLoading }:any = fetchFlowsList(1, 1000, true);
@@ -508,7 +519,7 @@ const BuildPlayGround: React.FC = () => {
                     )}
                     
                     {/* Flow Controls */}
-                    <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                    <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-20'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
                         <FlowControls
                             onZoomIn={handleZoomIn}
                             onZoomOut={handleZoomOut}
@@ -526,6 +537,8 @@ const BuildPlayGround: React.FC = () => {
                             proplesLogs={conversionLogs}
                         />
                     </div>
+                    <GitControlsFooterPortal />
+                    <CommitModal />
                 </div>
 
                 <Dialog

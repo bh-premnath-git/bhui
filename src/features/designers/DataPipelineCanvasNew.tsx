@@ -304,7 +304,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                 edgeTypes={edgeTypes}
                 renderControls={true}
                 controls={
-                  <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-4'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                  <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-20'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
                     <FlowControls
                       onZoomIn={handleZoomIn}
                       onZoomOut={handleZoomOut}

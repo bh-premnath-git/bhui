@@ -65,7 +65,7 @@ export type WidgetState = Omit<Widget, 'id'> & {
 export interface DashboardState {
   widgets: Record<string, WidgetState>;
   isGridLocked: boolean;
-  layoutMap: Map<string, {layout_id: string; x: number; y: number; w: number; h: number; order_index: string }>;
+  layoutMap: Record<string, {layout_id: string; x: number; y: number; w: number; h: number; order_index: string }>;
 }
 
 /* --------------------------------------------------------------------- */
@@ -100,7 +100,7 @@ const DEFAULT_WIDGET: Omit<WidgetState, 'id'> = {
 const initialState: DashboardState = {
   widgets: {},
   isGridLocked: false,
-  layoutMap: new Map<string, { layout_id: string;  x: number; y: number; w: number; h: number; order_index: string }>(),
+  layoutMap: {},
 };
 
 const ensure = (s: DashboardState, id: string) => s.widgets[id];
@@ -154,16 +154,16 @@ const dashboardSlice = createSlice({
     },
     removeWidget: (s, { payload }: PayloadAction<string>) => {
       delete s.widgets[payload];
-      s.layoutMap.delete(payload);
+      delete s.layoutMap[payload];
     },
-    setLayoutMap: (s, { payload }: PayloadAction<Map<string, { layout_id: string; x: number; y: number; w: number; h: number; order_index: string }>>) => {
+    setLayoutMap: (s, { payload }: PayloadAction<Record<string, { layout_id: string; x: number; y: number; w: number; h: number; order_index: string }>>) => {
       s.layoutMap = payload;
     },
     updateLayoutMapEntry: (s, { payload }: PayloadAction<{ widgetId: string; layout: { layout_id: string; x: number; y: number; w: number; h: number; order_index: string } }>) => {
-      s.layoutMap.set(payload.widgetId, payload.layout);
+      s.layoutMap[payload.widgetId] = payload.layout;
     },
     removeLayoutMapEntry: (s, { payload }: PayloadAction<string>) => {
-      s.layoutMap.delete(payload);
+      delete s.layoutMap[payload];
     },
     flipWidget: (s, { payload }: PayloadAction<string>) => {
       const w = ensure(s, payload); if (w) w.isFlipped = !w.isFlipped;
@@ -225,18 +225,17 @@ const dashboardSlice = createSlice({
       .addCase(updateDashboardLayout.fulfilled, (state, action) => {
         // Update the layoutMap with the new layout data
         const { layoutId, layout } = action.payload;
-        const widgetId = Array.from(state.layoutMap.entries())
-          .find(([_, value]) => value.layout_id === layoutId)?.[0];
+        const widgetId = Object.keys(state.layoutMap).find((key) => state.layoutMap[key].layout_id === layoutId);
         
-        if (widgetId && state.layoutMap.has(widgetId)) {
-          const currentLayout = state.layoutMap.get(widgetId)!;
-          state.layoutMap.set(widgetId, {
+        if (widgetId && state.layoutMap[widgetId]) {
+          const currentLayout = state.layoutMap[widgetId];
+          state.layoutMap[widgetId] = {
             ...currentLayout,
             x: layout.widget_coordinates?.x ?? currentLayout.x,
             y: layout.widget_coordinates?.y ?? currentLayout.y,
             w: layout.widget_size?.w ?? currentLayout.w,
             h: layout.widget_size?.h ?? currentLayout.h
-          });
+          };
         }
       })
       .addCase(updateDashboardLayout.rejected, (state, action) => {

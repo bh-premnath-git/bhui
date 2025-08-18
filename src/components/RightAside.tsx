@@ -93,6 +93,9 @@ export function RightAside({
         mainContent.style.width = `calc(100% - ${clampedWidth}%)`;
       }
       
+      // Update the sidebar context with the new width
+      updateRightAsideWidth(`w-[${Math.round(clampedWidth)}%]`);
+      
       // Dispatch a custom event to notify other components that the RightAside panel has been resized
       const resizeEvent = new CustomEvent('rightAsideResize', {
         bubbles: true,
@@ -101,11 +104,12 @@ export function RightAside({
       document.dispatchEvent(resizeEvent);
       
       // Also dispatch a resize event to ensure ReactFlow and other components update
-      window.dispatchEvent(new Event('resize'));
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
     }
     
     setCurrentWidth(clampedWidth);
-    updateRightAsideWidth(clampedWidth+'%');
   };
 
   // Handle resize end

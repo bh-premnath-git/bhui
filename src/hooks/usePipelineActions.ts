@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store';
 import { showErrorToast } from '@/components/ui/error-toast';
-import { 
-    getTransformationCount, 
-    runNextCheckpoint, 
+import {
+    getTransformationCount,
+    runNextCheckpoint,
     stopPipeLine,
     getPipelineById,
     setBuildPipeLineDtl,
@@ -19,16 +19,16 @@ import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 // Utility function to get port based on engine type
 const getPortByEngineType = (engineType: ValidEngineTypes): string => {
-  switch (engineType) {
-    case 'pyspark':
-      return SPARK_PORT;
-    case 'pandas':
-      return PANDAS_PORT;
-    case 'pyflink':
-      return FLINK_PORT;
-    default:
-      return SPARK_PORT; // Default fallback
-  }
+    switch (engineType) {
+        case 'pyspark':
+            return SPARK_PORT;
+        case 'pandas':
+            return PANDAS_PORT;
+        case 'pyflink':
+            return FLINK_PORT;
+        default:
+            return SPARK_PORT; // Default fallback
+    }
 };
 
 interface UsePipelineActionsProps {
@@ -103,10 +103,10 @@ export const usePipelineActions = ({
     const extractErrorDetails = useCallback((error: any) => {
         const errorDetail = error.response?.data?.detail || '';
         const errorMessage = error.message || '';
-        
+
         let detailedErrorInfo = '';
         let formattedErrorInfo = '';
-        
+
         if (errorDetail) {
             try {
                 // Try to extract the meaningful error from the detail field
@@ -119,25 +119,25 @@ export const usePipelineActions = ({
                             .replace(/\\'/g, "'")
                             .replace(/\\"/g, '"');
                         detailedErrorInfo = cleanedDetails;
-                        
+
                         // Format the error for better readability
                         if (cleanedDetails.includes('Failed validating')) {
                             const lines = cleanedDetails.split('\n');
                             const mainError = lines[0];
                             const instanceMatch = cleanedDetails.match(/On instance\['[^']+'\]\['([^']+)'\]:/);
                             const instanceName = instanceMatch ? instanceMatch[1] : 'unknown';
-                            
+
                             // Create a more user-friendly error message
                             formattedErrorInfo = `🔴 Validation Error on '${instanceName}'\n\n`;
                             formattedErrorInfo += `❌ Issue: ${mainError}\n\n`;
-                            
+
                             // Extract required fields if available
                             const requiredMatch = cleanedDetails.match(/required.*:\s*\[(.*?)\]/);
                             if (requiredMatch) {
                                 const requiredFields = requiredMatch[1].split(',').map(field => field.trim().replace(/'/g, ''));
                                 formattedErrorInfo += `📋 Required fields: ${requiredFields.join(', ')}\n\n`;
                             }
-                            
+
                             // Add instance details if available
                             const instanceDataMatch = cleanedDetails.match(/On instance\['[^']+'\]\['[^']+'\]:\s*({.*})/s);
                             if (instanceDataMatch) {
@@ -149,7 +149,7 @@ export const usePipelineActions = ({
                                     formattedErrorInfo += `📊 Current configuration:\n${instanceDataMatch[1]}\n\n`;
                                 }
                             }
-                            
+
                             // Add suggestion based on error type
                             if (mainError.includes('required property')) {
                                 const missingField = mainError.match(/'([^']+)' is a required property/);
@@ -195,7 +195,7 @@ export const usePipelineActions = ({
                     const refPath = resolvedSource.$ref.substring(2); // Remove '#/'
                     const pathParts = refPath.split('/');
                     let resolved = pipelineDefinition;
-                    
+
                     for (const part of pathParts) {
                         if (resolved && resolved[part]) {
                             resolved = resolved[part];
@@ -204,19 +204,19 @@ export const usePipelineActions = ({
                             break;
                         }
                     }
-                    
+
                     if (resolved) {
                         resolvedSource = resolved;
                     }
                 }
-                
+
                 // Also resolve connection reference if it exists
                 let resolvedConnection = resolvedSource?.connection;
                 if (resolvedConnection && resolvedConnection.$ref && pipelineDefinition) {
                     const refPath = resolvedConnection.$ref.substring(2);
                     const pathParts = refPath.split('/');
                     let resolved = pipelineDefinition;
-                    
+
                     for (const part of pathParts) {
                         if (resolved && resolved[part]) {
                             resolved = resolved[part];
@@ -225,20 +225,20 @@ export const usePipelineActions = ({
                             break;
                         }
                     }
-                    
+
                     if (resolved) {
                         resolvedConnection = {
                             ...resolved,
                             // Ensure connection_config_id is available for form validation
-                            connection_config_id: resolved.connection_config_id || 
-                                                resolved.id || 
-                                                resolved.name ||
-                                                // Extract from $ref path if needed
-                                                pathParts[pathParts.length - 1]
+                            connection_config_id: resolved.connection_config_id ||
+                                resolved.id ||
+                                resolved.name ||
+                                // Extract from $ref path if needed
+                                pathParts[pathParts.length - 1]
                         };
                     }
                 }
-                
+
                 // Structure the data properly for the ReaderOptionsForm
                 const readerFormData = {
                     ...transformation,
@@ -248,14 +248,14 @@ export const usePipelineActions = ({
                         ...resolvedSource,
                         connection: resolvedConnection,
                         // Ensure source_type is properly set based on the source data
-                        source_type: resolvedSource?.source_type || 
-                                    (resolvedSource?.table_name ? 'Relational' : 
-                                     resolvedSource?.file_name ? 'File' : 'Relational'),
+                        source_type: resolvedSource?.source_type ||
+                            (resolvedSource?.table_name ? 'Relational' :
+                                resolvedSource?.file_name ? 'File' : 'Relational'),
                         // Add file_type if it's a file source
-                        file_type: resolvedSource?.file_name ? 
-                                  (resolvedSource.file_name.toLowerCase().endsWith('.csv') ? 'CSV' :
-                                   resolvedSource.file_name.toLowerCase().endsWith('.json') ? 'JSON' :
-                                   resolvedSource.file_name.toLowerCase().endsWith('.parquet') ? 'Parquet' : 'CSV') : undefined
+                        file_type: resolvedSource?.file_name ?
+                            (resolvedSource.file_name.toLowerCase().endsWith('.csv') ? 'CSV' :
+                                resolvedSource.file_name.toLowerCase().endsWith('.json') ? 'JSON' :
+                                    resolvedSource.file_name.toLowerCase().endsWith('.parquet') ? 'Parquet' : 'CSV') : undefined
                     },
                     // Ensure read_options is properly structured
                     read_options: transformation.read_options || {},
@@ -264,7 +264,7 @@ export const usePipelineActions = ({
                     drop_columns: transformation.drop_columns || [],
                     rename_columns: transformation.rename_columns || {}
                 };
-                
+
                 console.log(`🔧 usePipelineActions: Structured Reader form data for ${nodeId}:`, readerFormData);
                 return readerFormData;
             }
@@ -278,7 +278,7 @@ export const usePipelineActions = ({
                     nodeId
                 };
             }
-            
+
             return {
                 ...transformation,
                 nodeId
@@ -291,7 +291,7 @@ export const usePipelineActions = ({
 
     const handleSourceUpdate = useCallback(async ({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
         console.log('🔧 usePipelineActions: handleSourceUpdate called with:', { nodeId, sourceData });
-        
+
         let data;
 
         if (sourceData.sourceData?.data) {
@@ -321,7 +321,7 @@ export const usePipelineActions = ({
 
         try {
             console.log('🔧 usePipelineActions: About to update node with data:', data);
-            
+
             setNodes(prevNodes => {
                 const updatedNodes = prevNodes.map((node: any) => {
                     if (node.id === nodeId) {
@@ -340,19 +340,19 @@ export const usePipelineActions = ({
                                 transformationData: data.transformationData || node.data?.transformationData || {}
                             }
                         };
-                        
+
                         console.log('🔧 usePipelineActions: Updated node:', {
                             nodeId,
                             oldNode: node,
                             updatedNode,
                             transformationData: updatedNode.data.transformationData
                         });
-                        
+
                         return updatedNode;
                     }
                     return node;
                 });
-                
+
                 console.log('🔧 usePipelineActions: All nodes after update:', updatedNodes);
                 return updatedNodes;
             });
@@ -392,17 +392,17 @@ export const usePipelineActions = ({
                 }
                 return transform;
             });
-            
+
             // Convert selectedMode to API parameter format
-            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
-                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' :
+                selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
             const params: any = new URLSearchParams({
                 pipeline_name: `${pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name}`,
                 pipeline_json: JSON.stringify(pipeline_json),
                 mode: modeAction,
                 use_secure: USE_SECURE
             });
-            
+
             // Add host parameter if cluster is attached
             if (attachedCluster?.master_ip) {
                 params.append('host', attachedCluster.master_ip);
@@ -410,7 +410,7 @@ export const usePipelineActions = ({
                 params.append('host', "host.docker.internal");
                 params.append('port', getPortByEngineType(selectedEngineType));
             }
-            
+
             debuggedNodesList.forEach(checkpoint => {
                 params.append('checkpoints', checkpoint?.title);
             });
@@ -420,13 +420,13 @@ export const usePipelineActions = ({
 
             // Pass the request data directly
             let response: any = await apiService.post({
-                baseUrl:CATALOG_REMOTE_API_URL,
+                baseUrl: CATALOG_REMOTE_API_URL,
                 url: `/api/v1/pipeline/debug/start_pipeline?${params.toString()}`,
                 // usePrefix: true,
                 method: 'POST',
                 data: params,
             });
-            
+
             if (response.error) {
                 throw new Error(response.error);
             }
@@ -480,9 +480,9 @@ export const usePipelineActions = ({
                 // const errorMessages = error.message.split('\n').slice(1);
                 // setValidationErrors(errorMessages);
             }
-            
+
             if (
-                errorMessage.includes('already exist') || 
+                errorMessage.includes('already exist') ||
                 errorMessage.includes('already running') ||
                 errorDetail.includes('ALREADY_EXISTS') ||
                 errorDetail.includes('already running')
@@ -493,11 +493,11 @@ export const usePipelineActions = ({
                         host: attachedCluster?.master_ip || 'host.docker.internal',
                         use_secure: USE_SECURE
                     })).unwrap();
-                    
+
                     if (countsResponse.transformationOutputCounts) {
                         setTransformationCounts(countsResponse.transformationOutputCounts);
                         setIsPipelineRunning(true);
-                        
+
                         setTerminalLogs(prevLogs => [...prevLogs, {
                             timestamp: new Date().toISOString(),
                             message: 'Pipeline is already running. Fetched current transformation counts.',
@@ -516,13 +516,13 @@ export const usePipelineActions = ({
             setIsCanvasLoading(false);
         }
     }, [
-        handleRunClick, 
-        debuggedNodesList, 
-        nodes, 
-        edges, 
-        pipelineDtl, 
-        pipelineName, 
-        dispatch, 
+        handleRunClick,
+        debuggedNodesList,
+        nodes,
+        edges,
+        pipelineDtl,
+        pipelineName,
+        dispatch,
         selectedMode,
         attachedCluster,
         setIsCanvasLoading,
@@ -540,13 +540,13 @@ export const usePipelineActions = ({
         try {
             const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
             const host = attachedCluster?.master_ip;
-            
-            let response = await dispatch(stopPipeLine({ 
+
+            let response = await dispatch(stopPipeLine({
                 params: pipelineName_val,
                 host: host,
                 use_secure: USE_SECURE
             })).unwrap();
-            
+
             if (response.message) {
                 setIsPipelineRunning(false);
                 // Clear transformation counts when stopping the pipeline
@@ -556,10 +556,10 @@ export const usePipelineActions = ({
             console.error('Error stopping pipeline:', error);
         }
     }, [
-        pipelineDtl?.pipeline_name, 
+        pipelineDtl?.pipeline_name,
         pipelineDtl?.name,
         pipelineName,
-        attachedCluster?.master_ip, 
+        attachedCluster?.master_ip,
         dispatch,
         setIsPipelineRunning,
         setTransformationCounts
@@ -571,23 +571,23 @@ export const usePipelineActions = ({
             if (typeof setErrorBanner === 'function') {
                 setErrorBanner(null);
             }
-            
+
             const pipelineName_val = pipelineDtl?.name || pipelineDtl?.pipeline_name || pipelineName;
             const host = attachedCluster?.master_ip || 'host.docker.internal';
-            
-            let result: any = await dispatch(runNextCheckpoint({ 
+
+            let result: any = await dispatch(runNextCheckpoint({
                 pipeline_name: pipelineName_val,
                 host: host
             })).unwrap();
-            
+
             // Only proceed if first API call was successful
             if (result && !result.error) {
-                let countsResponse = await dispatch(getTransformationCount({ 
+                let countsResponse = await dispatch(getTransformationCount({
                     params: pipelineName_val,
                     host: host,
                     use_secure: USE_SECURE
                 })).unwrap();
-                
+
                 if (countsResponse.error) {
                     throw new Error(countsResponse.error);
                 }
@@ -599,7 +599,7 @@ export const usePipelineActions = ({
             }
         } catch (error: any) {
             console.error('Error in handleNext:', error);
-            
+
             // Extract detailed error information using helper function
             const { errorMessage, formattedErrorInfo } = extractErrorDetails(error);
 
@@ -633,10 +633,10 @@ export const usePipelineActions = ({
             }
         }
     }, [
-        pipelineDtl?.pipeline_name, 
+        pipelineDtl?.pipeline_name,
         pipelineDtl?.name,
         pipelineName,
-        attachedCluster?.master_ip, 
+        attachedCluster?.master_ip,
         dispatch,
         setTransformationCounts,
         setTerminalLogs,
@@ -657,16 +657,16 @@ export const usePipelineActions = ({
             }]);
 
             const partialPipelineJson: any = await convertUIToPipelineJsonUpToNode(
-                nodes, 
-                edges, 
-                pipelineDtl, 
+                nodes,
+                edges,
+                pipelineDtl,
                 nodeId,
                 pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name
             );
 
             // Convert selectedMode to API parameter format
-            const modeAction = selectedMode === 'debug' ? 'DEBUG' : 
-                              selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
+            const modeAction = selectedMode === 'debug' ? 'DEBUG' :
+                selectedMode === 'interactive' ? 'INTERACTIVE' : 'ENGINE';
 
             // Create API parameters for partial pipeline execution
             const params = new URLSearchParams({
@@ -676,7 +676,7 @@ export const usePipelineActions = ({
                 use_secure: USE_SECURE,
                 target_node: nodeId // Add target node info for backend
             });
-            
+
             // Add host parameter if cluster is attached
             if (attachedCluster?.master_ip) {
                 params.append('host', attachedCluster.master_ip);
@@ -731,7 +731,7 @@ export const usePipelineActions = ({
 
         } catch (error: any) {
             console.error(`❌ Error refreshing node ${nodeId}:`, error);
-            
+
             // Add error log
             setTerminalLogs(prevLogs => [...prevLogs, {
                 timestamp: new Date().toISOString(),
@@ -742,11 +742,11 @@ export const usePipelineActions = ({
             setIsCanvasLoading(false);
         }
     }, [
-        nodes, 
-        edges, 
-        pipelineDtl, 
-        pipelineName, 
-        selectedMode, 
+        nodes,
+        edges,
+        pipelineDtl,
+        pipelineName,
+        selectedMode,
         dispatch,
         attachedCluster,
         setIsCanvasLoading,
@@ -759,104 +759,113 @@ export const usePipelineActions = ({
             // Determine effective pipeline ID from multiple sources
             const effectiveId = id || pipelineDtl?.pipeline_id || selectedPipeline?.pipeline_id || localStorage.getItem("pipeline_id")
 
-         
+
             // Set loading state
             setIsCanvasLoading(true);
 
             // Fetch pipeline details
-if(effectiveId){
+            if (effectiveId) {
                 const response = await dispatch(getPipelineById({ id: effectiveId })).unwrap();
-            console.log('🔧 fetchPipelineDetails: Received response:', response);
-            if (!response || !response.pipeline_json) {
-                setNodes([]);
-                setEdges([]);
-                throw new Error('Invalid pipeline data received');
-            }
-             const pipelineName = response.pipeline_json.name || response.pipeline_name || selectedPipeline?.pipeline_name || `Pipeline ${effectiveId}`;
-            console.log('🔧 fetchPipelineDetails: Setting pipeline name:', pipelineName);
-            setPipeLineName(pipelineName);
-            dispatch(setBuildPipeLineDtl(response.pipeline_json));
-            // dispatch(setSelectedPipeline(response.));
-            dispatch(setPipeLineType(response.pipeline_type || null));
-            let optimised = await resolveRefsPipelineJson(response?.pipeline_json, response?.pipeline_json);
-            setPipelineJson(optimised);
- const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+                console.log('🔧 fetchPipelineDetails: Received response:', response);
+                // if (!response || !response.pipeline_json) {
+                //     setNodes([]);
+                //     setEdges([]);
+                //     throw new Error('Invalid pipeline data received');
+                // }
+                const pipelineName = response?.pipeline_json?.name || response?.pipeline_name || selectedPipeline?.pipeline_name || `Pipeline ${effectiveId}`;
+                console.log('🔧 fetchPipelineDetails: Setting pipeline name:', pipelineName);
+                setPipeLineName(pipelineName);
+                dispatch(setPipeLineType(response?.pipeline_type || null));
+                // dispatch(setSelectedPipeline(response.));
+                if (!response?.pipeline_json) {
+                    dispatch(setBuildPipeLineDtl(null));
+                    setPipelineJson(null);
+                    setNodes([]);
+                    setEdges([]);
+                    setFormStates({});
+                    setIsCanvasLoading(false);
+                    return;
+                }
+                dispatch(setBuildPipeLineDtl(response.pipeline_json));
+                let optimised = await resolveRefsPipelineJson(response.pipeline_json, response.pipeline_json);
+                setPipelineJson(optimised);
+                const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
 
-            // Map nodes with titles safely
-            const nodesWithTitles = uiJson.nodes.map(node => {
-                const matchingTransformation = response.pipeline_json.transformations?.find(
-                    (t: any) => t?.title === node?.data?.title && t?.name
-                );
+                // Map nodes with titles safely
+                const nodesWithTitles = uiJson.nodes.map(node => {
+                    const matchingTransformation = response.pipeline_json.transformations?.find(
+                        (t: any) => t?.title === node?.data?.title && t?.name
+                    );
 
-                if (matchingTransformation) {
-                    return {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            title: matchingTransformation.name,
-                            transformationData: {
-                                ...node.data.transformationData,
-                                name: matchingTransformation.name
+                    if (matchingTransformation) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                title: matchingTransformation.name,
+                                transformationData: {
+                                    ...node.data.transformationData,
+                                    name: matchingTransformation.name
+                                }
                             }
-                        }
-                    };
+                        };
+                    }
+                    return node;
+                });
+
+                if (response?.pipeline_json == null) {
+                    setPipelineJson(null);
+                    setNodes([]);
+                    setEdges([]);
+                } else {
+                    setNodes(nodesWithTitles);
+                    setEdges(uiJson.edges || []);
                 }
-                return node;
-            });
-            
-            if (response?.pipeline_json == null) {
-                setPipelineJson(null);
-                setNodes([]);
-                setEdges([]);
-            } else {
-                setNodes(nodesWithTitles);
-                setEdges(uiJson.edges || []);
+
+                // Initialize form states
+                const initialFormStates: { [key: string]: any } = {};
+                response.pipeline_json.transformations?.forEach((transformation: any) => {
+                    const matchingNode = nodesWithTitles.find(
+                        (node: any) =>
+                            node?.data?.label === transformation?.transformation &&
+                            node?.data?.title === transformation?.name
+                    );
+
+                    if (matchingNode?.id) {
+                        initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id, matchingNode, response.pipeline_json);
+                    }
+                });
+
+                console.log('🔧 usePipelineActions: Setting form states:', {
+                    initialFormStates,
+                    transformationsCount: response.pipeline_json.transformations?.length || 0,
+                    nodesCount: nodesWithTitles.length,
+                    pipelineId: effectiveId,
+                    pipelineName: pipelineName
+                });
+                setFormStates(initialFormStates);
             }
 
-            // Initialize form states
-            const initialFormStates: { [key: string]: any } = {};
-            response.pipeline_json.transformations?.forEach((transformation: any) => {
-                const matchingNode = nodesWithTitles.find(
-                    (node: any) =>
-                        node?.data?.label === transformation?.transformation &&
-                        node?.data?.title === transformation?.name
-                );
-
-                if (matchingNode?.id) {
-                    initialFormStates[matchingNode.id] = getInitialFormState(transformation, matchingNode.id, matchingNode, response.pipeline_json);
-                }
-            });
-
-            console.log('🔧 usePipelineActions: Setting form states:', {
-                initialFormStates,
-                transformationsCount: response.pipeline_json.transformations?.length || 0,
-                nodesCount: nodesWithTitles.length,
-                pipelineId: effectiveId,
-                pipelineName: pipelineName
-            });
-            setFormStates(initialFormStates);
-}
-            
             // Update pipeline name and JSON safely - prioritize response data
-           
+
             // Convert pipeline to UI JSON
-           
-            
+
+
 
             // Clear loading state on success
             setIsCanvasLoading(false);
 
         } catch (error) {
             console.error("Error fetching pipeline details:", error);
-            
+
             // Clear states on error to prevent stale data
             setNodes([]);
             setEdges([]);
             setFormStates({});
-            
+
             // Clear loading state on error
             setIsCanvasLoading(false);
-            
+
             // Show error banner if available
             if (setErrorBanner) {
                 setErrorBanner({

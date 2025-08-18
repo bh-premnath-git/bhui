@@ -399,68 +399,6 @@ const getSchemaForTransformation = (transformationType: string, targetNodeId: st
   }
 };
 
-// Function to get transformation name mapping from old schema to new pipeline schema
-const getTransformationNameMapping = (engineType: 'pyspark' | 'pyflink' = 'pyspark') => {
-  try {
-    if (!pipelineSchema?.allOf) return {};
-    
-    const engineSchema = pipelineSchema.allOf.find((schema: any) => 
-      schema.if?.properties?.engine_type?.const === engineType
-    );
-
-    if (!engineSchema?.then?.properties?.transformations?.items?.allOf) {
-      return {};
-    }
-
-    const availableTransformations = engineSchema.then.properties.transformations.items.allOf.map((transformation: any) => ({
-      name: transformation?.if?.properties?.transformation?.const,
-      description: transformation?.then?.description || '',
-      schema: transformation?.then,
-    })).filter((t: any) => t.name);
-
-    // Create mapping from common old names to new names
-    const mapping: Record<string, string> = {};
-    
-    availableTransformations.forEach((transformation: any) => {
-      const name = transformation.name;
-      // Add direct mapping
-      mapping[name] = name;
-      
-      // Add common old name mappings
-      if (name === 'Mapper') {
-        mapping['SchemaTransformation'] = name;
-        mapping['Schema Transformation'] = name;
-        mapping['schema_transformation'] = name;
-      } else if (name === 'Set') {
-        mapping['SetCombiner'] = name;
-        mapping['Set Combiner'] = name;
-        mapping['set_combiner'] = name;
-        mapping['Union'] = name; // Union is also mapped to Set
-      } else if (name === 'SQL') {
-        mapping['SqlTransformation'] = name;
-        mapping['SQL Transformation'] = name;
-        mapping['SQLTransformation'] = name;
-        mapping['sql_transformation'] = name;
-        mapping['Sql'] = name;
-      } else if (name === 'Aggregator') {
-        mapping['Aggregate'] = name;
-        mapping['aggregator'] = name;
-        mapping['aggregate'] = name;
-      } else if (name === 'Joiner') {
-        mapping['Join'] = name;
-        mapping['joiner'] = name;
-        mapping['join'] = name;
-      }
-    });
-
-    console.log('🔧 Transformation name mapping:', mapping);
-    return mapping;
-  } catch (error) {
-    console.error('Error creating transformation name mapping:', error);
-    return {};
-  }
-};
-
 const PipeLineChatPanel = () => {
   const dispatch = useAppDispatch();
   const { id } = useParams<{ id: string }>();
@@ -2261,15 +2199,9 @@ const PipeLineChatPanel = () => {
       // Call the API to get data sources
       const response: any = await apiService.get({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: `/data_source/search/`,
+        url: `/data_source/search?params=${data.reader_name}`,
         usePrefix: true,
-        method: 'GET',
-        params: {
-          data_src_name: data.reader_name,
-          offset: 0,
-          limit: 10,
-          order_desc: false
-        }
+        method: 'GET'
       });
 
       // Check if we got results
@@ -2822,7 +2754,17 @@ const PipeLineChatPanel = () => {
                   )}
 
 
-                  {message.role === 'assistant' && message.formData && !message.formData.isConfirmation && !message.formData.isEmbeddedForm && (
+                  {message.role === 'assistant' && message.formData && !message.formData.isConfirmation && !message.formData.isEmbeddedForm &&
+                    (
+                      message.formData.isTarget ||
+                      message.formData.isMultiSourceSelect ||
+                      message.formData.isSingleDependencySelect ||
+                      message.formData.isMultiDependencySelect ||
+                      message.formData.isDependencyEdit ||
+                      (message.formData.schema && ((message.formData.schema as any).title || (message.formData.schema as any).module_name)) ||
+                      message.formData.initialValues ||
+                      message.formData.currentNodeId
+                    ) && (
                     <div className="pl-8 mt-2 bg-white rounded-lg shadow-sm group relative">
                       <div className="space-y-3">
 

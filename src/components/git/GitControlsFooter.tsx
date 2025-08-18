@@ -11,8 +11,10 @@ import {
   fetchChangedEntities, 
 } from "@/store/slices/gitSlice";
 import { useEffect } from "react";
+import { useSidebar } from "@/context/SidebarContext";
 
 export function GitControlsFooterPortal() {
+  
   const mount = document.getElementById("git-footer-portal");
   if (!mount) return null;
   return createPortal(<GitControlsFooter />, mount);
@@ -44,6 +46,7 @@ function GitControlsFooter() {
   const changedCount = newEntities.length + modifiedEntities.length;
   const uncommittedFiles = status?.uncommittedFiles ?? changedCount;
   const branch = status?.branch ?? "—";
+    const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded } = useSidebar();
 
   const handleCommit = () => {
     dispatch(openCommitModal());
@@ -67,9 +70,17 @@ function GitControlsFooter() {
     // TODO: Implement delete branch functionality
     console.log("Delete branch clicked");
   };
+  
+  const parseRightAsidePercent = (widthStr: string) => {
+    // Support formats like "w-[25%]" or "25%" or "25"
+    const match = (widthStr || '').match(/(\d+)%?/);
+    return match ? Number(match[1]) : 25;
+  };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[1200] pointer-events-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-[1200] pointer-events-auto" style={{
+                          right: isRightAsideOpen ? `${parseRightAsidePercent(rightAsideWidth) + 2}%` : '1rem'
+                        }}>
       <div className="border-t backdrop-enhanced">
         <div className="flex items-center justify-between px-6 py-3">
           {/* Left: Branch & actions */}

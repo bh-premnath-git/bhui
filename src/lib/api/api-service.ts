@@ -208,46 +208,7 @@ class ApiService {
   async delete<T>(config: ApiConfig): Promise<T> {
     return this.request<T>({ ...config, method: 'DELETE' }).then((res) => res.data);
   }
-
-  /**
-   * Fetch logs for a specific DAG run and task
-   * @param dagId The DAG ID
-   * @param dagRunId The DAG run ID
-   * @param taskId The task ID (optional)
-   * @param bhEnvName The BigHammer environment name
-   * @returns The logs as a string
-   */
-  async fetchDagLogs(
-    dagId: string,
-    dagRunId: string,
-    bhEnvName: string,
-    taskId?: string
-  ): Promise<string> {
-    const params: Record<string, string> = {
-      dag_id: dagId,
-      dag_run_id: dagRunId,
-      bh_env_name: bhEnvName
-    };
-
-    if (taskId) {
-      params.task_id = taskId;
-    }
-
-    // Log the API call for debugging
-    console.log(`Fetching logs with URL: ${CATALOG_REMOTE_API_URL}/api/v1/bh_airflow/get_dag_logs`);
-    console.log('Params:', params);
-    
-    const config: ApiConfig = {
-      baseUrl: CATALOG_REMOTE_API_URL,
-      url: '/api/v1/bh_airflow/get_dag_logs',
-      method: 'GET',
-      params
-    };
-
-    return this.request<string>(config).then((res) => res.data);
-  }
-
-  // Chat history methods removed from generic API service. Use feature-scoped pipelineChatApi instead.
+  
 }
 
 export const apiService = new ApiService();

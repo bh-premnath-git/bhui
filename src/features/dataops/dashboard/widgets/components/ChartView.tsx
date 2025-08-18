@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Plot from 'react-plotly.js';
-import { ChartType, ColorScheme } from '@/store/slices/dataops/dashboardStore';
+import { ChartType, ColorScheme } from '@/store/slices/dataops/dashboardSlice';
 import { getColorPalette } from '@/lib/colorSchemes';
 
 interface ChartViewProps {

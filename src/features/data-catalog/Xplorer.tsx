@@ -11,7 +11,7 @@ interface XplorerProps {
   dashboardId?: string;
 }
 
-export function Xplorer({ dashboardId = "102" }: XplorerProps) {
+export function Xplorer({ dashboardId  }: XplorerProps) {
   const { state, dispatch, dispatchAsync } = useDashboard();
   const {
     dashboards,

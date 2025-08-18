@@ -1,7 +1,6 @@
-import { apiService } from '@/lib/api/api-service';
+import { apiService, MutationVariables } from '@/lib/api/api-service';
 import type { ApiConfig } from '@/lib/api/api-config';
 import { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import { MutationVariables } from '@/lib/api/api-service';
 
 /**
  * Helper type to wrap UseMutationOptions so it matches the shape

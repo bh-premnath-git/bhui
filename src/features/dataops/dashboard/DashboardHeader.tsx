@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Lock, Unlock, RefreshCw, Star, Link, MoreHorizontal } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { toggleGridLock, refreshWidget } from '@/store/slices/dataops/dashboardStore'
+import { toggleGridLock, refreshWidget } from '@/store/slices/dataops/dashboardSlice'
 export const DashboardHeader = () => {
   const { widgets, isGridLocked } = useAppSelector((state) => state.dashboard);
   const dispatch = useAppDispatch();

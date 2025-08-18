@@ -52,8 +52,8 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
     return (
         <Card className={`border-red-200 bg-red-50 shadow-lg w-full max-w-full mx-auto ${className}`} role="alert" aria-live="polite">
             <div className="p-3 sm:p-4">
-                <div className="flex items-start justify-between gap-2 sm:gap-4">
-                    <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0 w-full sm:w-auto">
                         <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                             <h3 className="text-xs sm:text-sm font-medium text-red-800 mb-1 break-words">
@@ -67,7 +67,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
                         </div>
                     </div>
                     
-                    <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                    <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 w-full sm:w-auto order-2 sm:order-none justify-end sm:justify-start">
                         {onShowLogs && (
                             <Button
                                 variant="ghost"

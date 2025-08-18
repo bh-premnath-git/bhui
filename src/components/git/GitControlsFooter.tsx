@@ -15,6 +15,7 @@ import { useSidebar } from "@/context/SidebarContext";
 import { cn } from "@/lib/utils";
 
 export function GitControlsFooterPortal() {
+  
   const mount = document.getElementById("git-footer-portal");
   if (!mount) return null;
   return createPortal(<GitControlsFooter />, mount);
@@ -22,7 +23,6 @@ export function GitControlsFooterPortal() {
 
 function GitControlsFooter() {
   const dispatch = useAppDispatch();
-  const { isExpanded } = useSidebar();
   const {
     enabled,
     status,
@@ -47,6 +47,7 @@ function GitControlsFooter() {
   const changedCount = newEntities.length + modifiedEntities.length;
   const uncommittedFiles = status?.uncommittedFiles ?? changedCount;
   const branch = status?.branch ?? "—";
+    const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded } = useSidebar();
 
   const handleCommit = () => {
     dispatch(openCommitModal());
@@ -70,11 +71,19 @@ function GitControlsFooter() {
     // TODO: Implement delete branch functionality
     console.log("Delete branch clicked");
   };
+  
+  const parseRightAsidePercent = (widthStr: string) => {
+    // Support formats like "w-[25%]" or "25%" or "25"
+    const match = (widthStr || '').match(/(\d+)%?/);
+    return match ? Number(match[1]) : 25;
+  };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[1200] pointer-events-auto">
+    <div className="fixed bottom-0 left-16 right-0 z-[1200] pointer-events-auto" style={{
+                          right: isRightAsideOpen ? `${parseRightAsidePercent(rightAsideWidth) + 2}%` : '1rem'
+                        }}>
       <div className="border-t backdrop-enhanced">
-        <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex items-center justify-between ">
           {/* Left: Branch & actions */}
           <div className={cn(
             "flex items-center gap-6 transition-all duration-300",
@@ -136,20 +145,21 @@ function GitControlsFooter() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <div className="text-sm text-muted-foreground font-mono">
-              {operationLoading ? "Syncing..." : "Ready to commit • Last sync 2m ago"}
+            <div className="text-sm text-muted-foreground font-bold font-mono cursor-pointer bg-yellow-100 p-1 rounded" onClick={()=>handleCommit()}>
+              {operationLoading ? "Syncing..." : "Ready to commit (20 uncommited files) • Last sync 2m ago"}
             </div>
           </div>
 
           {/* Right: Commit changes */}
-          <Button 
+          {/* <Button 
             onClick={handleCommit} 
-            className="btn-git-primary gap-2 font-semibold"
+            size="sm"
+            className="btn-git-primary gap-2 font-semibold text-sm"
             disabled={changedCount === 0 || operationLoading}
           >
             <GitCommit className="h-4 w-4" />
             {operationLoading ? "Processing..." : `Commit Changes (${uncommittedFiles} files)`}
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>

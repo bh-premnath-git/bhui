@@ -133,8 +133,6 @@ setDataSource(response)
 
   // Function to create proper initial data structure for ReaderOptionsForm
   const createInitialData = React.useCallback(() => {
-    console.log('🔧 OrderPopUp: Creating initial data from currentNode:', currentNode);
-    console.log('🔧 OrderPopUp: Pipeline JSON:', pipelineJson);
     
     if (!currentNode?.data) {
       console.log('🔧 OrderPopUp: No currentNode data available');
@@ -144,7 +142,6 @@ setDataSource(response)
     const nodeData = currentNode.data;
     const nodeSource = nodeData.source;
     const dataSrcId = nodeSource?.data_src_id;
-    console.log('🔧 OrderPopUp: Looking for data_src_id:', dataSrcId);
 
     // Try to find existing transformation in pipeline JSON
     let pipelineTransformation = null;
@@ -152,11 +149,9 @@ setDataSource(response)
 
     if (dataSrcId && pipelineJson) {
       pipelineTransformation = findTransformationFromPipeline(dataSrcId);
-      console.log('🔧 OrderPopUp: Found pipeline transformation:', pipelineTransformation);
 
       if (pipelineTransformation && pipelineTransformation.source) {
         pipelineSource = resolveSourceFromPipeline(pipelineTransformation.source);
-        console.log('🔧 OrderPopUp: Resolved pipeline source:', pipelineSource);
       }
     }
     // debugger
@@ -197,9 +192,6 @@ setDataSource(response)
       nodeId: nodeId,
       dependent_on: pipelineTransformation?.dependent_on || nodeData.dependent_on || []
     };
-    console.log('🔧 OrderPopUp: Created initial data:', dataSource);
-
-    console.log('🔧 OrderPopUp: Created initial data with pipeline priority:', initialData);
     return initialData;
   }, [currentNode, nodeId, pipelineJson, findTransformationFromPipeline, resolveSourceFromPipeline]);
 
@@ -381,7 +373,7 @@ setDataSource(response)
             )}
             {selected === 1 && (
               <SchemaTable 
-                dataSourceId={source.source?.data_src_id} 
+                dataSourceId={initialData.source?.data_src_id} 
                 onSwitchToReaderOptions={() => setSelected(0)}
               />
             )}

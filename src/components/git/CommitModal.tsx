@@ -52,7 +52,7 @@ export function CommitModal() {
 
       <div className="ml-auto w-[85%] bg-card border-l shadow-2xl flex flex-col backdrop-enhanced">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={handleCloseModal} className="focus-enhanced">
               <X className="h-4 w-4" />
@@ -187,14 +187,14 @@ export function CommitModal() {
         </div>
 
         {/* Footer - Commit message */}
-        <div className="border-t p-6 bg-muted/20">
+        <div className="border-t p-4 bg-muted/20">
           <div className="mb-3">
             <label className="text-sm font-semibold">Commit Message</label>
           </div>
           <Textarea
             value={commitMessage}
             onChange={handleMessageChange}
-            className="mb-4 min-h-[100px] focus-enhanced font-mono"
+            className="mb-3 min-h-[90px] focus-enhanced font-mono text-sm"
             placeholder="Enter a detailed commit message..."
             disabled={operationLoading}
           />
@@ -207,9 +207,10 @@ export function CommitModal() {
               </span>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={handleCloseModal} 
                 className="focus-enhanced"
                 disabled={operationLoading}
@@ -217,6 +218,7 @@ export function CommitModal() {
                 Cancel
               </Button>
               <Button 
+                size="sm"
                 className="btn-git-primary focus-enhanced font-semibold" 
                 onClick={handleCommit}
                 disabled={operationLoading || !commitMessage.trim()}

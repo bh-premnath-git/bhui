@@ -18,7 +18,7 @@ import {
   toggleMaximize,
   toggleChartTypePicker,
   toggleColorSchemePicker,
-} from '@/store/slices/dataops/dashboardStore';
+} from '@/store/slices/dataops/dashboardSlice';
 import {
   DropdownMenu,
   DropdownMenuContent,

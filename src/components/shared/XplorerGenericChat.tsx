@@ -80,7 +80,7 @@ export function XplorerGenericChatUI({ imageSrc, assistantColor = '#009459',
       intermediate_executed_query_json: data.chartMetadata,
       executed_query:  { ...data.data },
       chart_config: "",
-      dashboardId: data.dashboardId ?? "102",
+      dashboardId: data.dashboardId,
       connectionId: connectionId
     };
     

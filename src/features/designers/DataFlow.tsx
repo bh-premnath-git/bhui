@@ -29,7 +29,7 @@ import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
 import { CommitModal } from '@/components/git/CommitModal';
 import { setEnabled } from '@/store/slices/gitSlice';
 
- 
+
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
     const { selectNode, revertOrSaveData, setSelectedFlowId, reactFlowInstance, selectedFlowId, setIsSaving, setIsSaved, prevNodeFn, setNodeFormData } = useFlow();
@@ -84,11 +84,11 @@ const BuildPlayGround: React.FC = () => {
         setShowLogs,
         isNodeFormOpen,
         setIsNodeFormOpen,
-        selectedNodeId, 
+        selectedNodeId,
         setSelectedNodeId,
         setNodes,
     } = usePipelineContext();
-    
+
     const onError = useCallback((id: string) => {
         // console.log('Flow Error:', id);
     }, []);
@@ -106,19 +106,19 @@ const BuildPlayGround: React.FC = () => {
     }, [dispatch]);
     const { id } = useParams();
     const { useFetchFlowById, fetchFlowsList } = useFlowApi();
-    const { data: flowList, isLoading: isFlowListLoading }:any = fetchFlowsList(1, 1000, true);
-    
+    const { data: flowList, isLoading: isFlowListLoading }: any = fetchFlowsList(1, 1000, true);
+
     // Validate flowId before making API call
     const isValidFlowId = (flowId: string | null | undefined): flowId is string => {
         return typeof flowId === 'string' && flowId.trim().length > 0;
     };
-    
+
     // Only fetch flow if we have a valid ID
     const shouldFetchFlow = isValidFlowId(id);
     const { data: flow, isLoading: isFlowLoading, isError, refetch } = useFetchFlowById(id, shouldFetchFlow);
-    
+
     const isLoading = isFlowLoading || isFlowListLoading;
-    
+
     // Auto-select first flow if no ID is provided
     useEffect(() => {
         if (!id && flowList && Array.isArray(flowList.data) && flowList.data.length > 0) {
@@ -127,7 +127,7 @@ const BuildPlayGround: React.FC = () => {
             navigate(`/designers/data-flow-playground/${firstFlow.flow_id}`);
         }
     }, [id, flowList, navigate]);
-    
+
     // Force refetch when ID changes
     useEffect(() => {
         if (isValidFlowId(id)) {
@@ -138,27 +138,27 @@ const BuildPlayGround: React.FC = () => {
             console.warn(`DataFlow: Invalid flow ID provided: ${id}, skipping refetch`);
         }
     }, []);
-    
+
     // Listen for custom flow selection events
     useEffect(() => {
         const handleFlowSelected = (event: CustomEvent) => {
             const { flowId } = event.detail;
             console.log(`DataFlow: Received flowSelected event for flow ${flowId}`);
-            
+
             // Force a refresh regardless of whether we're on this flow
             console.log(`DataFlow: Forcing refetch for flow ${flowId}`);
             refetch();
-            
+
             // Reset processedFlowId to ensure the flow is processed again
             setProcessedFlowId(null);
-            
+
             // Force a re-render
             setForceRender(prev => prev + 1);
         };
-        
+
         // Add event listener
         document.addEventListener('flowSelected', handleFlowSelected as EventListener);
-        
+
         // Clean up
         return () => {
             document.removeEventListener('flowSelected', handleFlowSelected as EventListener);
@@ -166,7 +166,7 @@ const BuildPlayGround: React.FC = () => {
     }, [refetch]);
     const handleOpenNodeForm = useCallback((nodeId: string) => {
         console.log('DataFlow: Opening NodeForm for node:', nodeId);
-        
+
         // First select the node in the Flow context
         selectNode(nodeId);
 
@@ -211,34 +211,34 @@ const BuildPlayGround: React.FC = () => {
 
     // Key state to force re-render
     const [forceRender, setForceRender] = useState(0);
-    
+
     // Track if we've already processed this flow to prevent loops
     const [processedFlowId, setProcessedFlowId] = useState<string | null>(null);
-    
+
     // Reset processedFlowId when ID changes
     useEffect(() => {
         if (id) {
             // Check if the current processedFlowId starts with this ID
             const isCurrentFlow = processedFlowId?.startsWith(id + '-');
-            
+
             if (!isCurrentFlow) {
                 console.log(`DataFlow: ID changed to ${id}, resetting processedFlowId`);
                 setProcessedFlowId(null);
             }
         }
     }, [id, processedFlowId]);
-    
+
     // Load flow data when flow changes
     useEffect(() => {
         // Only update the selected flow ID if it's different and valid
-        if (isValidFlowId(id) && id !== selectedFlowId) { 
+        if (isValidFlowId(id) && id !== selectedFlowId) {
             console.log(`DataFlow: Setting selected flow ID to ${id}`);
             setSelectedFlowId(id);
         } else if (id && !isValidFlowId(id)) {
             console.warn(`DataFlow: Invalid flow ID provided, not setting selected flow: ${id}`);
         }
     }, [id, selectedFlowId, setSelectedFlowId, isValidFlowId]);
-    
+
     // Separate effect for handling flow data changes
     useEffect(() => {
         // Skip if no flow data or invalid ID
@@ -248,57 +248,57 @@ const BuildPlayGround: React.FC = () => {
             }
             return;
         }
-        
+
         // Skip if we've already processed this exact flow instance
         // We use a combination of ID and flow data to determine if this is a new fetch
         const flowKey = `${id}-${flow.updated_at || Date.now()}`;
         if (processedFlowId === flowKey) {
             return;
         }
-        
+
         console.log(`DataFlow: Processing flow ${id}, data:`, flow);
-        
+
         // Mark this flow as processed to prevent loops
         setProcessedFlowId(flowKey);
-        
+
         // Force a re-render when flow changes
         setForceRender(prev => prev + 1);
-        
+
         // Check if flow has valid definition
         if (flow?.flow_definition?.flow_json) {
             try {
                 // Safely check if flowJson exists
                 const flowJson = flow.flow_definition.flow_json?.flowJson;
-                
+
                 if (!flowJson) {
                     console.log("DataFlow: No flow JSON data found, using empty nodes/edges");
                     // Use empty arrays if no flow JSON
                     updateSetNode([], []);
                     return;
                 }
-                
+
                 console.log("DataFlow: Processing flow JSON:", flowJson);
 
                 // The converter function will handle parsing if needed
                 const { nodes, edges, nodeFormData } = convertFlowJsonToReactFlow(flowJson, moduleTypes);
 
                 console.log('DataFlow: Converted flow.json to ReactFlow format:', { nodes, edges, nodeFormData });
-                
+
                 // Update the state with the converted data
                 console.log("DataFlow: Updating nodes and edges:", nodes, edges);
-                
+
                 // Clear existing nodes and edges first
                 updateSetNode([], []);
-                
+
                 // Use a short timeout to ensure the clear operation completes
                 setTimeout(() => {
                     // Use updateSetNode to update both nodes and edges in one call
                     updateSetNode(nodes, edges);
-                    
+
                     // Update form data
                     setNodeFormData(nodeFormData);
                     setNodeFormDataLocal(nodeFormData);
-                    
+
                     // Center the view after a short delay to ensure nodes are rendered
                     setTimeout(() => {
                         if (handleCenter) {
@@ -317,10 +317,10 @@ const BuildPlayGround: React.FC = () => {
             // Use empty arrays if no flow definition
             updateSetNode([], []);
         }
-        
+
         // Update Redux state
         dispatch(setSelectedFlow(flow));
-        
+
         // Set environment if available
         const flowdeployment = flow;
         if (flowdeployment?.flow_deployment?.[0]?.bh_env_id) {
@@ -393,7 +393,7 @@ const BuildPlayGround: React.FC = () => {
         };
     }, []);
 
-   
+
     useEffect(() => {
         // Handle browser back button
         const handlePopState = (event: PopStateEvent) => {
@@ -441,7 +441,7 @@ const BuildPlayGround: React.FC = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         flex: '1 1 auto',
-                        height:'100%'
+                        height: '100%'
                     }}>
                     {isLoading ? (
                         <div className="w-full h-full flex items-center justify-center bg-background">
@@ -457,7 +457,7 @@ const BuildPlayGround: React.FC = () => {
                                 title="No Flow Found"
                                 description="Get started by creating a new flow."
                                 action={
-                                    <Button 
+                                    <Button
                                         onClick={() => setCreateFlowDialogOpen(true)}
                                         className="mt-4"
                                     >
@@ -501,7 +501,7 @@ const BuildPlayGround: React.FC = () => {
                             onInit={(instance) => {
                                 // Only log once to prevent console spam
                                 console.log(`ReactFlow initialized for flow ${id}`);
-                                
+
                                 // Store the instance for later use
                                 if (instance && typeof instance.fitView === 'function') {
                                     // Center the view after initialization
@@ -517,7 +517,7 @@ const BuildPlayGround: React.FC = () => {
                             }}
                         />
                     )}
-                    
+
                     {/* Flow Controls */}
                     <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-20'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
                         <FlowControls
@@ -590,7 +590,7 @@ const BuildPlayGround: React.FC = () => {
                             </Button>
                         </div>
                         <div className="h-[calc(300px-40px)] overflow-auto p-2">
-                            <Terminal 
+                            <Terminal
                                 isOpen={showLogs}
                                 onClose={() => setShowLogs(false)}
                                 terminalLogs={terminalLogs}

@@ -1,4 +1,5 @@
 export interface DashboardLayout {
+  id: number;
   layout_id: number;
   dashboard_id: number;
   widget_id: number;

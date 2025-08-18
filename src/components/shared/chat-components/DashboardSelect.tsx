@@ -33,7 +33,7 @@ export function DashboardSelect({ onSelectDashboard, selectedDashboardId }: Dash
         <div className="flex flex-col items-center">
           <div>Failed to load dashboards.</div>
           <button 
-            onClick={() => onSelectDashboard("102")}
+            onClick={() => onSelectDashboard(undefined)}
             className="mt-2 px-4 py-1 bg-primary/10 text-primary text-sm rounded-md hover:bg-primary/20"
           >
             Use Main Dashboard

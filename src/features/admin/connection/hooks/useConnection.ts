@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useResource } from '@/hooks/api/useResource';
 import { debounce } from 'lodash';
 import { Connection, ConnectionType, ConnectionValue, ConnectionPaginatedResponse } from '@/types/admin/connection';

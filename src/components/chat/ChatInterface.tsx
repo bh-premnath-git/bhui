@@ -1,12 +1,12 @@
 import React from 'react';
-import { ChatHeader } from '@/components/chat/ChatHeader';
-import {ChatInput} from '@/components/chat/ChatInput';
-import {ActionCategories} from '@/components/chat/ActionCategories';
-import {ChatMessages} from '@/components/chat/ChatMessages';
-import {ActionsList} from '@/components/chat/ActionsList';
-import {CommunityShowcase} from '@/components/chat/CommunityShowcase';
+import { ChatHeader } from './ChatHeader';
+import { ChatInput } from './ChatInput';
+import { ActionCategories } from './ActionCategories';
+import { ActionsList } from './ActionsList';
+import { ChatMessages } from './ChatMessages';
+import { CommunityShowcase } from './CommunityShowcase';
 
-const Home: React.FC = () => {
+export const ChatInterface: React.FC = () => {
   return (
     <div className="min-h-screen bg-chat-background transition-smooth">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -31,5 +31,3 @@ const Home: React.FC = () => {
     </div>
   );
 };
-
-export default Home;

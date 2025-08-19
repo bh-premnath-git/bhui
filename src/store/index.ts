@@ -18,6 +18,8 @@ import promptsReducer from './slices/admin/promptsSlice';
 import dashboardReducer from './slices/dataops/dashboardSlice';
 import llmReducer from './slices/admin/llmSlice';
 import gitReducer from './slices/gitSlice';
+import chatReducer from './slices/chat/chatSlice';
+import communityReducer from './slices/chat/communitySlice';
 
 export const store = configureStore({
   reducer: {
@@ -40,6 +42,8 @@ export const store = configureStore({
     prompts: promptsReducer,
     llms: llmReducer,
     git: gitReducer,
+    chat: chatReducer,
+    community: communityReducer,
   },
 });
 

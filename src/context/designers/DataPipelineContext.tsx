@@ -34,6 +34,7 @@ import { apiService } from '@/lib/api/api-service';
 import { useAppSelector } from '@/hooks/useRedux';
 import { random } from 'lodash';
 import { usePipelineOperations } from '@/hooks/usePipelineOperations';
+import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 import { Pipeline } from '@/types/designer/pipeline';
 import { debug } from 'console';
 
@@ -234,7 +235,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const autoSaveInterval = parseInt(time, 10) || 5000;
     const navigate = useNavigate();
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
-    const { zoomIn, zoomOut, fitView } = useReactFlow();
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [initialDataMap, setInitialDataMap] = useState<{ [key: string]: any }>({});
 
@@ -440,7 +440,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleRunClick,
         setSelectedFormState,
         setRunDialogOpen,
-        // For fetchPipelineDetails
         id,
         setNodes,
         setEdges,
@@ -680,6 +679,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Force a re-render by updating a timestamp
         setHeaderUpdateTrigger(prev => prev + 1);
     }
+
+    // Flow alignment helpers based on current nodes/edges
+    const { alignHorizontal: alignHorizontalFlow } = useFlowAlignment({
+        nodes,
+        edges,
+        updateNodes: updateSetNode,
+        reactFlowInstance,
+    });
+
     const handleNodeUpdate = useCallback((nodeId: string, updatedData: any) => {
         
         // Ensure nodes is an array before mapping
@@ -755,7 +763,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Center and align the nodes
             await handleCenter();
-            await handleAlignHorizontal();
+            // Prefer alignment from useFlowAlignment for better layout
+            await alignHorizontalFlow({ startX: 50, startY: 50, levelWidth: 240, nodeSpacing: 160, fitView: true, distribution: 'compact' });
         }
 
         // Initialize form states for the new nodes

@@ -189,6 +189,7 @@ export function getDefaultValueForField(field: SchemaProperty): any {
  */
 export function transformArrayForForm(value: any, field: SchemaProperty): any {
   if (!Array.isArray(value) || field.type !== 'array') {
+    console.log(`🔧 transformArrayForForm: Skipping non-array value:`, { value, fieldType: field.type });
     return value;
   }
 
@@ -196,28 +197,40 @@ export function transformArrayForForm(value: any, field: SchemaProperty): any {
   const itemType = field.items?.type;
   const isPrimitiveArray = itemType && ['string', 'number', 'integer', 'boolean'].includes(itemType);
   
+  console.log(`🔧 transformArrayForForm: Processing array:`, {
+    value,
+    itemType,
+    isPrimitiveArray,
+    valueLength: value.length
+  });
   
   if (isPrimitiveArray) {
     // Transform simple array values to objects with 'value' property
     const transformed = value.map((item: any, index: number) => {
       // If it's already in the correct format, keep it
       if (typeof item === 'object' && item !== null && 'value' in item) {
+        console.log(`🔧 transformArrayForForm: Item ${index} already in correct format:`, item);
         return item;
       }
       // Transform primitive value to object format
-      return {
+      const transformedItem = {
         value: item,
         _key: `item_${index}_${Date.now()}`
       };
+      console.log(`🔧 transformArrayForForm: Transformed item ${index}:`, { original: item, transformed: transformedItem });
+      return transformedItem;
     });
+    console.log(`🔧 transformArrayForForm: Final transformed array:`, transformed);
     return transformed;
   }
 
   // For object arrays, return as-is but ensure each item has a _key
-  return value.map((item: any, index: number) => ({
+  const objectArray = value.map((item: any, index: number) => ({
     ...item,
     _key: item._key || `item_${index}_${Date.now()}`
   }));
+  console.log(`🔧 transformArrayForForm: Object array with keys:`, objectArray);
+  return objectArray;
 }
 
 /**

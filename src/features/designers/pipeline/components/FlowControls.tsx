@@ -21,6 +21,7 @@ import { usePipelineContext } from '@/context/designers/DataPipelineContext'
 import { useEventStream } from '@/features/admin/connection/hooks/useEventStream'
 import { useSidebar } from '@/context/SidebarContext'
 import { API_PREFIX_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 
 interface Log {
   timestamp: string
@@ -65,6 +66,12 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     updateSetNode, 
     reactFlowInstance 
   } = usePipelineContext()
+  const { alignHorizontal, alignVertical, alignTopLeftGrid, alignTopLeftHierarchical } = useFlowAlignment({
+    nodes,
+    edges,
+    updateNodes: updateSetNode,
+    reactFlowInstance,
+  });
   const [logs,setLogs]=useState<any>([])
   
  const { start, stop } = useEventStream({
@@ -82,7 +89,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   
   const handleLogsClick = async () => {
     await handleCenterClick();
-await handleAlignTopLeftClick();
+// await handleAlignTopLeftClick();
 
     console.log("🔧 Terminal button clicked - starting logs and alignment process");
     console.log("🔧 onAlignTopLeft prop available:", !!onAlignTopLeft);
@@ -111,34 +118,34 @@ await handleAlignTopLeftClick();
       />,
       // `Terminal - ${pipelineDtl?.pipeline_name || 'Pipeline'}`
     );
-    console.log("🔧 Bottom drawer content set, scheduling alignment...");
+    console.log("🔧 Bottom drawer content set; panning viewport up to keep nodes visible");
 
-    // Auto-align pipeline to top-left hierarchically when terminal opens
-    // Try multiple times with different delays to ensure it works
-    const alignmentAttempts = [300, 600, 1000];
-    
-    alignmentAttempts.forEach((delay, index) => {
-      setTimeout(() => {
-        console.log(`🔧 Alignment attempt ${index + 1} (delay: ${delay}ms)`);
-        
-        if (onAlignTopLeft) {
-          console.log("🔧 Calling onAlignTopLeft from props");
-          onAlignTopLeft();
+    // After the drawer opens, nudge the viewport up instead of re-aligning nodes
+    setTimeout(() => {
+      try {
+        const el = document.querySelector('[data-bottom-drawer], .bottom-drawer, #bottom-drawer') as HTMLElement | null;
+        const height = el?.offsetHeight || Math.round(window.innerHeight * 0.3);
+        const offset = Math.max(160, Math.floor(height * 0.7));
+        if (reactFlowInstance) {
+          // Read current viewport and pan up by offset
+          // @ts-ignore
+          const vp = reactFlowInstance.toObject?.().viewport || { x: 0, y: 0, zoom: (reactFlowInstance as any).getZoom?.() || 1 };
+          reactFlowInstance.setViewport({ x: vp.x, y: vp.y - offset, zoom: vp.zoom }, { duration: 400 });
         } else {
-          console.log("🔧 onAlignTopLeft not available, using local hierarchical alignment");
-          handleAlignTopLeftHierarchical();
+          // Fallback: resize + center
+          window.dispatchEvent(new Event('resize'));
+          handleCenterClick();
         }
-      }, delay);
-    });
+      } catch (e) {
+        console.error('Viewport nudge failed', e);
+      }
+    }, 250);
   }
 
   const handleCloseLogs = () => {
     closeBottomDrawer();
   }
 
-  const handleAddNodeClick = () => {
-    setIsPipelineFormOpen(true);
-  }
 
   const handleClosePipelineForm = () => {
     setIsPipelineFormOpen(false);
@@ -333,90 +340,26 @@ await handleAlignTopLeftClick();
   const handleAlignHorizontalClick = () => {
     console.log("Align Horizontal clicked");
     try {
-      if (!nodes || nodes.length === 0) {
-        console.log("No nodes to align");
-        return;
-      }
-      
-      // Create a map of node levels (columns)
-      const nodeLevels = new Map<string, number>();
-      const visited = new Set<string>();
-
-      // Find source nodes (nodes with no incoming edges)
-      const sourceNodes = nodes.filter(node =>
-        !edges.some(edge => edge.target === node.id)
-      );
-
-      // Assign levels through BFS
-      const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-      while (queue.length > 0) {
-        const { id, level } = queue.shift()!;
-        if (visited.has(id)) continue;
-
-        visited.add(id);
-        nodeLevels.set(id, level);
-
-        // Find all outgoing edges from this node
-        const outgoingEdges = edges.filter(edge => edge.source === id);
-        outgoingEdges.forEach(edge => {
-          if (!visited.has(edge.target)) {
-            queue.push({ id: edge.target, level: level + 1 });
-          }
-        });
-      }
-
-      // Get maximum level for spacing calculation
-      const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
-      const levelWidth = 200; // Horizontal spacing between levels
-      const nodeSpacing = 150; // Vertical spacing between nodes in the same level
-
-      // Group nodes by their levels
-      const nodesByLevel = new Map<number, string[]>();
-      nodeLevels.forEach((level, nodeId) => {
-        if (!nodesByLevel.has(level)) {
-          nodesByLevel.set(level, []);
-        }
-        nodesByLevel.get(level)!.push(nodeId);
+      alignHorizontal({
+        startX: 50,
+        startY: 50,
+        levelWidth: 220,
+        nodeSpacing: 150,
+        fitView: true,
+        distribution: 'even',
+        fitViewOptions: { padding: 0.15, duration: 600 },
       });
-
-      // Calculate new positions
-      const startX = 50;
-      const startY = 50;
-      const newNodes = nodes.map(node => {
-        const level = nodeLevels.get(node.id) || 0;
-        const nodesInLevel = nodesByLevel.get(level) || [];
-        const indexInLevel = nodesInLevel.indexOf(node.id);
-
-        return {
-          ...node,
-          position: {
-            x: startX + (level * levelWidth),
-            y: startY + (indexInLevel * nodeSpacing)
-          }
-        };
-      });
-
-      // Update nodes with new positions
-      updateSetNode(newNodes, edges);
-
-      // Center the view
-      setTimeout(() => {
-        const centerX = startX + (maxLevel * levelWidth) / 2;
-        const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 0);
-        const centerY = startY + (maxNodesInLevel * nodeSpacing) / 2;
-        
-        if (reactFlowInstance && reactFlowInstance.setCenter) {
-          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }
-        
-        // Try to click the fitView button directly as a fallback
-        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-        if (fitViewButton instanceof HTMLElement) {
-          console.log("Clicking fitView button after horizontal alignment");
-          fitViewButton.click();
-        }
-      }, 100);
-      
+      handleCenterClick();
+      // const refit = () => {
+      //   const doFit = () => {
+      //     try { reactFlowInstance?.fitView({ padding: 0.15, duration: 650 }); } catch {}
+      //   };
+      //   // Wait for layout + render, then fit
+      //   requestAnimationFrame(() => requestAnimationFrame(doFit));
+      //   // Fallback in case rAF timing misses
+      //   setTimeout(doFit, 220);
+      // };
+      // refit();
     } catch (error) {
       console.error("Error in align horizontal:", error);
     }
@@ -425,90 +368,16 @@ await handleAlignTopLeftClick();
   const handleAlignVerticalClick = () => {
     console.log("Align Vertical clicked");
     try {
-      if (!nodes || nodes.length === 0) {
-        console.log("No nodes to align");
-        return;
-      }
-      
-      // Create a map of node levels (rows)
-      const nodeLevels = new Map<string, number>();
-      const visited = new Set<string>();
-
-      // Find source nodes (nodes with no incoming edges)
-      const sourceNodes = nodes.filter(node =>
-        !edges.some(edge => edge.target === node.id)
-      );
-
-      // Assign levels through BFS
-      const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-      while (queue.length > 0) {
-        const { id, level } = queue.shift()!;
-        if (visited.has(id)) continue;
-
-        visited.add(id);
-        nodeLevels.set(id, level);
-
-        // Find all outgoing edges from this node
-        const outgoingEdges = edges.filter(edge => edge.source === id);
-        outgoingEdges.forEach(edge => {
-          if (!visited.has(edge.target)) {
-            queue.push({ id: edge.target, level: level + 1 });
-          }
-        });
-      }
-
-      // Get maximum level for spacing calculation
-      const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
-      const levelHeight = 150; // Vertical spacing between levels
-      const nodeSpacing = 200; // Horizontal spacing between nodes in the same level
-
-      // Group nodes by their levels
-      const nodesByLevel = new Map<number, string[]>();
-      nodeLevels.forEach((level, nodeId) => {
-        if (!nodesByLevel.has(level)) {
-          nodesByLevel.set(level, []);
-        }
-        nodesByLevel.get(level)!.push(nodeId);
+      alignVertical({
+        startX: 50,
+        startY: 50,
+        levelHeight: 180,
+        nodeSpacing: 150,
+        fitView: true,
+        fitViewOptions: { padding: 0.15, duration: 600 },
       });
+           handleCenterClick();
 
-      // Calculate new positions
-      const startX = 50;
-      const startY = 50;
-      const newNodes = nodes.map(node => {
-        const level = nodeLevels.get(node.id) || 0;
-        const nodesInLevel = nodesByLevel.get(level) || [];
-        const indexInLevel = nodesInLevel.indexOf(node.id);
-
-        return {
-          ...node,
-          position: {
-            x: startX + (indexInLevel * nodeSpacing),
-            y: startY + (level * levelHeight)
-          }
-        };
-      });
-
-      // Update nodes with new positions
-      updateSetNode(newNodes, edges);
-
-      // Center the view
-      setTimeout(() => {
-        const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 0);
-        const centerX = startX + (maxNodesInLevel * nodeSpacing) / 2;
-        const centerY = startY + (maxLevel * levelHeight) / 2;
-        
-        if (reactFlowInstance && reactFlowInstance.setCenter) {
-          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }
-        
-        // Try to click the fitView button directly as a fallback
-        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-        if (fitViewButton instanceof HTMLElement) {
-          console.log("Clicking fitView button after vertical alignment");
-          fitViewButton.click();
-        }
-      }, 100);
-      
     } catch (error) {
       console.error("Error in align vertical:", error);
     }
@@ -517,52 +386,8 @@ await handleAlignTopLeftClick();
   const handleAlignTopLeftClick = () => {
     console.log("Align Top Left clicked");
     try {
-      if (!nodes || nodes.length === 0) {
-        console.log("No nodes to align");
-        return;
-      }
-      
-      // Simple grid layout starting from top-left
-      const startX = -200; // Move nodes more to the right
-      const startY = -120; // Move nodes even higher up (can go negative)
-      const gridSpacing = 100; // Space between nodes
-      const nodesPerRow = 4; // Number of nodes per row
-      
-      const newNodes = nodes.map((node, index) => {
-        const row = Math.floor(index / nodesPerRow);
-        const col = index % nodesPerRow;
-        
-        return {
-          ...node,
-          position: {
-            x: startX + (col * gridSpacing),
-            y: startY + (row * gridSpacing)
-          }
-        };
-      });
-
-      // Update nodes with new positions
-      updateSetNode(newNodes, edges);
-
-      // Center the view after a short delay
-      setTimeout(() => {
-        if (reactFlowInstance && reactFlowInstance.setCenter) {
-          // Calculate the center of the grid
-          const rows = Math.ceil(nodes.length / nodesPerRow);
-          const centerX = startX + ((nodesPerRow - 1) * gridSpacing) / 2;
-          const centerY = startY + ((rows - 1) * gridSpacing) / 2;
-          
-          reactFlowInstance.setCenter(centerX, centerY, { duration: 800 });
-        }
-        
-        // Try to click the fitView button directly as a fallback
-        const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-        if (fitViewButton instanceof HTMLElement) {
-          console.log("Clicking fitView button after top-left alignment");
-          fitViewButton.click();
-        }
-      }, 100);
-      
+      // Grid from top-left
+      alignTopLeftGrid({ startX: 0, startY: 0, spacing: 140, columns: 4, fitView: true });
     } catch (error) {
       console.error("Error in align top left:", error);
     }
@@ -570,123 +395,23 @@ await handleAlignTopLeftClick();
 
   const handleAlignTopLeftHierarchical = () => {
     console.log("🔧 Hierarchical Top Left alignment triggered");
-    console.log("🔧 Nodes available:", nodes?.length || 0);
-    console.log("🔧 Edges available:", edges?.length || 0);
-    
     try {
-      if (!nodes || nodes.length === 0) {
-        console.log("🔧 No nodes to align hierarchically");
-        return;
-      }
-      
-      // Create a map of node levels (hierarchical layers)
-      const nodeLevels = new Map<string, number>();
-      const visited = new Set<string>();
-
-      // Find source nodes (nodes with no incoming edges)
-      const sourceNodes = nodes.filter(node =>
-        !edges.some(edge => edge.target === node.id)
-      );
-
-      // If no source nodes found, treat all nodes as potential sources
-      if (sourceNodes.length === 0) {
-        console.log("No clear source nodes found, using first node as source");
-        if (nodes.length > 0) {
-          sourceNodes.push(nodes[0]);
-        }
-      }
-
-      // Assign levels through BFS (Breadth-First Search)
-      const queue = sourceNodes.map(node => ({ id: node.id, level: 0 }));
-      while (queue.length > 0) {
-        const { id, level } = queue.shift()!;
-        if (visited.has(id)) continue;
-
-        visited.add(id);
-        nodeLevels.set(id, level);
-
-        // Find all outgoing edges from this node
-        const outgoingEdges = edges.filter(edge => edge.source === id);
-        outgoingEdges.forEach(edge => {
-          if (!visited.has(edge.target)) {
-            queue.push({ id: edge.target, level: level + 1 });
-          }
-        });
-      }
-
-      // Handle any unvisited nodes (disconnected components)
-      nodes.forEach(node => {
-        if (!visited.has(node.id)) {
-          nodeLevels.set(node.id, 0);
-        }
+      // ELK-based layered layout from top-left
+      alignTopLeftHierarchical({
+        startX: 0,
+        startY: 0,
+        direction: 'RIGHT',
+        nodeNodeSpacing: 80,
+        layerSpacing: 140,
+        fitView: true,
       });
-
-      // Group nodes by their hierarchical levels
-      const nodesByLevel = new Map<number, string[]>();
-      nodeLevels.forEach((level, nodeId) => {
-        if (!nodesByLevel.has(level)) {
-          nodesByLevel.set(level, []);
-        }
-        nodesByLevel.get(level)!.push(nodeId);
-      });
-
-      // Calculate positions for hierarchical layout
-      const startX = 50; // Start from left edge
-      const startY = 50; // Start from top edge  
-      const levelWidth = 250; // Horizontal spacing between levels
-      const nodeSpacing = 120; // Vertical spacing between nodes in the same level
-
-      // Calculate new positions
-      const newNodes = nodes.map(node => {
-        const level = nodeLevels.get(node.id) || 0;
-        const nodesInLevel = nodesByLevel.get(level) || [];
-        const indexInLevel = nodesInLevel.indexOf(node.id);
-
-        return {
-          ...node,
-          position: {
-            x: startX + (level * levelWidth),
-            y: startY + (indexInLevel * nodeSpacing)
-          }
-        };
-      });
-
-      console.log("🔧 Calculated new node positions:", newNodes.map(n => ({ id: n.id, position: n.position })));
-      
-      // Update nodes with new positions
-      updateSetNode(newNodes, edges);
-      console.log("🔧 Nodes updated with new positions");
-
-      // Center the view after positioning
-      setTimeout(() => {
-        const maxLevel = Math.max(...Array.from(nodeLevels.values()), 0);
-        const maxNodesInLevel = Math.max(...Array.from(nodesByLevel.values()).map(n => n.length), 0);
-        
-        if (reactFlowInstance && reactFlowInstance.fitView) {
-          // Use fitView to show all nodes properly
-          reactFlowInstance.fitView({ 
-            padding: 0.1, 
-            duration: 800,
-            minZoom: 0.3,
-            maxZoom: 1.0
-          });
-        } else {
-          // Fallback: try to click the fitView button directly
-          const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-          if (fitViewButton instanceof HTMLElement) {
-            console.log("Clicking fitView button after hierarchical alignment");
-            fitViewButton.click();
-          }
-        }
-      }, 100);
-      
     } catch (error) {
       console.error("Error in hierarchical top left alignment:", error);
     }
   };
 
   const actions = [
-    { key: 'add-node', icon: MdAdd, handler: handleAddNodeClick },
+    // { key: 'add-node', icon: MdAdd, handler: handleAddNodeClick },
     { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
     { key: 'zoom-out', icon: BiZoomOut, handler: handleZoomOutClick },
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
@@ -754,28 +479,6 @@ await handleAlignTopLeftClick();
           </React.Fragment>
         ))}
 
-        {/* Extra button to open Settings (shadcn Sheet) */}
-        {/* <div className="w-px h-6 bg-gray-200 mx-1" /> */}
-        {/* <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" onClick={handleSettingsClick} title="Settings">
-              <MdSettings size={20} />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="mySheetContent">
-            <SheetHeader>
-              <SheetTitle>Settings</SheetTitle>
-              <SheetDescription>
-                Customize your pipeline settings here.
-              </SheetDescription>
-            </SheetHeader>
-            <SheetFooter>
-              <Button variant="secondary" onClick={handleCloseSettings}>
-                Close
-              </Button>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet> */}
       </div>
 
       {/* Logs Terminal */}

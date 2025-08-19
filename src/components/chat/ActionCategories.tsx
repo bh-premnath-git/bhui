@@ -13,6 +13,21 @@ interface ActionCategory {
 
 const categories: ActionCategory[] = [
   {
+    id: 'create-pipeline',
+    title: 'Create Pipeline',
+    icon: Plus,
+  },
+  {
+    id: 'explore-data',
+    title: 'Explore Data',
+    icon: Database,
+  },
+  {
+    id: 'check-jobs',
+    title: 'Check Jobs',
+    icon: ListChecks,
+  },
+  {
     id: 'other-items',
     title: 'Other Items',
     icon: MoreHorizontal,

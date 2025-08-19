@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Database, Plus, ListChecks, Users, BarChart3 } from 'lucide-react';
+import { ChevronRight, Database, Plus, ListChecks, Users, BarChart3, FolderPlus, Settings } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 
 interface Action {
@@ -53,17 +53,31 @@ const ACTIONS: Record<string, Action> = {
     description: 'Monitor job performance and metrics',
     icon: BarChart3,
   },
+  'add-project': {
+    id: 'add-project',
+    title: 'Add Project',
+    description: 'Create and configure new projects',
+    icon: FolderPlus,
+  },
+  'add-environment': {
+    id: 'add-environment',
+    title: 'Add Environment',
+    description: 'Set up development and production environments',
+    icon: Settings,
+  },
 };
 
 // Mapping from selected category context -> which suggestion actions to show
 const CONTEXT_TO_ACTION_IDS: Record<string, string[]> = {
+  'create-pipeline': ['create-pipeline'],
+  'explore-data': ['explore-data'],
+  'check-jobs': ['check-job-statistics'],
   'other-items': [
     'add-users-roles',
     'add-connections', 
     'onboard-dataset',
-    'create-pipeline',
-    'explore-data',
-    'check-job-statistics'
+    'add-project',
+    'add-environment'
   ],
 };
 

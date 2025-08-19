@@ -1,5 +1,5 @@
 import { Dispatch } from '@reduxjs/toolkit';
-import { CONNECTION_WORKFLOW, type WorkflowConfig, type WorkflowStep } from '@/data/chatResponses';
+import { CONNECTION_WORKFLOW, PROJECT_WORKFLOW, ENVIRONMENT_WORKFLOW, DATA_CATALOG_WORKFLOW, PIPELINE_WORKFLOW, type WorkflowConfig, type WorkflowStep } from '@/data/chatResponses';
 import { 
   addMessage, 
   setTyping, 
@@ -25,7 +25,9 @@ export class ChatService {
       'onboard-dataset': 'Onboard new dataset',
       'create-pipeline': 'Create pipeline',
       'explore-data': 'Explore Data',
-      'check-job-statistics': 'Check Job Statistics'
+      'check-job-statistics': 'Check Job Statistics',
+      'add-project': 'Add Project',
+      'add-environment': 'Add Environment'
     };
 
     this.dispatch(addMessage({
@@ -37,6 +39,22 @@ export class ChatService {
     if (actionId === 'add-connections') {
       // Start the connection workflow
       this.currentWorkflow = CONNECTION_WORKFLOW;
+      await this.executeStep('start');
+    } else if (actionId === 'add-project') {
+      // Start the project workflow
+      this.currentWorkflow = PROJECT_WORKFLOW;
+      await this.executeStep('start');
+    } else if (actionId === 'add-environment') {
+      // Start the environment workflow
+      this.currentWorkflow = ENVIRONMENT_WORKFLOW;
+      await this.executeStep('start');
+    } else if (actionId === 'onboard-dataset') {
+      // Start the data catalog workflow
+      this.currentWorkflow = DATA_CATALOG_WORKFLOW;
+      await this.executeStep('start');
+    } else if (actionId === 'create-pipeline') {
+      // Start the pipeline workflow
+      this.currentWorkflow = PIPELINE_WORKFLOW;
       await this.executeStep('start');
     } else {
       // For other actions, show a placeholder message
@@ -75,6 +93,12 @@ export class ChatService {
       isUser: true
     }));
 
+    // Store pipeline JSON if provided (for sample pipelines)
+    if (selectedOption.pipelineJson) {
+      // Store the pipeline JSON in localStorage for later use
+      localStorage.setItem('selectedPipelineJson', JSON.stringify(selectedOption.pipelineJson));
+    }
+
     // Execute the next step
     await this.executeStep(selectedOption.next);
   }
@@ -94,7 +118,7 @@ export class ChatService {
     await this.executeStep(step.nextOnClick);
   }
 
-  private async executeStep(stepId: string): Promise<void> {
+  async executeStep(stepId: string): Promise<void> {
     if (!this.currentWorkflow) return;
 
     const step = this.currentWorkflow.steps.find(s => s.id === stepId);
@@ -132,10 +156,23 @@ export class ChatService {
           }
         }));
       } else if (step.uiComponent.type === 'RightAsideComponent') {
+        // Map component names to component IDs
+        const componentIdMap: Record<string, string> = {
+          'AddConnection': 'connection-form',
+          'AddProject': 'project-form',
+          'AddEnvironment': 'environment-form',
+          'AddTable': 'table-form',
+          'AddFile': 'file-form',
+          'AddPipeline': 'pipeline-form',
+          'DataPipelineCanvas': 'pipeline-canvas'
+        };
+        
+        const componentId = componentIdMap[step.uiComponent.props.component || ''] || 'connection-form';
+        
         // Open right aside component
         const rightComponent: RightComponent = {
           componentType: 'RightAsideComponent',
-          componentId: 'connection-form',
+          componentId: componentId,
           title: step.uiComponent.props.title || 'Configuration Panel',
           isVisible: true
         };

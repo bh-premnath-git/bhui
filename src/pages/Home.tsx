@@ -35,7 +35,7 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="min-h-[70vh] flex items-center justify-center">
             <div className="w-full text-center space-y-8">
-              <ChatHeader />
+              {/* <ChatHeader /> */}
               {messages.length > 0 && <ChatMessages />}
               <ChatInput />
             </div>
@@ -54,9 +54,9 @@ const Home: React.FC = () => {
           <div className="flex-1 overflow-y-auto">
             <div className="container mx-auto px-4 py-8 max-w-3xl">
               <div className="space-y-8">
-                <div className="text-center">
+                {/* <div className="text-center">
                   <ChatHeader />
-                </div>
+                </div> */}
                 {messages.length > 0 && <ChatMessages />}
                 <ChatInput />
               </div>

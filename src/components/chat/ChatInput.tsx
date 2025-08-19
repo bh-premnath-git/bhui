@@ -96,7 +96,7 @@ export const ChatInput: React.FC = () => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "0px";
-    el.style.height = Math.min(el.scrollHeight, 240) + "px"; // up to ~10 lines
+    el.style.height = Math.min(el.scrollHeight, 120) + "px"; // up to ~5 lines
   };
 
   useEffect(() => {
@@ -191,7 +191,7 @@ export const ChatInput: React.FC = () => {
           rounded-2xl border border-chat-border/50 bg-background/60
           backdrop-blur supports-[backdrop-filter]:bg-background/40
           transition-all focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/30
-          shadow-md px-3 py-2 sm:px-4 sm:py-3
+          shadow-md px-3 sm:px-4 py-2
         "
       >
         <Textarea
@@ -200,13 +200,13 @@ export const ChatInput: React.FC = () => {
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask BigHammer…"
-          rows={3}
+          rows={1}
           className="
             w-full resize-none border-0 bg-transparent
             px-1 py-1 text-base leading-6
             placeholder:text-muted-foreground
             focus-visible:ring-0 focus-visible:ring-offset-0
-            min-h-[72px] max-h-60
+            min-h-[48px] max-h-32
           "
           aria-label="Chat message"
         />
@@ -218,18 +218,18 @@ export const ChatInput: React.FC = () => {
           <ActionsList variant="compact" />
         </div>
 
-        <div className="flex items-center justify-end gap-1 pt-2">
+        <div className="flex items-center justify-end gap-1 pt-1">
           {/* Mic */}
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className={`h-9 w-9 rounded-full hover:bg-primary/10 ${isRecording ? "bg-primary/10" : ""}`}
+            className={`h-8 w-8 rounded-full hover:bg-primary/10 ${isRecording ? "bg-primary/10" : ""}`}
             aria-label={isRecording ? "Stop voice input" : "Start voice input"}
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isLoading}
           >
-            {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
           </Button>
 
           {/* Send */}
@@ -239,12 +239,12 @@ export const ChatInput: React.FC = () => {
             disabled={!currentInput.trim() || isLoading}
             className="
               bg-gradient-to-r from-primary to-primary/80 text-primary-foreground
-              rounded-full px-4 h-9 text-sm hover:opacity-90 disabled:opacity-50
+              rounded-full px-3 h-8 text-sm hover:opacity-90 disabled:opacity-50
             "
             aria-label="Send message"
           >
             <div className="flex items-center gap-1">
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs">Send</span>
             </div>
           </Button>

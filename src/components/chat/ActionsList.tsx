@@ -1,72 +1,114 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Users, Database, Package, BarChart3, Search, TrendingUp } from 'lucide-react';
+import { ChevronRight, Database, Plus, ListChecks, Users, BarChart3 } from 'lucide-react';
+import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 
 interface Action {
   id: string;
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  category: string;
 }
 
-// Actions from the second reference image
-const actions: Action[] = [
-  {
-    id: 'add-users',
-    title: 'Add Users or roles...',
-    description: 'Manage user permissions and access control',
+type ActionsListProps = {
+  variant?: 'card' | 'compact';
+};
+
+// Master actions library - all available actions
+const ACTIONS: Record<string, Action> = {
+  'add-users-roles': {
+    id: 'add-users-roles',
+    title: 'Add Users or roles',
+    description: 'Manage user access and permissions',
     icon: Users,
-    category: 'User Management',
   },
-  {
+  'add-connections': {
     id: 'add-connections',
-    title: 'Add new Connections...',
+    title: 'Add new Connections',
     description: 'Connect to databases and data sources',
     icon: Database,
-    category: 'Data Sources',
   },
-  {
+  'onboard-dataset': {
     id: 'onboard-dataset',
-    title: 'Onboard new dataset...',
+    title: 'Onboard new dataset',
     description: 'Import and configure new datasets',
-    icon: Package,
-    category: 'Data Management',
+    icon: ListChecks,
   },
-  {
+  'create-pipeline': {
     id: 'create-pipeline',
-    title: 'Create pipeline...',
-    description: 'Build data processing workflows',
-    icon: BarChart3,
-    category: 'Pipelines',
+    title: 'Create pipeline',
+    description: 'Build data processing pipelines',
+    icon: Plus,
   },
-  {
+  'explore-data': {
     id: 'explore-data',
-    title: 'Explore Data...',
+    title: 'Explore Data',
     description: 'Analyze and visualize your data',
-    icon: Search,
-    category: 'Analytics',
+    icon: ListChecks,
   },
-  {
-    id: 'check-statistics',
-    title: 'Check Job Statistics...',
+  'check-job-statistics': {
+    id: 'check-job-statistics',
+    title: 'Check Job Statistics',
     description: 'Monitor job performance and metrics',
-    icon: TrendingUp,
-    category: 'Monitoring',
+    icon: BarChart3,
   },
-];
+};
 
-export const ActionsList: React.FC = () => {
-  const handleActionClick = (actionId: string) => {
-    console.log(`Action clicked: ${actionId}`);
-    // TODO: Implement action-specific logic
+// Mapping from selected category context -> which suggestion actions to show
+const CONTEXT_TO_ACTION_IDS: Record<string, string[]> = {
+  'other-items': [
+    'add-users-roles',
+    'add-connections', 
+    'onboard-dataset',
+    'create-pipeline',
+    'explore-data',
+    'check-job-statistics'
+  ],
+};
+
+export const ActionsList: React.FC<ActionsListProps> = ({ variant = 'card' }) => {
+  const dispatch = useAppDispatch();
+  const context = useAppSelector((s) => s.chat.context);
+
+  const actions = useMemo(() => {
+    const ids = CONTEXT_TO_ACTION_IDS[context] || [];
+    return ids.map((id) => ACTIONS[id]).filter(Boolean);
+  }, [context]);
+
+  const handleActionClick = async (actionId: string) => {
+    const { getChatService } = await import('@/services/chatService');
+    const chatService = getChatService(dispatch);
+    await chatService.processAction(actionId);
   };
 
+  if (!actions.length) return null;
+
+  if (variant === 'compact') {
+    // Render small suggestion chips inline (for inside input panel)
+    return (
+      <div className="flex flex-wrap gap-2 pt-1">
+        {actions.map((action) => (
+          <Button
+            key={action.id}
+            variant="outline"
+            size="sm"
+            onClick={() => handleActionClick(action.id)}
+            className="rounded-full h-8 px-3 border-chat-border/50 hover:border-primary/40 bg-background/60"
+          >
+            <action.icon className="h-3.5 w-3.5 mr-1.5 text-primary" />
+            <span className="text-xs">{action.title}</span>
+          </Button>
+        ))}
+      </div>
+    );
+  }
+
+  // Default card variant
   return (
-    <div className="w-full max-w-4xl mx-auto mb-8">
+    <div className="w-full max-w-4xl mx-auto">
       <Card className="bg-chat-surface/30 border-chat-border/50">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="space-y-3">
             {actions.map((action) => (
               <Button
@@ -87,20 +129,6 @@ export const ActionsList: React.FC = () => {
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-smooth" />
               </Button>
             ))}
-          </div>
-
-          {/* Quick Text Input */}
-          <div className="mt-6 pt-4 border-t border-chat-border/30">
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                placeholder="Text..."
-                className="flex-1 p-3 border border-chat-border/50 rounded-lg bg-background/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-smooth"
-              />
-              <Button size="sm" className="bg-primary text-primary-foreground">
-                Send
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>

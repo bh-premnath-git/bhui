@@ -6,6 +6,22 @@ export interface Message {
   content: string;
   timestamp: Date;
   isUser: boolean;
+  options?: string[];
+  uiComponent?: {
+    type: 'Card';
+    props: {
+      title?: string;
+      description?: string;
+    };
+    stepId?: string;
+  };
+}
+
+export interface RightComponent {
+  componentType: 'RightAsideComponent';
+  componentId: string;
+  title: string;
+  isVisible: boolean;
 }
 
 interface ChatState {
@@ -14,6 +30,8 @@ interface ChatState {
   isTyping: boolean;
   isLoading: boolean;
   context: string;
+  rightComponent: RightComponent | null;
+  layoutMode: 'centered' | 'split';
 }
 
 const initialState: ChatState = {
@@ -22,6 +40,8 @@ const initialState: ChatState = {
   isTyping: false,
   isLoading: false,
   context: '',
+  rightComponent: null,
+  layoutMode: 'centered',
 };
 
 const chatSlice = createSlice({
@@ -48,11 +68,18 @@ const chatSlice = createSlice({
     setContext: (state, action: PayloadAction<string>) => {
       state.context = action.payload;
     },
+    setRightComponent: (state, action: PayloadAction<RightComponent | null>) => {
+      state.rightComponent = action.payload;
+      state.layoutMode = action.payload ? 'split' : 'centered';
+    },
+    setLayoutMode: (state, action: PayloadAction<'centered' | 'split'>) => {
+      state.layoutMode = action.payload;
+    },
     clearMessages: (state) => {
       state.messages = [];
     },
   },
 });
 
-export const { setCurrentInput, addMessage, setTyping, setLoading, setContext, clearMessages } = chatSlice.actions;
+export const { setCurrentInput, addMessage, setTyping, setLoading, setContext, setRightComponent, setLayoutMode, clearMessages } = chatSlice.actions;
 export default chatSlice.reducer;

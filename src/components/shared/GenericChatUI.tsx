@@ -10,7 +10,9 @@ import { useRecommendation } from '@/hooks/useRecommendation';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { marked } from 'marked';
 import { createShortUUID } from '@/lib/utils';
-  
+import { useAuth } from '@/hooks/useAuth';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { addWidget } from '@/store/slices/dataops/dashboardSlice';
 
 interface GenericChatUIProps {
   imageSrc?: string;
@@ -20,9 +22,6 @@ interface GenericChatUIProps {
   variant?: string;
 }
 
-// Custom event name constant
-export const CHART_ADDED_EVENT = 'chart-added-to-dashboard';
-export const WIDGET_REMOVED_EVENT = 'widget-removed-from-dashboard';
 const allowedResponseTypes = ['SQL', 'CHART', 'TABLE', 'EXPLANATION'];
 
 // Initialize marked to use synchronous mode
@@ -52,6 +51,9 @@ export function GenericChatUI({
   const [processingState, setProcessingState] = useState<'processing' | 'processed' | 'hidden'>('hidden');
   const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
   const streamAbortRef = useRef<() => void>();
+  const { getUserInfo } = useAuth();
+  const userInfo = getUserInfo();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     let isActive = true;
@@ -129,22 +131,19 @@ export function GenericChatUI({
   const handleAddToDashboard = (data: any) => {
     const chartData = {
       id: `chart-${createShortUUID()}`,
-      owner: "info@bighammer.ai",
+      owner: userInfo?.email,
       widget_type: "user_defined",
       name: data.chartMetadata.layout.title.text,
       visibility: "private",
       sql_query: data.sql,
       intermediate_executed_query_json: data.chartMetadata,
-      executed_query:  { ...data.data },
-      chart_config: ""
+      executed_query: { ...data.data },
+      chart_config: {},
+      plotly_data: JSON.stringify(data.chartMetadata), // Added for chart rendering
+      meta_data: {},                                   // Added required property
+      dashboard_layout: []
     };
-    // Dispatch custom event with chart data
-    const chartEvent = new CustomEvent(CHART_ADDED_EVENT, {
-      detail: chartData,
-      bubbles: true,
-      cancelable: true
-    });
-    document.dispatchEvent(chartEvent);
+    dispatch(addWidget(chartData));
   };
 
   return (
@@ -152,10 +151,10 @@ export function GenericChatUI({
       <ScrollArea className="flex-1 w-full">
         <div className="px-4 py-4 w-full  mx-auto">
           {messages.length === 0 ? (
-            <motion.div 
+            <motion.div
               className="flex flex-col space-y-8"
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
               <div className="flex gap-4">
@@ -169,7 +168,7 @@ export function GenericChatUI({
                   </p>
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-500 mb-3 ml-12">You can ask me questions like:</p>
                 <div className="flex flex-col gap-2 ml-12">

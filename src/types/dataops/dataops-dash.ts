@@ -66,7 +66,7 @@ export interface Widget {
   executed_query: ExecutedQueryItem[] | any;
   plotly_data: string | any;
   intermediate_executed_query_json?: any;
-  chart_config: ChartConfig;
+  chart_config: ChartConfig | Record<string, unknown>;
   meta_data: Record<string, unknown>;
   dashboard_layout: unknown[];
 }

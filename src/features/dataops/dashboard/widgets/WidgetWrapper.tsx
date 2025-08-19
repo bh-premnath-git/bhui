@@ -19,7 +19,6 @@ import { ChartTypeViewer } from './components/ChartTypeViewer';
 import { ColorSchemeViewer } from './components/ColorSchemeViewer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Terminal, RefreshCcw, Code } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { decompressValue } from '@/lib/decompress';
 
@@ -52,7 +51,7 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
 
   const errorSummary = hasExecutedQueryError
     ? String(data!.executed_query[0].error).split('\n')[0].slice(0, 300)
-    : 'Failed to load widget data.';
+    : 'No data available';
 
   const headerProps = {
     widgetId,
@@ -90,33 +89,27 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
   // Polished error state inside the same card (keeps consistent chrome)
   if (!widgetState || isError || !data || !plotlyData) {
     const errorCard = (
-      <Card id={`widget-${widgetId}`} className={`bg-background border shadow-sm h-full ${className}`}>
+      <Card id={`widget-${widgetId}`} className={`bg-background border shadow-sm h-full flex flex-col ${className}`}>
         <WidgetHeader {...headerProps} />
-        <div className="p-3 h-[calc(100%-50px)] overflow-auto">
-          <Alert variant="destructive" className="mb-3">
-            <Terminal className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription className="whitespace-pre-wrap break-words">
-              {errorSummary}
-            </AlertDescription>
-          </Alert>
-          <div className="flex gap-2">
-            <Button variant="default" onClick={() => refetch()}>
-              <RefreshCcw className="h-4 w-4 mr-2" /> Retry
-            </Button>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="mb-4 text-muted-foreground">
+            {errorSummary}
           </div>
+          <Button variant="default" onClick={() => refetch()} className="flex items-center gap-2">
+            <RefreshCcw className="h-4 w-4" /> Retry
+          </Button>
         </div>
       </Card>
     );
     return isMaximized
       ? createPortal(
-          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
-            <div className="min-h-screen p-4 flex items-center justify-center">
-              <div className="w-full max-w-6xl h-[80vh]">{errorCard}</div>
-            </div>
-          </div>,
-          document.body
-        )
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
+          <div className="min-h-screen p-4 flex items-center justify-center">
+            <div className="w-full max-w-6xl h-[80vh]">{errorCard}</div>
+          </div>
+        </div>,
+        document.body
+      )
       : errorCard;
   }
 
@@ -203,12 +196,12 @@ export const WidgetWrapper = ({ widgetId, title, className }: WidgetWrapperProps
 
   return isMaximized
     ? createPortal(
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
-          <div className="min-h-screen p-4 flex items-center justify-center">
-            <div className="w-full max-w-6xl h-[80vh]">{card}</div>
-          </div>
-        </div>,
-        document.body
-      )
+      <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm overflow-auto">
+        <div className="min-h-screen p-4 flex items-center justify-center">
+          <div className="w-full max-w-6xl h-[80vh]">{card}</div>
+        </div>
+      </div>,
+      document.body
+    )
     : card;
 };

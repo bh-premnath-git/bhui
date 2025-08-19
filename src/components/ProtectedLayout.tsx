@@ -48,10 +48,11 @@ const LayoutWrapper = () => {
       <div 
         id="main-content-area"
         className={cn(
-          "flex flex-col overflow-hidden transition-all duration-300",
-           isRightAsideOpen ? '' : 'flex-1'
+          "flex flex-col overflow-hidden transition-all duration-300 flex-1"
         )}
-        style={{ zIndex: 1, width: isRightAsideOpen ? `calc(100% - ${rightAsidePercentage}%)` : undefined }}>
+        style={{ 
+          zIndex: 1
+        }}>
         <MainContentInternal /> 
         {isBottomDrawerOpen && bottomDrawerContent && (
           <div 
@@ -71,8 +72,8 @@ const LayoutWrapper = () => {
       {isRightAsideOpen && rightAsideContent && (
         <div 
           id="right-aside-container"
-          className="flex-shrink-0 h-full transition-all duration-300" 
-          style={{ width: rightAsidePercentage+'%', zIndex: 80 }}
+          className="fixed right-0 top-0 h-full transition-all duration-300 z-[80]" 
+          style={{ width: rightAsidePercentage+'%' }}
         >
           <RightAside title={rightAsideTitle} width={rightAsideWidth}>
             {rightAsideContent}

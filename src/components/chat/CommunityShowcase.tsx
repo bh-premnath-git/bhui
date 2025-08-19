@@ -76,13 +76,7 @@ export const CommunityShowcase: React.FC = () => {
   return (
     <div className="w-full">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h3 className="text-2xl font-semibold text-foreground">From the Community</h3>
-          <p className="text-muted-foreground mt-1">
-            Explore what the community is building with v0.
-          </p>
-        </div>
+      <div className="flex items-center justify-end mb-8">
         <Button variant="ghost" className="text-primary hover:text-primary/80">
           Browse All
           <ChevronRight className="ml-1 h-4 w-4" />
@@ -144,23 +138,6 @@ export const CommunityShowcase: React.FC = () => {
                       +{project.tags.length - 2}
                     </Badge>
                   )}
-                </div>
-
-                {/* Author and Likes */}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">by {project.author}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLike(project.id);
-                    }}
-                    className="h-auto p-1 hover:text-red-500 transition-smooth"
-                  >
-                    <Heart className="h-3 w-3 mr-1" />
-                    <span className="text-xs">{project.likes}</span>
-                  </Button>
                 </div>
               </div>
             </CardContent>

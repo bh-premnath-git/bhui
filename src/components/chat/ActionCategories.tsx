@@ -1,8 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { useAppDispatch } from '@/hooks/useRedux';
 import { setContext, setOtherActions } from '@/store/slices/chat/chatSlice';
-import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3 } from 'lucide-react';
+import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3, FolderPlus, Settings } from 'lucide-react';
 
 interface ActionItem {
   id: number;
@@ -41,17 +41,16 @@ const categories: ActionCategory[] = [
 const otherItemsActions: ActionItem[] = [
   { id: 1, title: "Add User or roles", icon: Users },
   { id: 2, title: "Add new Connection", icon: Cable },
-  { id: 2, title: "Add new Project", icon: Cable },
-  { id: 2, title: "Add new Environment", icon: Cable },
-  { id: 3, title: "Onboard new dataset", icon: Upload },
-  { id: 4, title: "Create pipeline", icon: Plus },
-  { id: 5, title: "Explore Data", icon: Database },
-  { id: 6, title: "Check Job Statistics", icon: BarChart3 },
+  { id: 3, title: "Add new Project", icon: FolderPlus },
+  { id: 4, title: "Add new Environment", icon: Settings },
+  { id: 5, title: "Onboard new dataset", icon: Upload },
+  { id: 6, title: "Create pipeline", icon: Plus },
+  { id: 7, title: "Explore Data", icon: Database },
+  { id: 8, title: "Check Job Statistics", icon: BarChart3 },
 ];
 
 export const ActionCategories: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { otherActions } = useAppSelector((state) => state.chat);
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId === 'other-items') {

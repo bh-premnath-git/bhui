@@ -8,14 +8,14 @@ export const ChatHeader: React.FC = () => {
       {/* Main Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-center space-x-2 mb-6">
-          <h1 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">
+          <h3 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">
             Bighammer
-          </h1>
+          </h3>
         </div>
         
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+        <h4 className="text-lg md:text-xl font-bold text-foreground">
           How I can help?
-        </h2>
+        </h4>
       </div>
     </div>
   );

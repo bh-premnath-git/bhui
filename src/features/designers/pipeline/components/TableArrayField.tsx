@@ -1,5 +1,4 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -482,8 +481,8 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
               </div>
             </div>
             
-            <div className="overflow-hidden rounded-md border">
-              <Table>
+            <div className="rounded-md border monaco-table-container" style={{ overflow: 'visible' }}>
+              <Table className="relative" style={{ overflow: 'visible' }}>
                 <TableHeader className={cn(showActionsColumn ? "" : "")}>
                   <TableRow className="bg-muted/50">
                     {allColumns.map((columnKey) => {
@@ -515,7 +514,7 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                     )}
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody style={{ overflow: 'visible' }}>
                   {values.map((item: any, index: number) => {
                     const itemPath = `${fullFieldKey}.${index}`;
                     
@@ -540,7 +539,7 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                     }
 
                     return (
-                      <TableRow key={item._key}>
+                      <TableRow key={item._key} style={{ overflow: 'visible' }}>
                         {allColumns.map((columnKey) => {
                           const columnField = activeFields.fields[columnKey];
                           const isRequired = activeFields.required.includes(columnKey);
@@ -561,8 +560,14 @@ export const TableArrayField: React.FC<TableArrayFieldProps> = ({
                           return (
                             <TableCell 
                               key={columnKey} 
-                              className="py-3 px-3 align-top"
-                              style={{ width: columnWidth, minWidth: '120px' }}
+                              className="py-3 px-3 align-top relative"
+                              style={{ 
+                                width: columnWidth, 
+                                minWidth: '120px',
+                                // Allow Monaco editor suggestions to overflow table cell boundaries
+                                overflow: 'visible',
+                                position: 'relative'
+                              }}
                             >
                               {columnField ? (
                                 <div className="min-w-0 w-full">

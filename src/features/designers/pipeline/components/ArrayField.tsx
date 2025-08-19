@@ -37,6 +37,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
   const [showDescription, setShowDescription] = useState(false);
   const fullFieldKey = parentPath ? `${parentPath}.${fieldKey}` : fieldKey;
   const keyCounter = useRef(0);
+  const isInitialized = useRef(false);
   
   return (
     <FormField
@@ -115,21 +116,26 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
         React.useEffect(() => {
           const currentFormValue = formField.value || [];
           
-          if (currentFormValue.length === 0) {
-            // Only add item if truly empty
-            addItem();
-          } else if (currentFormValue.length > 0) {
-            // Ensure existing values have _key properties
-            const hasKeysAlready = currentFormValue.every((item: any) => 
-              typeof item === 'object' && item !== null && '_key' in item
-            );
-            
-            if (!hasKeysAlready) {
-              const valuesWithKeys = currentFormValue.map((item: any, index: number) => ({
-                ...(typeof item === 'object' && item !== null ? item : { value: item }),
-                _key: `item_${++keyCounter.current}_${Date.now()}_${index}`
-              }));
-              formField.onChange(valuesWithKeys);
+          // Only initialize once to prevent interference with form updates
+          if (!isInitialized.current) {
+            if (currentFormValue.length === 0) {
+              // Only add item if truly empty
+              addItem();
+              isInitialized.current = true;
+            } else if (currentFormValue.length > 0) {
+              // Ensure existing values have _key properties
+              const hasKeysAlready = currentFormValue.every((item: any) => 
+                typeof item === 'object' && item !== null && '_key' in item
+              );
+              
+              if (!hasKeysAlready) {
+                const valuesWithKeys = currentFormValue.map((item: any, index: number) => ({
+                  ...(typeof item === 'object' && item !== null ? item : { value: item }),
+                  _key: `item_${++keyCounter.current}_${Date.now()}_${index}`
+                }));
+                formField.onChange(valuesWithKeys);
+              }
+              isInitialized.current = true;
             }
           }
         }, [formField.value]);

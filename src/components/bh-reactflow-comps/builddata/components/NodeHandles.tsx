@@ -73,7 +73,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
         const handleCount = inputHandlesCount;
         // Base height plus space for each handle - ensure enough space for all handles
         // Use smaller spacing when there are more handles
-        const spacing = handleCount > 4 ? 12 : handleCount > 6 ? 8 : 16;
+        const spacing = handleCount > 6 ? 8 : handleCount > 4 ? 10 : 12;
         return Math.max(80, handleCount * spacing + 20); // Adjust minimum height and padding
     }, [inputHandlesCount]);
 
@@ -171,21 +171,10 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
 
     // Calculate the position for each handle to ensure even vertical spacing
     const calculateHandlePosition = useCallback((index: number, totalHandles: number) => {
-        // If there's only one handle, center it
-        if (totalHandles === 1) {
-            return '50%';
-        }
-        
-        // For multiple handles, adjust spacing based on the number of handles
-        // Use smaller spacing when there are more handles
-        const spacing = totalHandles > 4 ? 10 : totalHandles > 6 ? 8 : 12;
-        const totalHeight = (totalHandles - 1) * spacing;
-        
-        // Start position to center the group (percentage from top)
-        const startPosition = 50 - (totalHeight / 2);
-        
-        // Calculate position for this specific handle
-        return `calc(${startPosition}% + ${index * spacing}px)`;
+        // Top-align handles with a small offset; reduce spacing as count grows
+        const spacing = totalHandles > 6 ? 8 : totalHandles > 4 ? 10 : 12;
+        const startOffset = 6; // px padding from top
+        return `calc(${startOffset}px + ${index * spacing}px)`;
     }, []);
 
     // Function to render a single input handle
@@ -247,8 +236,8 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                             style={{
                                 top: position,
                                 opacity: 1,
-                                width: '8px',
-                                height: '8px',
+                                width: '6px',
+                                height: '6px',
                                 background: '#1890ff', // Blue color for plus handle
                                 border: '1px solid #ffffff',
                                 borderRadius: '50%',
@@ -257,7 +246,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                                 boxShadow: '0 0 3px rgba(24, 144, 255, 0.5)',
                                 zIndex: -10, // Negative z-index to ensure it's behind the node image
                                 left: 0,
-                                transform: 'translate(-50%, -150%)',
+                                transform: 'translate(-50%, -550%)',
                             }}
                             className="handle-input handle-plus"
                             isConnectable={true}
@@ -268,13 +257,13 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                             className="absolute flex items-center justify-center pointer-events-none"
                             style={{
                                 top: position,
-                                left: '-4px',
-                                width: '8px',
-                                height: '8px',
+                                left: '-30px',
+                                width: '6px',
+                                height: '6px',
                                 color: 'white',
                                 fontSize: '8px',
                                 fontWeight: 'bold',
-                                transform: 'translate(-50%, -150%)',
+                                transform: 'translate(-50%, -350%)',
                                 zIndex: -11, // Negative z-index to ensure it's behind the node image
                             }}
                         >
@@ -290,8 +279,8 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                             style={{
                                 top: position,
                                 opacity: 1,
-                                width: '8px', // Reduced size
-                                height: '8px', // Reduced size
+                                width: '6px', // Reduced size
+                                height: '6px', // Reduced size
                                 background: (isConnected || customHandleConnected) ? '#4CAF50' : '#ef4444',
                                 border: `1px solid ${(isConnected || customHandleConnected) ? '#4CAF50' : '#ef4444'}`,
                                 borderRadius: '50%',
@@ -302,7 +291,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                                     : '0 0 4px rgba(239, 68, 68, 0.5)',
                                 zIndex: -10, // Negative z-index to ensure it's behind the node image
                                 left: 0,
-                                transform: 'translate(-50%, -150%)',
+                                transform: 'translate(-50%, -550%)',
                             }}
                             className={`handle-input handle-input-${index} ${
                                 (isConnected || customHandleConnected) ? 'connected-handle' : ''
@@ -316,9 +305,9 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                             style={{
                                 position: 'absolute',
                                 top: position,
-                                left: '4px', // Position closer to the handle
+                                left: '-35px', // Position closer to the handle
                                 transform: 'translateY(-50%)',
-                                fontSize: '10px',
+                                fontSize: '7px',
                                 color: (isConnected || customHandleConnected) ? '#4CAF50' : '#666',
                                 pointerEvents: 'none',
                                 userSelect: 'none',
@@ -328,10 +317,10 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                                 textShadow: '0px 0px 2px rgba(255, 255, 255, 0.8)', // Add text shadow for better visibility
                                 fontWeight: (isConnected || customHandleConnected) ? 'bold' : 'normal',
                                 transition: 'all 0.2s ease',
-                                backgroundColor: (isConnected || customHandleConnected || isConnectionDragging) ? 'rgba(255, 255, 255, 0.8)' : 'transparent',
-                                padding: (isConnected || customHandleConnected || isConnectionDragging) ? '1px 4px' : '0',
+                                // backgroundColor: (isConnected || customHandleConnected || isConnectionDragging) ? 'rgba(255, 255, 255, 0.8)' : 'transparent',
+                                // padding: (isConnected || customHandleConnected || isConnectionDragging) ? '1px 4px' : '0',
                                 borderRadius: '2px',
-                                border: (isConnected || customHandleConnected) ? '1px solid #e0e0e0' : 'none'
+                                // border: (isConnected || customHandleConnected) ? '1px solid #e0e0e0' : 'none'
                             }}
                         >
                             {portLabel}
@@ -363,8 +352,8 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     style={{
                         top: position,
                         right: '0px',
-                        width: isConnectionDragging ? '44px' : '40px', // Slightly larger to match the connection area
-                        height: isConnectionDragging ? '44px' : '40px', // Slightly larger to match the connection area
+                        width: isConnectionDragging ? '36px' : '32px', // Slightly smaller to match reduced handle size
+                        height: isConnectionDragging ? '36px' : '32px', // Slightly smaller to match reduced handle size
                         transform: 'translateX(50%) translateY(-50%)',
                         background: isConnectionDragging 
                             ? 'radial-gradient(circle, rgba(128,128,128,0.5) 0%, rgba(128,128,128,0) 70%)' 
@@ -413,8 +402,8 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     style={{
                         top: position,
                         opacity: 0, // Completely invisible
-                        width: isConnectionDragging ? '24px' : '20px', // Larger invisible area
-                        height: isConnectionDragging ? '24px' : '20px', // Larger invisible area
+                        width: isConnectionDragging ? '20px' : '16px', // Larger invisible area (reduced to match smaller handles)
+                        height: isConnectionDragging ? '20px' : '16px', // Larger invisible area (reduced to match smaller handles)
                         transform: 'translateX(50%) translateY(-50%)',
                         cursor: 'crosshair',
                         background: 'transparent',
@@ -592,7 +581,7 @@ export const NodeHandles: React.FC<NodeHandlesProps> = ({ data }) => {
                     height: 36px; /* Increased to match the larger clickable area */
                     background: radial-gradient(circle, rgba(128,128,128,0.3) 0%, rgba(128,128,128,0) 70%);
                     border-radius: 50%;
-                    transform: translateX(50%) translateY(-50%);
+                    transform: translateX(50%) translateY(-170%);
                     z-index: -16;
                     pointer-events: none;
                 }

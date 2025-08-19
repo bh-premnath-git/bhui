@@ -1,5 +1,5 @@
 // src/features/designers/DataPipelineCanvasNew.tsx
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useSidebar } from '@/context/SidebarContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
+import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 import { PipelineForm } from '@/features/designers/pipeline/components/PipelineForm';
 import LookupForm from '@/features/designers/pipeline/components/form-sections/LookupForm';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
@@ -79,7 +80,9 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     fetchPipelineDetails,
     errorBanner,
     setErrorBanner,
-    pipelines
+    pipelines,
+    updateSetNode,
+    reactFlowInstance,
   } = usePipelineContext();
 
   // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
@@ -96,36 +99,36 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     const thirdTimer = setTimeout(handleResize, 600);
 
     // Try to trigger fitView if possible through the context
-    if (handleCenter) {
-      const fitViewTimer = setTimeout(() => {
-        try {
-          handleCenter();
-          // Make sure nodes are visible when layout changes
-          if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
-            handleCenter();
-          }
-        } catch (error) {
-          console.error('Error calling handleCenter:', error);
-        }
-      }, 350);
+    // if (handleCenter) {
+    //   const fitViewTimer = setTimeout(() => {
+    //     try {
+    //       handleCenter();
+    //       // Make sure nodes are visible when layout changes
+    //       if (nodes.length > 0 && (isRightAsideOpen || isBottomDrawerOpen)) {
+    //         handleCenter();
+    //       }
+    //     } catch (error) {
+    //       console.error('Error calling handleCenter:', error);
+    //     }
+    //   }, 350);
 
-      // Add a second fitView attempt after a longer delay
-      const secondFitViewTimer = setTimeout(() => {
-        try {
-          handleCenter();
-        } catch (error) {
-          console.error('Error in second fitView attempt:', error);
-        }
-      }, 800);
+    //   // Add a second fitView attempt after a longer delay
+    //   const secondFitViewTimer = setTimeout(() => {
+    //     try {
+    //       handleCenter();
+    //     } catch (error) {
+    //       console.error('Error in second fitView attempt:', error);
+    //     }
+    //   }, 800);
 
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(secondTimer);
-        clearTimeout(thirdTimer);
-        clearTimeout(fitViewTimer);
-        clearTimeout(secondFitViewTimer);
-      };
-    }
+    //   return () => {
+    //     clearTimeout(timer);
+    //     clearTimeout(secondTimer);
+    //     clearTimeout(thirdTimer);
+    //     clearTimeout(fitViewTimer);
+    //     clearTimeout(secondFitViewTimer);
+    //   };
+    // }
 
     return () => {
       clearTimeout(timer);
@@ -143,32 +146,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   }, [dispatch]);
 
   // Listen for RightAside panel resize events
-  useEffect(() => {
-    const handleRightAsideResize = (e: CustomEvent) => {
-      // Force a resize event to make ReactFlow recalculate dimensions
-      window.dispatchEvent(new Event('resize'));
-
-      // Try to center the view after a short delay
-      if (handleCenter) {
-        const timer = setTimeout(() => {
-          try {
-            handleCenter();
-          } catch (error) {
-            console.error('Error centering after RightAside resize:', error);
-          }
-        }, 200);
-
-        return () => clearTimeout(timer);
-      }
-    };
-
-    // Add event listener for the custom rightAsideResize event
-    document.addEventListener('rightAsideResize', handleRightAsideResize as EventListener);
-
-    return () => {
-      document.removeEventListener('rightAsideResize', handleRightAsideResize as EventListener);
-    };
-  }, [handleCenter]);
+  
   useEffect(() => {
     // debugger
     if (id) {
@@ -185,7 +163,56 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         });
     }
   }, [id, fetchPipelineDetails]);
+
+  // Separate effect to handle alignment after nodes are loaded
+  useEffect(() => {
+    console.log('🔧 Alignment effect triggered:', {
+      id,
+      isLoadingPipeline,
+      nodesLength: nodes.length,
+      currentPipelineId,
+      hasAlignFunction: !!handleAlignHorizontal,
+      hasReactFlowInstance: !!reactFlowInstance
+    });
+
+    // Only apply alignment if we just loaded a pipeline and have nodes
+    if (id && !isLoadingPipeline && nodes.length > 0 && currentPipelineId === id && reactFlowInstance) {
+      console.log('🔧 Applying horizontal alignment...');
+      
+      // Use multiple attempts with different delays like other parts of the code
+      const alignmentTimer1 = setTimeout(() => {
+        if (handleAlignHorizontal) {
+          console.log('🔧 First alignment attempt');
+          handleAlignHorizontal();
+          window.dispatchEvent(new Event('resize'));
+        }
+      }, 100);
+
+      const alignmentTimer2 = setTimeout(() => {
+        if (handleAlignHorizontal) {
+          console.log('🔧 Second alignment attempt');
+          handleAlignHorizontal();
+          window.dispatchEvent(new Event('resize'));
+        }
+      }, 500);
+
+      const alignmentTimer3 = setTimeout(() => {
+        if (handleAlignHorizontal) {
+          console.log('🔧 Final alignment attempt');
+          handleAlignHorizontal();
+        }
+      }, 1000);
+
+      return () => {
+        clearTimeout(alignmentTimer1);
+        clearTimeout(alignmentTimer2);
+        clearTimeout(alignmentTimer3);
+      };
+    }
+  }, [id, isLoadingPipeline, nodes.length, currentPipelineId]);
   const debuggedNodesSet = useMemo(() => new Set(debuggedNodes), [debuggedNodes]);
+
+
 
   const memoizedNodeTypes = useMemo(() => ({
     custom: (props: any) => (
@@ -404,7 +431,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                 target_name: rawInitialValues?.target?.target_name || rawInitialValues?.target_name || '',
                 table_name: rawInitialValues?.target?.table_name || rawInitialValues?.table_name || '',
                 file_name: rawInitialValues?.target?.file_name || rawInitialValues?.file_name || '',
-                load_mode: rawInitialValues?.target?.load_mode || rawInitialValues?.load_mode || 'append',
+                load_mode: rawInitialValues?.target?.load_mode || rawInitialValues?.load_mode || 'overwrite',
                 // Ensure connection is properly structured
                 connection: {
                   ...(rawInitialValues?.target?.connection || {}),

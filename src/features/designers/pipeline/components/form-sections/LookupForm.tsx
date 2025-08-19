@@ -229,6 +229,7 @@ const LookupForm: React.FC<LookupFormProps> = ({
 
   // Handle form submission
   const onFormSubmit = (data: LookupFormValues) => {
+    console.log('🔧 LookupForm submitted with data:', data);
     // Ensure required fields that are not in UI are included
     const submissionData = {
       ...data,

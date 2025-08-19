@@ -42,7 +42,18 @@ const transformInitialValuesForForm = (values: any, schema: any): any => {
   // Transform array fields to the format expected by ArrayField component
   Object.entries(schema.properties).forEach(([key, field]: [string, any]) => {
     if (field.type === 'array' && transformedValues[key] !== undefined) {
-      transformedValues[key] = transformArrayForForm(transformedValues[key], field);
+      console.log(`🔧 transformInitialValuesForForm: Processing array field "${key}":`, {
+        originalValue: transformedValues[key],
+        fieldType: field.type,
+        itemsType: field.items?.type
+      });
+      
+      const transformedArray = transformArrayForForm(transformedValues[key], field);
+      transformedValues[key] = transformedArray;
+      
+      console.log(`🔧 transformInitialValuesForForm: Transformed array field "${key}":`, {
+        transformedValue: transformedArray
+      });
     }
   });
 
@@ -257,6 +268,31 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             console.log(`🔧 PipelineForm (${currentNodeId}) final form values:`, formInitialValues);
             console.log(`🔧 PipelineForm (${currentNodeId}) transformation name:`, transformationName);
             
+            // Debug specific array fields
+            if (transformedInitialValues.select_columns) {
+              console.log(`🔧 PipelineForm (${currentNodeId}) select_columns details:`, {
+                original: initialValues?.select_columns,
+                transformed: transformedInitialValues.select_columns,
+                final: formInitialValues.select_columns
+              });
+            }
+            if (transformedInitialValues.drop_columns) {
+              console.log(`🔧 PipelineForm (${currentNodeId}) drop_columns details:`, {
+                original: initialValues?.drop_columns,
+                transformed: transformedInitialValues.drop_columns,
+                final: formInitialValues.drop_columns,
+                schemaDefault: schemaDefaults.drop_columns
+              });
+            }
+            
+            // Also log if drop_columns exists in initialValues but not in transformed
+            if (initialValues?.drop_columns && !transformedInitialValues.drop_columns) {
+              console.log(`🔧 PipelineForm (${currentNodeId}) drop_columns missing in transformed:`, {
+                original: initialValues?.drop_columns,
+                transformedKeys: Object.keys(transformedInitialValues)
+              });
+            }
+            
             // Reset form with merged values and force update
             configurationForm.reset(formInitialValues);
             
@@ -265,10 +301,16 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
               const currentValues = configurationForm.getValues();
               const updatedValues = { ...formInitialValues, ...currentValues };
               
-              // Only update fields that are still empty/undefined
+              // Only update fields that are still empty/undefined, but preserve arrays that have values
               Object.entries(formInitialValues).forEach(([key, value]) => {
                 const currentValue = configurationForm.getValues(key as any);
-                if (currentValue === undefined || currentValue === '' || currentValue === null) {
+                // For arrays, only update if current value is undefined or null, not if it's an empty array
+                // because an empty array might be the correct initial state
+                const shouldUpdate = Array.isArray(value) 
+                  ? (currentValue === undefined || currentValue === null)
+                  : (currentValue === undefined || currentValue === '' || currentValue === null);
+                
+                if (shouldUpdate) {
                   configurationForm.setValue(key as any, value);
                 }
               });
@@ -683,7 +725,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
             }
           }
         }
-      } else if (selectedTransformation.name === 'Mapper') {
+      } else if (selectedTransformation.name === 'Mapper'|| selectedTransformation.name === 'Expression') {
         // Handle Mapper transformation - similar to SchemaTransformation
         const derivedFieldMatch = fieldName.match(/derived_fields\.(\d+)\.expression/);
         const columnListMatch = fieldName.match(/column_list\.(\d+)\.expression/);
@@ -971,7 +1013,7 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     setHasUserInteracted(false); // Reset user interaction state for new form
   };
 
-  // Manual validation function
+  // Enhanced validation function that handles array constraints and conditional validation
   const validateFormData = (data: any) => {
     if (!transformationSchema) return { isValid: true, errors: {} };
 
@@ -979,6 +1021,18 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       // Get active fields based on current form values
       const { fields, required } = getActiveFields(transformationSchema, data);
       const errors: any = {};
+      
+      // Debug logging for repartition
+      if (selectedTransformation?.name === 'Repartition') {
+        console.log('🔧 Repartition validation debug:', {
+          data,
+          fields: Object.keys(fields),
+          required,
+          repartitionType: data.repartition_type,
+          repartitionExpression: data.repartition_expression,
+          repartitionExpressionLength: data.repartition_expression?.length
+        });
+      }
       
       // Check required fields
       required.forEach((fieldKey: string) => {
@@ -995,6 +1049,99 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
           };
         }
       });
+
+      // Additional validation for array fields and conditional constraints
+      const validateFieldRecursively = (fieldKey: string, fieldValue: any, fieldSchema: any, parentPath: string = '') => {
+        const fullPath = parentPath ? `${parentPath}.${fieldKey}` : fieldKey;
+        
+        // Validate array constraints
+        if (fieldSchema?.type === 'array' && Array.isArray(fieldValue)) {
+          // Check minItems constraint
+          if (fieldSchema.minItems && fieldValue.length < fieldSchema.minItems) {
+            errors[fullPath] = {
+              message: `${fieldSchema.title || formatFieldTitle(fieldKey)} must have at least ${fieldSchema.minItems} item(s)`
+            };
+          }
+          
+          // Validate each array item
+          if (fieldSchema.items) {
+            fieldValue.forEach((item: any, index: number) => {
+              const itemPath = `${fullPath}.${index}`;
+              
+              // Check required fields in array items
+              if (fieldSchema.items.required && Array.isArray(fieldSchema.items.required)) {
+                fieldSchema.items.required.forEach((requiredField: string) => {
+                  const itemValue = item[requiredField];
+                  if (itemValue === undefined || itemValue === null || itemValue === '') {
+                    errors[`${itemPath}.${requiredField}`] = {
+                      message: `${formatFieldTitle(requiredField)} is required`
+                    };
+                  }
+                });
+              }
+              
+              // Check minLength constraints in array item properties
+              if (fieldSchema.items.properties) {
+                Object.entries(fieldSchema.items.properties).forEach(([propKey, propSchema]: [string, any]) => {
+                  const propValue = item[propKey];
+                  if (propSchema.minLength && typeof propValue === 'string' && propValue.length < propSchema.minLength) {
+                    errors[`${itemPath}.${propKey}`] = {
+                      message: `${formatFieldTitle(propKey)} must be at least ${propSchema.minLength} character(s) long`
+                    };
+                  }
+                });
+              }
+            });
+          }
+        }
+        
+        // Validate string minLength constraints
+        if (fieldSchema?.type === 'string' && fieldSchema.minLength && typeof fieldValue === 'string' && fieldValue.length < fieldSchema.minLength) {
+          errors[fullPath] = {
+            message: `${fieldSchema.title || formatFieldTitle(fieldKey)} must be at least ${fieldSchema.minLength} character(s) long`
+          };
+        }
+        
+        // Recursively validate nested objects
+        if (fieldSchema?.type === 'object' && fieldSchema.properties && typeof fieldValue === 'object' && fieldValue !== null) {
+          Object.entries(fieldSchema.properties).forEach(([nestedKey, nestedSchema]: [string, any]) => {
+            const nestedValue = fieldValue[nestedKey];
+            if (nestedValue !== undefined) {
+              validateFieldRecursively(nestedKey, nestedValue, nestedSchema, fullPath);
+            }
+          });
+        }
+      };
+
+      // Apply additional validation to all fields
+      Object.entries(fields).forEach(([fieldKey, fieldSchema]) => {
+        const fieldValue = data[fieldKey];
+        if (fieldValue !== undefined) {
+          validateFieldRecursively(fieldKey, fieldValue, fieldSchema);
+        }
+      });
+
+      // Handle conditional validation for schemas with anyOf/allOf
+      if (transformationSchema.anyOf || transformationSchema.allOf) {
+        const conditionalSchemas = transformationSchema.anyOf || transformationSchema.allOf || [];
+        
+        conditionalSchemas.forEach((conditionalSchema: any) => {
+          if (conditionalSchema.if && conditionalSchema.then) {
+            // Check if the condition is met
+            const conditionMet = evaluateCondition(conditionalSchema.if, data);
+            
+            if (conditionMet && conditionalSchema.then.properties) {
+              // Apply additional validation from the 'then' clause
+              Object.entries(conditionalSchema.then.properties).forEach(([fieldKey, fieldSchema]: [string, any]) => {
+                const fieldValue = data[fieldKey];
+                if (fieldValue !== undefined) {
+                  validateFieldRecursively(fieldKey, fieldValue, fieldSchema);
+                }
+              });
+            }
+          }
+        });
+      }
       
       return { 
         isValid: Object.keys(errors).length === 0, 
@@ -1006,13 +1153,31 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
     }
   };
 
+  // Helper function to evaluate if conditions
+  const evaluateCondition = (condition: any, data: any): boolean => {
+    if (!condition.properties) return false;
+    
+    return Object.entries(condition.properties).every(([key, value]: [string, any]) => {
+      if (value.const !== undefined) {
+        return data[key] === value.const;
+      }
+      return true;
+    });
+  };
+
   // Helper function to clean up internal _key properties from form data
   const cleanupFormData = (obj: any): any => {
     if (Array.isArray(obj)) {
       return obj.map((item) => {
         const cleanedItem = cleanupFormData(item);
         // For primitive arrays, extract the value property
-        if (cleanedItem && typeof cleanedItem === 'object' && 'value' in cleanedItem && Object.keys(cleanedItem).length === 1) {
+        // Only do this if the object has EXACTLY one property called 'value' and nothing else
+        // This ensures we only extract values from primitive array items, not from complex objects
+        if (cleanedItem && 
+            typeof cleanedItem === 'object' && 
+            'value' in cleanedItem && 
+            Object.keys(cleanedItem).length === 1 &&
+            Object.keys(cleanedItem)[0] === 'value') {
           return cleanedItem.value;
         }
         return cleanedItem;
@@ -1040,13 +1205,22 @@ export const PipelineForm: React.FC<PipelineFormProps> = ({
       const cleanedData = cleanupFormData(data);
       const validation = validateFormData(cleanedData);
       if (!validation.isValid) {
+        console.log('🔧 PipelineForm validation failed:', {
+          errors: validation.errors,
+          cleanedData,
+          transformationName: selectedTransformation?.name
+        });
         
         // Set form errors
         Object.entries(validation.errors).forEach(([path, error]: [string, any]) => {
+          console.log(`🔧 Setting form error for path "${path}":`, error);
           configurationForm.setError(path as any, error);
         });
         
-        toast.error('Please fix the validation errors');
+        // Show a more detailed error message
+        const errorCount = Object.keys(validation.errors).length;
+        const errorMessages = Object.values(validation.errors).map((error: any) => error.message);
+        toast.error(`Please fix ${errorCount} validation error(s): ${errorMessages.slice(0, 2).join(', ')}${errorMessages.length > 2 ? '...' : ''}`);
         return;
       }
 

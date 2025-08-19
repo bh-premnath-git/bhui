@@ -76,6 +76,7 @@ console.log(filteredSources)
   );
 
   const handleSourceSelect = (source: any) => {
+    console.log(source)
     onChange(source);
     setIsSelectingSource(false);
   };

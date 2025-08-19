@@ -65,6 +65,18 @@ export function BottomDrawer({
     };
   }, [isExpanded]);
 
+  // Notify listeners after open/height change so canvases can refit
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const height = drawerRef.current?.getBoundingClientRect().height ?? undefined;
+      const evt = new CustomEvent('bottomDrawerResize', { bubbles: true, detail: { open: isBottomDrawerOpen, height } });
+      document.dispatchEvent(evt);
+      // Also dispatch a window resize so components recalc their size
+      window.dispatchEvent(new Event('resize'));
+    }, 350); // match transition duration
+    return () => clearTimeout(timer);
+  }, [isBottomDrawerOpen, isMaximized, currentHeight]);
+
   // Handle resize start
   const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();

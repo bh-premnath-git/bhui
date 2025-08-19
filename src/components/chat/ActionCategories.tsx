@@ -1,9 +1,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useAppDispatch } from '@/hooks/useRedux';
-import { setContext } from '@/store/slices/chat/chatSlice';
-import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { setContext, setOtherActions } from '@/store/slices/chat/chatSlice';
+import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3 } from 'lucide-react';
 
+interface ActionItem {
+  id: number;
+  title: string;
+  icon: LucideIcon;
+}
 interface ActionCategory {
   id: string;
   title: string;
@@ -33,11 +38,31 @@ const categories: ActionCategory[] = [
   },
 ];
 
+const otherItemsActions: ActionItem[] = [
+  { id: 1, title: "Add User or roles", icon: Users },
+  { id: 2, title: "Add new Connection", icon: Cable },
+  { id: 2, title: "Add new Project", icon: Cable },
+  { id: 2, title: "Add new Environment", icon: Cable },
+  { id: 3, title: "Onboard new dataset", icon: Upload },
+  { id: 4, title: "Create pipeline", icon: Plus },
+  { id: 5, title: "Explore Data", icon: Database },
+  { id: 6, title: "Check Job Statistics", icon: BarChart3 },
+];
+
 export const ActionCategories: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { otherActions } = useAppSelector((state) => state.chat);
 
   const handleCategoryClick = (categoryId: string) => {
-    dispatch(setContext(categoryId));
+    if (categoryId === 'other-items') {
+      // Set context and otherActions for 'other-items' to show in full-screen chat
+      dispatch(setContext('other-items'));
+      dispatch(setOtherActions(otherItemsActions));
+    } else {
+      // Clear other actions and set context for regular categories
+      dispatch(setOtherActions(null));
+      dispatch(setContext(categoryId));
+    }
   };
 
   return (
@@ -46,11 +71,11 @@ export const ActionCategories: React.FC = () => {
         {categories.map((category) => {
           const Icon = category.icon;
           return (
-           <Button
-  key={category.id}
-  variant="ghost"
-  onClick={() => handleCategoryClick(category.id)}
-  className={`
+            <Button
+              key={category.id}
+              variant="ghost"
+              onClick={() => handleCategoryClick(category.id)}
+              className={`
     h-10 px-4 rounded-full border border-border
     bg-card text-card-foreground
     backdrop-blur-sm text-sm font-medium
@@ -59,14 +84,14 @@ export const ActionCategories: React.FC = () => {
     hover:shadow-lg hover:shadow-black/20 hover:scale-105
     active:scale-95 group
   `}
-  aria-label={category.title}
->
-  {/* Icon */}
-  <Icon className="w-4 h-4 mr-2 text-current" />
+              aria-label={category.title}
+            >
+              {/* Icon */}
+              <Icon className="w-4 h-4 mr-2 text-current" />
 
-  {/* Text */}
-  <span className="relative z-10">{category.title}</span>
-</Button>
+              {/* Text */}
+              <span className="relative z-10">{category.title}</span>
+            </Button>
 
           );
         })}

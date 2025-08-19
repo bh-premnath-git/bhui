@@ -12,23 +12,23 @@ interface ActionCategory {
 const categories: ActionCategory[] = [
   {
     id: 'create-pipeline',
-    title: 'Create pipeline...',
-    gradient: 'from-blue-500 to-cyan-500',
+    title: 'Create Pipeline',
+    gradient: 'from-blue-500 via-blue-600 to-cyan-500',
   },
   {
     id: 'explore-data',
     title: 'Explore Data',
-    gradient: 'from-purple-500 to-pink-500',
+    gradient: 'from-purple-500 via-purple-600 to-pink-500',
   },
   {
     id: 'check-jobs',
     title: 'Check Jobs',
-    gradient: 'from-green-500 to-emerald-500',
+    gradient: 'from-green-500 via-green-600 to-emerald-500',
   },
   {
     id: 'other-items',
     title: 'Other Items',
-    gradient: 'from-orange-500 to-red-500',
+    gradient: 'from-orange-500 via-orange-600 to-red-500',
   },
 ];
 
@@ -41,20 +41,33 @@ export const ActionCategories: React.FC = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="flex flex-wrap gap-3 justify-center">
         {categories.map((category) => (
           <Button
             key={category.id}
-            variant="outline"
+            variant="ghost"
             onClick={() => handleCategoryClick(category.id)}
-            className="h-16 p-4 bg-chat-surface/50 border-chat-border/50 hover:border-primary/30 hover:bg-chat-surface transition-smooth group relative overflow-hidden"
+            className="
+              h-10 px-4 rounded-full border border-white/10
+              bg-gradient-to-br from-white/5 to-white/[0.02]
+              backdrop-blur-sm text-sm font-medium
+              transition-all duration-300 ease-out
+              hover:border-white/20 hover:from-white/10 hover:to-white/[0.05]
+              hover:shadow-lg hover:shadow-black/10 hover:scale-105
+              active:scale-95 group relative overflow-hidden
+            "
           >
-            {/* Background Gradient Effect */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-10 transition-smooth`} />
+            {/* Gradient Overlay */}
+            <div className={`
+              absolute inset-0 rounded-full bg-gradient-to-br ${category.gradient} 
+              opacity-15 group-hover:opacity-30 
+              transition-all duration-300 group-hover:scale-110
+            `} />
             
-            <div className="relative z-10 flex items-center justify-center text-center">
-              <p className="font-medium text-sm">{category.title}</p>
-            </div>
+            {/* Text */}
+            <span className="relative z-10 text-foreground group-hover:text-white transition-colors duration-300">
+              {category.title}
+            </span>
           </Button>
         ))}
       </div>

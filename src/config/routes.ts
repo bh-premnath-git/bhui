@@ -1,6 +1,7 @@
 export const ROUTES = {
   INDEX: '/',
   LOGIN: '/login',
+  HOME: '/home',
   DASHBOARD: '/dataops-hub',
   PROFILE: '/profile',
   SETTINGS: '/settings',

@@ -28,14 +28,14 @@ export function NavigationBreadcrumb() {
   const selectedConnection = useAppSelector((state: RootState) => state.connections.selectedconnection);
   const selectedEnvironment = useAppSelector((state: RootState) => state.environments.selectedEnvironment);
 
-  // Redirect authenticated users from root to dataops-hub
+  // Redirect authenticated users from root to home
   if (location.pathname === "/" && isAuthenticated) {
-    return <Navigate to="/dataops-hub" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const getBreadcrumbItems = (): BreadcrumbItem[] => {
     const currentPath = location.pathname;
-    const items: BreadcrumbItem[] = [{ title: "Home", path: "/dataops-hub" }];
+    const items: BreadcrumbItem[] = [{ title: "Home", path: "/home" }];
 
     if (currentPath === "/") return items;
 

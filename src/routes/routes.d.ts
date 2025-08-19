@@ -5,6 +5,13 @@ declare module './LoadingFallback' {
   export { LoadingFallback };
 }
 
+declare module './homeRoutes' {
+  import { ReactElement } from 'react';
+  const HomeRoutes: ReactElement;
+  export default HomeRoutes;
+  export { HomeRoutes };
+}
+
 declare module './dataCatalogRoutes' {
   import { ReactElement } from 'react';
   const DataCatalogRoutes: ReactElement;

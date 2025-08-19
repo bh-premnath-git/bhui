@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Camera, Figma, Upload, Globe, X } from 'lucide-react';
+import { useAppDispatch } from '@/hooks/useRedux';
+import { setContext } from '@/store/slices/chat/chatSlice';
 
 interface ActionCategory {
   id: string;
@@ -42,9 +44,10 @@ const categories: ActionCategory[] = [
 ];
 
 export const ActionCategories: React.FC = () => {
+  const dispatch = useAppDispatch();
+
   const handleCategoryClick = (categoryId: string) => {
-    console.log(`Selected category: ${categoryId}`);
-    // TODO: Implement category-specific actions
+    dispatch(setContext(categoryId));
   };
 
   return (

@@ -19,10 +19,10 @@ const Home: React.FC = () => {
           </div>
           
           {/* Chat Messages and Actions */}
-          <div className="space-y-8">
+          {/* <div className="space-y-8">
             <ChatMessages />
             <ActionsList />
-          </div>
+          </div> */}
           
           {/* Community Section */}
           <CommunityShowcase />

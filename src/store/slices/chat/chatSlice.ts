@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { set } from 'lodash';
 
 export interface Message {
   id: string;
@@ -12,6 +13,7 @@ interface ChatState {
   currentInput: string;
   isTyping: boolean;
   isLoading: boolean;
+  context: string;
 }
 
 const initialState: ChatState = {
@@ -19,6 +21,7 @@ const initialState: ChatState = {
   currentInput: '',
   isTyping: false,
   isLoading: false,
+  context: '',
 };
 
 const chatSlice = createSlice({
@@ -42,11 +45,14 @@ const chatSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
+    setContext: (state, action: PayloadAction<string>) => {
+      state.context = action.payload;
+    },
     clearMessages: (state) => {
       state.messages = [];
     },
   },
 });
 
-export const { setCurrentInput, addMessage, setTyping, setLoading, clearMessages } = chatSlice.actions;
+export const { setCurrentInput, addMessage, setTyping, setLoading, setContext, clearMessages } = chatSlice.actions;
 export default chatSlice.reducer;

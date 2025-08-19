@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { setCurrentInput, addMessage } from '@/store/slices/chat/chatSlice';
 
 export const ChatInput: React.FC = () => {
-  const { currentInput, isLoading } = useAppSelector((state) => state.chat);
+  const { currentInput, isLoading, context } = useAppSelector((state) => state.chat);
   const dispatch = useAppDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
 

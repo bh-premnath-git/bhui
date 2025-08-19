@@ -645,7 +645,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                     type: 'custom',
                     position: {
                         x: xPosition - 130, // Position at the start
-                        y: sourceIndex === 0 ? yPosition : yPosition + yOffset
+                        y: yPosition + (sourceIndex * Math.abs(yOffset))
                     },
                     data: {
                         label: 'Reader',

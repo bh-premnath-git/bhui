@@ -549,6 +549,8 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
             baseSchema: !!baseSchema
         });
         
+        let values: FormData;
+        
         // Use transformation-specific initial values generation for Target/Writer
         if (initialData && Object.keys(initialData).length > 0) {
             // Check if initialData is already properly structured (from DataPipelineCanvasNew)
@@ -568,24 +570,28 @@ export const TargetPopUp: React.FC<TargetPopUpProps> = ({
                     fullTargetObject: initialData.target,
                     fullConnectionObject: initialData.target?.connection
                 });
-                return initialData;
+                values = initialData;
             } else {
                 // Process raw data using transformation initial values generation
                 const generated = generateTransformationInitialValues({ title: 'Target' }, initialData, nodeId || '');
-                console.log('🔧 TargetPopUp - Generated transformation initial values:', {
-                    input: initialData,
-                    output: generated,
-                    hasTargetConnection: !!generated?.target?.connection,
-                    hasFileType: !!generated?.file_type,
-                    connectionConfigId: generated?.target?.connection?.connection_config_id
-                });
-                return generated;
+                values = generated;
             }
+        } else {
+            // Fallback to schema-based generation if no initial data
+            const fallback = generateInitialValues(baseSchema, initialData);
+            console.log('🔧 TargetPopUp - Generated fallback initial values:', fallback);
+            values = fallback;
         }
-        // Fallback to schema-based generation if no initial data
-        const fallback = generateInitialValues(baseSchema, initialData);
-        console.log('🔧 TargetPopUp - Generated fallback initial values:', fallback);
-        return fallback;
+        
+        
+        // Also set target_name to match name if not already set
+        if (!values.target?.target_name && values.name) {
+            if (!values.target) values.target = {};
+            values.target.target_name = values.name;
+            console.log('🔧 TargetPopUp - Set default target_name to match name:', values.name);
+        }
+        
+        return values;
     }, [baseSchema, initialData, nodeId]);
 
     // Initialize form with react-hook-form (start with base schema)

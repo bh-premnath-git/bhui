@@ -15,7 +15,6 @@ import { convertPipelineToUIJson } from '@/lib/pipelineJsonConverter';
 import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, ENVIRONMENT, USE_SECURE, SPARK_PORT, PANDAS_PORT, FLINK_PORT } from '@/config/platformenv';
 import { apiService } from '@/lib/api/api-service';
 import { ValidEngineTypes } from '@/types/pipeline';
-import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 // Utility function to get port based on engine type
 const getPortByEngineType = (engineType: ValidEngineTypes): string => {

@@ -13,7 +13,7 @@ interface ChartViewProps {
 
 export const ChartView = ({ data, layout, widgetId, chartType, color }: ChartViewProps) => {
   const plotRef = useRef<any>(null);
-  
+  delete layout.title;
   // Handle null, undefined, or invalid data
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (

@@ -26,13 +26,12 @@ import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
 import { CommitModal } from '@/components/git/CommitModal';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
-  const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth } = useSidebar();
+  const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded } = useSidebar();
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
   // No sidebar width needed since we removed the sidebar
   const { pipelineType } = useAppSelector((state: RootState) => state.buildPipeline);
 
@@ -235,11 +234,17 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   }), [transformationCounts, pipelineDtl, debuggedNodesList]);
 
 
+  const parseRightAsidePercent = (widthStr: string) => {
+    // Support formats like "w-[25%]" or "25%" or "25"
+    const match = (widthStr || '').match(/(\d+)%?/);
+    return match ? Number(match[1]) : 25;
+  };
+
   const getMainContentStyle = () => {
     let availableWidth = '100%';
     if (isRightAsideOpen) {
-      const rightAsidePercentage = rightAsideWidth.match(/\[(\d+)%\]/)?.[1] || '25';
-      availableWidth = `calc(100% - ${rightAsidePercentage}%)`;
+      const percent = parseRightAsidePercent(rightAsideWidth);
+      availableWidth = `calc(100% - ${percent}%)`;
     }
 
     return {
@@ -254,7 +259,15 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
       <div className={`flex h-full w-full pipeline-container ${isRightAsideOpen ? 'with-right-aside' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer' : ''}`}>
 
         {errorBanner && (
-          <div className="fixed top-20 left-20 right-10 z-50 p-4">
+          <div
+            className="fixed top-20 z-50 p-4 transition-all duration-300"
+            style={{
+              left: isExpanded ? 256 : 56, // sidebar width in px
+              right: isRightAsideOpen
+                ? rightAsideWidth.replace('w-[', '').replace(']', '')
+                : 40, // ~right-10
+            }}
+          >
             <ErrorBanner
               title={errorBanner.title}
               description={errorBanner.description}
@@ -304,7 +317,12 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                 edgeTypes={edgeTypes}
                 renderControls={true}
                 controls={
-                  <div className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-20'} ${isRightAsideOpen ? 'right-[41%]' : 'right-4'} z-[1000] transition-all duration-300`}>
+                  <div
+                    className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-20'} z-[1000] transition-all duration-300`}
+                    style={{
+                      right: isRightAsideOpen ? `${parseRightAsidePercent(rightAsideWidth) + 2}%` : '1rem'
+                    }}
+                  >
                     <FlowControls
                       onZoomIn={handleZoomIn}
                       onZoomOut={handleZoomOut}
@@ -562,8 +580,10 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           />
         </div>
       </div>
-      <GitControlsFooterPortal />
+      {/* <div > */}
+      <GitControlsFooterPortal  />
       <CommitModal />
+      {/* </div> */}
     </>
   );
 };

@@ -3,6 +3,7 @@ import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { updateWidgetLayout, updateDashboardLayout } from '@/store/slices/dataops/dashboardSlice'
 import { WidgetWrapper } from '@/features/dataops/dashboard/widgets/WidgetWrapper';
 import { useCallback, useRef, useEffect } from 'react';
+import { useSidebar } from '@/context/SidebarContext';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -14,9 +15,29 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 
 export const DashboardLayout =  ({ className }: DashboardGridProps) => {
   const { widgets, isGridLocked, layoutMap } = useAppSelector((state) => state.dashboard);
+  const { isRightAsideOpen } = useSidebar();
   const dispatch = useAppDispatch();
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
+  const rightAsideStateRef = useRef(isRightAsideOpen);
+  const isRightAsideTransitionRef = useRef(false);
+  
+  // Track RightAside state changes and block layout updates during transitions
+  useEffect(() => {
+    if (rightAsideStateRef.current !== isRightAsideOpen) {
+      console.log('🔧 Dashboard - RightAside state changed, blocking layout updates');
+      isRightAsideTransitionRef.current = true;
+      rightAsideStateRef.current = isRightAsideOpen;
+      
+      // Clear the transition flag after animation completes
+      const timer = setTimeout(() => {
+        isRightAsideTransitionRef.current = false;
+        console.log('🔧 Dashboard - RightAside transition complete, allowing layout updates');
+      }, 350); // Slightly longer than CSS transition duration
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isRightAsideOpen]);
   
   // Mark initial load as complete after first render
   useEffect(() => {
@@ -69,6 +90,12 @@ export const DashboardLayout =  ({ className }: DashboardGridProps) => {
       return;
     }
     
+    // Skip layout changes during RightAside transitions
+    if (isRightAsideTransitionRef.current) {
+      console.log('🔧 Dashboard - Skipping layout change during RightAside transition');
+      return;
+    }
+    
     const layoutChanges: Array<{widgetId: string, layout: {x: number, y: number, w: number, h: number}}> = [];
     let hasActualChanges = false;
     
@@ -111,7 +138,7 @@ export const DashboardLayout =  ({ className }: DashboardGridProps) => {
       console.log('🔧 Dashboard - Layout changed, triggering debounced API update', layoutChanges);
       debouncedApiUpdate(layoutChanges);
     }
-  }, [isGridLocked, dispatch, debouncedApiUpdate, widgets]);
+  }, [isGridLocked, dispatch, debouncedApiUpdate, widgets, isRightAsideTransitionRef]);
 
   const widgetTitles: Record<string, string> =  Object.fromEntries(
     Object.entries(widgets).map(([id, { name }]) => [

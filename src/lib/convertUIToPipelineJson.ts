@@ -122,32 +122,39 @@ export const convertUIToPipelineJson = (nodes: Node[], edges: Edge[], pipelineDt
                 (lookupConfig.source.data_src_name || lookupConfig.source.name)) {
                 
                 const source = lookupConfig.source;
-                // Handle different connection config formats
+                // Extract connection metadata consistently
                 const connectionConfig = source?.connection_config?.custom_metadata || 
                                        source?.connection?.custom_metadata || 
-                                       source?.connection;
-                const fullConnectionConfig = source?.connection_config || source?.connection || {};
+                                       source?.connection || {};
                 const source_type = source.type || source.source_type;
                 const isFileSource = connectionConfig?.connection_type == "Local" || 
                                     connectionConfig?.connection_type == "S3" ||
                                     source.source_type === "File";
                 const sourceName = source.data_src_name || source.name;
+
+                // Normalize connection object to the expected shape
+                const normalizedConnection: any = {
+                    custom_metadata: connectionConfig || {}
+                };
+                const connCfgId = source?.connection_config_id || source?.connection?.connection_config_id;
+                if (connCfgId !== undefined && connCfgId !== null && connCfgId !== '') {
+                    normalizedConnection.connection_config_id = connCfgId;
+                }
                 
                 console.log('🔧 Processing lookup source:', {
                     sourceName,
                     source,
                     connectionConfig,
-                    fullConnectionConfig,
+                    normalizedConnection,
                     isFileSource
                 });
-                
                 return {
                     name: sourceName,
                     source_type: isFileSource ? "File" : "Relational",
                     ...(isFileSource ? {} : { table_name: source?.table_name || source.data_src_name }),
                     file_name: source.file_name ? `${source.file_name}` : undefined,
                     data_src_id: source.data_src_id,
-                    connection: fullConnectionConfig
+                    connection: normalizedConnection
                 };
             }
             return null;

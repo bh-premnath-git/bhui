@@ -26,7 +26,7 @@ export const Header = () => {
   const isDataOpsHubRoute = (path: string) =>
     path === "/dataops-hub";
   const isDataXploreRoute = (path: string) =>
-    path === "/data-catalog/xplorer";
+    /^\/data-catalog\/xplorer(\/[^/?]+)?(\?.*)?$/.test(path);
 
   // Decide which header content to render
   const renderHeaderContent = () => {

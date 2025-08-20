@@ -70,7 +70,7 @@ const Home: React.FC = () => {
           <div className="flex flex-col flex-1 border-r border-chat-border/50">
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col h-full px-4 py-4">
-                {context === 'other-items' && otherActions && (
+                {/* {context === 'other-items' && otherActions && (
                   <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-6 flex-shrink-0">
                     <h3 className="text-sm font-semibold text-foreground mb-3">Choose an action:</h3>
                     <div className="grid grid-cols-1 gap-2">
@@ -93,7 +93,7 @@ const Home: React.FC = () => {
                       })}
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {messages.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
@@ -136,7 +136,7 @@ const Home: React.FC = () => {
       />
       <main className="flex-1 flex flex-col">
         <div className="flex-1 flex flex-col container mx-auto px-4 max-w-4xl py-6">
-          {context === 'other-items' && otherActions && (
+          {/* {context === 'other-items' && otherActions && (
             <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-6 flex-shrink-0">
               <h3 className="text-sm font-semibold text-foreground mb-3">Choose an action:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -159,7 +159,7 @@ const Home: React.FC = () => {
                 })}
               </div>
             </div>
-          )}
+          )} */}
           {messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-muted-foreground">

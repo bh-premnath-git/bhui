@@ -10,11 +10,6 @@ interface ActionItem {
   icon: LucideIcon;
 }
 
-interface ActionItem {
-  id: number;
-  title: string;
-  icon: LucideIcon;
-}
 interface ActionCategory {
   id: string;
   title: string;

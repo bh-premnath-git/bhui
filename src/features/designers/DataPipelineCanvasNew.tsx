@@ -138,12 +138,12 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
   // Enable git integration when component mounts (top-level hook)
-  useEffect(() => {
-    dispatch(setEnabled(true));
-    return () => {
-      dispatch(setEnabled(false));
-    };
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch(setEnabled(true));
+  //   return () => {
+  //     dispatch(setEnabled(false));
+  //   };
+  // }, [dispatch]);
 
   // Listen for RightAside panel resize events
   

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 export const ChatHeader: React.FC = () => {
   const { getUserInfo } = useAuth();
   const userInfo = getUserInfo();
-  const userName = userInfo?.name || userInfo?.username;
+  const userName = (userInfo?.name || userInfo?.username).toLowerCase();
 
   const [greeting, setGreeting] = useState("Hello");
 
@@ -19,8 +19,9 @@ export const ChatHeader: React.FC = () => {
   return (
     <div className="relative w-full">
       <div className="flex items-center justify-center py-6">
-        <h1 className="text-xl md:text-2xl font-medium text-foreground">
-          {greeting}, {userName}
+        <h1 className="text-xl md:text-2xl font-medium text-foreground flex gap-2">
+          <p className="capitalize">{greeting},</p>
+          <p className="capitalize"> {userName}</p>
         </h1>
       </div>
     </div>

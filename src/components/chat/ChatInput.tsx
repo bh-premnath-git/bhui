@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Plus, Shuffle, Mic, MicOff } from "lucide-react";
+import { Send, Mic, MicOff } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { setCurrentInput, addMessage } from "@/store/slices/chat/chatSlice";
+import { ActionsList } from "./ActionsList";
 
 // Web Speech API type declarations
 declare global {
@@ -86,24 +87,23 @@ export const ChatInput: React.FC = () => {
   const { currentInput, isLoading } = useAppSelector((state) => state.chat);
   const dispatch = useAppDispatch();
 
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // --- Auto-grow the textarea, keep it compact when empty
+  // Auto-grow the textarea
   const autoGrow = () => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "0px";
-    el.style.height = Math.min(el.scrollHeight, 160) + "px"; // cap ~8 lines
+    el.style.height = Math.min(el.scrollHeight, 120) + "px"; // up to ~5 lines
   };
 
   useEffect(() => {
     autoGrow();
   }, [currentInput]);
 
-  // --- Mic (Web Speech API)
+  // Cleanup recording on unmount
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -118,13 +118,12 @@ export const ChatInput: React.FC = () => {
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SR) {
-      // You could toast here if you use a toaster
       console.warn("Speech recognition not supported in this browser.");
       return;
     }
 
     const recognition = new SR();
-    recognition.lang = "en-IN"; // tweak if needed
+    recognition.lang = "en-IN";
     recognition.interimResults = true;
     recognition.continuous = false;
 
@@ -152,7 +151,7 @@ export const ChatInput: React.FC = () => {
   const handleSubmit = () => {
     if (!currentInput.trim() || isLoading) return;
 
-    // Add user message
+    // User message
     dispatch(
       addMessage({
         content: currentInput,
@@ -160,7 +159,7 @@ export const ChatInput: React.FC = () => {
       })
     );
 
-    // Simulated AI response (replace with your real call)
+    // Simulated AI response
     setTimeout(() => {
       dispatch(
         addMessage({
@@ -172,8 +171,6 @@ export const ChatInput: React.FC = () => {
     }, 600);
 
     dispatch(setCurrentInput(""));
-    setIsExpanded(false);
-    autoGrow();
   };
 
   const handleInputChange = (value: string) => {
@@ -188,74 +185,52 @@ export const ChatInput: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+     <div className="w-full max-w-3xl mx-auto px-2">
+      {/* Inline suggestion chips (when a category is selected) */}
+      <div className="pb-1">
+        {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+        {/* @ts-ignore - dynamic import prevents circular complaints */}
+        <ActionsList variant="compact" />
+      </div>
+      
       <div
         className="
-          rounded-full border border-chat-border/50 bg-background/60
-          backdrop-blur supports-[backdrop-filter]:bg-background/40
-          transition-all hover:border-primary/30 focus-within:border-primary/40
-          focus-within:ring-1 focus-within:ring-primary/40 shadow-sm
+          rounded-xl border border-chat-border/50 bg-background/80
+          backdrop-blur supports-[backdrop-filter]:bg-background/60
+          transition-all focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/30
+          shadow-sm px-2 py-1
         "
       >
-        <div className="flex items-center gap-1 px-1.5">
-          {/* Left actions */}
-          <div className="flex items-center gap-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full hover:bg-primary/10"
-              aria-label="Add"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full hover:bg-primary/10"
-              aria-label="Surprise me"
-            >
-              <Shuffle className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Textarea (centered, compact, aligned with buttons) */}
-          <div className="flex-1 min-w-0">
-            <Textarea
-              ref={textareaRef}
-              value={currentInput}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsExpanded(true)}
-              placeholder="Ask BigHammer.ai to build…"
-              rows={isExpanded ? 3 : 1}
-              className="
-                w-full resize-none border-0 bg-transparent
-                px-2 py-2 text-sm leading-5
-                placeholder:text-muted-foreground
-                focus-visible:ring-0 focus-visible:ring-offset-0
-                min-h-[36px] max-h-40
-              "
-              aria-label="Chat message"
-            />
-          </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-0.5 pl-0.5">
+        <div className="flex items-end gap-1">
+          <Textarea
+            ref={textareaRef}
+            value={currentInput}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask BigHammer…"
+            rows={1}
+            className="
+              flex-1 resize-none border-0 bg-transparent
+              px-2 py-1 text-sm leading-5
+              placeholder:text-muted-foreground/70
+              focus-visible:ring-0 focus-visible:ring-offset-0
+              min-h-[40px] max-h-32
+            "
+            aria-label="Chat message"
+          />
+          
+          <div className="flex items-center gap-0.5 pb-1">
             {/* Mic */}
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className={`h-9 w-9 rounded-full hover:bg-primary/10 ${
-                isRecording ? "bg-primary/10" : ""
-              }`}
+              className={`h-7 w-7 rounded-full hover:bg-primary/10 ${isRecording ? "bg-primary/10" : ""}`}
               aria-label={isRecording ? "Stop voice input" : "Start voice input"}
               onClick={isRecording ? stopRecording : startRecording}
               disabled={isLoading}
             >
-              {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
             </Button>
 
             {/* Send */}
@@ -265,31 +240,20 @@ export const ChatInput: React.FC = () => {
               disabled={!currentInput.trim() || isLoading}
               className="
                 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground
-                rounded-full px-3 h-9 text-sm hover:opacity-90 disabled:opacity-50
+                rounded-full px-3 h-7 text-xs hover:opacity-90 disabled:opacity-50
               "
               aria-label="Send message"
             >
-              {isLoading ? (
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse" />
-                  <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse [animation-delay:120ms]" />
-                  <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse [animation-delay:240ms]" />
-                </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Send className="h-4 w-4" />
-                  <span className="hidden sm:inline text-xs">Send</span>
-                </div>
-              )}
+              <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Tiny helper text (optional) */}
-      <div className="mt-1.5 text-[11px] text-muted-foreground text-center">
-        Press <kbd className="px-1 py-0.5 rounded border">Enter</kbd> to send •{" "}
-        <kbd className="px-1 py-0.5 rounded border">Shift</kbd>+<kbd className="px-1 py-0.5 rounded border">Enter</kbd> for a new line
+      <div className="mt-1 text-[10px] text-muted-foreground text-center">
+        Press <kbd className="px-1 py-0.5 rounded border text-[0.7rem]">Enter</kbd> to send •{" "}
+        <kbd className="px-1 py-0.5 rounded border text-[0.7rem]">Shift</kbd>+
+        <kbd className="px-1 py-0.5 rounded border text-[0.7rem]">Enter</kbd> for new line
       </div>
     </div>
   );

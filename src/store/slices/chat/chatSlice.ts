@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { set } from 'lodash';
 import { type LucideIcon } from 'lucide-react';
 
 export interface Message {
@@ -7,6 +6,28 @@ export interface Message {
   content: string;
   timestamp: Date;
   isUser: boolean;
+  options?: string[];
+  uiComponent?: {
+    type: 'Card';
+    props: {
+      title?: string;
+      description?: string;
+    };
+    stepId?: string;
+  };
+}
+
+export interface RightComponent {
+  componentType: 'RightAsideComponent';
+  componentId: string;
+  title: string;
+  isVisible: boolean;
+}
+
+export interface ActionItem {
+  id: number;
+  title: string;
+  icon: LucideIcon;
 }
 
 export interface ActionItem {
@@ -21,6 +42,8 @@ interface ChatState {
   isTyping: boolean;
   isLoading: boolean;
   context: string;
+  rightComponent: RightComponent | null;
+  layoutMode: 'centered' | 'split';
   otherActions: ActionItem[] | null;
   selectedActionTitle: string | null;
 }
@@ -31,6 +54,8 @@ const initialState: ChatState = {
   isTyping: false,
   isLoading: false,
   context: '',
+  rightComponent: null,
+  layoutMode: 'centered',
   otherActions: null,
   selectedActionTitle: null,
 };
@@ -59,6 +84,13 @@ const chatSlice = createSlice({
     setContext: (state, action: PayloadAction<string>) => {
       state.context = action.payload;
     },
+    setRightComponent: (state, action: PayloadAction<RightComponent | null>) => {
+      state.rightComponent = action.payload;
+      state.layoutMode = action.payload ? 'split' : 'centered';
+    },
+    setLayoutMode: (state, action: PayloadAction<'centered' | 'split'>) => {
+      state.layoutMode = action.payload;
+    },
     setOtherActions: (state, action: PayloadAction<ActionItem[] | null>) => {
       state.otherActions = action.payload;
     },
@@ -71,5 +103,17 @@ const chatSlice = createSlice({
   },
 });
 
-export const { setCurrentInput, addMessage, setTyping, setLoading, setContext, setOtherActions, setSelectedActionTitle, clearMessages } = chatSlice.actions;
+export const {
+  setCurrentInput,
+  addMessage,
+  setTyping,
+  setLoading,
+  setContext,
+  setRightComponent,
+  setLayoutMode,
+  setOtherActions,
+  setSelectedActionTitle,
+  clearMessages
+} = chatSlice.actions;
+
 export default chatSlice.reducer;

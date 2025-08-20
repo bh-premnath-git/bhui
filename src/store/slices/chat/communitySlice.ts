@@ -5,9 +5,6 @@ export interface CommunityProject {
   title: string;
   description: string;
   category: string;
-  imageUrl: string;
-  author: string;
-  likes: number;
   tags: string[];
   createdAt: Date;
 }
@@ -45,22 +42,10 @@ const communitySlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    likeProject: (state, action: PayloadAction<string>) => {
-      const project = state.projects.find(p => p.id === action.payload);
-      if (project) {
-        project.likes += 1;
-      }
-    },
   },
 });
 
-export const { 
-  setProjects, 
-  setFeaturedProjects, 
-  addProject, 
-  setLoading, 
-  setError, 
-  likeProject 
-} = communitySlice.actions;
+export const { setProjects, setFeaturedProjects, addProject, setLoading, setError } =
+  communitySlice.actions;
 
 export default communitySlice.reducer;

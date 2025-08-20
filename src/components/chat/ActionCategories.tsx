@@ -9,6 +9,12 @@ interface ActionItem {
   title: string;
   icon: LucideIcon;
 }
+
+interface ActionItem {
+  id: number;
+  title: string;
+  icon: LucideIcon;
+}
 interface ActionCategory {
   id: string;
   title: string;
@@ -54,11 +60,9 @@ export const ActionCategories: React.FC = () => {
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId === 'other-items') {
-      // Set context and otherActions for 'other-items' to show in full-screen chat
       dispatch(setContext('other-items'));
       dispatch(setOtherActions(otherItemsActions));
     } else {
-      // Clear other actions and set context for regular categories
       dispatch(setOtherActions(null));
       dispatch(setContext(categoryId));
     }
@@ -75,14 +79,14 @@ export const ActionCategories: React.FC = () => {
               variant="ghost"
               onClick={() => handleCategoryClick(category.id)}
               className={`
-    h-10 px-4 rounded-full border border-border
-    bg-card text-card-foreground
-    backdrop-blur-sm text-sm font-medium
-    transition-all duration-300 ease-out
-    hover:border-accent hover:bg-accent hover:text-accent-foreground
-    hover:shadow-lg hover:shadow-black/20 hover:scale-105
-    active:scale-95 group
-  `}
+                h-10 px-4 rounded-full border border-border
+                bg-card text-card-foreground
+                backdrop-blur-sm text-sm font-medium
+                transition-all duration-300 ease-out
+                hover:border-accent hover:bg-accent hover:text-accent-foreground
+                hover:shadow-lg hover:shadow-black/20 hover:scale-105
+                active:scale-95 group
+              `}
               aria-label={category.title}
             >
               {/* Icon */}
@@ -91,7 +95,6 @@ export const ActionCategories: React.FC = () => {
               {/* Text */}
               <span className="relative z-10">{category.title}</span>
             </Button>
-
           );
         })}
       </div>

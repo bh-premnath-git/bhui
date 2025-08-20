@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { set } from 'lodash';
+import { type LucideIcon } from 'lucide-react';
 
 export interface Message {
   id: string;
@@ -24,6 +24,12 @@ export interface RightComponent {
   isVisible: boolean;
 }
 
+export interface ActionItem {
+  id: number;
+  title: string;
+  icon: LucideIcon;
+}
+
 interface ChatState {
   messages: Message[];
   currentInput: string;
@@ -32,6 +38,8 @@ interface ChatState {
   context: string;
   rightComponent: RightComponent | null;
   layoutMode: 'centered' | 'split';
+  otherActions: ActionItem[] | null;
+  selectedActionTitle: string | null;
 }
 
 const initialState: ChatState = {
@@ -42,6 +50,8 @@ const initialState: ChatState = {
   context: '',
   rightComponent: null,
   layoutMode: 'centered',
+  otherActions: null,
+  selectedActionTitle: null,
 };
 
 const chatSlice = createSlice({
@@ -75,11 +85,29 @@ const chatSlice = createSlice({
     setLayoutMode: (state, action: PayloadAction<'centered' | 'split'>) => {
       state.layoutMode = action.payload;
     },
+    setOtherActions: (state, action: PayloadAction<ActionItem[] | null>) => {
+      state.otherActions = action.payload;
+    },
+    setSelectedActionTitle: (state, action: PayloadAction<string | null>) => {
+      state.selectedActionTitle = action.payload;
+    },
     clearMessages: (state) => {
       state.messages = [];
     },
   },
 });
 
-export const { setCurrentInput, addMessage, setTyping, setLoading, setContext, setRightComponent, setLayoutMode, clearMessages } = chatSlice.actions;
+export const {
+  setCurrentInput,
+  addMessage,
+  setTyping,
+  setLoading,
+  setContext,
+  setRightComponent,
+  setLayoutMode,
+  setOtherActions,
+  setSelectedActionTitle,
+  clearMessages
+} = chatSlice.actions;
+
 export default chatSlice.reducer;

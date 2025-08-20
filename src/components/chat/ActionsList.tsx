@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Database, Plus, ListChecks, Users, BarChart3, FolderPlus, Settings } from 'lucide-react';
+import { ChevronRight, Database, Plus, ListChecks, Users, BarChart3, FolderPlus, Settings, Cable, Upload } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
+import { setSelectedActionTitle, setContext } from '@/store/slices/chat/chatSlice';
 
 interface Action {
   id: string;
@@ -27,13 +28,13 @@ const ACTIONS: Record<string, Action> = {
     id: 'add-connections',
     title: 'Add new Connections',
     description: 'Connect to databases and data sources',
-    icon: Database,
+    icon: Cable,
   },
   'onboard-dataset': {
     id: 'onboard-dataset',
     title: 'Onboard new dataset',
     description: 'Import and configure new datasets',
-    icon: ListChecks,
+    icon: Upload,
   },
   'create-pipeline': {
     id: 'create-pipeline',
@@ -45,7 +46,7 @@ const ACTIONS: Record<string, Action> = {
     id: 'explore-data',
     title: 'Explore Data',
     description: 'Analyze and visualize your data',
-    icon: ListChecks,
+    icon: Database,
   },
   'check-job-statistics': {
     id: 'check-job-statistics',
@@ -90,10 +91,19 @@ export const ActionsList: React.FC<ActionsListProps> = ({ variant = 'card' }) =>
     return ids.map((id) => ACTIONS[id]).filter(Boolean);
   }, [context]);
 
-  const handleActionClick = async (actionId: string) => {
-    const { getChatService } = await import('@/services/chatService');
-    const chatService = getChatService(dispatch);
-    await chatService.processAction(actionId);
+  const handleActionClick = async (actionId: string, actionTitle: string) => {
+    // Set the selected action title and context
+    dispatch(setSelectedActionTitle(actionTitle));
+    dispatch(setContext(`action-${actionId}`));
+    
+    // Optional: Handle with chat service if available
+    try {
+      const { getChatService } = await import('@/services/chatService');
+      const chatService = getChatService(dispatch);
+      await chatService.processAction(actionId);
+    } catch (error) {
+      console.log('Chat service not available, using fallback action handling');
+    }
   };
 
   if (!actions.length) return null;
@@ -107,7 +117,7 @@ export const ActionsList: React.FC<ActionsListProps> = ({ variant = 'card' }) =>
             key={action.id}
             variant="outline"
             size="sm"
-            onClick={() => handleActionClick(action.id)}
+            onClick={() => handleActionClick(action.id, action.title)}
             className="rounded-full h-8 px-3 border-chat-border/50 hover:border-primary/40 bg-background/60"
           >
             <action.icon className="h-3.5 w-3.5 mr-1.5 text-primary" />
@@ -128,7 +138,7 @@ export const ActionsList: React.FC<ActionsListProps> = ({ variant = 'card' }) =>
               <Button
                 key={action.id}
                 variant="outline"
-                onClick={() => handleActionClick(action.id)}
+                onClick={() => handleActionClick(action.id, action.title)}
                 className="w-full h-auto p-4 justify-between bg-background/50 hover:bg-background border-chat-border/30 hover:border-primary/30 transition-smooth group"
               >
                 <div className="flex items-center space-x-3">

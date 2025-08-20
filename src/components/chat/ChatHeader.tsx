@@ -1,21 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export const ChatHeader: React.FC = () => {
+  const { getUserInfo } = useAuth();
+  const userInfo = getUserInfo();
+  const userName = userInfo?.name || userInfo?.username;
+
+  const [greeting, setGreeting] = useState("Hello");
+
+  useEffect(() => {
+    const hours = new Date().getHours();
+    if (hours < 12) setGreeting("Good Morning");
+    else if (hours < 17) setGreeting("Good Afternoon");
+    else if (hours < 21) setGreeting("Good Evening");
+    else setGreeting("Good Day");
+  }, []);
 
   return (
-    <div className="relative">
-
-      {/* Main Header */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-center space-x-2 mb-6">
-          <h1 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">
-            Bighammer
-          </h1>
-        </div>
-        
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-          How I can help?
-        </h2>
+    <div className="relative w-full">
+      <div className="flex items-center justify-center py-6">
+        <h1 className="text-xl md:text-2xl font-medium text-foreground">
+          {greeting}, {userName}
+        </h1>
       </div>
     </div>
   );

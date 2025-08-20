@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
-import { setRightComponent, addMessage } from '@/store/slices/chat/chatSlice';
+import { setRightComponent, addMessage, openChatBottomDrawer, closeChatBottomDrawer, setChatBottomDrawerHeight } from '@/store/slices/chat/chatSlice';
 import { getChatService } from '@/services/chatService';
+import { BottomDrawer } from '@/components/BottomDrawer';
+import { useSidebar } from '@/context/SidebarContext';
 
 // Import specific form components
 import { ConnectionForm } from './forms/ConnectionForm';
-import { AddProjectForm } from './forms/AddProjectForm';
-import { AddEnvironmentForm } from './forms/AddEnvironmentForm';
 import { AddProject } from '@/features/admin/projects/AddProject';
 import { AddEnvironment } from '@/features/admin/environment/AddEnvironment';
 import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDataSourceWizard';
@@ -17,6 +17,7 @@ import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 import { PipelineForm } from './forms/PipelineForm';
 import { PipelineCanvasWrapper } from './wrappers/PipelineCanvasWrapper';
 import { PlaygroundHeader } from '@/components/headers/playground-header';
+import RequirementForm from '@/pages/designers/requirements/RequirementForm';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -40,8 +41,20 @@ const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 export const RightAsideComponent: React.FC = () => {
   const dispatch = useAppDispatch();
   const rightComponent = useAppSelector((state) => state.chat.rightComponent);
+  const bottomDrawer = useAppSelector((state) => state.chat.bottomDrawer);
   const chatService = getChatService(dispatch);
   const { projects } = useProjects();
+
+  // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
+  const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
+  React.useEffect(() => {
+    if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
+    if (!bottomDrawer.isOpen && isBottomDrawerOpen) closeBottomDrawer();
+  }, [bottomDrawer.isOpen, isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer]);
+  React.useEffect(() => {
+    // push height to context for consistent internal behavior of BottomDrawer
+    updateBottomDrawerHeight(`${bottomDrawer.height}px`);
+  }, [bottomDrawer.height, updateBottomDrawerHeight]);
 
   if (!rightComponent || !rightComponent.isVisible) {
     return null;
@@ -134,6 +147,12 @@ export const RightAsideComponent: React.FC = () => {
             </div>
           </div>
         );
+      case 'requirement-form':
+        return (
+          <div className="h-full overflow-auto">
+            <RequirementForm />
+          </div>
+        );
       default:
         return (
           <div className="p-4 text-center text-muted-foreground">
@@ -144,9 +163,9 @@ export const RightAsideComponent: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full bg-background border-l border-chat-border/50">
+    <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20">
       <Card className="h-full rounded-none border-0 shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-chat-border/30">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
           <CardTitle className="text-lg font-semibold">
             {rightComponent.title}
           </CardTitle>
@@ -154,13 +173,27 @@ export const RightAsideComponent: React.FC = () => {
             variant="ghost"
             size="icon"
             onClick={handleClose}
-            className="h-8 w-8 rounded-full hover:bg-muted"
+            className="h-8 w-8 rounded-full hover:bg-muted/60"
           >
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="p-0 h-[calc(100%-4rem)] overflow-auto">
-          {renderComponent()}
+        <CardContent className="p-0 h-[calc(100%-3rem)] overflow-hidden flex flex-col">
+          <div className={`flex-1 min-h-0 ${bottomDrawer.isOpen ? '' : 'overflow-auto'}`}>
+            {renderComponent()}
+          </div>
+          {/* Scoped Bottom Drawer controlled by Redux */}
+          {bottomDrawer.isOpen && bottomDrawer.content && (
+            <div id="bottom-drawer-container" className="flex-shrink-0 w-full">
+              <BottomDrawer 
+                title={bottomDrawer.title}
+                height={`h-[${bottomDrawer.height}px]`}
+                onClose={() => dispatch(closeChatBottomDrawer())}
+              >
+                {bottomDrawer.content}
+              </BottomDrawer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

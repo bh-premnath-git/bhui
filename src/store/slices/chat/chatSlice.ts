@@ -6,15 +6,27 @@ export interface Message {
   content: string;
   timestamp: Date;
   isUser: boolean;
+  // Indicates content is being streamed (partial)
+  isStreaming?: boolean;
   options?: string[];
-  uiComponent?: {
-    type: 'Card';
-    props: {
-      title?: string;
-      description?: string;
-    };
-    stepId?: string;
-  };
+  uiComponent?: (
+    {
+      type: 'Card';
+      props: {
+        title?: string;
+        description?: string;
+      };
+      stepId?: string;
+    } |
+    {
+      type: 'Input';
+      props: {
+        placeholder?: string;
+        buttonLabel?: string;
+      };
+      stepId?: string;
+    }
+  );
 }
 
 export interface RightComponent {
@@ -40,6 +52,13 @@ interface ChatState {
   layoutMode: 'centered' | 'split';
   otherActions: ActionItem[] | null;
   selectedActionTitle: string | null;
+  // Bottom drawer (scoped to RightAsideComponent)
+  bottomDrawer: {
+    isOpen: boolean;
+    title: string;
+    height: number; // in px
+    content: any | null; // JSX content; kept as any for flexibility
+  };
 }
 
 const initialState: ChatState = {
@@ -52,6 +71,12 @@ const initialState: ChatState = {
   layoutMode: 'centered',
   otherActions: null,
   selectedActionTitle: null,
+  bottomDrawer: {
+    isOpen: false,
+    title: '',
+    height: 300,
+    content: null,
+  },
 };
 
 const chatSlice = createSlice({
@@ -69,11 +94,36 @@ const chatSlice = createSlice({
       };
       state.messages.push(newMessage);
     },
+    // Add message with a specific id (for streaming updates)
+    addMessageWithId: (
+      state,
+      action: PayloadAction<{ id: string; message: Omit<Message, 'id' | 'timestamp'> }>
+    ) => {
+      const { id, message } = action.payload;
+      const newMessage: Message = {
+        ...message,
+        id,
+        timestamp: new Date(),
+      };
+      state.messages.push(newMessage);
+    },
     setTyping: (state, action: PayloadAction<boolean>) => {
       state.isTyping = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
+    },
+    // Update last AI message by ID (for streaming)
+    updateMessageContent: (
+      state,
+      action: PayloadAction<{ id: string; content: string; isStreaming?: boolean }>
+    ) => {
+      const { id, content, isStreaming } = action.payload;
+      const msg = state.messages.find((m) => m.id === id);
+      if (msg && !msg.isUser) {
+        msg.content = content;
+        if (typeof isStreaming !== 'undefined') msg.isStreaming = isStreaming;
+      }
     },
     setContext: (state, action: PayloadAction<string>) => {
       state.context = action.payload;
@@ -94,20 +144,40 @@ const chatSlice = createSlice({
     clearMessages: (state) => {
       state.messages = [];
     },
+    // Bottom drawer reducers (RightAside scoped)
+    openChatBottomDrawer: (state, action: PayloadAction<{ title?: string; content: any; height?: number }>) => {
+      state.bottomDrawer.isOpen = true;
+      state.bottomDrawer.title = action.payload.title ?? state.bottomDrawer.title;
+      state.bottomDrawer.content = action.payload.content;
+      if (action.payload.height) state.bottomDrawer.height = action.payload.height;
+    },
+    closeChatBottomDrawer: (state) => {
+      state.bottomDrawer.isOpen = false;
+      state.bottomDrawer.content = null;
+      state.bottomDrawer.title = '';
+    },
+    setChatBottomDrawerHeight: (state, action: PayloadAction<number>) => {
+      state.bottomDrawer.height = Math.max(100, Math.min(action.payload, Math.floor(window.innerHeight * 0.8)));
+    },
   },
 });
 
 export const {
   setCurrentInput,
   addMessage,
+  addMessageWithId,
   setTyping,
   setLoading,
+  updateMessageContent,
   setContext,
   setRightComponent,
   setLayoutMode,
   setOtherActions,
   setSelectedActionTitle,
-  clearMessages
+  clearMessages,
+  openChatBottomDrawer,
+  closeChatBottomDrawer,
+  setChatBottomDrawerHeight,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

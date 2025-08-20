@@ -8,16 +8,33 @@ export interface WorkflowStep {
     next: string;
     pipelineJson?: any; // Optional pipeline configuration JSON
   }>;
-  uiComponent?: {
-    type: 'Card' | 'RightAsideComponent';
-    props: {
-      title?: string;
-      description?: string;
-      component?: string;
-    };
-  };
+  uiComponent?: (
+    {
+      type: 'Card';
+      props: {
+        title?: string;
+        description?: string;
+      };
+    } |
+    {
+      type: 'RightAsideComponent';
+      props: {
+        title?: string;
+        component?: string;
+      };
+    } |
+    {
+      type: 'Input';
+      props: {
+        placeholder?: string;
+        buttonLabel?: string;
+      };
+    }
+  );
   nextOnClick?: string;
   nextOnSelect?: string;
+  nextOnSubmit?: string;
+  inputKey?: string; // key to store input value (e.g., 'pipelineName')
 }
 
 export interface WorkflowConfig {
@@ -300,10 +317,10 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "start",
       actor: "ai",
-      message: "Let's create a new pipeline! This will require setting up a project, environment, connection, and data source. Do you want to continue?",
+      message: "Let's create a new pipeline. We'll configure a project and environment.",
       options: [
-        { label: "Yes, let's start", next: "projectSetup" },
-        { label: "No, show sample pipelines", next: "showSamplePipelines" }
+        { label: "Set up Project", next: "projectSetup" },
+        { label: "Browse sample pipelines", next: "showSamplePipelines" }
       ]
     },
     
@@ -311,10 +328,10 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "projectSetup",
       actor: "ai",
-      message: "Step 1/4: First, let's set up a project. Do you want to create a new project?",
+      message: "First, set up a project. Create new or use existing.",
       options: [
-        { label: "Yes", next: "showProjectCard" },
-        { label: "No, use existing", next: "showSampleProjects" }
+        { label: "Create new project", next: "showProjectCard" },
+        { label: "Use existing project", next: "showSampleProjects" }
       ]
     },
     {
@@ -345,18 +362,17 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       actor: "ai",
       message: "Here are some existing projects you can use:",
       options: [
-        { label: "Sample Project Alpha", next: "projectSelected" },
-        { label: "Sample Project Beta", next: "projectSelected" }
+        { label: "Sample Project Alpha", next: "environmentSetup" },
+        { label: "Sample Project Beta", next: "environmentSetup" }
       ],
-      nextOnSelect: "projectSelected"
+      nextOnSelect: "environmentSetup"
     },
     {
       id: "projectSelected",
       actor: "ai",
-      message: "✅ Project selected! Do you want to continue to environment setup?",
+      message: "✅ Project selected!",
       options: [
-        { label: "Yes, continue", next: "environmentSetup" },
-        { label: "No, finish here", next: "pipelineIncomplete" }
+        { label: "Next: Environment setup", next: "environmentSetup" }
       ]
     },
     
@@ -364,10 +380,10 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "environmentSetup",
       actor: "ai",
-      message: "Step 2/4: Now let's set up an environment. Do you want to create a new environment?",
+      message: "Next, set up an environment. Create new or use existing.",
       options: [
-        { label: "Yes", next: "showEnvironmentCard" },
-        { label: "No, use existing", next: "showSampleEnvironments" }
+        { label: "Create new environment", next: "showEnvironmentCard" },
+        { label: "Use existing environment", next: "showSampleEnvironments" }
       ]
     },
     {
@@ -398,192 +414,99 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       actor: "ai",
       message: "Here are some existing environments you can use:",
       options: [
-        { label: "Development Environment", next: "environmentSelected" },
-        { label: "Production Environment", next: "environmentSelected" }
+        { label: "Development Environment", next: "askPipelineName" },
+        { label: "Production Environment", next: "askPipelineName" }
       ],
-      nextOnSelect: "environmentSelected"
+      nextOnSelect: "askPipelineName"
     },
     {
       id: "environmentSelected",
       actor: "ai",
-      message: "✅ Environment selected! Do you want to continue to connection setup?",
+      message: "✅ Environment selected! You're ready to create the pipeline.",
       options: [
-        { label: "Yes, continue", next: "connectionSetup" },
-        { label: "No, finish here", next: "pipelineIncomplete" }
+        { label: "Create Pipeline", next: "askPipelineName" }
       ]
     },
-    
-    // Connection Setup Phase
+
+    // Final Pipeline Creation - Refactored flow with input + selections
+   
     {
-      id: "connectionSetup",
+      id: "askPipelineName",
       actor: "ai",
-      message: "Step 3/4: Now let's set up a connection. Do you want to create a new connection?",
-      options: [
-        { label: "Yes", next: "showConnectionCard" },
-        { label: "No, use existing", next: "showSampleConnections" }
-      ]
-    },
-    {
-      id: "showConnectionCard",
-      actor: "ai",
+      message: "Can you give the pipeline name?",
       uiComponent: {
-        type: "Card",
+        type: "Input",
         props: {
-          title: "New Connection",
-          description: "Click to start creating a new connection"
+          placeholder: "Enter pipeline name",
+          buttonLabel: "Continue"
         }
       },
-      nextOnClick: "openConnectionForm"
+      inputKey: "pipelineName",
+      nextOnSubmit: "askPipelineMode"
     },
     {
-      id: "openConnectionForm",
-      actor: "system",
-      uiComponent: {
-        type: "RightAsideComponent",
-        props: {
-          title: "Add Connection",
-          component: "AddConnection"
-        }
-      }
-    },
-    {
-      id: "showSampleConnections",
+      id: "askPipelineMode",
       actor: "ai",
-      message: "Here are some existing connections you can use:",
+      message: "What kind of pipeline do you want?",
       options: [
-        { label: "Sample DB - Localhost", next: "connectionSelected" },
-        { label: "Sample API - Dev Server", next: "connectionSelected" }
+        { label: "Batch", next: "askPipelineKind" },
+        { label: "Streaming", next: "askPipelineKind" }
       ],
-      nextOnSelect: "connectionSelected"
+      nextOnSelect: "askPipelineKind"
     },
     {
-      id: "connectionSelected",
+      id: "askPipelineKind",
       actor: "ai",
-      message: "✅ Connection selected! Do you want to continue to data source setup?",
+      message: "What kind of pipeline you need?",
       options: [
-        { label: "Yes, continue", next: "dataSourceSetup" },
-        { label: "No, finish here", next: "pipelineIncomplete" }
-      ]
-    },
-    
-    // Data Source Setup Phase
-    {
-      id: "dataSourceSetup",
-      actor: "ai",
-      message: "Step 4/4: Finally, let's add a data source. Do you want to add a new data source?",
-      options: [
-        { label: "Yes", next: "chooseDataSourceType" },
-        { label: "No, use existing", next: "showSampleDataSources" }
-      ]
-    },
-    {
-      id: "chooseDataSourceType",
-      actor: "ai",
-      message: "What kind of data source would you like to add?",
-      options: [
-        { label: "Table", next: "showTableCard" },
-        { label: "File", next: "showFileCard" }
-      ]
-    },
-    {
-      id: "showTableCard",
-      actor: "ai",
-      uiComponent: {
-        type: "Card",
-        props: {
-          title: "New Table Source",
-          description: "Click to start adding a new table data source"
-        }
-      },
-      nextOnClick: "openTableForm"
-    },
-    {
-      id: "openTableForm",
-      actor: "system",
-      uiComponent: {
-        type: "RightAsideComponent",
-        props: {
-          title: "Add Table Data Source",
-          component: "AddTable"
-        }
-      }
-    },
-    {
-      id: "showFileCard",
-      actor: "ai",
-      uiComponent: {
-        type: "Card",
-        props: {
-          title: "New File Source",
-          description: "Click to start adding a new file data source"
-        }
-      },
-      nextOnClick: "openFileForm"
-    },
-    {
-      id: "openFileForm",
-      actor: "system",
-      uiComponent: {
-        type: "RightAsideComponent",
-        props: {
-          title: "Add File Data Source",
-          component: "AddFile"
-        }
-      }
-    },
-    {
-      id: "showSampleDataSources",
-      actor: "ai",
-      message: "Here are some existing data sources you can use:",
-      options: [
-        { label: "Customer Orders Table", next: "dataSourceSelected" },
-        { label: "Sales Report CSV File", next: "dataSourceSelected" }
+        { label: "Requirement", next: "showRequirementCard" },
+        { label: "Design (Manual)", next: "showDesignCard" }
       ],
-      nextOnSelect: "dataSourceSelected"
+      nextOnSelect: "showDesignCard"
     },
     {
-      id: "dataSourceSelected",
-      actor: "ai",
-      message: "✅ Data source selected! Now let's create the pipeline. Do you want to continue?",
-      options: [
-        { label: "Yes, create pipeline", next: "showPipelineCard" },
-        { label: "No, finish setup", next: "pipelineIncomplete" }
-      ]
-    },
-    
-    // Final Pipeline Creation
-    {
-      id: "showPipelineCard",
+      id: "showDesignCard",
       actor: "ai",
       uiComponent: {
         type: "Card",
         props: {
-          title: "New Pipeline",
-          description: "Click to start creating a new pipeline with all components"
+          title: "Design your pipeline",
+          description: "Click to open the canvas and design manually"
         }
       },
-      nextOnClick: "openPipelineForm"
+      nextOnClick: "openPipelineCanvas"
     },
     {
-      id: "openPipelineForm",
-      actor: "system",
-      uiComponent: {
-        type: "RightAsideComponent",
-        props: {
-          title: "Add Pipeline",
-          component: "AddPipeline"
-        }
-      }
-    },
-    {
-      id: "pipelineCreated",
+      id: "showRequirementCard",
       actor: "ai",
-      message: "🎉 Pipeline created successfully! Your pipeline is now ready with all components configured.",
+      uiComponent: {
+        type: "Card",
+        props: {
+          title: "Define requirements",
+          description: "Click to open the Requirement form"
+        }
+      },
+      nextOnClick: "openRequirementForm"
+    },
+    {
+      id: "openPipelineCanvas",
+      actor: "system",
       uiComponent: {
         type: "RightAsideComponent",
         props: {
           title: "Pipeline Canvas",
           component: "DataPipelineCanvas"
+        }
+      }
+    },
+    {
+      id: "openRequirementForm",
+      actor: "system",
+      uiComponent: {
+        type: "RightAsideComponent",
+        props: {
+          title: "Requirement",
+          component: "RequirementForm"
         }
       }
     },

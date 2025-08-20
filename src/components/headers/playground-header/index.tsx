@@ -24,7 +24,6 @@ import PipelineControls from '../build-playground-header/components/PipelineCont
 import { useModules } from '@/hooks/useModules';
 import { usePipelineModules } from '@/hooks/usePipelineModules';
 import { useSidebar } from '@/context/SidebarContext';
-import { EngineSelector } from './EngineSelector';
 import { ModeSelector } from './ModeSelector';
 
 export interface PlayGroundHeaderProps {

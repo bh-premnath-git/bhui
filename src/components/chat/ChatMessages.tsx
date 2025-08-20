@@ -28,16 +28,21 @@ export const ChatMessages: React.FC = () => {
   const handleCardClick = (stepId: string) => {
     chatService.handleCardClick(stepId);
   };
+
+  const handleInputSubmit = (stepId: string, value: string) => {
+    chatService.handleInputSubmit(stepId, value);
+  };
  
   if (messages.length === 0 && !isTyping) {
     return null;
   }
  
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <Card className="bg-chat-surface/30 max-h-full overflow-y-auto">
-        <div className="p-4 space-y-4">
-          {messages.map((message) => (
+    <div className="w-full h-full">
+      <div className="h-full max-w-4xl mx-auto flex flex-col">
+        <div className="flex-1 overflow-y-auto px-0">
+          <div className="p-4 space-y-4">
+            {messages.map((message) => (
             <div
               key={message.id}
               className={`flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'}`}
@@ -53,13 +58,23 @@ export const ChatMessages: React.FC = () => {
                 className={`max-w-[80%] rounded-lg px-4 py-2 ${
                   message.isUser
                     ? 'bg-primary text-primary-foreground ml-auto'
-                    : 'bg-background border border-chat-border/50'
+                    : 'bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20'
                 }`}
               >
                 {message.content && (
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">
                     {message.content}
+                    {message.isStreaming && (
+                      <span className="inline-block w-1 h-4 align-baseline bg-muted-foreground/60 animate-pulse ml-0.5 rounded-sm" />
+                    )}
                   </p>
+                )}
+                {!message.content && message.isStreaming && (
+                  <div className="flex items-center gap-1 py-0.5">
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse [animation-delay:200ms]" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse [animation-delay:400ms]" />
+                  </div>
                 )}
                
                 {/* Render options as buttons */}
@@ -133,6 +148,33 @@ export const ChatMessages: React.FC = () => {
                     </div>
                   </Card>
                 )}
+
+                {message.uiComponent && message.uiComponent.type === 'Input' && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      placeholder={message.uiComponent.props.placeholder || 'Type here'}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const value = (e.target as HTMLInputElement).value.trim();
+                          if (value) handleInputSubmit(message.uiComponent.stepId || '', value);
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        const container = (e.currentTarget.parentElement as HTMLElement);
+                        const input = container.querySelector('input');
+                        const value = (input as HTMLInputElement)?.value.trim();
+                        if (value) handleInputSubmit(message.uiComponent.stepId || '', value);
+                      }}
+                    >
+                      {message.uiComponent.props.buttonLabel || 'Submit'}
+                    </Button>
+                  </div>
+                )}
                
                 <p className={`text-xs mt-1 ${
                   message.isUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -161,7 +203,7 @@ export const ChatMessages: React.FC = () => {
                 <AvatarImage src="/assets/ai/ai.svg" alt="AI" className="p-1" />
                 <AvatarFallback className="bg-primary/10 text-primary text-[10px]">AI</AvatarFallback>
               </Avatar>
-              <div className="bg-background border border-chat-border/50 rounded-lg px-4 py-2">
+              <div className="bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 rounded-lg px-4 py-2">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" />
                   <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse [animation-delay:200ms]" />
@@ -170,11 +212,11 @@ export const ChatMessages: React.FC = () => {
               </div>
             </div>
           )}
-         
+
           <div ref={messagesEndRef} />
         </div>
-      </Card>
+      </div>
     </div>
+  </div>
   );
 };
- 

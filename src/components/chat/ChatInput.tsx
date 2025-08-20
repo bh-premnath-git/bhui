@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Mic, MicOff } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { setCurrentInput, addMessage } from "@/store/slices/chat/chatSlice";
+import { setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping } from "@/store/slices/chat/chatSlice";
 import { ActionsList } from "./ActionsList";
 
 // Web Speech API type declarations
@@ -159,16 +159,40 @@ export const ChatInput: React.FC = () => {
       })
     );
 
-    // Simulated AI response
-    setTimeout(() => {
-      dispatch(
-        addMessage({
-          content:
-            "I'd be happy to help you build that! Let me break down your request and create something amazing.",
+    // Streaming AI response (simulated)
+    const id = crypto.randomUUID();
+    dispatch(
+      addMessageWithId({
+        id,
+        message: {
+          content: "",
           isUser: false,
-        })
-      );
-    }, 600);
+          isStreaming: true,
+        },
+      })
+    );
+
+    // Show thinking dots before streaming starts
+    dispatch(setTyping(true));
+
+    const chunks = [
+      "I'd be happy to help you build that! ",
+      "Let me break down your request ",
+      "and create something amazing.",
+    ];
+    let buffer = "";
+    let i = 0;
+
+    const interval = setInterval(() => {
+      if (i < chunks.length) {
+        buffer += chunks[i++];
+        dispatch(updateMessageContent({ id, content: buffer, isStreaming: true }));
+      } else {
+        clearInterval(interval);
+        dispatch(updateMessageContent({ id, content: buffer, isStreaming: false }));
+        dispatch(setTyping(false));
+      }
+    }, 350);
 
     dispatch(setCurrentInput(""));
   };

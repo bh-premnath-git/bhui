@@ -874,3 +874,117 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     }
   ]
 };
+
+// Job statistics and monitoring workflow
+export const JOB_STATISTICS_WORKFLOW: WorkflowConfig = {
+  workflow: "job-statistics",
+  steps: [
+    {
+      id: "start",
+      actor: "ai",
+      message: "I'll help you check your job statistics and pipeline performance. What would you like to monitor?",
+      options: [
+        { label: "Recent Job Status", next: "showRecentJobs" },
+        { label: "Failed Jobs", next: "showFailedJobs" },
+        { label: "Performance Metrics", next: "showPerformanceMetrics" },
+        { label: "All Job Statistics", next: "showAllStatistics" }
+      ]
+    },
+    {
+      id: "showRecentJobs",
+      actor: "ai",
+      message: "Here's your recent job activity:",
+      uiComponent: {
+        type: "Card",
+        props: {
+          title: "Recent Jobs Dashboard",
+          description: "View recent job executions and their status"
+        }
+      },
+      nextOnClick: "openJobsDashboard"
+    },
+    {
+      id: "showFailedJobs",
+      actor: "ai",
+      message: "Let me show you jobs that need attention:",
+      uiComponent: {
+        type: "Card",
+        props: {
+          title: "Failed Jobs Analysis",
+          description: "Review failed jobs and error details"
+        }
+      },
+      nextOnClick: "openFailedJobsPanel"
+    },
+    {
+      id: "showPerformanceMetrics",
+      actor: "ai",
+      message: "Here are your pipeline performance insights:",
+      uiComponent: {
+        type: "Card",
+        props: {
+          title: "Performance Dashboard",
+          description: "View execution times, resource usage, and trends"
+        }
+      },
+      nextOnClick: "openPerformancePanel"
+    },
+    {
+      id: "showAllStatistics",
+      actor: "ai",
+      message: "Opening comprehensive job statistics dashboard:",
+      uiComponent: {
+        type: "Card",
+        props: {
+          title: "Complete Job Statistics",
+          description: "Full overview of all job metrics and analytics"
+        }
+      },
+      nextOnClick: "openFullStatistics"
+    },
+    {
+      id: "openJobsDashboard",
+      actor: "system",
+      uiComponent: {
+        type: "RightAsideComponent",
+        props: {
+          title: "Recent Jobs",
+          component: "JobsDashboard"
+        }
+      }
+    },
+    {
+      id: "openFailedJobsPanel",
+      actor: "system",
+      uiComponent: {
+        type: "RightAsideComponent",
+        props: {
+          title: "Failed Jobs Analysis",
+          component: "FailedJobsPanel"
+        }
+      }
+    },
+    {
+      id: "openPerformancePanel",
+      actor: "system",
+      uiComponent: {
+        type: "RightAsideComponent",
+        props: {
+          title: "Performance Metrics",
+          component: "PerformancePanel"
+        }
+      }
+    },
+    {
+      id: "openFullStatistics",
+      actor: "system",
+      uiComponent: {
+        type: "RightAsideComponent",
+        props: {
+          title: "Job Statistics Dashboard",
+          component: "JobStatisticsDashboard"
+        }
+      }
+    }
+  ]
+};

@@ -1,5 +1,5 @@
 import { Dispatch } from '@reduxjs/toolkit';
-import { CONNECTION_WORKFLOW, PROJECT_WORKFLOW, ENVIRONMENT_WORKFLOW, DATA_CATALOG_WORKFLOW, PIPELINE_WORKFLOW, type WorkflowConfig, type WorkflowStep } from '@/data/chatResponses';
+import { CONNECTION_WORKFLOW, PROJECT_WORKFLOW, ENVIRONMENT_WORKFLOW, DATA_CATALOG_WORKFLOW, PIPELINE_WORKFLOW, JOB_STATISTICS_WORKFLOW, type WorkflowConfig, type WorkflowStep } from '@/data/chatResponses';
 import { 
   addMessage, 
   setTyping, 
@@ -55,6 +55,10 @@ export class ChatService {
     } else if (actionId === 'create-pipeline') {
       // Start the pipeline workflow
       this.currentWorkflow = PIPELINE_WORKFLOW;
+      await this.executeStep('start');
+    } else if (actionId === 'check-job-statistics') {
+      // Start the job statistics workflow
+      this.currentWorkflow = JOB_STATISTICS_WORKFLOW;
       await this.executeStep('start');
     } else {
       // For other actions, show a placeholder message

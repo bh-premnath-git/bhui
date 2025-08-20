@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppDispatch } from '@/hooks/useRedux';
-import { setContext, setOtherActions } from '@/store/slices/chat/chatSlice';
+import { setContext, setOtherActions, setLayoutMode } from '@/store/slices/chat/chatSlice';
+import { getChatService } from '@/services/chatService';
 import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3, FolderPlus, Settings } from 'lucide-react';
 
 interface ActionItem {
@@ -52,15 +53,29 @@ const otherItemsActions: ActionItem[] = [
 
 export const ActionCategories: React.FC = () => {
   const dispatch = useAppDispatch();
+  const chatService = getChatService(dispatch);
 
-  const handleCategoryClick = (categoryId: string) => {
+  const handleCategoryClick = async (categoryId: string) => {
     if (categoryId === 'other-items') {
       dispatch(setContext('other-items'));
       dispatch(setOtherActions(otherItemsActions));
+      // Don't add a message with options - ActionsList component will handle the display
     } else {
       dispatch(setOtherActions(null));
       dispatch(setContext(categoryId));
+      
+      // Trigger the appropriate workflow based on category
+      if (categoryId === 'create-pipeline') {
+        await chatService.processAction('create-pipeline');
+      } else if (categoryId === 'explore-data') {
+        await chatService.processAction('onboard-dataset');
+      } else if (categoryId === 'check-jobs') {
+        await chatService.processAction('check-job-statistics');
+      }
     }
+    
+    // Force transition to chat layout
+    dispatch(setLayoutMode('centered'));
   };
 
   return (

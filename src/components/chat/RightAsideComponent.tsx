@@ -16,6 +16,7 @@ import ImportDataSourceStepper from '@/features/data-catalog/components/ImportDa
 import { useProjects } from '@/features/admin/projects/hooks/useProjects';
 import { PipelineForm } from './forms/PipelineForm';
 import { PipelineCanvasWrapper } from './wrappers/PipelineCanvasWrapper';
+import { PlaygroundHeader } from '@/components/headers/playground-header';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -121,7 +122,18 @@ export const RightAsideComponent: React.FC = () => {
       case 'pipeline-form':
         return <PipelineForm onClose={handleClose} />;
       case 'pipeline-canvas':
-        return <PipelineCanvasWrapper onClose={handleClose} />;
+        return (
+          <div className="flex flex-col h-full w-full">
+            {/* Inline playground header for pipeline */}
+            <div className="border-b">
+              <PlaygroundHeader playGroundHeader="pipeline" />
+            </div>
+            {/* Canvas below header; hide its internal header */}
+            <div className="flex-1 overflow-hidden">
+              <PipelineCanvasWrapper onClose={handleClose} hideHeader />
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="p-4 text-center text-muted-foreground">

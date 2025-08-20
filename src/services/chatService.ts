@@ -169,7 +169,7 @@ export class ChatService {
         
         const componentId = componentIdMap[step.uiComponent.props.component || ''] || 'connection-form';
         
-        // Open right aside component
+        // Open right aside component (render PipelineCanvasWrapper for 'pipeline-canvas')
         const rightComponent: RightComponent = {
           componentType: 'RightAsideComponent',
           componentId: componentId,

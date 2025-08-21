@@ -18,7 +18,7 @@ import { SqlViewer } from './components/SqlViewer';
 import { ChartTypeViewer } from './components/ChartTypeViewer';
 import { ColorSchemeViewer } from './components/ColorSchemeViewer';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Terminal, RefreshCcw, Code } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { decompressValue } from '@/lib/decompress';
 

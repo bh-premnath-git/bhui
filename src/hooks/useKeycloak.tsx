@@ -64,9 +64,9 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
             sessionStorage.setItem('kc_refreshToken', keycloak.refreshToken || '');
           }
           
-          // Redirect to dashboard if we're on the home page
+          // Redirect to home if we're on the root page
           if (window.location.pathname === '/') {
-            window.location.href = '/dataops-hub';
+            window.location.href = '/home';
           }
           
           // Set up token refresh
@@ -123,7 +123,7 @@ export const KeycloakProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       await keycloak.login({
-        redirectUri: window.location.origin + '/dataops-hub',
+        redirectUri: window.location.origin + '/home',
       });
     } catch (error) {
       console.error('Login error:', error);

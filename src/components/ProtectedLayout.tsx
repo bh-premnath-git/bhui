@@ -10,12 +10,13 @@ import { BottomDrawer } from "@/components/BottomDrawer";
 const MainContentInternal = () => {
   const { isExpanded } = useSidebar(); 
   const location = useLocation();
+const path=location.pathname;
   return (
     <div className={cn(
       "flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden",
       isExpanded ? "ml-64" : "ml-14",
     )}>
-      <div className="flex-shrink-0 mt-12"> 
+      <div className={cn("flex-shrink-0 ",path=="/home" ? " " : "mt-12")}> 
         <Header />
       </div>
       <main className="flex-1 relative overflow-auto h-full w-full "> 
@@ -54,13 +55,14 @@ const LayoutWrapper = () => {
           zIndex: 1
         }}>
         <MainContentInternal /> 
-        {isBottomDrawerOpen && bottomDrawerContent && (
+        {/* Render global BottomDrawer only when RightAside is closed; otherwise RightAside hosts its own drawer */}
+        {(!isRightAsideOpen) && isBottomDrawerOpen && bottomDrawerContent && (
           <div 
             id="bottom-drawer-container"
             className={cn(
               "flex-shrink-0 transition-all duration-300",
               isExpanded ? "pl-[9%]" : "pl-[0.5%]",
-              "w-full" // Ensure full width
+              "w-full"
             )}
           >
             <BottomDrawer title={bottomDrawerTitle}>

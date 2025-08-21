@@ -10,6 +10,7 @@ interface BottomDrawerProps {
   height?: string; // Height when open (not maximized)
   className?: string;
   showMaximize?: boolean;
+  onClose?: () => void; // Optional external close handler (e.g., Redux close)
 }
 
 export function BottomDrawer({ 
@@ -17,7 +18,8 @@ export function BottomDrawer({
   children, 
   height = 'h-full', // Default open height 
   className,
-  showMaximize = true
+  showMaximize = true,
+  onClose
 }: BottomDrawerProps) {
   const { isBottomDrawerOpen, toggleBottomDrawer, updateBottomDrawerHeight, bottomDrawerHeight, isExpanded } = useSidebar(); 
   const [isMaximized, setIsMaximized] = React.useState(false);
@@ -221,7 +223,15 @@ export function BottomDrawer({
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleBottomDrawer}
+              onClick={() => {
+                // If an external close handler is provided (e.g., Redux close), call it
+                if (onClose) {
+                  onClose();
+                } else {
+                  // Fallback to context toggle if no external handler is provided
+                  toggleBottomDrawer();
+                }
+              }}
               className="h-6 w-6 p-0 hover:bg-muted"
             >
               <ChevronDown className={cn(

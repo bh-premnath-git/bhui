@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import NotFound from '@/pages/NotFound';
+import { HomeRoutes } from './homeRoutes';
 import { DataCatalogRoutes } from './dataCatalogRoutes';
 import { DesignerRoutes } from './designerRoutes';
 import { DataOpsRoutes } from './dataOpsRoutes';
@@ -16,6 +17,7 @@ import { RequirementRoutes } from './requirementRoutes'
 export const AppRoutes = () => {
   const protectedRoutes = useMemo(() => (
     <>
+      {HomeRoutes}
       {DataCatalogRoutes}
       {DesignerRoutes}
       {DataOpsRoutes}

@@ -6,6 +6,7 @@ import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 import { PlaygroundHeader } from "./headers/playground-header";
 import { AIChatButton } from "@/components/shared/ai-chat-button";
 import { useDispatch } from "react-redux";
+import { useAppSelector } from "@/hooks/useRedux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { pipelineSchema } from "@bh-ai/schemas";
 
@@ -25,11 +26,16 @@ export const Header = () => {
     path === "/data-catalog/notebook";
   const isDataOpsHubRoute = (path: string) =>
     path === "/dataops-hub";
+  const isHomeRoute = (path: string) =>
+    path === "/home";
   const isDataXploreRoute = (path: string) =>
-    path === "/data-catalog/xplorer";
+    /^\/data-catalog\/xplorer(\/[^/?]+)?(\?.*)?$/.test(path);
 
   // Decide which header content to render
   const renderHeaderContent = () => {
+    // Get chat right-aside state
+    const rightComponent = useAppSelector((state) => state.chat.rightComponent);
+
     // Get the current width of the right aside panel if it's open
     const getRightAsideWidth = () => {
       if (!isRightAsideOpen) return 0;
@@ -53,9 +59,10 @@ export const Header = () => {
       ? `calc(100vw - ${sidebarWidth}px - ${rightAsideWidthPercent}vw)` 
       : `calc(100vw - ${sidebarWidth}px)`;
     
+    
+
     if (isBuildPlaygroundRoute(location.pathname)) {
       dispatch(setIsFlow(false))
-
       return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
@@ -82,16 +89,28 @@ export const Header = () => {
         </div>
       );
     }
+    if(isHomeRoute(location.pathname)) {
+      return (
+        <></>
+      );
+
+    }
     return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
       <NavigationBreadcrumb />
     </div>;
   };
 
-  return (
+if(isHomeRoute(location.pathname)) {
+      return (
+        <></>
+      );
+
+    }else{
+    return (
     <header
       className={cn(
         "fixed top-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[90]",
-        "transition-all duration-300"
+        "transition-all duration-300 flex-shrink-0 "
       )}
       style={{
         left: isExpanded ? '256px' : '56px',
@@ -101,10 +120,11 @@ export const Header = () => {
           : `calc(100vw - ${isExpanded ? '256px' : '56px'})`
       }}
     >
-      <div className="flex items-center justify-between h-full px-6 w-full">
+      <div className="flex items-center justify-between h-full px-6 w-full ">
         {renderHeaderContent()}
         {isNotebookRoute(location.pathname) && <NotebookAiButton />}
       </div>
     </header>
   );
+}
 };

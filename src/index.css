@@ -263,6 +263,54 @@
     -webkit-backdrop-filter: blur(8px);
   }
 
+  /* Chat-specific styles */
+  .glass-effect {
+    @apply bg-background/80 backdrop-blur-md border border-border/50 shadow-lg;
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .bg-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary/80;
+  }
+
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .transition-bounce {
+    @apply transition-all duration-200 ease-out hover:scale-105 active:scale-95;
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 20px rgba(var(--primary), 0.3);
+  }
+
+  /* Chat border colors */
+  .border-chat-border\/50 {
+    @apply border-border/50;
+  }
+
+  .border-chat-border\/30 {
+    @apply border-border/30;
+  }
+
+  /* Chat background colors */
+  .bg-chat-background {
+    @apply bg-background;
+  }
+
+  .bg-chat-surface {
+    @apply bg-card;
+  }
+
+  .bg-chat-surface\/50 {
+    @apply bg-card/50;
+  }
+
+  .bg-chat-surface\/30 {
+    @apply bg-card/30;
+  }
+
   .page-transition {
     @apply animate-fade-in;
   }

@@ -25,9 +25,13 @@ import CreatePipelineDialog from '@/features/designers/pipeline/components/Creat
 import { setEnabled } from '@/store/slices/gitSlice';
 import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
 import { CommitModal } from '@/components/git/CommitModal';
+import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table as TableIcon } from 'lucide-react';
+// Drawer is rendered in RightAsideComponent via Redux
+import { openChatBottomDrawer, closeChatBottomDrawer } from '@/store/slices/chat/chatSlice';
 
 const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
-  const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded } = useSidebar();
+  const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded, setBottomDrawerContent, openBottomDrawer, bottomDrawerContent, bottomDrawerTitle } = useSidebar();
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(false);
@@ -138,12 +142,12 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
   // Enable git integration when component mounts (top-level hook)
-  useEffect(() => {
-    dispatch(setEnabled(true));
-    return () => {
-      dispatch(setEnabled(false));
-    };
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch(setEnabled(true));
+  //   return () => {
+  //     dispatch(setEnabled(false));
+  //   };
+  // }, [dispatch]);
 
   // Listen for RightAside panel resize events
   
@@ -338,40 +342,97 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
               }}>
 
               <ComposableCanvas
-                className={`w-full h-full bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''} ${isBottomDrawerOpen ? 'with-bottom-drawer-canvas' : ''}`}
+                className={`w-full ${isBottomDrawerOpen ? 'h-[calc(100%-300px)]' : 'h-full'} bg-background transition-all duration-300 reactflow-wrapper ${isRightAsideOpen ? 'with-right-panel-canvas' : ''}`}
                 type="pipeline"
                 nodeTypes={memoizedNodeTypes}
                 edgeTypes={edgeTypes}
                 renderControls={true}
                 controls={
                   <div
-                    className={`fixed ${isBottomDrawerOpen ? 'bottom-[300px]' : 'bottom-20'} z-[1000] transition-all duration-300`}
+                    className={`fixed ${isBottomDrawerOpen ? 'bottom-[320px]' : 'bottom-20'} z-[1000] transition-all duration-300` }
                     style={{
                       right: isRightAsideOpen ? `${parseRightAsidePercent(rightAsideWidth) + 2}%` : '1rem'
                     }}
                   >
-                    <FlowControls
-                      onZoomIn={handleZoomIn}
-                      onZoomOut={handleZoomOut}
-                      onCenter={handleCenter}
-                      onAlignHorizontal={handleAlignHorizontal}
-                      onAlignVertical={handleAlignVertical}
-                      onAlignTopLeft={handleAlignTopLeft}
-                      handleRunClick={handleRun}
-                      onStop={handleStop}
-                      onNext={handleNext}
-                      isPipelineRunning={isPipelineRunning}
-                      isLoading={isCanvasLoading}
-                      pipelineConfig={handleRunClick}
-                      terminalLogs={terminalLogs}
-                      proplesLogs={conversionLogs}
-                    />
+                    <div className="flex flex-col items-end gap-3">
+                      <FlowControls
+                        onZoomIn={handleZoomIn}
+                        onZoomOut={handleZoomOut}
+                        onCenter={handleCenter}
+                        onAlignHorizontal={handleAlignHorizontal}
+                        onAlignVertical={handleAlignVertical}
+                        onAlignTopLeft={handleAlignTopLeft}
+                        handleRunClick={handleRun}
+                        onStop={handleStop}
+                        onNext={handleNext}
+                        isPipelineRunning={isPipelineRunning}
+                        isLoading={isCanvasLoading}
+                        pipelineConfig={handleRunClick}
+                        terminalLogs={terminalLogs}
+                        proplesLogs={conversionLogs}
+                      />
+                      <Button
+                        className="rounded-full h-10 w-10 shadow-lg"
+                        size="icon"
+                        variant="default"
+                        onClick={() => {
+                          // Toggle bottom drawer: close if already open, else open with preview content
+                          const state = (window as any).__bh_store__?.getState?.();
+                          const isOpen = state?.chat?.bottomDrawer?.isOpen;
+                          if (isOpen) {
+                            dispatch(closeChatBottomDrawer());
+                            return;
+                          }
+                          dispatch(openChatBottomDrawer({
+                            title: 'Preview',
+                            height: 300,
+                            content: (
+                              <div className="p-4">
+                                <div className="mb-2 font-medium">Sample Data</div>
+                                <UITable>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>ID</TableHead>
+                                      <TableHead>Name</TableHead>
+                                      <TableHead>Status</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    <TableRow>
+                                      <TableCell>1</TableCell>
+                                      <TableCell>Alice</TableCell>
+                                      <TableCell>Active</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell>2</TableCell>
+                                      <TableCell>Bob</TableCell>
+                                      <TableCell>Pending</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell>3</TableCell>
+                                      <TableCell>Charlie</TableCell>
+                                      <TableCell>Inactive</TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </UITable>
+                              </div>
+                            )
+                          }));
+                        }}
+                        aria-label="Show sample data"
+                        title="Show sample data"
+                      >
+                        <TableIcon className="h-5 w-5" />
+                      </Button>
+                    </div>
                   </div>}
                 loading={isCanvasLoading}
                 defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
                 minZoom={0.2}
                 maxZoom={1.5}
               />
+
+              {/* Bottom drawer is rendered by RightAsideComponent using Redux-controlled state */}
             </div>
           )}
 

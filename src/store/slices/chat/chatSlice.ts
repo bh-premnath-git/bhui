@@ -34,6 +34,8 @@ export interface RightComponent {
   componentId: string;
   title: string;
   isVisible: boolean;
+  // Optional extra configuration passed from workflow (e.g., toggle targets)
+  extra?: any;
 }
 
 export interface ActionItem {

@@ -206,7 +206,8 @@ export class ChatService {
           componentType: 'RightAsideComponent',
           componentId: componentId,
           title: step.uiComponent.props.title || 'Configuration Panel',
-          isVisible: true
+          isVisible: true,
+          extra: (step.uiComponent as any)?.props?.extra
         };
         this.dispatch(setRightComponent(rightComponent));
       }

@@ -21,6 +21,8 @@ export interface WorkflowStep {
       props: {
         title?: string;
         component?: string;
+        // Optional extra configuration for UI (e.g., toggle targets)
+        extra?: any;
       };
     } |
     {
@@ -495,7 +497,23 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
         type: "RightAsideComponent",
         props: {
           title: "Pipeline Canvas",
-          component: "DataPipelineCanvas"
+          component: "DataPipelineCanvas",
+          extra: {
+            toggles: [
+              {
+                id: 'requirement-form',
+                title: 'Requirement',
+                componentId: 'requirement-form',
+                targetComponent: 'RequirementForm'
+              },
+              {
+                id: 'pipeline-canvas',
+                title: 'Pipeline',
+                componentId: 'pipeline-canvas',
+                targetComponent: 'DataPipelineCanvas'
+              }
+            ]
+          }
         }
       }
     },
@@ -506,7 +524,24 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
         type: "RightAsideComponent",
         props: {
           title: "Requirement",
-          component: "RequirementForm"
+          component: "RequirementForm",
+          // Provide toggle meta so RightAside can render icons for switching
+          extra: {
+            toggles: [
+              {
+                id: 'requirement-form',
+                title: 'Requirement',
+                componentId: 'requirement-form',
+                targetComponent: 'RequirementForm'
+              },
+              {
+                id: 'pipeline-canvas',
+                title: 'Pipeline',
+                componentId: 'pipeline-canvas',
+                targetComponent: 'DataPipelineCanvas'
+              }
+            ]
+          }
         }
       }
     },
@@ -779,12 +814,28 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "pipelineSelected",
       actor: "ai",
-      message: "✅ Pipeline selected successfully! Here's your pipeline canvas:",
+      message: "✅ Pipeline selected successfully! Here's your pipeline canvas:\nUse the icons above to switch between Requirement and Pipeline.",
       uiComponent: {
         type: "RightAsideComponent",
         props: {
           title: "Sample Pipeline Canvas",
-          component: "DataPipelineCanvas"
+          component: "DataPipelineCanvas",
+          extra: {
+            toggles: [
+              {
+                id: 'requirement-form',
+                title: 'Requirement',
+                componentId: 'requirement-form',
+                targetComponent: 'RequirementForm'
+              },
+              {
+                id: 'pipeline-canvas',
+                title: 'Pipeline',
+                componentId: 'pipeline-canvas',
+                targetComponent: 'DataPipelineCanvas'
+              }
+            ]
+          }
         }
       }
     },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, FileText, GitBranch } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { setRightComponent, addMessage, openChatBottomDrawer, closeChatBottomDrawer, setChatBottomDrawerHeight } from '@/store/slices/chat/chatSlice';
 import { getChatService } from '@/services/chatService';
@@ -162,13 +162,49 @@ export const RightAsideComponent: React.FC = () => {
     }
   };
 
+  const handleToggle = (targetComponentId: string) => {
+    if (!rightComponent) return;
+    // Switch component in-place while keeping title and extra
+    dispatch(setRightComponent({
+      ...rightComponent,
+      componentId: targetComponentId,
+      // Keep visible
+      isVisible: true,
+    }));
+  };
+
   return (
     <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20">
       <Card className="h-full rounded-none border-0 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
-          <CardTitle className="text-lg font-semibold">
-            {rightComponent.title}
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-lg font-semibold">
+              {rightComponent.title}
+            </CardTitle>
+            {/* Toggle icons (visible when extra.toggles is provided) */}
+            {Array.isArray((rightComponent as any).extra?.toggles) && (
+              <div className="flex items-center gap-1 ml-2">
+                {(rightComponent as any).extra.toggles.map((t: any) => {
+                  const isActive = rightComponent.componentId === t.componentId;
+                  const IconComp = t.componentId === 'requirement-form' ? FileText : GitBranch;
+                  return (
+                    <Button
+                      key={t.id}
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 rounded-full transition-colors ${isActive ? 'bg-primary text-primary-foreground shadow ring-2 ring-primary' : 'hover:bg-muted/60 text-muted-foreground'}`}
+                      title={t.title}
+                      aria-label={t.title}
+                      aria-pressed={isActive}
+                      onClick={() => handleToggle(t.componentId)}
+                    >
+                      <IconComp className="h-4 w-4" />
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="icon"

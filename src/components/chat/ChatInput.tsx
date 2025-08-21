@@ -5,6 +5,7 @@ import { Send, Mic, MicOff } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping } from "@/store/slices/chat/chatSlice";
 import { ActionsList } from "./ActionsList";
+import { ActionCategories } from "./ActionCategories";
 
 // Web Speech API type declarations
 declare global {
@@ -271,7 +272,10 @@ export const ChatInput: React.FC = () => {
               <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
+
         </div>
+            {/* <ActionCategories/> */}
+
       </div>
 
       <div className="mt-1 text-[10px] text-muted-foreground text-center">

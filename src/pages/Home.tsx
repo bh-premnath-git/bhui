@@ -14,7 +14,7 @@ import { setContext, setOtherActions, setSelectedActionTitle, clearMessages } fr
 const Home: React.FC = () => {
   const { context, messages, otherActions, selectedActionTitle, layoutMode } = useAppSelector((state) => state.chat);
   const dispatch = useAppDispatch();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Resizable right panel state/refs (for split layout)
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -112,13 +112,13 @@ const Home: React.FC = () => {
           onSelectChat={handleSelectChat}
         />
         <main className="flex-1 flex flex-col">
-          <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="container mx-auto px-4 py-8 max-w-7xl">
             <div className="space-y-10">
               {/* Header + Input + Categories */}
               <div className="text-center space-y-8">
                 <ChatHeader />
                 <ChatInput />
-                <ActionCategories />
+                
               </div>
 
               {/* Community Showcase (widgets grid) */}
@@ -146,7 +146,7 @@ const Home: React.FC = () => {
           <div className="flex flex-col flex-1 border-r border-chat-border/50">
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col h-full px-4 py-4">
-                {/* {context === 'other-items' && otherActions && (
+                {context === 'other-items' && otherActions && (
                   <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-6 flex-shrink-0">
                     <h3 className="text-sm font-semibold text-foreground mb-3">Choose an action:</h3>
                     <div className="grid grid-cols-1 gap-2">
@@ -155,10 +155,27 @@ const Home: React.FC = () => {
                         return (
                           <button
                             key={action.id}
-                            onClick={() => {
-                              dispatch(setContext(`action-${action.id}`));
+                            onClick={async () => {
+                              const titleToActionId: Record<string, string> = {
+                                'Add User or roles': 'add-users-roles',
+                                'Add new Connection': 'add-connections',
+                                'Add new Project': 'add-project',
+                                'Add new Environment': 'add-environment',
+                                'Onboard new dataset': 'onboard-dataset',
+                                'Create pipeline': 'create-pipeline',
+                                'Explore Data': 'explore-data',
+                                'Check Job Statistics': 'check-job-statistics',
+                              };
+                              const actionId = titleToActionId[action.title];
                               dispatch(setOtherActions(null));
                               dispatch(setSelectedActionTitle(action.title));
+                              try {
+                                const { getChatService } = await import('@/services/chatService');
+                                const chatService = getChatService(dispatch);
+                                await chatService.processAction(actionId);
+                              } catch (e) {
+                                console.error('Failed to process action', e);
+                              }
                             }}
                             className="justify-start h-10 px-3 text-sm hover:bg-accent hover:text-accent-foreground rounded-lg border border-transparent hover:border-border flex items-center"
                           >
@@ -169,7 +186,7 @@ const Home: React.FC = () => {
                       })}
                     </div>
                   </div>
-                )} */}
+                )}
 
                 {messages.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">

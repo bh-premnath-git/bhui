@@ -1,8 +1,8 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { useAppDispatch } from '@/hooks/useRedux';
-import { setContext, setOtherActions } from '@/store/slices/chat/chatSlice';
+import { setContext, setOtherActions, clearMessages, setSelectedActionTitle } from '@/store/slices/chat/chatSlice';
 import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3, FolderPlus, Settings } from 'lucide-react';
+import SuggestionButton from '@/features/designers/pipeline/components/SuggestionButton';
 
 interface ActionItem {
   id: number;
@@ -53,45 +53,61 @@ const otherItemsActions: ActionItem[] = [
 export const ActionCategories: React.FC = () => {
   const dispatch = useAppDispatch();
 
-  const handleCategoryClick = (categoryId: string) => {
+  const handleCategoryClick = async (categoryId: string) => {
+    // Map categories to actionIds used by chatService
+    const categoryToActionId: Record<string, string> = {
+      'create-pipeline': 'create-pipeline',
+      'explore-data': 'explore-data',
+      'check-jobs': 'check-job-statistics',
+    };
+
     if (categoryId === 'other-items') {
       dispatch(setContext('other-items'));
       dispatch(setOtherActions(otherItemsActions));
-    } else {
-      dispatch(setOtherActions(null));
+      dispatch(clearMessages());
+      return;
+    }
+
+    // For direct categories, immediately start the workflow (no extra click)
+    const actionId = categoryToActionId[categoryId];
+    dispatch(setOtherActions(null));
+    dispatch(clearMessages());
+
+    try {
+      // Show the selected title in header/surface if needed
+      const titles: Record<string, string> = {
+        'create-pipeline': 'Create pipeline',
+        'explore-data': 'Explore Data',
+        'check-job-statistics': 'Check Job Statistics',
+      };
+      if (titles[actionId]) dispatch(setSelectedActionTitle(titles[actionId]));
+
+      const { getChatService } = await import('@/services/chatService');
+      const chatService = getChatService(dispatch);
+
+      // Set context to action-* for consistency with ActionsList clicks
+      dispatch(setContext(`action-${actionId}`));
+      await chatService.processAction(actionId);
+    } catch (e) {
+      // Fallback: at least set context so user sees conversation view
       dispatch(setContext(categoryId));
+      console.error('Failed to start action from category click', e);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <div className="flex flex-wrap gap-3 justify-center">
-        {categories.map((category) => {
-          const Icon = category.icon;
-          return (
-            <Button
-              key={category.id}
-              variant="ghost"
-              onClick={() => handleCategoryClick(category.id)}
-              className={`
-                h-10 px-4 rounded-full border border-border
-                bg-card text-card-foreground
-                backdrop-blur-sm text-sm font-medium
-                transition-all duration-300 ease-out
-                hover:border-accent hover:bg-accent hover:text-accent-foreground
-                hover:shadow-lg hover:shadow-black/20 hover:scale-105
-                active:scale-95 group
-              `}
-              aria-label={category.title}
-            >
-              {/* Icon */}
-              <Icon className="w-4 h-4 mr-2 text-current" />
-
-              {/* Text */}
-              <span className="relative z-10">{category.title}</span>
-            </Button>
-          );
-        })}
+    <div className="w-full max-w-7xl mx-auto">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+        {categories.map((category, idx) => (
+          <SuggestionButton
+            key={category.id}
+            text={category.title}
+            onClick={() => handleCategoryClick(category.id)}
+            index={idx}
+            className="mr-1.5 sm:mr-2"
+            icon={<category.icon className="w-4 h-4" />}
+          />
+        ))}
       </div>
     </div>
   );

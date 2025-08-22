@@ -4,8 +4,10 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, ChevronRight, Sparkles } from 'lucide-react';
+import { User, ChevronRight, Sparkles, Zap } from 'lucide-react';
 import { getChatService } from '@/services/chatService';
+import { motion } from 'framer-motion';
+import SuggestionButton from '@/features/designers/pipeline/components/SuggestionButton';
  
 export const ChatMessages: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -48,10 +50,28 @@ export const ChatMessages: React.FC = () => {
               className={`flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
               {!message.isUser && (
-                <Avatar className="h-8 w-8 mt-1">
-                  <AvatarImage src="/assets/ai/ai.svg" alt="AI" className="p-1" />
-                  <AvatarFallback className="bg-primary/10 text-primary text-[10px]">AI</AvatarFallback>
-                </Avatar>
+                 <motion.div
+            className="relative inline-flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+        >
+            <motion.button
+                className="relative w-8 h-8 rounded-full group flex items-center justify-center hover:bg-accent"
+                style={{ backgroundColor: "#009f59" }}
+                whileHover={{ scale: 1.05, opacity: 0.9 }}
+                whileTap={{ scale: 0.9 }}
+            >
+                <motion.img
+                    src="/assets/ai/ai.svg"
+                    alt="ai"
+                    className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+                    initial={{ rotate: -45 }}
+                    animate={{ rotate: -40 }}
+                    transition={{ type: 'spring', stiffness: 150 }}
+                />
+            </motion.button>
+        </motion.div>
               )}
              
               <div
@@ -81,16 +101,14 @@ export const ChatMessages: React.FC = () => {
                 {message.options && message.options.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {message.options.map((option, index) => (
-                      <Button
+                      <SuggestionButton
                         key={index}
-                        variant={message.isUser ? "secondary" : "outline"}
-                        size="sm"
+                        text={option}
                         onClick={() => handleOptionClick(option)}
-                        className="text-xs rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary transition-colors"
-                      >
-                        <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" />
-                        {option}
-                      </Button>
+                        index={index}
+                        className="mr-1.5"
+                        // Use Sparkles icon with assistant color
+                      />
                     ))}
                   </div>
                 )}
@@ -200,8 +218,18 @@ export const ChatMessages: React.FC = () => {
           {isTyping && (
             <div className="flex gap-3 justify-start">
               <Avatar className="h-8 w-8 mt-1">
-                <AvatarImage src="/assets/ai/ai.svg" alt="AI" className="p-1" />
-                <AvatarFallback className="bg-primary/10 text-primary text-[10px]">AI</AvatarFallback>
+                <div className="p-1">
+                  <motion.img
+                    src="/assets/ai/ai.svg"
+                    alt="AI"
+                    className="w-5 h-5 -rotate-[40deg]"
+                    initial={{ rotate: -45 }}
+                    animate={{ rotate: -40 }}
+                    transition={{ type: 'spring', stiffness: 150 }}
+                    style={{ filter: 'invert(28%) sepia(73%) saturate(471%) hue-rotate(108deg) brightness(96%) contrast(92%)' }}
+                  />
+                </div>
+                <AvatarFallback className="bg-[#009f59]/10 text-[#009f59] text-[10px]">AI</AvatarFallback>
               </Avatar>
               <div className="bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 rounded-lg px-4 py-2">
                 <div className="flex items-center gap-1">

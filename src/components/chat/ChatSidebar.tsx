@@ -25,7 +25,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [showNewChatTooltip, setShowNewChatTooltip] = useState(false);
 
   return (
-    <div className="relative">
+    <div className="relative top-10">
       <aside
         className={`h-full flex flex-col bg-white transition-all duration-200
           ${open ? 'w-80 min-w-[320px] border-r border-gray-200' : 'w-14 min-w-[56px]'}
@@ -38,7 +38,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-lg mt-4 ml-2 bg-gray-100 hover:bg-gray-100 border border-gray-300 text-gray-700 h-9 w-9"
+              className=" mt-4 ml-3 hover:bg-gray-100 text-black h-9 w-9"
               onClick={onToggle}
               aria-label={open ? 'Hide chat history' : 'Show chat history'}
               onMouseEnter={() => !open && setShowToggleTooltip(true)}
@@ -60,7 +60,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-lg ml-2 mt-4 bg-gray-100 hover:bg-gray-100 border border-gray-300 text-gray-700 h-9 w-9"
+              className=" mt-4 ml-3 hover:bg-gray-100 text-black h-9 w-9"
               onClick={onNewChat}
               aria-label="New Chat"
               onMouseEnter={() => !open && setShowNewChatTooltip(true)}

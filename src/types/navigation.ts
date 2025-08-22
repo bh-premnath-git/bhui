@@ -1,14 +1,14 @@
 import { LucideIcon } from "lucide-react";
 
 export interface NavAction {
-  icon: string;
+  icon?: string;
   action: string;
 }
 
 export interface NavItem {
   title: string;
   path: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   subItems?: NavItem[];
   parent?: string;
   actions?: NavAction[];

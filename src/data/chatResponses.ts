@@ -8,6 +8,14 @@ export interface WorkflowStep {
     next: string;
     pipelineJson?: any; // Optional pipeline configuration JSON
   }>;
+  // Dynamic options fetched from API. When present, chat should call the endpoint and
+  // render the returned items as selectable options.
+  dynamicOptions?: {
+    endpoint: string; // e.g., 'connection_registry/connection_config/list/?limit=10&offset=0'
+    isResponseFormat: boolean; // true => { data: [...] }, false => [...]
+    displayName: string; // dot-path to primary label field
+    subName?: string | null; // optional dot-path to subtitle field
+  };
   uiComponent?: (
     {
       type: 'Card';
@@ -54,7 +62,7 @@ export const CONNECTION_WORKFLOW: WorkflowConfig = {
       message: "Do you want to create a new connection?",
       options: [
         { label: "Yes", next: "showConnectionCard" },
-        { label: "No", next: "showSampleConnections" }
+        { label: "No", next: "showExistingConnections" }
       ]
     },
     {
@@ -81,13 +89,15 @@ export const CONNECTION_WORKFLOW: WorkflowConfig = {
       }
     },
     {
-      id: "showSampleConnections",
+      id: "showExistingConnections",
       actor: "ai",
-      message: "Here are some sample connections you can use:",
-      options: [
-        { label: "Sample DB - Localhost", next: "connectionSelected" },
-        { label: "Sample API - Dev Server", next: "connectionSelected" }
-      ],
+      message: "Select an existing connection:",
+      dynamicOptions: {
+        endpoint: "connection_registry/connection_config/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "connection_config_name",
+        subName: "connection_name"
+      },
       nextOnSelect: "connectionSelected"
     },
     {
@@ -142,11 +152,13 @@ export const PROJECT_WORKFLOW: WorkflowConfig = {
     {
       id: "showSampleProjects",
       actor: "ai",
-      message: "Here are some sample projects you can use:",
-      options: [
-        { label: "Sample Project Alpha", next: "projectSelected" },
-        { label: "Sample Project Beta", next: "projectSelected" }
-      ],
+      message: "Select an existing project:",
+      dynamicOptions: {
+        endpoint: "bh_project/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "bh_project_name",
+        subName: null
+      },
       nextOnSelect: "projectSelected"
     },
     {
@@ -201,11 +213,13 @@ export const ENVIRONMENT_WORKFLOW: WorkflowConfig = {
     {
       id: "showSampleEnvironments",
       actor: "ai",
-      message: "Here are some sample environments you can use:",
-      options: [
-        { label: "Development Environment", next: "environmentSelected" },
-        { label: "Production Environment", next: "environmentSelected" }
-      ],
+      message: "Select an existing environment:",
+      dynamicOptions: {
+        endpoint: "environment/environment/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "bh_env_name",
+        subName: null
+      },
       nextOnSelect: "environmentSelected"
     },
     {
@@ -297,11 +311,13 @@ export const DATA_CATALOG_WORKFLOW: WorkflowConfig = {
     {
       id: "showSampleDataSources",
       actor: "ai",
-      message: "Here are some sample data sources you can use:",
-      options: [
-        { label: "Customer Orders Table", next: "dataSourceSelected" },
-        { label: "Sales Report CSV File", next: "dataSourceSelected" }
-      ],
+      message: "Select an existing data source:",
+      dynamicOptions: {
+        endpoint: "data_source/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "data_src_name",
+        subName: "connection_config.custom_metadata.connection_type"
+      },
       nextOnSelect: "dataSourceSelected"
     },
     {
@@ -362,11 +378,13 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "showSampleProjects",
       actor: "ai",
-      message: "Here are some existing projects you can use:",
-      options: [
-        { label: "Sample Project Alpha", next: "environmentSetup" },
-        { label: "Sample Project Beta", next: "environmentSetup" }
-      ],
+      message: "Select an existing project:",
+      dynamicOptions: {
+        endpoint: "bh_project/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "bh_project_name",
+        subName: null
+      },
       nextOnSelect: "environmentSetup"
     },
     {
@@ -414,11 +432,13 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "showSampleEnvironments",
       actor: "ai",
-      message: "Here are some existing environments you can use:",
-      options: [
-        { label: "Development Environment", next: "askPipelineName" },
-        { label: "Production Environment", next: "askPipelineName" }
-      ],
+      message: "Select an existing environment:",
+      dynamicOptions: {
+        endpoint: "environment/environment/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "bh_env_name",
+        subName: null
+      },
       nextOnSelect: "askPipelineName"
     },
     {
@@ -550,265 +570,13 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "showSamplePipelines",
       actor: "ai",
-      message: "Here are some sample pipelines you can use:",
-      options: [
-        { label: "ETL - Customer Data", next: "pipelineSelected", pipelineJson: {
-    "$schema": "https://json-schema.org/draft-07/schema#",
-    "name": "pipline 7",
-    "description": " ",
-    "version": "1.0.0",
-    "parameters": [],
-    "connections": {
-        "lookup1_csv": {
-            "name": "aus 14 s3",
-            "connection_type": "S3",
-            "connection_config_id": 1,
-            "file_path_prefix": "example",
-            "bucket": "bh-dag-poc-1",
-            "secret_name": "bh-s3-aus14s3"
-        },
-        "lookup2.csv": {
-            "name": "aus 14 s3",
-            "connection_type": "S3",
-            "connection_config_id": 1,
-            "file_path_prefix": "example",
-            "bucket": "bh-dag-poc-1",
-            "secret_name": "bh-s3-aus14s3"
-        },
-        "output": {
-            "name": "aus14postgres",
-            "connection_type": "PostgreSQL",
-            "connection_config_id": 2,
-            "database": "sample_db",
-            "schema": "public",
-            "secret_name": "bh-postgres-aus14postgres"
-        }
-    },
-    "sources": {
-        "lookup1_csv": {
-            "name": "lookup1_csv",
-            "source_type": "File",
-            "data_src_id": 34,
-            "file_name": "lookup1.csv",
-            "connection": {
-                "$ref": "#/connections/lookup1_csv"
-            }
-        },
-        "lookup2.csv": {
-            "name": "lookup2.csv",
-            "source_type": "File",
-            "data_src_id": 33,
-            "file_name": "lookup2.csv",
-            "connection": {
-                "$ref": "#/connections/lookup2.csv"
-            }
-        }
-    },
-    "targets": {
-        "output": {
-            "name": "output",
-            "target_type": "Relational",
-            "table_name": "output",
-            "load_mode": "overwrite",
-            "file_name": "output.csv",
-            "connection": {
-                "$ref": "#/connections/output"
-            }
-        }
-    },
-    "transformations": [
-        {
-            "name": "lookup1_csv",
-            "dependent_on": [],
-            "transformation": "Reader",
-            "source": {
-                "$ref": "#/sources/lookup1_csv"
-            },
-            "read_options": {
-                "header": true
-            },
-            "select_columns": [],
-            "drop_columns": [],
-            "rename_columns": {}
-        },
-        {
-            "name": "Lookup",
-            "transformation": "Lookup",
-            "dependent_on": [
-                "lookup1_csv"
-            ],
-            "lookup_type": "Column Based",
-            "lookup_config": {
-                "name": "lookup_config",
-                "source": {
-                    "$ref": "#/sources/lookup2.csv"
-                },
-                "read_options": {
-                    "header": true
-                }
-            },
-            "lookup_columns": [
-                {
-                    "column": "id",
-                    "out_column_name": "id"
-                },
-                {
-                    "column": "department",
-                    "out_column_name": "department"
-                },
-                {
-                    "column": "name",
-                    "out_column_name": "name"
-                }
-            ],
-            "lookup_conditions": [
-                {
-                    "column_name": "id",
-                    "lookup_with": "id"
-                }
-            ],
-            "keep": "First"
-        },
-        {
-            "name": "output",
-            "transformation": "Writer",
-            "dependent_on": [
-                "Lookup"
-            ],
-            "target": {
-                "$ref": "#/targets/output"
-            },
-            "file_name": "output.csv",
-            "write_options": {
-                "header": true,
-                "sep": ","
-            }
-        }
-    ]
-} },
-        { 
-          label: "Data Quality Check Pipeline", 
-          next: "pipelineSelected",
-          pipelineJson: {
-            "$schema": "https://json-schema.org/draft-07/schema#",
-            "name": "Data Quality Check Pipeline",
-            "description": "Pipeline for data quality validation and cleansing",
-            "version": "1.0.0",
-            "parameters": [],
-            "connections": {
-              "input_data": {
-                "name": "Data Source",
-                "connection_type": "S3",
-                "connection_config_id": 1,
-                "file_path_prefix": "data-quality",
-                "bucket": "bh-dag-poc-1",
-                "secret_name": "bh-s3-data-quality"
-              }
-            },
-            "sources": {
-              "input_data": {
-                "name": "input_data",
-                "source_type": "File",
-                "data_src_id": 35,
-                "file_name": "raw_data.csv",
-                "connection": {
-                  "$ref": "#/connections/input_data"
-                }
-              }
-            },
-            "transformations": [
-              {
-                "name": "data_reader",
-                "dependent_on": [],
-                "transformation": "Reader",
-                "source": {
-                  "$ref": "#/sources/input_data"
-                },
-                "read_options": {
-                  "header": true
-                }
-              },
-              {
-                "name": "data_validation",
-                "transformation": "DataQuality",
-                "dependent_on": ["data_reader"],
-                "validation_rules": [
-                  {
-                    "column": "email",
-                    "rule": "email_format"
-                  },
-                  {
-                    "column": "age",
-                    "rule": "numeric_range",
-                    "min": 0,
-                    "max": 120
-                  }
-                ]
-              }
-            ]
-          }
-        },
-        { 
-          label: "Sales Dashboard Refresh", 
-          next: "pipelineSelected",
-          pipelineJson: {
-            "$schema": "https://json-schema.org/draft-07/schema#",
-            "name": "Sales Dashboard Refresh",
-            "description": "Pipeline to refresh sales dashboard data",
-            "version": "1.0.0",
-            "parameters": [],
-            "connections": {
-              "sales_db": {
-                "name": "Sales Database",
-                "connection_type": "PostgreSQL",
-                "connection_config_id": 3,
-                "database": "sales_db",
-                "schema": "public",
-                "secret_name": "bh-postgres-sales"
-              }
-            },
-            "sources": {
-              "sales_data": {
-                "name": "sales_data",
-                "source_type": "Table",
-                "data_src_id": 36,
-                "table_name": "sales_transactions",
-                "connection": {
-                  "$ref": "#/connections/sales_db"
-                }
-              }
-            },
-            "transformations": [
-              {
-                "name": "sales_reader",
-                "dependent_on": [],
-                "transformation": "Reader",
-                "source": {
-                  "$ref": "#/sources/sales_data"
-                }
-              },
-              {
-                "name": "sales_aggregation",
-                "transformation": "Aggregation",
-                "dependent_on": ["sales_reader"],
-                "group_by": ["region", "product_category"],
-                "aggregations": [
-                  {
-                    "column": "amount",
-                    "function": "sum",
-                    "alias": "total_sales"
-                  },
-                  {
-                    "column": "transaction_id",
-                    "function": "count",
-                    "alias": "transaction_count"
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      ],
+      message: "Select an existing pipeline:",
+      dynamicOptions: {
+        endpoint: "pipeline/list/?limit=1000&order_desc=true",
+        isResponseFormat: false,
+        displayName: "pipeline_name",
+        subName: "bh_project_name"
+      },
       nextOnSelect: "pipelineSelected"
     },
     {

@@ -146,11 +146,11 @@ const UserEngagementChart = () => (
 
 // --- Widgets ---
 const widgets = [
-  { id: '1', title: 'Latency Over Time', chart: DepartmentBudgetChart },
-  { id: '2', title: 'Data Quality by Project', chart: PassFailChart },
-  { id: '3', title: 'Job Status by Project', chart: ProjectStatusChart },
-  { id: '4', title: 'Job Performance', chart: PerformanceChart },
-  { id: '5', title: 'Recently Created Pipelines', chart: UserEngagementChart },
+  { id: '1', title: 'Data Latency', chart: DepartmentBudgetChart },
+  { id: '2', title: 'Data Quality', chart: PassFailChart },
+  { id: '3', title: 'Job Status', chart: ProjectStatusChart },
+  // { id: '4', title: 'Job Performance', chart: PerformanceChart },
+  // { id: '5', title: 'Recently Created Pipelines', chart: UserEngagementChart },
 ];
 
 // --- Main Showcase ---
@@ -169,7 +169,7 @@ export const CommunityShowcase = () => {
 
 
       {/* Widgets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {widgets.map((widget) => {
           const Chart = widget.chart;
           return (
@@ -178,8 +178,8 @@ export const CommunityShowcase = () => {
               className="cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-200 bg-white"
               onClick={() => handleViewWidget(widget.id)}
             >
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{widget.title}</h3>
+              <CardContent className="p-4">
+                <h3 className="text-lg font-semibold text-gray-900 text-center">{widget.title}</h3>
                 <div className="w-full aspect-[4/3] border border-gray-100 rounded-lg p-2">
                   <Chart />
                 </div>

@@ -10,19 +10,18 @@ import React, {
 } from 'react';
 import { usePipelineActions } from '@/hooks/usePipelineActions';
 import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
-import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import {
     useNodesState,
     useEdgesState,
     useReactFlow,
     Connection,
     addEdge
-} from 'reactflow';
+} from '@xyflow/react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
-import axios from 'axios';
 import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson, convertUIToPipelineJsonUpToNode } from '@/lib/convertUIToPipelineJson';
 import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
 import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
@@ -36,7 +35,6 @@ import { random } from 'lodash';
 import { usePipelineOperations } from '@/hooks/usePipelineOperations';
 import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 import { Pipeline } from '@/types/designer/pipeline';
-import { debug } from 'console';
 
 interface UIProperties {
     color: string;
@@ -118,7 +116,7 @@ interface bnPipelineContextProps {
     handleStop: () => void;
     handleNext: () => void;
     handleRefreshNode: (nodeId: string) => Promise<void>;
-    fetchSourceColumns: (nodes: any) => void;
+    fetchSourceColumns: () => void;
     handleLeavePage: () => void;
     getTransformationName: (moduleName: string) => string;
     addNodeToHistory: () => void;
@@ -1731,7 +1729,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleRun,
         handleStop,
         handleNext,
-        // fetchSourceColumns,
+        fetchSourceColumns: () => {}, // Add empty function for now
         handleLeavePage,
         getTransformationName,
         addNodeToHistory,
@@ -1796,6 +1794,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         detachCluster,
         pipelines,
         setPipelines,
+        initialDataMap,
+        setInitialDataMap,
+        getInitialDataForNode: (nodeId: string, source: any) => initialDataMap[nodeId] || null,
+        createInitialDataForNode: (nodeId: string, source: any) => {
+            const initialData = { nodeId, source, timestamp: Date.now() };
+            setInitialDataMap(prev => ({ ...prev, [nodeId]: initialData }));
+            return initialData;
+        },
         triggerManualSave
     }), [
         nodes,

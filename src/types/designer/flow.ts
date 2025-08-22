@@ -86,7 +86,7 @@ export interface FlowAgentConversationResponse {
 }
 
 // playground
-import { Node, Edge, ReactFlowInstance, NodeChange, EdgeChange } from "reactflow";
+import { Node, Edge, ReactFlowInstance, NodeChange, EdgeChange } from "@xyflow/react";
 
 export type TriggerRule =
   | "all_success"
@@ -194,7 +194,8 @@ export interface CustomNodeData {
   selectedData: any;
   position?: { x: number; y: number };
   tempSave: boolean;
-  requiredFields: any
+  requiredFields: any;
+  [key: string]: any;
 }
 
 export interface NodeFormData {

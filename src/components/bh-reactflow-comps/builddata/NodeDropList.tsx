@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react"
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { Node } from "@/types/designer/features/formTypes"
 import { X } from "lucide-react"
 import { useDispatch} from "react-redux"
@@ -36,6 +36,7 @@ interface NodeDropListProps {
 }
 
 const ITEMS_PER_PAGE = 10;
+const MAX_VISIBLE_NODES = 5;
 
 const NodeDropList: React.FC<NodeDropListProps> = ({
   filteredNodes,
@@ -48,6 +49,61 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const { setUnsavedChanges } = usePipelineContext();
+
+  // Responsive: compute visible nodes based on container width
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [visibleCount, setVisibleCount] = useState<number>(Math.min(MAX_VISIBLE_NODES, filteredNodes.length))
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const compute = () => {
+      const rect = el.getBoundingClientRect()
+      const style = getComputedStyle(el)
+      const gap = parseFloat((style as any).gap || (style as any).columnGap || '12') || 12
+
+      // Base sizes (keep conservative to avoid wrapping). Button min width/height set in markup.
+      const itemWidth = 44 // px, ~w-10 incl. padding
+      const moreBtnWidth = 40 // px, width of the "+" button
+
+      // How many slots fit based on width (each slot fits one icon or the more button)
+      let widthFit = Math.floor((rect.width + gap) / (itemWidth + gap))
+      widthFit = Math.max(widthFit, 0)
+
+      const hasOverflow = filteredNodes.length > MAX_VISIBLE_NODES
+
+      let next = 0
+      if (!hasOverflow) {
+        // No overflow: show as many as fit, up to total nodes
+        next = Math.min(widthFit, filteredNodes.length)
+      } else {
+        // Overflow: prefer showing MAX_VISIBLE_NODES if we have space for +1 more button
+        if (widthFit >= MAX_VISIBLE_NODES + 1) {
+          next = MAX_VISIBLE_NODES
+        } else {
+          // Reserve one slot for the more button
+          next = Math.max(widthFit - 1, 0)
+        }
+      }
+
+      setVisibleCount(next)
+    }
+
+    // Initial compute and observe size changes
+    compute()
+    const ro = new ResizeObserver(() => compute())
+    ro.observe(el)
+
+    // Also recompute when window zoom/metrics change
+    const onResize = () => compute()
+    window.addEventListener('resize', onResize)
+
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', onResize)
+    }
+  }, [filteredNodes.length])
 
   const {
     data,
@@ -119,8 +175,8 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
   }
 
   return (
-    <div className="flex justify-center gap-4 ">
-      {filteredNodes.slice(0, 7).map((node) => (
+    <div ref={containerRef} className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 px-2 w-full overflow-visible">
+      {filteredNodes.slice(0, visibleCount).map((node) => (
         <div
           key={node.ui_properties.module_name}
           onMouseEnter={() => handleNodeHover(node.ui_properties.module_name)}
@@ -143,23 +199,24 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                     console.log("Reader button clicked")
                     handleButtonClick(node)
                   }}
-                  className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out"
+                  className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out min-w-10 min-h-10"
                   style={{ backgroundColor: node.ui_properties.color }}
                 >
                   <div
                     className={`
                       flex items-center rounded-lg
                       transition-all duration-300 ease-in-out
-                      ${hoveredNode === node.ui_properties.module_name ? "w-auto" : "w-9"}
+                      ${hoveredNode === node.ui_properties.module_name ? "md:w-auto" : "w-9"}
                     `}
                   >
                     <img
                       src={node.ui_properties.icon}
                       alt={node.ui_properties.module_name}
-                      className="w-9 h-9 rounded"
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded"
                     />
+                    {/* Show label only on md+ when hovered to avoid crowding on small screens */}
                     {hoveredNode === node.ui_properties.module_name && (
-                      <div className="ml-2 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out text-sm">
+                      <div className="ml-2 hidden md:block whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out text-sm">
                         {node.ui_properties.module_name}
                       </div>
                     )}
@@ -168,7 +225,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
               </PopoverTrigger>
 
               <PopoverContent
-                className="w-80 p-2 bg-white shadow-lg rounded-lg"
+                className="w-[85vw] sm:w-80 p-2 bg-white shadow-lg rounded-lg"
                 align="start"
                 side="bottom"
                 style={{zIndex: 9999}}
@@ -196,7 +253,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                 />
 
                 <ul
-                  className="space-y-3 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-200"
+                  className="space-y-3 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-200"
                   onScroll={handleScroll}
                 >
                   {filteredSources.map((source: any, index: number) => (
@@ -224,7 +281,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                               : node.ui_properties.icon
                           }
                           alt={source.connection_type || node.ui_properties.module_name}
-                          className="w-9 h-9 rounded"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded"
                         />
                         {source.data_src_name}
                       </li>
@@ -260,23 +317,23 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                           console.log(node)
                 
                 handleButtonClick(node)}}
-              className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out"
+              className="node-button rounded text-white flex items-center p-0.5 transition-all duration-300 ease-in-out min-w-10 min-h-10"
               style={{ backgroundColor: node.ui_properties.color }}
             >
               <div
                 className={`
                   flex items-center rounded-lg
                   transition-all duration-300 ease-in-out
-                  ${hoveredNode === node.ui_properties.module_name ? "w-auto" : "w-9"}
+                  ${hoveredNode === node.ui_properties.module_name ? "md:w-auto" : "w-9"}
                 `}
               >
                 <img
                   src={node.ui_properties.icon}
                   alt={node.ui_properties.module_name}
-                  className="w-9 h-9 rounded"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded"
                 />
                 {hoveredNode === node.ui_properties.module_name && (
-                  <div className="ml-2 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out text-sm">
+                  <div className="ml-2 hidden md:block whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out text-sm">
                     {node.ui_properties.module_name}
                   </div>
                 )}
@@ -286,15 +343,15 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
         </div>
       ))}
 
-      {filteredNodes.length > 7 && (
+      {filteredNodes.length > visibleCount && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="rounded">
+            <button className="rounded min-w-10 min-h-10 flex items-center justify-center">
               <img src="/assets/buildPipeline/add.svg" alt="more" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[300px]"  style={{zIndex: 9999}}>
-            {filteredNodes.slice(7).map((node: Node) => (
+          <DropdownMenuContent align="end" className="w-[85vw] sm:w-[300px]"  style={{zIndex: 9999}}>
+            {filteredNodes.slice(visibleCount).map((node: Node) => (
               <DropdownMenuItem
                 key={node.ui_properties.module_name}
                 onClick={() => handleNodeClick(node)}
@@ -305,9 +362,9 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                   <img
                     src={node.ui_properties.icon}
                     alt={node.ui_properties.module_name}
-                    className="w-9 h-9"
+                    className="w-8 h-8 sm:w-9 sm:h-9"
                   />
-                  <div className="mx-4 flex flex-col justify-between h-8 relative">
+                  <div className="mx-4 hidden sm:flex flex-col justify-between h-8 relative">
                     <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
                     <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-gray-200 -translate-x-1/2"></div>
                     <div className="w-1 h-1 bg-gray-200 rounded-full"></div>

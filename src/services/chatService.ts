@@ -12,6 +12,7 @@ export class ChatService {
   private dispatch: Dispatch;
   private currentWorkflow: WorkflowConfig | null = null;
   private currentStepId: string | null = null;
+  private contextData: Record<string, any> = {};
 
   constructor(dispatch: Dispatch) {
     this.dispatch = dispatch;
@@ -122,6 +123,25 @@ export class ChatService {
     await this.executeStep(step.nextOnClick);
   }
 
+  async handleInputSubmit(stepId: string, value: string): Promise<void> {
+    if (!this.currentWorkflow) return;
+    const step = this.currentWorkflow.steps.find(s => s.id === stepId);
+    if (!step) return;
+
+    // Save input in context
+    if (step.inputKey) {
+      this.contextData[step.inputKey] = value;
+    }
+
+    // Echo user's input as a message
+    this.dispatch(addMessage({ content: value, isUser: true }));
+
+    // Continue to next step
+    if (step.nextOnSubmit) {
+      await this.executeStep(step.nextOnSubmit);
+    }
+  }
+
   async executeStep(stepId: string): Promise<void> {
     if (!this.currentWorkflow) return;
 
@@ -155,9 +175,20 @@ export class ChatService {
           isUser: false,
           uiComponent: {
             type: 'Card',
-            props: step.uiComponent.props,
+            props: (step.uiComponent as any).props,
             stepId: stepId
-          }
+          } as any
+        }));
+      } else if ((step.uiComponent as any).type === 'Input') {
+        // Add input component prompt
+        this.dispatch(addMessage({
+          content: '',
+          isUser: false,
+          uiComponent: {
+            type: 'Input',
+            props: (step.uiComponent as any).props,
+            stepId: stepId
+          } as any
         }));
       } else if (step.uiComponent.type === 'RightAsideComponent') {
         // Map component names to component IDs
@@ -168,7 +199,8 @@ export class ChatService {
           'AddTable': 'table-form',
           'AddFile': 'file-form',
           'AddPipeline': 'pipeline-form',
-          'DataPipelineCanvas': 'pipeline-canvas'
+          'DataPipelineCanvas': 'pipeline-canvas',
+          'RequirementForm': 'requirement-form'
         };
         
         const componentId = componentIdMap[step.uiComponent.props.component || ''] || 'connection-form';
@@ -178,7 +210,8 @@ export class ChatService {
           componentType: 'RightAsideComponent',
           componentId: componentId,
           title: step.uiComponent.props.title || 'Configuration Panel',
-          isVisible: true
+          isVisible: true,
+          extra: (step.uiComponent as any)?.props?.extra
         };
         this.dispatch(setRightComponent(rightComponent));
       }

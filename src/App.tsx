@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactFlowProvider } from 'reactflow';
+import { ReactFlowProvider } from '@xyflow/react';
 import { BrowserRouter } from "react-router-dom";
 import { KeycloakProvider, useKeycloak } from "./hooks/useKeycloak";
 import { ErrorBoundary } from "react-error-boundary";

@@ -10,7 +10,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges, ReactFlowInstance,
   MarkerType
-} from 'reactflow';
+} from '@xyflow/react';
 import {
   FlowContextType,
   CustomNodeData,
@@ -272,7 +272,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         ...node,
         data: {
           ...node.data,
-        },
+        } as CustomNodeData,
       })));
     },
     [setNodes]

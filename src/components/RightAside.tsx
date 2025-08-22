@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useSidebar } from '@/context/SidebarContext';
 import { Button } from '@/components/ui/button';
 import aiIcon from '/assets/ai/ai.svg';
+import { BottomDrawer } from '@/components/BottomDrawer';
 
 interface RightAsideProps {
   title?: string;
@@ -18,7 +19,13 @@ export function RightAside({
   width = 'w-[25%]',
   className
 }: RightAsideProps) {
-  const { closeRightAside, updateRightAsideWidth } = useSidebar();
+  const { 
+    closeRightAside, 
+    updateRightAsideWidth,
+    isBottomDrawerOpen,
+    bottomDrawerContent,
+    bottomDrawerTitle
+  } = useSidebar();
   const [currentWidth, setCurrentWidth] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const asideRef = useRef<HTMLDivElement>(null);
@@ -207,6 +214,18 @@ export function RightAside({
       <div className="flex-1 overflow-y-auto w-full">
         {children}
       </div>
+
+      {/* Scoped Bottom Drawer inside RightAside */}
+      {(() => {
+        const { isBottomDrawerOpen, bottomDrawerContent, bottomDrawerTitle } = useSidebar();
+        return (isBottomDrawerOpen && bottomDrawerContent) ? (
+          <div id="bottom-drawer-container" className="flex-shrink-0 w-full">
+            <BottomDrawer title={bottomDrawerTitle}>
+              {bottomDrawerContent}
+            </BottomDrawer>
+          </div>
+        ) : null;
+      })()}
     </aside>
   );
 }

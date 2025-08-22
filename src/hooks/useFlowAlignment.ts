@@ -707,46 +707,122 @@ export function useFlowAlignment(params: {
       if (!nodes || nodes.length === 0) return;
       const startX = opts?.startX ?? 0;
       const startY = opts?.startY ?? 0;
-      const nodeNodeSpacing = Math.max(40, opts?.nodeNodeSpacing ?? 80);
-      const layerSpacing = Math.max(60, opts?.layerSpacing ?? 140);
+      const nodeNodeSpacing = Math.max(40, opts?.nodeNodeSpacing ?? 120);
+      const layerSpacing = Math.max(60, opts?.layerSpacing ?? 180);
       const direction = opts?.direction ?? 'RIGHT';
       const defaultSize = opts?.defaultNodeSize ?? { width: 220, height: 100 };
 
       try {
         const elk = new ELK();
-        const elkGraph: any = {
+        
+        // Enhanced ELK nodes with proper port handling
+        const elkNodes = nodes.map((node) => {
+          const nodeData = node.data || {};
+          const nodeType = (node.type || '').toLowerCase();
+          
+          // Determine input/output port counts based on node type and edges
+          const incomingEdges = edges.filter(e => e.target === node.id);
+          const outgoingEdges = edges.filter(e => e.source === node.id);
+          
+          const inCount = Math.max(1, incomingEdges.length || (nodeType.includes('input') ? 0 : 1));
+          const outCount = Math.max(1, outgoingEdges.length || (nodeType.includes('output') ? 0 : 1));
+          
+          // Create input ports
+          const inPorts = Array.from({ length: inCount }).map((_, i) => ({
+            id: `${node.id}:in-${i}`,
+            properties: {
+              'elk.port.side': direction === 'RIGHT' ? 'WEST' : 'NORTH',
+              'elk.port.index': String(i),
+            },
+          }));
+          
+          // Create output ports
+          const outPorts = Array.from({ length: outCount }).map((_, i) => ({
+            id: `${node.id}:out-${i}`,
+            properties: {
+              'elk.port.side': direction === 'RIGHT' ? 'EAST' : 'SOUTH',
+              'elk.port.index': String(i),
+            },
+          }));
+
+          return {
+            id: node.id,
+            width: getNodeDimensions(node).width,
+            height: getNodeDimensions(node).height,
+            properties: {
+              'elk.portConstraints': 'FIXED_POS',
+            },
+            ports: [...inPorts, ...outPorts],
+          };
+        });
+
+        // Enhanced edge mapping with proper port connections
+        const elkEdges = edges.map((edge) => {
+          const sourceNode = nodes.find(n => n.id === edge.source);
+          const targetNode = nodes.find(n => n.id === edge.target);
+          
+          // Use handle IDs if available, otherwise default to first ports
+          const sourcePort = edge.sourceHandle ? `${edge.source}:${edge.sourceHandle}` : `${edge.source}:out-0`;
+          const targetPort = edge.targetHandle ? `${edge.target}:${edge.targetHandle}` : `${edge.target}:in-0`;
+          
+          return {
+            id: edge.id,
+            sources: [sourcePort],
+            targets: [targetPort],
+          };
+        });
+
+        const elkGraph = {
           id: 'root',
           layoutOptions: {
             'elk.algorithm': 'layered',
             'elk.direction': direction,
             'elk.spacing.nodeNode': String(nodeNodeSpacing),
             'elk.layered.spacing.nodeNodeBetweenLayers': String(layerSpacing),
-            'elk.layered.considerModelOrder': 'true',
+            
+            // Enhanced edge routing for cleaner layouts
+            'elk.edge.routing': 'ORTHOGONAL',
+            'elk.spacing.edgeNode': '50',
+            'elk.spacing.edgeEdge': '28',
+            'elk.layered.spacing.edgeNodeBetweenLayers': '34',
+            'elk.layered.spacing.edgeEdgeBetweenLayers': '16',
+            
+            // Better crossing minimization and node placement
+            'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+            'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+            'elk.layered.cycleBreaking.strategy': 'GREEDY',
+            'elk.layered.thoroughness': '10',
+            'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+            'elk.layered.unnecessaryBendpoints': 'true',
+            
+            // Additional quality improvements
             'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+            'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
+            'elk.layered.compaction.postCompaction.constraints': 'SEQUENCE',
           },
-          children: nodes.map((n) => ({
-            id: n.id,
-            width:
-              // @ts-ignore measured width if available
-              (n as any)?.measured?.width ?? (n as any)?.width ?? defaultSize.width,
-            height:
-              // @ts-ignore measured height if available
-              (n as any)?.measured?.height ?? (n as any)?.height ?? defaultSize.height,
-          })),
-          edges: edges.map((e) => ({ id: e.id, sources: [e.source], targets: [e.target] })),
+          children: elkNodes,
+          edges: elkEdges,
         };
 
-        const res = await elk.layout(elkGraph);
-        const positions = new Map<string, { x: number; y: number }>();
-        for (const c of res.children ?? []) positions.set(c.id, { x: startX + (c.x ?? 0), y: startY + (c.y ?? 0) });
+        const layouted = await elk.layout(elkGraph);
+        
+        const newNodes = nodes.map((node) => {
+          const layoutedNode = layouted.children?.find((n) => n.id === node.id);
+          return {
+            ...node,
+            position: {
+              x: startX + (layoutedNode?.x ?? 0),
+              y: startY + (layoutedNode?.y ?? 0)
+            }
+          } as Node;
+        });
 
-        const newNodes = nodes.map((n) => ({ ...n, position: positions.get(n.id) ?? { x: startX, y: startY } })) as Node[];
         updateNodes(newNodes, edges);
         setTimeout(() => {
           if (opts?.fitView !== false) doFitView(opts?.fitViewOptions);
         }, 30);
       } catch (err) {
-        console.error('ELK layout failed, falling back to horizontal alignment', err);
+        console.error('Enhanced ELK layout failed, falling back to horizontal alignment', err);
         alignHorizontal({ startX, startY, fitView: opts?.fitView, fitViewOptions: opts?.fitViewOptions });
       }
     },

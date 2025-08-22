@@ -679,7 +679,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     // Flow alignment helpers based on current nodes/edges
-    const { alignHorizontal: alignHorizontalFlow } = useFlowAlignment({
+    const { alignHorizontal: alignHorizontalFlow, alignTopLeftHierarchical } = useFlowAlignment({
         nodes,
         edges,
         updateNodes: updateSetNode,
@@ -761,8 +761,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Center and align the nodes
             await handleCenter();
-            // Prefer alignment from useFlowAlignment for better layout
-            await alignHorizontalFlow({ startX: 50, startY: 50, levelWidth: 240, nodeSpacing: 160, fitView: true, distribution: 'compact' });
+            // Use enhanced ELK-based hierarchical layout for professional results
+            await alignTopLeftHierarchical({ 
+                startX: 0, 
+                startY: 0, 
+                direction: 'RIGHT',
+                nodeNodeSpacing: 120,
+                layerSpacing: 200,
+                fitView: true 
+            });
         }
 
         // Initialize form states for the new nodes

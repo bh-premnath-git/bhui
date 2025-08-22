@@ -1,5 +1,5 @@
 // src/features/designers/DataPipelineCanvasNew.tsx
-import React, { useMemo, useEffect, useState, useRef } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useSidebar } from '@/context/SidebarContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
-import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 import { PipelineForm } from '@/features/designers/pipeline/components/PipelineForm';
 import LookupForm from '@/features/designers/pipeline/components/form-sections/LookupForm';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
@@ -22,7 +21,6 @@ import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Workflow } from 'lucide-react';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
-import { setEnabled } from '@/store/slices/gitSlice';
 import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
 import { CommitModal } from '@/components/git/CommitModal';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -141,15 +139,6 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     };
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
-  // Enable git integration when component mounts (top-level hook)
-  // useEffect(() => {
-  //   dispatch(setEnabled(true));
-  //   return () => {
-  //     dispatch(setEnabled(false));
-  //   };
-  // }, [dispatch]);
-
-  // Listen for RightAside panel resize events
   
   useEffect(() => {
     // debugger

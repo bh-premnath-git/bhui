@@ -343,23 +343,13 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
       alignHorizontal({
         startX: 50,
         startY: 50,
-        levelWidth: 220,
-        nodeSpacing: 150,
+        levelWidth: 300,        // Increased from 220 to prevent edge overlaps
+        nodeSpacing: 200,       // Increased from 150 for better spacing
         fitView: true,
         distribution: 'even',
         fitViewOptions: { padding: 0.15, duration: 600 },
       });
       handleCenterClick();
-      // const refit = () => {
-      //   const doFit = () => {
-      //     try { reactFlowInstance?.fitView({ padding: 0.15, duration: 650 }); } catch {}
-      //   };
-      //   // Wait for layout + render, then fit
-      //   requestAnimationFrame(() => requestAnimationFrame(doFit));
-      //   // Fallback in case rAF timing misses
-      //   setTimeout(doFit, 220);
-      // };
-      // refit();
     } catch (error) {
       console.error("Error in align horizontal:", error);
     }
@@ -371,13 +361,12 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
       alignVertical({
         startX: 50,
         startY: 50,
-        levelHeight: 180,
-        nodeSpacing: 150,
+        levelHeight: 240,       // Increased from 180 to prevent edge overlaps
+        nodeSpacing: 200,       // Increased from 150 for better spacing
         fitView: true,
         fitViewOptions: { padding: 0.15, duration: 600 },
       });
            handleCenterClick();
-
     } catch (error) {
       console.error("Error in align vertical:", error);
     }

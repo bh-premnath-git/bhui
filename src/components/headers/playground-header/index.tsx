@@ -20,6 +20,7 @@ import { ParameterModal } from '../build-playground-header/ParameterModal';
 import { AIButton } from './AIChatButton';
 import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { useFlow } from '@/context/designers/FlowContext';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
 import { useModules } from '@/hooks/useModules';
 import { usePipelineModules } from '@/hooks/usePipelineModules';
@@ -39,9 +40,12 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   
   // Get actual autosave status from pipeline context (only for pipeline mode)
   let pipelineContext = null;
+  let flowContext = null;
   try {
     if (!isFlow) {
       pipelineContext = usePipelineContext();
+    } else {
+      flowContext = useFlow();
     }
   } catch (error) {
     // Pipeline context not available
@@ -116,6 +120,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     return {
       "ui_properties": {
         "module_name": type.label,
+        "type": type.type,
         "color": type.color,
         "icon": type.icon,
         "id": type.id,
@@ -131,7 +136,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             icon: type?.icon,
             label: type?.label,
           },
-          properties: type.operators.map((op) => op.properties),
+          properties: type.operators?.map((op) => op.properties) || [],
           description: type?.description,
           fullyOptimized: false,
         }
@@ -139,11 +144,14 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     };
   });
   const {
-    handleNodeClick, addNodeToHistory,
     isPipelineRunning, handleNext, handleStop, handleRun,
     isPipelineValid, pipelineValidationErrors, pipelineValidationWarnings,
     attachedCluster,
-  } = pipelineContext || {};
+  } = isFlow ? flowContext : pipelineContext;
+
+  const contextHandleNodeClick = isFlow ? flowContext?.handleNodeClick : pipelineContext?.handleNodeClick;
+  const contextAddNodeToHistory = isFlow ? flowContext?.addNodeToHistory : pipelineContext?.addNodeToHistory;
+
   const isClusterAttached = !!attachedCluster;
   const { isRightAsideOpen } = useSidebar();
 
@@ -315,8 +323,8 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           (<div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
             <NodeDropList
               filteredNodes={isFlow ? flowNodes : filteredNodes}
-              handleNodeClick={handleNodeClick}
-              addNodeToHistory={addNodeToHistory}
+              handleNodeClick={contextHandleNodeClick}
+              addNodeToHistory={contextAddNodeToHistory}
             />
           </div>)}
 

@@ -9,7 +9,7 @@ import { edgeTypes } from '@/components/bh-reactflow-comps/flow/edgeTypes';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
 import { setEnabled } from '@/store/slices/gitSlice';
-import { Controls } from 'reactflow';
+import { Controls } from '@xyflow/react';
 import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
 import { CommitModal } from '@/components/git/CommitModal';
 

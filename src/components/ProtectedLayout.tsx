@@ -14,7 +14,7 @@ const path=location.pathname;
   return (
     <div className={cn(
       "flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden",
-      isExpanded ? "ml-64" : "ml-14",
+      isExpanded ? "ml-64" : "ml-0",
     )}>
       <div className={cn("flex-shrink-0 ",path=="/home" ? " " : "mt-12")}> 
         <Header />

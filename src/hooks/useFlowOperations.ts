@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { ReactFlowInstance, Node, Edge } from 'reactflow';
+import { ReactFlowInstance, Node, Edge } from '@xyflow/react';
 import { LocalStorageService } from '@/lib/localStorageServices';
 import { CustomNodeData, NodeFormData } from '@/types/designer/flow';
 

@@ -7,6 +7,8 @@ import {
   setRightComponent,
   RightComponent 
 } from '@/store/slices/chat/chatSlice';
+import { apiService } from '@/lib/api/api-service';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 
 export class ChatService {
   private dispatch: Dispatch;
@@ -81,31 +83,36 @@ export class ChatService {
     }
 
     const currentStep = this.currentWorkflow.steps.find(s => s.id === this.currentStepId);
-    if (!currentStep || !currentStep.options) {
-      console.warn('Current step has no options');
-      return;
-    }
-
-    const selectedOption = currentStep.options.find(opt => opt.label === choice);
-    if (!selectedOption) {
-      console.warn(`Option not found: ${choice}`);
+    if (!currentStep) {
+      console.warn('Current step not found');
       return;
     }
 
     // Add user's choice as a message
-    this.dispatch(addMessage({
-      content: choice,
-      isUser: true
-    }));
+    this.dispatch(addMessage({ content: choice, isUser: true }));
 
-    // Store pipeline JSON if provided (for sample pipelines)
-    if (selectedOption.pipelineJson) {
-      // Store the pipeline JSON in localStorage for later use
-      localStorage.setItem('selectedPipelineJson', JSON.stringify(selectedOption.pipelineJson));
+    // Handle static options path
+    if (currentStep.options && currentStep.options.length > 0) {
+      const selectedOption = currentStep.options.find(opt => opt.label === choice);
+      if (!selectedOption) {
+        console.warn(`Option not found: ${choice}`);
+        return;
+      }
+
+      if (selectedOption.pipelineJson) {
+        localStorage.setItem('selectedPipelineJson', JSON.stringify(selectedOption.pipelineJson));
+      }
+      await this.executeStep(selectedOption.next);
+      return;
     }
 
-    // Execute the next step
-    await this.executeStep(selectedOption.next);
+    // Handle dynamic options path (when options rendered from API response)
+    if ((currentStep as any).dynamicOptions && currentStep.nextOnSelect) {
+      await this.executeStep(currentStep.nextOnSelect);
+      return;
+    }
+
+    console.warn('No options handler for current step');
   }
 
   async handleCardClick(stepId: string): Promise<void> {
@@ -160,10 +167,49 @@ export class ChatService {
 
     // Handle different step types
     if (step.message) {
+      // Build options either from static options or dynamic API options
+      let options: string[] | undefined = step.options?.map(opt => opt.label);
+
+      if (!options && (step as any).dynamicOptions) {
+        try {
+          const dyn = (step as any).dynamicOptions as {
+            endpoint: string;
+            isResponseFormat: boolean;
+            displayName: string;
+            subName?: string | null;
+          };
+
+          const data = await apiService.get<any>({
+            url: `/${dyn.endpoint.replace(/^\//, '')}`,
+            baseUrl: CATALOG_REMOTE_API_URL,
+            method: 'GET',
+            usePrefix: true,
+          });
+
+          const list = dyn.isResponseFormat ? (data?.data ?? []) : data;
+
+          const getByPath = (obj: any, path: string | undefined | null): string | undefined => {
+            if (!obj || !path) return undefined;
+            return path.split('.').reduce((acc: any, key: string) => (acc ? acc[key] : undefined), obj);
+          };
+
+          options = Array.isArray(list)
+            ? list.map((item: any) => {
+                const main = getByPath(item, dyn.displayName) ?? '';
+                const sub = getByPath(item, dyn.subName ?? undefined);
+                return sub ? `${main} (${sub})` : String(main);
+              }).filter(Boolean)
+            : [];
+        } catch (e) {
+          console.error('Failed to load dynamic options', e);
+          options = [];
+        }
+      }
+
       this.dispatch(addMessage({
         content: step.message,
         isUser: false,
-        options: step.options?.map(opt => opt.label)
+        options,
       }));
     }
 

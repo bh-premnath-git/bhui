@@ -1,6 +1,6 @@
 import { useFlow } from '@/context/designers/FlowContext';
 import { memo, useState, useCallback } from 'react';
-import { EdgeProps, getSmoothStepPath, useReactFlow } from 'reactflow';
+import { EdgeProps, getSmoothStepPath, useReactFlow } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 
 export const CustomEdge = memo(({

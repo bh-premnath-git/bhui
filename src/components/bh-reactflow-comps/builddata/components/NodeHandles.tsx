@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Handle, Position, useEdges, useReactFlow, useNodeId, useUpdateNodeInternals } from 'reactflow';
+import { Handle, Position, useEdges, useReactFlow, useNodeId, useUpdateNodeInternals } from '@xyflow/react';
 
 interface NodeHandlesProps {
     data: {

@@ -33,7 +33,6 @@ export const navigationItems: NavItem[] = [
   }]},
   {
     title: "Agent Explore",
-    icon: BarChart,
     path: `${ROUTES.DATA_CATALOG}/xplorer`,
     subItems: [],
     actions: [
@@ -97,6 +96,7 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
+
   {
     title: "Admin Console",
     icon: Settings,

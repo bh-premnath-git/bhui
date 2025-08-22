@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useEffect, useCallback } from "react";
-import { useReactFlow } from "reactflow";
+import { useReactFlow } from "@xyflow/react";
 import { useTransformationOutputQuery } from "@/lib/hooks/useTransformationOutput";
 import { HiChartBar } from "react-icons/hi";
 import { useDispatch, useSelector } from "react-redux";
@@ -167,7 +167,7 @@ export const CustomEdge = memo(({
     
     const queryParams = useMemo(() => ({
         pipelineName: pipelineDtl?.pipeline_name,
-        transformationName: getNode(source)?.data.title,
+        transformationName: (getNode(source)?.data.title as string) || '',
         isFlow,
         // Only enable the query when our metrics are being shown in the drawer
         enabled: isShowingInDrawer && isBottomDrawerOpen
@@ -182,7 +182,7 @@ export const CustomEdge = memo(({
     }, [nodes, edges, updateSetNode, reactFlowInstance]);
     
     const rowCount = transformationCounts.find(
-        (t) => t.transformationName?.toLowerCase() === sourceNode?.data.title?.toLowerCase()
+        (t) => t.transformationName?.toLowerCase() === (sourceNode?.data.title as string)?.toLowerCase()
     )?.rowCount;
 
     const edgeCenter = useMemo(() => ({
@@ -246,7 +246,7 @@ export const CustomEdge = memo(({
                 // First fetch the data
                 const result = await dispatch(fetchTransformationOutput({
                     pipelineName: pipelineName || pipelineDtl?.name || pipelineDtl?.pipeline_name,
-                    transformationName: sourceNode?.data.title,
+                    transformationName: (sourceNode?.data.title as string) || '',
                     host:attachedCluster.master_ip||"host.docker.internal",
                     isFlow
                 })).unwrap();
@@ -255,7 +255,7 @@ export const CustomEdge = memo(({
                 
                 // Format the data for the Terminal component
                 const previewData: PreviewData = {
-                    transformationName: sourceNode?.data.title || 'Transformation',
+                    transformationName: (sourceNode?.data.title as string) || 'Transformation',
                     outputs: result.outputs || []
                 };
                 
@@ -298,7 +298,7 @@ export const CustomEdge = memo(({
         if (metricsData && isShowingInDrawer && isBottomDrawerOpen) {
             // Format the data for the Terminal component
             const previewData: PreviewData = {
-                transformationName: sourceNode?.data.title || 'Transformation',
+                transformationName: (sourceNode?.data.title as string) || 'Transformation',
                 outputs: metricsData || []
             };
             

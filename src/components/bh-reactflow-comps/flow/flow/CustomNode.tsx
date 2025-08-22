@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useEffect } from "react";
-import { NodeProps, useUpdateNodeInternals } from "reactflow";
+import { NodeProps, useUpdateNodeInternals } from "@xyflow/react";
 import { NodeContent } from "./NodeContent";
 import { NodeHandles } from "./NodeHandles";
 import { useFlow } from "@/context/designers/FlowContext";
@@ -30,7 +30,8 @@ interface CustomNodeData {
 }
 
 export const CustomNode = memo(
-  ({ id, data, selected }: NodeProps<CustomNodeData>) => {
+  ({ id, data, selected }: NodeProps) => {
+    const typedData = data as unknown as CustomNodeData;
     const [isHovered, setIsHovered] = useState(false);
     const [isNodeTapModalOpen, setIsNodeTapModalOpen] = useState(false);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -97,9 +98,9 @@ export const CustomNode = memo(
         >
           <NodeContent
             id={id}
-            label={data.meta.moduleInfo.label}
-            type={data.meta?.renameType ?? data.selectedData}
-            moduleInfo={data.meta.moduleInfo}
+            label={typedData.meta.moduleInfo.label}
+            type={typedData.meta?.renameType ?? typedData.selectedData}
+            moduleInfo={typedData.meta.moduleInfo}
             isHovered={isHovered}
           />
           <NodeHandles />

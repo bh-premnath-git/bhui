@@ -1,13 +1,14 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import ReactFlow, {
+import {
+  ReactFlow,
   ReactFlowProvider,
   Connection,
   addEdge,
   ReactFlowInstance,
   MarkerType,
   getOutgoers,
-} from 'reactflow';
+} from '@xyflow/react';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { useFlow } from '@/context/designers/FlowContext';
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';

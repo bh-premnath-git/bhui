@@ -1,6 +1,5 @@
-import { useCallback, useRef } from 'react';
-import { useReactFlow } from 'reactflow';
-import { random } from 'lodash';
+import { useCallback } from 'react';
+import { useReactFlow } from '@xyflow/react';
 
 interface UsePipelineOperationsProps {
     nodes: any[];
@@ -66,26 +65,26 @@ export const usePipelineOperations = ({
     const handleCenter = useCallback(() => {
         try {
             // Use more generous padding and longer duration for better visibility
-            fitView({ 
-                duration: 800, 
-                padding: 0.2, 
+            fitView({
+                duration: 800,
+                padding: 0.2,
                 includeHiddenNodes: false,
                 minZoom: 0.5,
                 maxZoom: 1.5
             });
-            
+
             // Dispatch a custom event that other components can listen for
             const centerEvent = new CustomEvent('canvasCentered', {
                 bubbles: true,
                 detail: { timestamp: Date.now() }
             });
             document.dispatchEvent(centerEvent);
-            
+
             // Force a resize event to ensure ReactFlow recalculates dimensions
             window.dispatchEvent(new Event('resize'));
         } catch (error) {
             console.error('FitView error:', error);
-            
+
             // Fallback approach - try to use the ReactFlow instance directly
             try {
                 const reactFlowViewport = document.querySelector('.react-flow__viewport');
@@ -93,7 +92,7 @@ export const usePipelineOperations = ({
                     // Reset transform to center view
                     reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
                 }
-                
+
                 // Try to click the fitView button as a last resort
                 const fitViewButton = document.querySelector('.react-flow__controls-fitview');
                 if (fitViewButton instanceof HTMLElement) {
@@ -260,11 +259,11 @@ export const usePipelineOperations = ({
         const gridSpacing = 200; // Spacing between nodes
         const startX = 50;
         const startY = 50;
-        
+
         const newNodes = nodes.map((node, index) => {
             const row = Math.floor(index / 4); // 4 nodes per row
             const col = index % 4;
-            
+
             return {
                 ...node,
                 position: {
@@ -353,7 +352,7 @@ export const usePipelineOperations = ({
         // Use updateSetNode for consistent state management
         const updatedNodes = Array.isArray(nodes) ? [...nodes, ...newNodes] : [...newNodes];
         const updatedEdges = Array.isArray(edges) ? [...edges, ...newEdges] : [...newEdges];
-        
+
         updateSetNode(updatedNodes, updatedEdges);
         setFormStates(prevFormStates => ({
             ...prevFormStates,
@@ -374,11 +373,11 @@ export const usePipelineOperations = ({
         setCopiedEdges(selectedEdges);
 
         addNodeToHistory();
-        
+
         // Filter out selected nodes and edges
         const updatedNodes = nodes.filter(node => !node.selected);
         const updatedEdges = edges.filter(edge => !edge.selected);
-        
+
         // Use updateSetNode for consistent state management
         updateSetNode(updatedNodes, updatedEdges);
     }, [nodes, edges, addNodeToHistory, updateSetNode, setCopiedNodes, setCopiedEdges]);
@@ -398,7 +397,7 @@ export const usePipelineOperations = ({
             const lastState = redoStack[redoStack.length - 1];
             setRedoStack((prev) => prev.slice(0, -1));
             setHistory((prev) => [...prev, { nodes, edges }]);
-            
+
             // Use updateSetNode for consistent state management
             updateSetNode(lastState.nodes, lastState.edges);
         }

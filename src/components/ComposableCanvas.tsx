@@ -1,6 +1,7 @@
 // src/components/designers/ComposableCanvas.tsx
 import React, { useCallback, useEffect, useRef } from 'react';
-import ReactFlow, {
+import {
+  ReactFlow,
   ReactFlowProvider,
   ConnectionMode,
   Connection,
@@ -11,13 +12,12 @@ import ReactFlow, {
   useReactFlow,
   Background,
   BackgroundVariant,
-  Controls,
   Node,
   Edge,
   NodeChange,
   EdgeChange,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { useFlow } from '@/context/designers/FlowContext';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useSidebar } from '@/context/SidebarContext';

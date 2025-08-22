@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { mockRequirements, RequirementStatus, MappingChatMessage } from '@/utils/mockData';
-import ReactFlow, { Background, Controls, Node, Edge } from 'reactflow';
-import 'reactflow/dist/style.css';
+import {ReactFlow,  Background, Controls, Node, Edge } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { Share2, MessageCircle, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 

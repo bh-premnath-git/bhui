@@ -5,10 +5,8 @@ import { LoadingFallback } from './LoadingFallback';
 
 // Lazy-loaded components
 const DesignerDashboard = lazy(() => import("@/pages/designers/DesignerDashboard"));
-const BuildDataPipeline = lazy(() => import("@/pages/designers/BuildDataPipeline"));
 const DataPipeCanvas = lazy(() => import("@/pages/designers/DataPipelineCanvas"));
 const ManageFlow = lazy(() => import("@/pages/designers/ManageFlow"));
-const FlowCanvas = lazy(() => import("@/pages/designers/FlowCanvas"));
 const DataFlowCanvas = lazy(() => import("@/pages/designers/DataFlowCanva"));
 const NotebookEditor = lazy(() => import("@/pages/data-catalog/Notebook"));
 
@@ -43,14 +41,6 @@ export const DesignerRoutes = (
       element={
         <Suspense fallback={<LoadingFallback />}>
           <ManageFlow />
-        </Suspense>
-      } 
-    />
-    <Route 
-      path="/designers/flow-playground/:id" 
-      element={
-        <Suspense fallback={<LoadingFallback />}>
-          <FlowCanvas />
         </Suspense>
       } 
     />

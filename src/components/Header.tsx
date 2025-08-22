@@ -9,6 +9,7 @@ import { useDispatch } from "react-redux";
 import { useAppSelector } from "@/hooks/useRedux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { pipelineSchema } from "@bh-ai/schemas";
+import { useEffect } from "react";
 
 export const Header = () => {
   const { isExpanded, isRightAsideOpen } = useSidebar();
@@ -30,6 +31,15 @@ export const Header = () => {
     path === "/home";
   const isDataXploreRoute = (path: string) =>
     /^\/data-catalog\/xplorer(\/[^/?]+)?(\?.*)?$/.test(path);
+
+  // Handle flow state updates in useEffect to avoid setState during render
+  useEffect(() => {
+    if (isBuildPlaygroundRoute(location.pathname)) {
+      dispatch(setIsFlow(false));
+    } else if (isFlowPlaygroundRoute(location.pathname)) {
+      dispatch(setIsFlow(true));
+    }
+  }, [location.pathname, dispatch]);
 
   // Decide which header content to render
   const renderHeaderContent = () => {
@@ -62,13 +72,11 @@ export const Header = () => {
     
 
     if (isBuildPlaygroundRoute(location.pathname)) {
-      dispatch(setIsFlow(false))
       return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
         <PlaygroundHeader playGroundHeader="pipeline" />
       </div>;
     }
     if (isFlowPlaygroundRoute(location.pathname)) {
-      dispatch(setIsFlow(true))
       return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
         <PlaygroundHeader playGroundHeader="flow" />
       </div>

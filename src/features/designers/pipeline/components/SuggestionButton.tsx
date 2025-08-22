@@ -40,7 +40,11 @@ const SuggestionButton = ({
         className={`flex-shrink-0 flex items-center rounded-lg bg-gray-100 border border-border/40 px-3 py-1.5 cursor-pointer hover:bg-gray-200 transition-all duration-200 hover:shadow-md ${className}`}
         style={{ color: assistantColor }}
       >
-        <Zap className="w-4 h-4 mr-1.5 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
+        {icon ? (
+          <span className="w-4 h-4 mr-1.5 flex-shrink-0">{icon}</span>
+        ) : (
+          <Zap className="w-4 h-4 mr-1.5 flex-shrink-0 transform rotate-12" style={{ color: "#E6B800", fill: "#E6B800" }} />
+        )}
         <span className="truncate font-medium text-sm">{text}</span>
       </div>
     </motion.div>

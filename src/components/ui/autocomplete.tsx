@@ -11,6 +11,7 @@ interface AutocompleteProps {
   placeholder?: string;
   className?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export const Autocomplete: React.FC<AutocompleteProps> = ({
@@ -20,7 +21,8 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   renderInput,
   placeholder,
   className,
-  required
+  required,
+  disabled
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
@@ -29,7 +31,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   
   // Debug logging
-  console.log('🔍 Autocomplete render:', {
+  console.log(' Autocomplete render:', {
     options: options.length,
     value,
     placeholder,
@@ -208,14 +210,17 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
         React.cloneElement(renderInput({
           value,
           onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-            onChange(e.target.value);
-            setIsOpen(true);
+            if (!disabled) {
+              onChange(e.target.value);
+              setIsOpen(true);
+            }
           },
-          onFocus: () => setIsOpen(true),
+          onFocus: () => !disabled && setIsOpen(true),
           onKeyDown: handleKeyDown,
           placeholder,
           className,
-          required
+          required,
+          disabled
         }), { ref: inputRef })
       ) : (
         <Input
@@ -223,14 +228,17 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
           type="text"
           value={value || ''}
           onChange={(e) => {
-            onChange(e.target.value);
-            setIsOpen(true);
+            if (!disabled) {
+              onChange(e.target.value);
+              setIsOpen(true);
+            }
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => !disabled && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={className}
           required={required}
+          disabled={disabled}
         />
       )}
       {renderDropdown()}

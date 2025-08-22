@@ -1,4 +1,4 @@
-import { Node, Edge } from 'reactflow';
+import { Node, Edge } from '@xyflow/react';
 import { convertToOptimizedPipelineJson, resolveRefs, UINode } from './pipelineJsonConverter';
 import { validatePipelineConnections } from './validatePipelineConnections';
 

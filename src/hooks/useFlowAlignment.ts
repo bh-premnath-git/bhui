@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import type { Edge, FitViewOptions, Node, ReactFlowInstance } from 'reactflow';
+import type { Edge, FitViewOptions, Node, ReactFlowInstance } from '@xyflow/react';
 
 // Shared options for all aligners
 export type AlignCommonOptions = {
@@ -99,8 +99,8 @@ function getDefaultNodePriority(node: Node): number {
   if (nodeType.includes('join') || nodeType.includes('merge')) return 60;
   
   // Check for priority hints in node data labels or names
-  const label = (nodeData.label || '').toLowerCase();
-  const name = (nodeData.name || '').toLowerCase();
+  const label = ((nodeData.label as string) || '').toLowerCase();
+  const name = ((nodeData.name as string) || '').toLowerCase();
   const combined = `${label} ${name}`;
   
   if (combined.includes('critical') || combined.includes('important')) return 85;
@@ -119,7 +119,7 @@ function getNodeDimensions(node: Node): { width: number; height: number } {
   // Fall back to node data dimensions
   const nodeData = node.data || {};
   if (nodeData.width && nodeData.height) {
-    return { width: nodeData.width, height: nodeData.height };
+    return { width: nodeData.width as any, height: nodeData.height as any };
   }
   
   // Default dimensions based on node type

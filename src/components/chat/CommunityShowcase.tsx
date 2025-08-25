@@ -149,7 +149,7 @@ const widgets = [
   { id: '1', title: 'Data Latency', chart: DepartmentBudgetChart },
   { id: '2', title: 'Data Quality', chart: PassFailChart },
   { id: '3', title: 'Job Status', chart: ProjectStatusChart },
-  // { id: '4', title: 'Job Performance', chart: PerformanceChart },
+  { id: '4', title: 'Job Performance', chart: PerformanceChart },
   // { id: '5', title: 'Recently Created Pipelines', chart: UserEngagementChart },
 ];
 
@@ -160,16 +160,9 @@ export const CommunityShowcase = () => {
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
       {/* Section Header */}
-      <div className="flex items-center justify-end mb-8 w-full">
-  <Button variant="outline" className="ml-0 flex items-center gap-2 hover:bg-gray-50">
-    Browse All
-    <ChevronRight className="h-4 w-4" />
-  </Button>
-</div>
-
 
       {/* Widgets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {widgets.map((widget) => {
           const Chart = widget.chart;
           return (
@@ -191,4 +184,3 @@ export const CommunityShowcase = () => {
     </div>
   );
 };
- 

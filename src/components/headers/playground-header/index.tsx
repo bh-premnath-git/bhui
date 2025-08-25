@@ -310,15 +310,30 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           )}
         </div>
 
-        {/* Middle section - Node controls */}
-        {pipelineType?.toLowerCase() != "requirement" &&
-          (<div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
+        {/* Middle section - Node controls (pipeline only, requires context) */}
+        {!isFlow && pipelineContext && pipelineType?.toLowerCase() !== "requirement" && (
+          <div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
             <NodeDropList
-              filteredNodes={isFlow ? flowNodes : filteredNodes}
+              filteredNodes={filteredNodes}
               handleNodeClick={handleNodeClick}
               addNodeToHistory={addNodeToHistory}
             />
-          </div>)}
+          </div>
+        )}
+
+        {/* Middle section - Node controls (flow) */}
+        {isFlow && pipelineType?.toLowerCase() !== "requirement" && (
+          <div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
+            <NodeDropList
+              filteredNodes={flowNodes}
+              handleNodeClick={(node, source) => {
+                // In flow mode, we don't have pipeline history; just add the node via handleNodeClick-like behavior
+                // Delegate to pipeline-style handler if provided, otherwise no-op history
+                handleNodeClick?.(node as any, source);
+              }}
+            />
+          </div>
+        )}
 
         {/* Right section - Pipeline controls and AI button */}
         <div className="flex items-center justify-end space-x-2 flex-shrink-0">

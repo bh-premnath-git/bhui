@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GripVertical } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { ChatSidebar } from '@/components/chat/ChatSidebar';
 import { ChatHeader } from '@/components/chat/ChatHeader';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -104,7 +105,33 @@ const Home: React.FC = () => {
   // No context selected - show onboarding/centered layout
   if (!context) {
     return (
-      <div className="flex h-screen bg-chat-background">
+      <div className="flex h-screen bg-chat-background relative" style={{ overflow: 'hidden' }}>
+        {/* AI Button - Top Left */}
+        <motion.div
+          className="absolute top-5 z-50"
+                    style={{ right: sidebarOpen ? 320 : 80 }}
+
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.button
+            className="relative w-8 h-8 rounded-full group flex items-center justify-center hover:bg-accent"
+            style={{ backgroundColor: "#009f59" }}
+            whileHover={{ scale: 1.05, opacity: 0.9 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <motion.img
+              src="/assets/ai/ai.svg"
+              alt="ai"
+              className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+              initial={{ rotate: -45 }}
+              animate={{ rotate: -40 }}
+              transition={{ type: 'spring', stiffness: 150 }}
+            />
+          </motion.button>
+        </motion.div>
+
         <ChatSidebar
           open={sidebarOpen}
           onToggle={handleToggleSidebar}
@@ -112,7 +139,7 @@ const Home: React.FC = () => {
           onSelectChat={handleSelectChat}
         />
         <main className="flex-1 flex flex-col">
-          <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="container mx-auto px-4 py-8 ">
             <div className="space-y-10">
               {/* Header + Input + Categories */}
               <div className="text-center space-y-8">
@@ -134,7 +161,32 @@ const Home: React.FC = () => {
   // Split layout mode
   if (layoutMode === 'split') {
     return (
-      <div className="flex h-screen bg-chat-background">
+      <div className="flex h-screen bg-chat-background relative "  style={{ overflow: 'hidden' }}>
+        {/* AI Button - Top Left */}
+        <motion.div
+          className="absolute  top-12  z-50"
+          style={{ right: sidebarOpen ? 320 : 80 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.button
+            className="relative w-8 h-8 rounded-full group flex items-center justify-center hover:bg-accent"
+            style={{ backgroundColor: "#009f59" }}
+            whileHover={{ scale: 1.05, opacity: 0.9 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <motion.img
+              src="/assets/ai/ai.svg"
+              alt="ai"
+              className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+              initial={{ rotate: -45 }}
+              animate={{ rotate: -40 }}
+              transition={{ type: 'spring', stiffness: 150 }}
+            />
+          </motion.button>
+        </motion.div>
+
         <ChatSidebar
           open={sidebarOpen}
           onToggle={handleToggleSidebar}
@@ -248,14 +300,39 @@ const Home: React.FC = () => {
 
   // Full-screen chat mode
   return (
-    <div className="flex h-screen bg-chat-background">
+    <div className="flex h-screen bg-chat-background relative" style={{ overflow: 'hidden' }}>
+      {/* AI Button - Top Left */}
+      <motion.div
+        className="absolute  top-8 z-50 mt-6"
+        style={{ right: sidebarOpen ? 320 : 80 }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.button
+          className="relative w-8 h-8 rounded-full group flex items-center justify-center hover:bg-accent"
+          style={{ backgroundColor: "#009f59" }}
+          whileHover={{ scale: 1.05, opacity: 0.9 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <motion.img
+            src="/assets/ai/ai.svg"
+            alt="ai"
+            className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+            initial={{ rotate: -45 }}
+            animate={{ rotate: -40 }}
+            transition={{ type: 'spring', stiffness: 150 }}
+          />
+        </motion.button>
+      </motion.div>
+
       <ChatSidebar
         open={sidebarOpen}
         onToggle={handleToggleSidebar}
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
       />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col mt-4">
         <div className="flex-1 flex flex-col container mx-auto px-4 max-w-4xl py-6">
           {messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">

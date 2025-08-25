@@ -34,11 +34,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       >
         {/* Fixed Header */}
         <div className={`flex items-center px-4 py-4 bg-white sticky top-0 z-10 ${open ? 'justify-between' : 'flex-col gap-2'}`}>
-          <div className="relative">
+          {/* <div className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className=" mt-4 ml-3 hover:bg-gray-100 text-black h-9 w-9"
+              className=" mt-4 ml-3 hover:bg-gray-100 text-black h-9 w-9 "
               onClick={onToggle}
               aria-label={open ? 'Hide chat history' : 'Show chat history'}
               onMouseEnter={() => !open && setShowToggleTooltip(true)}
@@ -47,20 +47,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <Menu className="h-4 w-4" />
             </Button>
             
-            {/* Tooltip for toggle button */}
             {showToggleTooltip && !open && (
               <div className="absolute left-12 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg shadow-lg border border-gray-300 whitespace-nowrap z-50">
                 {open ? 'Hide chat history' : 'Show chat history'}
                 <div className="absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-gray-800"></div>
               </div>
             )}
-          </div>
+          </div> */}
           
           <div className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className=" mt-4 ml-3 hover:bg-gray-100 text-black h-9 w-9"
+              className=" mt-11 ml-2 hover:bg-gray-100 text-white h-6 w-6 bg-orange-600 rounded-full"
               onClick={onNewChat}
               aria-label="New Chat"
               onMouseEnter={() => !open && setShowNewChatTooltip(true)}

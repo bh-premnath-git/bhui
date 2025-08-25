@@ -9,6 +9,7 @@ import { useDispatch } from "react-redux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { pipelineSchema } from "@bh-ai/schemas";
 import { useEffect } from "react";
+import { motion } from 'framer-motion';
 
 export const Header = () => {
   const { isExpanded, isRightAsideOpen } = useSidebar();
@@ -45,7 +46,7 @@ export const Header = () => {
     // Get the current width of the right aside panel if it's open
     const getRightAsideWidth = () => {
       if (!isRightAsideOpen) return 0;
-      
+
       const container = document.getElementById('right-aside-container');
       if (container) {
         const containerWidth = container.getBoundingClientRect().width;
@@ -54,18 +55,18 @@ export const Header = () => {
       }
       return 25; // Default to 25% if container not found
     };
-    
+
     // Calculate the sidebar width
     const sidebarWidth = isExpanded ? 256 : 56; // 16rem = 256px, 3.5rem = 56px
-    
+
     // Calculate the available width for the header content
     // We need to account for both sidebar and right aside panel
     const rightAsideWidthPercent = getRightAsideWidth();
-    const availableWidth = isRightAsideOpen 
-      ? `calc(100vw - ${sidebarWidth}px - ${rightAsideWidthPercent}vw)` 
+    const availableWidth = isRightAsideOpen
+      ? `calc(100vw - ${sidebarWidth}px - ${rightAsideWidthPercent}vw)`
       : `calc(100vw - ${sidebarWidth}px)`;
-    
-    
+
+
 
     if (isBuildPlaygroundRoute(location.pathname)) {
       return <div className="w-full overflow-hidden" style={{ width: availableWidth }}>
@@ -93,9 +94,32 @@ export const Header = () => {
         </div>
       );
     }
-    if(isHomeRoute(location.pathname)) {
+    if (isHomeRoute(location.pathname)) {
+      console.log("home")
       return (
-        <></>
+        <motion.div
+          className="absolute  top-8 z-50 mt-6"
+          style={{ right: isExpanded ? 320 : 80 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.button
+            className="relative w-8 h-8 rounded-full group flex items-center justify-center hover:bg-accent"
+            style={{ backgroundColor: "#009f59" }}
+            whileHover={{ scale: 1.05, opacity: 0.9 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <motion.img
+              src="/assets/ai/ai.svg"
+              alt="ai"
+              className="w-3 h-4 transform -rotate-[40deg] filter brightness-0 invert"
+              initial={{ rotate: -45 }}
+              animate={{ rotate: -40 }}
+              transition={{ type: 'spring', stiffness: 150 }}
+            />
+          </motion.button>
+        </motion.div>
       );
 
     }
@@ -104,13 +128,7 @@ export const Header = () => {
     </div>;
   };
 
-if(isHomeRoute(location.pathname)) {
-      return (
-        <></>
-      );
-
-    }else{
-    return (
+  return (
     <header
       className={cn(
         "fixed top-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[90]",
@@ -119,8 +137,8 @@ if(isHomeRoute(location.pathname)) {
       style={{
         left: isExpanded ? '256px' : '56px',
         right: '0',
-        width: isRightAsideOpen 
-          ? `calc(100vw - ${isExpanded ? '256px' : '56px'})` 
+        width: isRightAsideOpen
+          ? `calc(100vw - ${isExpanded ? '256px' : '56px'})`
           : `calc(100vw - ${isExpanded ? '256px' : '56px'})`
       }}
     >
@@ -130,5 +148,5 @@ if(isHomeRoute(location.pathname)) {
       </div>
     </header>
   );
-}
+
 };

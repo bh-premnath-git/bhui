@@ -318,15 +318,16 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           )}
         </div>
 
-        {/* Middle section - Node controls */}
-        {pipelineType?.toLowerCase() != "requirement" &&
-          (<div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
+        {/* Middle section - Node controls (pipeline only, requires context) */}
+        {!isFlow && pipelineContext && pipelineType?.toLowerCase() !== "requirement" && (
+          <div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
             <NodeDropList
               filteredNodes={isFlow ? flowNodes : filteredNodes}
               handleNodeClick={contextHandleNodeClick}
               addNodeToHistory={contextAddNodeToHistory}
             />
-          </div>)}
+          </div>
+        )}
 
         {/* Right section - Pipeline controls and AI button */}
         <div className="flex items-center justify-end space-x-2 flex-shrink-0">

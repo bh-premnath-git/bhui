@@ -43,7 +43,7 @@ export const ChatMessages: React.FC = () => {
     <div className="w-full h-full">
       <div className="h-full max-w-4xl mx-auto flex flex-col">
         <div className="flex-1 overflow-y-auto px-0">
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 mt-[22px]">
             {messages.map((message) => (
               <div
                 key={message.id}

@@ -38,7 +38,7 @@ export const ChatMessages: React.FC = () => {
   if (messages.length === 0 && !isTyping) {
     return null;
   }
-
+  
   return (
     <div className="w-full h-full">
       <div className="h-full max-w-4xl mx-auto flex flex-col">

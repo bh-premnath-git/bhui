@@ -71,11 +71,16 @@ export const ActionCategories: React.FC = () => {
       };
       if (titles[actionId]) dispatch(setSelectedActionTitle(titles[actionId]));
 
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-
       // Set context to action-* for consistency with ActionsList clicks
       dispatch(setContext(`action-${actionId}`));
+
+      if (actionId === 'explore-data') {
+        // For explore-data, only set context without triggering service call
+        return;
+      }
+
+      const { getChatService } = await import('@/services/chatService');
+      const chatService = getChatService(dispatch);
       await chatService.processAction(actionId);
     } catch (e) {
       // Fallback: at least set context so user sees conversation view

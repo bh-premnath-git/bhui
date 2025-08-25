@@ -18,6 +18,7 @@ import { PipelineForm } from './forms/PipelineForm';
 import { PipelineCanvasWrapper } from './wrappers/PipelineCanvasWrapper';
 import { PlaygroundHeader } from '@/components/headers/playground-header';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
+import { ExploreDataComponent } from './ExploreDataComponent';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -152,6 +153,12 @@ export const RightAsideComponent: React.FC = () => {
           <div className="h-full overflow-auto">
             <RequirementForm />
           </div>
+        );
+      case 'explore-data':
+        return (
+          <ExploreDataComponent 
+            query={(rightComponent as any).extra?.query}
+          />
         );
       default:
         return (

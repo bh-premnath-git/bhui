@@ -50,6 +50,11 @@ export interface ActionItem {
   icon: LucideIcon;
 }
 
+export interface Connection {
+  id: number | string;
+  connection_config_name: string;
+}
+
 interface ChatState {
   messages: Message[];
   currentInput: string;
@@ -60,6 +65,7 @@ interface ChatState {
   layoutMode: 'centered' | 'split';
   otherActions: ActionItem[] | null;
   selectedActionTitle: string | null;
+  selectedConnection: Connection | null;
   // Bottom drawer (scoped to RightAsideComponent)
   bottomDrawer: {
     isOpen: boolean;
@@ -79,6 +85,7 @@ const initialState: ChatState = {
   layoutMode: 'centered',
   otherActions: null,
   selectedActionTitle: null,
+  selectedConnection: null,
   bottomDrawer: {
     isOpen: false,
     title: '',
@@ -152,6 +159,12 @@ const chatSlice = createSlice({
     clearMessages: (state) => {
       state.messages = [];
     },
+    setSelectedConnection: (state, action: PayloadAction<Connection | null>) => {
+      state.selectedConnection = action.payload;
+    },
+    clearSelectedConnection: (state) => {
+      state.selectedConnection = null;
+    },
     // Bottom drawer reducers (RightAside scoped)
     openChatBottomDrawer: (state, action: PayloadAction<{ title?: string; content: any; height?: number }>) => {
       state.bottomDrawer.isOpen = true;
@@ -183,6 +196,8 @@ export const {
   setOtherActions,
   setSelectedActionTitle,
   clearMessages,
+  setSelectedConnection,
+  clearSelectedConnection,
   openChatBottomDrawer,
   closeChatBottomDrawer,
   setChatBottomDrawerHeight,

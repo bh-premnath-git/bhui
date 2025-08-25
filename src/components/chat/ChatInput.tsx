@@ -375,45 +375,61 @@ export const ChatInput: React.FC = () => {
                     </DropdownMenuSubTrigger>
 
                     <DropdownMenuPortal>
-                      <DropdownMenuSubContent className="w-64 p-0">
+                      <DropdownMenuSubContent className="w-72 p-0 border border-border/50 shadow-lg">
                         {/* Loading */}
                         {(hookIsLoading || hookIsFetching) && (
-                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Loading connections…
+                          <div className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground border-b border-border/30">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            <span>Loading connections…</span>
                           </div>
                         )}
 
                         {/* Error */}
                         {hookIsError && !(hookIsLoading || hookIsFetching) && (
-                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-red-600">
+                          <div className="flex items-center gap-3 px-4 py-3 text-sm text-destructive border-b border-border/30">
                             <AlertTriangle className="h-4 w-4" />
-                            Failed to load connections
+                            <span>Failed to load connections</span>
                           </div>
                         )}
 
                         {/* Empty */}
                         {!hookIsError && !(hookIsLoading || hookIsFetching) && hookConnections.length === 0 && (
-                          <DropdownMenuItem disabled className="text-muted-foreground">
+                          <div className="px-4 py-3 text-sm text-muted-foreground">
                             No connections found
-                          </DropdownMenuItem>
+                          </div>
                         )}
 
-                        {/* List */}
+                        {/* List - Show max 3 items, scroll for more */}
                         {!hookIsError && !(hookIsLoading || hookIsFetching) && hookConnections.length > 0 && (
-                          <div className="max-h-64 overflow-auto">
-                            {hookConnections.map((c) => (
+                          <div className="max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                            {hookConnections.map((c, index) => (
                               <DropdownMenuItem
                                 key={String(c.id)}
                                 onClick={() => handleSelectExploreConnection(c)}
-                                className="flex items-center gap-2"
+                                className={`
+                                  flex items-center gap-3 px-4 py-3 cursor-pointer
+                                  hover:bg-accent/50 focus:bg-accent/50 transition-colors
+                                  ${index < hookConnections.length - 1 ? 'border-b border-border/20' : ''}
+                                `}
                               >
-                                <Database className="h-4 w-4 opacity-70" />
-                                <div className="flex flex-col">
-                                  <span className="text-sm">{c.connection_config_name}</span>
+                                <div className="flex-shrink-0">
+                                  <Database className="h-4 w-4 text-primary/70" />
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="text-sm font-medium text-foreground truncate">
+                                    {c.connection_config_name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground truncate">
+                                    Click to explore this connection
+                                  </span>
                                 </div>
                               </DropdownMenuItem>
                             ))}
+                            {hookConnections.length > 3 && (
+                              <div className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border/20 bg-muted/20">
+                                Scroll to see more connections
+                              </div>
+                            )}
                           </div>
                         )}
                       </DropdownMenuSubContent>

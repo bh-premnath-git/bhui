@@ -158,6 +158,7 @@ export const RightAsideComponent: React.FC = () => {
         return (
           <ExploreDataComponent 
             query={(rightComponent as any).extra?.query}
+            connection={(rightComponent as any).extra?.connection}
           />
         );
       default:

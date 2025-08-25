@@ -25,7 +25,14 @@ const projectStatusData = [
   { name: 'Public', success: 6, failed: 1, in_progress: 1 },
   { name: 'Transport', success: 5, failed: 1, in_progress: 1 },
 ];
-
+const performanceMetrics = [
+  { name: 'Jan', value: 85 },
+  { name: 'Feb', value: 92 },
+  { name: 'Mar', value: 78 },
+  { name: 'Apr', value: 96 },
+  { name: 'May', value: 89 },
+  { name: 'Jun', value: 94 },
+];
 // --- Shared chart config ---
 const baseConfig = { displayModeBar: false, responsive: true };
 const baseLayout = {
@@ -74,11 +81,29 @@ const ProjectStatusChart = () => (
     style={{ width: '100%', height: '100%' }}
   />
 );
+const PerformanceChart = () => (
+  <Plot
+    data={[
+      {
+        x: performanceMetrics.map(d => d.name),
+        y: performanceMetrics.map(d => d.value),
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#3b82f6', width: 3 },
+        marker: { size: 6, color: '#3b82f6' },
+      },
+    ]}
+    layout={{ ...baseLayout, showlegend: false }}
+    config={baseConfig}
+    style={{ width: '100%', height: '100%' }}
+  />
+);
 // --- Widgets ---
 const widgets = [
   { id: '1', title: 'Data Latency', chart: DepartmentBudgetChart },
   { id: '2', title: 'Data Quality', chart: PassFailChart },
   { id: '3', title: 'Job Status', chart: ProjectStatusChart },
+  { id: '4', title: 'Job Performance', chart: PerformanceChart },
 ];
 
 // --- Main Showcase ---
@@ -104,9 +129,8 @@ export const WidgetShowcase = () => {
         </Button>
       </div>
 
-
       {/* Widgets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {widgets.map((widget) => {
           const Chart = widget.chart;
           return (

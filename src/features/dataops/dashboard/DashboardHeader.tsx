@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Lock, Unlock, RefreshCw, Star, Link, MoreHorizontal } from 'lucide-react';
+import { Lock, Unlock, RefreshCw, Star, Link } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { toggleGridLock, refreshWidget } from '@/store/slices/dataops/dashboardSlice'
 export const DashboardHeader = () => {
@@ -17,14 +16,7 @@ export const DashboardHeader = () => {
 
   return (
     <div className="flex items-center justify-between p-2 bg-widget-bg border-b border-widget-border">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="text-xs">
-            {Object.keys(widgets).length} widgets
-          </Badge>
-        </div>
-      </div>
-
+      <div></div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
           <Star className="h-4 w-4" />

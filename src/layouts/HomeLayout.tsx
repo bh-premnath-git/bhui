@@ -146,7 +146,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
   // ----- Onboarding (no context selected) -----
   if (!context) {
     return (
-      <div className="flex h-screen bg-chat-background">
+      <div className="flex h-[calc(100vh-4rem)] bg-chat-background">
         <ChatSidebar
           open={sidebarOpen}
           onToggle={toggleSidebar}
@@ -171,7 +171,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
   // ----- Split layout -----
   if (layoutMode === "split") {
     return (
-      <div className="flex h-screen bg-chat-background">
+      <div className="flex h-[calc(100vh-4rem)] bg-chat-background">
         <ChatSidebar
           open={sidebarOpen}
           onToggle={toggleSidebar}
@@ -196,7 +196,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
                     </p>
                   </div>
                 ) : (
-                  <div className="flex-1 pb-4">{/* Page content goes here */}{children}</div>
+                  <div className="flex-1 pb-4">{children}</div>
                 )}
               </div>
             </div>
@@ -243,7 +243,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
 
   // ----- Full layout -----
   return (
-    <div className="flex h-screen bg-chat-background">
+    <div className="flex h-[calc(100vh-4rem)] bg-chat-background">
       <ChatSidebar
         open={sidebarOpen}
         onToggle={toggleSidebar}
@@ -261,7 +261,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
               </p>
             </div>
           ) : (
-            <div className="flex-1 pb-4">{/* Page content goes here */}{children}</div>
+            <div className="flex-1 pb-4">{children}</div>
           )}
         </div>
         <div className="border-t border-chat-border/20 bg-background/80 backdrop-blur-sm sticky bottom-0">

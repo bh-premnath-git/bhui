@@ -419,9 +419,6 @@ export const ChatInput: React.FC = () => {
                                   <span className="text-sm font-medium text-foreground truncate">
                                     {c.connection_config_name}
                                   </span>
-                                  <span className="text-xs text-muted-foreground truncate">
-                                    Click to explore this connection
-                                  </span>
                                 </div>
                               </DropdownMenuItem>
                             ))}

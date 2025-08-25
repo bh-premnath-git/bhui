@@ -6,7 +6,6 @@ import NotebookAiButton from "./headers/notbook-header/NotebookAiButton";
 import { PlaygroundHeader } from "./headers/playground-header";
 import { AIChatButton } from "@/components/shared/ai-chat-button";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "@/hooks/useRedux";
 import { setIsFlow } from "@/store/slices/designer/buildPipeLine/BuildPipeLineSlice";
 import { pipelineSchema } from "@bh-ai/schemas";
 import { useEffect } from "react";
@@ -15,7 +14,7 @@ export const Header = () => {
   const { isExpanded, isRightAsideOpen } = useSidebar();
   const location = useLocation();
   const dispatch = useDispatch();
-    console.log(pipelineSchema, "pipelineSchema")
+  console.log(pipelineSchema, "pipelineSchema")
 
   // Route-check helpers
   const isBuildPlaygroundRoute = (path: string) =>
@@ -43,9 +42,6 @@ export const Header = () => {
 
   // Decide which header content to render
   const renderHeaderContent = () => {
-    // Get chat right-aside state
-    const rightComponent = useAppSelector((state) => state.chat.rightComponent);
-
     // Get the current width of the right aside panel if it's open
     const getRightAsideWidth = () => {
       if (!isRightAsideOpen) return 0;

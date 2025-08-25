@@ -8,11 +8,8 @@ export const ROUTES = {
   DATA_CATALOG: '/data-catalog',
   DESIGNERS: {
     INDEX: '/designers',
-    BUILD_PIPELINE: '/designers/build-datapipeline',
-    BUILD_PLAYGROUND: (id:string) => `/designers/build-playground/${id}`,
-    MANAGE_FLOW: '/designers/manage-flow',
-    FLOW_PLAYGROUND: (id:string) => `/designers/flow-playground/${id}`,
-    Data_FLOW_PLAYGROUND: (id:string) => `/designers/data-flow-playground/${id}`,
+    BUILD_PLAYGROUND: (id:string | null) => id ? `/designers/build-playground/${id}` : '/designers/build-playground',
+    Data_FLOW_PLAYGROUND: (id:string | null) => id ? `/designers/data-flow-playground/${id}` : '/designers/data-flow-playground',
     NOTEBOOK: '/designers/notebook',
     REQUIREMENTS: {
       INDEX: '/designers/requirements',

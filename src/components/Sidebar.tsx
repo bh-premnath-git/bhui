@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { shouldShowAdminNavItems } from "@/utils/roleUtils";
 import { useLocation } from "react-router-dom";
-import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
+import { LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { useSidebar } from "@/context/SidebarContext";
 import { useNavigation } from "@/hooks/useNavigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,7 +30,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { theme, toggleTheme, setThemeMode } = useTheme();
+  const { toggleTheme, setThemeMode } = useTheme();
   const navigation = useNavigation();
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
@@ -133,7 +132,7 @@ export function Sidebar() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigation.handleNavigation('/');
+      navigation.handleNavigation(ROUTES.INDEX);
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -220,7 +219,7 @@ export function Sidebar() {
                     <Moon className="h-4 w-4" />
                     <span>Dark</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2" onClick={async () => { await logout(); navigation.handleNavigation('/'); }}>
+                  <DropdownMenuItem className="flex items-center gap-2" onClick={handleLogout}>
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>
                   </DropdownMenuItem>
@@ -530,7 +529,7 @@ export function Sidebar() {
                                             className={cn(
                                               "flex items-center px-2 py-1.5 rounded-md flex-1 text-sm transition-colors",
                                               isSubActive
-                                                ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300 font-medium"
+                                                ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300"
                                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white"
                                             )}
                                           >

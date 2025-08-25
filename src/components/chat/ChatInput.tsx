@@ -110,8 +110,7 @@ export const ChatInput: React.FC = () => {
       // Run the actual explore flow now
       await chatService.processExploreQuery(query, selectedConnection, threadId);
 
-      // Reset the mode after handling the query
-      dispatch(setContext('idle'));
+      // Don't reset context - keep it as 'action-explore-data' for follow-up queries
       return;
     }
 

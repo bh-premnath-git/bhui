@@ -10,9 +10,10 @@ interface Connection {
 interface ExploreDataComponentProps {
   query?: string;
   connection?: Connection;
+  threadId?: string;
 }
 
-export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ query, connection }) => {
+export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ query, connection, threadId }) => {
   return (
     <div className="h-full overflow-auto p-6">
       <div className="max-w-2xl mx-auto space-y-4">
@@ -74,6 +75,13 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
               {query && (
                 <span className="bg-blue-100 px-2 py-1 rounded text-blue-700 font-medium">
                   Analysis Ready
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
+              {threadId && (
+                <span className="bg-primary/10 px-2 py-1 rounded text-primary font-medium">
+                  {threadId}
                 </span>
               )}
             </div>

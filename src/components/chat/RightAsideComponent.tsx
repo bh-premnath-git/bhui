@@ -159,6 +159,7 @@ export const RightAsideComponent: React.FC = () => {
           <ExploreDataComponent 
             query={(rightComponent as any).extra?.query}
             connection={(rightComponent as any).extra?.connection}
+            threadId={(rightComponent as any).extra?.threadId}
           />
         );
       default:

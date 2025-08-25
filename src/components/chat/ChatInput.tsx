@@ -13,12 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Send, Mic, MicOff, Plus, Sliders, Loader2, Database, AlertTriangle } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { Connection, setSelectedConnection, setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping, setContext, setOtherActions, clearMessages, setSelectedActionTitle, setRightComponent, clearSelectedConnection } from "@/store/slices/chat/chatSlice";
+import { Connection, setSelectedConnection, setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping, setContext, setOtherActions, clearMessages, setSelectedActionTitle, setRightComponent, clearSelectedConnection, setThreadId, clearThreadId } from "@/store/slices/chat/chatSlice";
 import { ActionsList } from "./ActionsList";
 import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
+import { useConversation } from '@/hooks/useConversation';
 
 export const ChatInput: React.FC = () => {
-  const { currentInput, isLoading, context, selectedConnection } = useAppSelector((state) => state.chat);
+  const { currentInput, isLoading, context, selectedConnection, threadId } = useAppSelector((state) => state.chat);
 
   const {
     connections: hookConnections = [] as Connection[],
@@ -26,6 +27,8 @@ export const ChatInput: React.FC = () => {
     isFetching: hookIsFetching,
     isError: hookIsError
   } = useAdminConnections();
+
+  const { createConversation } = useConversation();
 
   const dispatch = useAppDispatch();
 
@@ -105,7 +108,7 @@ export const ChatInput: React.FC = () => {
       const chatService = getChatService(dispatch);
 
       // Run the actual explore flow now
-      await chatService.processExploreQuery(query, selectedConnection);
+      await chatService.processExploreQuery(query, selectedConnection, threadId);
 
       // Reset the mode after handling the query
       dispatch(setContext('idle'));
@@ -190,7 +193,7 @@ export const ChatInput: React.FC = () => {
     }
   };
 
-  const handleSelectExploreConnection = ( connection: Connection) => {
+  const handleSelectExploreConnection = (connection: Connection) => {
     const actionId = 'explore-data';
     dispatch(setSelectedConnection(connection));
     dispatch(setOtherActions(null));
@@ -198,6 +201,14 @@ export const ChatInput: React.FC = () => {
     dispatch(setSelectedActionTitle('Explore Data'));
     // Arm the input mode; do NOT call the service here
     dispatch(setContext(`action-${actionId}`));
+    createConversation()
+      .then(res => {
+        dispatch(setThreadId(res.data.thread_id));
+      })
+      .catch(err => {
+        console.error('Failed to create conversation thread:', err);
+        dispatch(clearThreadId());
+      });
   };
 
   const handleCheckJob = async () => {
@@ -315,7 +326,7 @@ export const ChatInput: React.FC = () => {
 
   const placeholderText =
     context === 'action-explore-data' ? selectedConnection ? `Ask about data in ${selectedConnection.connection_config_name}`
-      :'e.g., "Show me total sales by region for the last quarter"'
+      : 'e.g., "Show me total sales by region for the last quarter"'
       : 'How Can I Help You ?';
 
   return (

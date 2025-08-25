@@ -81,11 +81,12 @@ export class ChatService {
     }
   }
 
-  async processExploreQuery(query: string, connection?: { id: number | string; connection_config_name: string } | null): Promise<void> {
+  async processExploreQuery(query: string, connection?: { id: number | string; connection_config_name: string } | null, threadId?: string): Promise<void> {
    
     // Store the query and connection for later use when card is clicked
     this.contextData['exploreQuery'] = query;
     this.contextData['exploreConnection'] = connection;
+    this.contextData['threadId'] = threadId;
 
     // Show a brief typing indicator
     this.dispatch(setTyping(true));
@@ -327,13 +328,16 @@ export class ChatService {
   }
 
   async handleExploreCardClick(query: string, connection?: { id: number | string; connection_config_name: string } | null): Promise<void> {
+    // Get threadId from stored context data
+    const threadId = this.contextData['threadId'];
+    
     // Open a right-aside requirement form (or any component you prefer) with the query
     const rightComponent: RightComponent = {
       componentType: 'RightAsideComponent',
       componentId: 'explore-data',
       title: 'Explore Data',
       isVisible: true,
-      extra: { query, connection },
+      extra: { query, connection, threadId },
     };
     this.dispatch(setRightComponent(rightComponent));
 

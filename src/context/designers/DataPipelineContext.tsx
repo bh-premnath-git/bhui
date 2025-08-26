@@ -569,7 +569,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     setSaveError(error.message || 'Unknown error occurred during save');
                 }
             } else {
-                console.log('🔧 AutoSave - No unsaved changes, skipping save');
             }
         }, autoSaveInterval);
 
@@ -580,10 +579,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     useEffect(() => {
         // Skip if this is the initial load or if it's a flow
         if (isFlow || Object.keys(formStates).length === 0) {
-            console.log('🔧 AutoSave - Skipping formStates change tracking:', { 
-                isFlow, 
-                formStatesCount: Object.keys(formStates).length 
-            });
             return;
         }
         

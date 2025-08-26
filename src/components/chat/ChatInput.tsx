@@ -1,19 +1,35 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
+import {
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { Send, Mic, MicOff, Plus, Sliders } from "lucide-react";
+import { Send, Mic, MicOff, Plus, Sliders, Loader2, Database, AlertTriangle } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping, setContext, setOtherActions, clearMessages, setSelectedActionTitle, setRightComponent } from "@/store/slices/chat/chatSlice";
+import { Connection, setSelectedConnection, setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping, setContext, setOtherActions, clearMessages, setSelectedActionTitle, setRightComponent, clearSelectedConnection, setThreadId, clearThreadId } from "@/store/slices/chat/chatSlice";
 import { ActionsList } from "./ActionsList";
+import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
+import { useConversation } from '@/hooks/useConversation';
 
 export const ChatInput: React.FC = () => {
-  const { currentInput, isLoading, currentInputStep } = useAppSelector((state) => state.chat);
+  const { currentInput, isLoading, context, selectedConnection, threadId,currentInputStep } = useAppSelector((state) => state.chat);
+
+  const {
+    connections: hookConnections = [] as Connection[],
+    isLoading: hookIsLoading,
+    isFetching: hookIsFetching,
+    isError: hookIsError
+  } = useAdminConnections();
+
+  const { createConversation } = useConversation();
+
   const dispatch = useAppDispatch();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -81,7 +97,6 @@ export const ChatInput: React.FC = () => {
   const handleSubmit = async () => {
     if (!currentInput.trim() || isLoading) return;
 
-    // Check if there's a current workflow step expecting input
     if (currentInputStep) {
       // Route to workflow system
       const { getChatService } = await import('@/services/chatService');
@@ -99,7 +114,26 @@ export const ChatInput: React.FC = () => {
         isUser: true,
       })
     );
+    dispatch(addMessage({ content: currentInput, isUser: true }));
 
+    if (context === 'action-explore-data') {
+      const query = currentInput.trim();
+      dispatch(setCurrentInput(''));
+
+      const { getChatService } = await import('@/services/chatService');
+      const chatService = getChatService(dispatch);
+
+      // Run the actual explore flow now
+      await chatService.processExploreQuery(query, selectedConnection, threadId);
+
+      // Don't reset context - keep it as 'action-explore-data' for follow-up queries
+      return;
+    }
+
+    // If the user was answering the 'explore data' question, reset the context.
+    if (context === 'explore-data-question') {
+      dispatch(setContext('idle'));
+    }
     // Streaming AI response (simulated)
     const id = crypto.randomUUID();
     dispatch(
@@ -157,9 +191,10 @@ export const ChatInput: React.FC = () => {
   // Handler functions for dropdown actions
   const handleCreatePipeline = async () => {
     const actionId = 'create-pipeline';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Create pipeline'));
       const { getChatService } = await import('@/services/chatService');
@@ -172,28 +207,30 @@ export const ChatInput: React.FC = () => {
     }
   };
 
-  const handleExploreData = async () => {
+  const handleSelectExploreConnection = (connection: Connection) => {
     const actionId = 'explore-data';
+    dispatch(setSelectedConnection(connection));
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
-    try {
-      dispatch(setSelectedActionTitle('Explore Data'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('explore-data'));
-      console.error('Failed to start explore data action', e);
-    }
+    dispatch(setSelectedActionTitle('Explore Data'));
+    // Arm the input mode; do NOT call the service here
+    dispatch(setContext(`action-${actionId}`));
+    createConversation()
+      .then(res => {
+        dispatch(setThreadId(res.data.thread_id));
+      })
+      .catch(err => {
+        console.error('Failed to create conversation thread:', err);
+        dispatch(clearThreadId());
+      });
   };
 
   const handleCheckJob = async () => {
     const actionId = 'check-job-statistics';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Check Job Statistics'));
       const { getChatService } = await import('@/services/chatService');
@@ -208,9 +245,10 @@ export const ChatInput: React.FC = () => {
 
   const handleAddUserOrRole = async () => {
     const actionId = 'add-users-roles';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Add Users or roles'));
       const { getChatService } = await import('@/services/chatService');
@@ -225,9 +263,10 @@ export const ChatInput: React.FC = () => {
 
   const handleAddNewConnection = async () => {
     const actionId = 'add-connections';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Add new Connections'));
       const { getChatService } = await import('@/services/chatService');
@@ -242,9 +281,10 @@ export const ChatInput: React.FC = () => {
 
   const handleOnboardNewDataset = async () => {
     const actionId = 'onboard-dataset';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Onboard new dataset'));
       const { getChatService } = await import('@/services/chatService');
@@ -259,9 +299,10 @@ export const ChatInput: React.FC = () => {
 
   const handleAddProject = async () => {
     const actionId = 'add-project';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Add Project'));
       const { getChatService } = await import('@/services/chatService');
@@ -276,9 +317,10 @@ export const ChatInput: React.FC = () => {
 
   const handleAddEnvironment = async () => {
     const actionId = 'add-environment';
+    dispatch(clearSelectedConnection());
     dispatch(setOtherActions(null));
     dispatch(clearMessages());
-    
+
     try {
       dispatch(setSelectedActionTitle('Add Environment'));
       const { getChatService } = await import('@/services/chatService');
@@ -295,6 +337,11 @@ export const ChatInput: React.FC = () => {
   const handleCloseRightAside = () => {
     dispatch(setRightComponent(null));
   };
+
+  const placeholderText =
+    context === 'action-explore-data' ? selectedConnection ? `Ask about data in ${selectedConnection.connection_config_name}`
+      : 'e.g., "Show me total sales by region for the last quarter"'
+      : 'How Can I Help You ?';
 
   return (
     <div className="w-full max-w-3xl mx-auto px-2">
@@ -319,7 +366,7 @@ export const ChatInput: React.FC = () => {
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={autoGrow}
-            placeholder="How Can I Help You ?"
+            placeholder={placeholderText}
             rows={2}
             className="flex-1 resize-none border-0 bg-transparent pl-0 pr-2 py-1.5 text-sm leading-5 placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[56px] max-h-60 overflow-y-auto"
             aria-label="Chat message"
@@ -346,9 +393,70 @@ export const ChatInput: React.FC = () => {
                   <DropdownMenuItem onClick={handleCreatePipeline}>
                     Create Pipeline
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExploreData}>
-                    Explore Data
-                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Database className="mr-2 h-4 w-4" />
+                      <span>Explore Data</span>
+                    </DropdownMenuSubTrigger>
+
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent className="w-72 p-0 border border-border/50 shadow-lg">
+                        {/* Loading */}
+                        {(hookIsLoading || hookIsFetching) && (
+                          <div className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground border-b border-border/30">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            <span>Loading connections…</span>
+                          </div>
+                        )}
+
+                        {/* Error */}
+                        {hookIsError && !(hookIsLoading || hookIsFetching) && (
+                          <div className="flex items-center gap-3 px-4 py-3 text-sm text-destructive border-b border-border/30">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span>Failed to load connections</span>
+                          </div>
+                        )}
+
+                        {/* Empty */}
+                        {!hookIsError && !(hookIsLoading || hookIsFetching) && hookConnections.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-muted-foreground">
+                            No connections found
+                          </div>
+                        )}
+
+                        {/* List - Show max 3 items, scroll for more */}
+                        {!hookIsError && !(hookIsLoading || hookIsFetching) && hookConnections.length > 0 && (
+                          <div className="max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                            {hookConnections.map((c, index) => (
+                              <DropdownMenuItem
+                                key={String(c.id)}
+                                onClick={() => handleSelectExploreConnection(c)}
+                                className={`
+                                  flex items-center gap-3 px-4 py-3 cursor-pointer
+                                  hover:bg-accent/50 focus:bg-accent/50 transition-colors
+                                  ${index < hookConnections.length - 1 ? 'border-b border-border/20' : ''}
+                                `}
+                              >
+                                <div className="flex-shrink-0">
+                                  <Database className="h-4 w-4 text-primary/70" />
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="text-sm font-medium text-foreground truncate">
+                                    {c.connection_config_name}
+                                  </span>
+                                </div>
+                              </DropdownMenuItem>
+                            ))}
+                            {hookConnections.length > 3 && (
+                              <div className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border/20 bg-muted/20">
+                                Scroll to see more connections
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
                   <DropdownMenuItem onClick={handleCheckJob}>
                     Check Job
                   </DropdownMenuItem>
@@ -404,9 +512,8 @@ export const ChatInput: React.FC = () => {
                   {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </Button>
                 <span
-                  className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 transition-opacity ${
-                    isRecording ? "opacity-100" : "opacity-0"
-                  }`}
+                  className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 transition-opacity ${isRecording ? "opacity-100" : "opacity-0"
+                    }`}
                   aria-hidden
                 />
               </div>
@@ -425,9 +532,9 @@ export const ChatInput: React.FC = () => {
         </div>
 
         {/* Footer: hint and categories */}
-        
 
-       
+
+
       </form>
     </div>
   );

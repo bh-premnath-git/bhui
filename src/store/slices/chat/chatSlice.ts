@@ -4,7 +4,7 @@ import { type LucideIcon } from 'lucide-react';
 export interface Message {
   id: string;
   content: string;
-  timestamp: Date;
+  timestamp: string;
   isUser: boolean;
   // Indicates content is being streamed (partial)
   isStreaming?: boolean;
@@ -53,10 +53,9 @@ export interface ActionItem {
   icon: LucideIcon;
 }
 
-export interface ActionItem {
-  id: number;
-  title: string;
-  icon: LucideIcon;
+export interface Connection {
+  id: number | string;
+  connection_config_name: string;
 }
 
 interface ChatState {
@@ -75,6 +74,8 @@ interface ChatState {
     stepId: string;
     inputKey: string;
   } | null;
+  selectedConnection: Connection | null;
+  threadId: string | null;
   // Bottom drawer (scoped to RightAsideComponent)
   bottomDrawer: {
     isOpen: boolean;
@@ -96,6 +97,8 @@ const initialState: ChatState = {
   otherActions: null,
   selectedActionTitle: null,
   currentInputStep: null,
+  selectedConnection: null,
+  threadId: null,
   bottomDrawer: {
     isOpen: false,
     title: '',
@@ -115,7 +118,7 @@ const chatSlice = createSlice({
       const newMessage: Message = {
         ...action.payload,
         id: crypto.randomUUID(),
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       state.messages.push(newMessage);
     },
@@ -128,7 +131,7 @@ const chatSlice = createSlice({
       const newMessage: Message = {
         ...message,
         id,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       state.messages.push(newMessage);
     },
@@ -176,6 +179,18 @@ const chatSlice = createSlice({
     setCurrentInputStep: (state, action: PayloadAction<{ stepId: string; inputKey: string } | null>) => {
       state.currentInputStep = action.payload;
     },
+    setSelectedConnection: (state, action: PayloadAction<Connection | null>) => {
+      state.selectedConnection = action.payload;
+    },
+    clearSelectedConnection: (state) => {
+      state.selectedConnection = null;
+    },
+    setThreadId: (state, action: PayloadAction<string | null>) => {
+      state.threadId = action.payload;
+    },
+    clearThreadId: (state) => {
+      state.threadId = null;
+    },
     // Bottom drawer reducers (RightAside scoped)
     openChatBottomDrawer: (state, action: PayloadAction<{ title?: string; content: any; height?: number }>) => {
       state.bottomDrawer.isOpen = true;
@@ -209,6 +224,10 @@ export const {
   setSelectedActionTitle,
   clearMessages,
   setCurrentInputStep,
+  setSelectedConnection,
+  clearSelectedConnection,
+  setThreadId,
+  clearThreadId,
   openChatBottomDrawer,
   closeChatBottomDrawer,
   setChatBottomDrawerHeight,

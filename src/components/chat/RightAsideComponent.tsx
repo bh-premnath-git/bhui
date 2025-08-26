@@ -18,6 +18,7 @@ import { PipelineForm } from './forms/PipelineForm';
 import { PipelineCanvasWrapper } from './wrappers/PipelineCanvasWrapper';
 import { PlaygroundHeader } from '@/components/headers/playground-header';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
+import { ExploreDataComponent } from './ExploreDataComponent';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -35,9 +36,6 @@ const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-
-
-
 export const RightAsideComponent: React.FC = () => {
   const dispatch = useAppDispatch();
   const rightComponent = useAppSelector((state) => state.chat.rightComponent);
@@ -47,10 +45,12 @@ export const RightAsideComponent: React.FC = () => {
 
   // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
   const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
+  
   React.useEffect(() => {
     if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
     if (!bottomDrawer.isOpen && isBottomDrawerOpen) closeBottomDrawer();
   }, [bottomDrawer.isOpen, isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer]);
+  
   React.useEffect(() => {
     // push height to context for consistent internal behavior of BottomDrawer
     updateBottomDrawerHeight(`${bottomDrawer.height}px`);
@@ -63,11 +63,11 @@ export const RightAsideComponent: React.FC = () => {
   const handleClose = async () => {
     // Close the right component
     dispatch(setRightComponent(null));
-    
+
     // Treat close as submit - add success message and trigger next step based on component type
     let successMessage = '✅ Configuration completed successfully!';
     let nextStep: string | null = null;
-    
+
     switch (rightComponent?.componentId) {
       case 'connection-form':
         successMessage = '✅ Connection configuration completed successfully!';
@@ -98,7 +98,7 @@ export const RightAsideComponent: React.FC = () => {
         return;
 
     }
-    
+
     dispatch(addMessage({
       content: successMessage,
       isUser: false
@@ -157,6 +157,14 @@ export const RightAsideComponent: React.FC = () => {
             <RequirementForm />
           </div>
         );
+      case 'explore-data':
+        return (
+          <ExploreDataComponent 
+            query={(rightComponent as any).extra?.query}
+            connection={(rightComponent as any).extra?.connection}
+            threadId={(rightComponent as any).extra?.threadId}
+          />
+        );
       default:
         return (
           <div className="p-4 text-center text-muted-foreground">
@@ -180,17 +188,16 @@ export const RightAsideComponent: React.FC = () => {
   return (
     <div className="w-full mt-14 h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
       <Card className="h-full rounded-none border-0 shadow-none">
-        <CardHeader className="p-2 flex flex-row items-center justify-between space-y-0 via-transparent to-transparent">
-          <div className="flex items-center gap-3">
-            {/* Show title only when provided */}
-            {/* {Boolean(rightComponent.title && rightComponent.title.trim().length > 0) && (
-              <CardTitle className="text-lg font-semibold">
-                {rightComponent.title}
-              </CardTitle>
-            )} */}
-            {/* Toggle icons (visible when extra.toggles is provided and not hidden) */}
-            {Boolean(!(rightComponent as any).extra?.hideIcons) && Array.isArray((rightComponent as any).extra?.toggles) && (rightComponent as any).extra.toggles.length > 1 && (
-              <div className="flex items-center gap-1 ml-2">
+        <CardHeader 
+          className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <CardTitle className="text-lg font-semibold truncate min-w-0" title={rightComponent.title}>
+              {rightComponent.title}
+            </CardTitle>
+            {/* Toggle icons (visible when extra.toggles is provided) */}
+            {Array.isArray((rightComponent as any).extra?.toggles) && (
+              <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                 {(rightComponent as any).extra.toggles.map((t: any) => {
                   const isActive = rightComponent.componentId === t.componentId;
                   const IconComp = t.componentId === 'requirement-form' ? FileText : GitBranch;

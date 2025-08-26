@@ -6,6 +6,7 @@ import {
   setLoading, 
   setRightComponent,
   setCurrentInputStep,
+  setContext,
   RightComponent 
 } from '@/store/slices/chat/chatSlice';
 import { apiService } from '@/lib/api/api-service';
@@ -42,11 +43,12 @@ export class ChatService {
       'add-environment': 'Add Environment'
     };
 
-    this.dispatch(addMessage({
-      content: actionTitles[actionId] || actionId,
-      isUser: true
-    }));
-
+    if (actionId !== 'explore-data') {
+      this.dispatch(addMessage({
+        content: actionTitles[actionId] || actionId,
+        isUser: true
+      }));
+    }
     // Handle specific actions
     if (actionId === 'add-connections') {
       // Start the connection workflow
@@ -72,6 +74,9 @@ export class ChatService {
       // Start the job statistics workflow
       this.currentWorkflow = JOB_STATISTICS_WORKFLOW;
       await this.executeStep('start');
+    } else if (actionId === 'explore-data') {
+      // Do nothing here. We only set context and wait for the user's next message.
+      return;
     } else {
       // For other actions, show a placeholder message
       this.dispatch(setTyping(true));
@@ -83,6 +88,33 @@ export class ChatService {
         isUser: false
       }));
     }
+  }
+
+  async processExploreQuery(query: string, connection?: { id: number | string; connection_config_name: string } | null, threadId?: string): Promise<void> {
+   
+    // Store the query and connection for later use when card is clicked
+    this.contextData['exploreQuery'] = query;
+    this.contextData['exploreConnection'] = connection;
+    this.contextData['threadId'] = threadId;
+
+    // Show a brief typing indicator
+    this.dispatch(setTyping(true));
+    await this.delay(600);
+    this.dispatch(setTyping(false))
+
+    // Add a card component that user can click to open the analysis panel
+    this.dispatch(addMessage({
+      content: `I'll help you explore: "${query}" on ${connection?.connection_config_name || 'selected connection'}`,
+      isUser: false,
+      uiComponent: {
+        type: 'Card',
+        props: {
+          title: 'Data Analysis Ready',
+          description: `Click to open the analysis panel for: "${query}" on ${connection?.connection_config_name || 'selected connection'}`
+        },
+        stepId: 'explore-data-card'
+      } as any
+    }));
   }
 
   async handleUserChoice(choice: string): Promise<void> {
@@ -155,6 +187,14 @@ export class ChatService {
     // Handle special non-workflow cards
     if (stepId === 'viewPipelineSchema') {
       await this.showPipelineSchemaOnRightSide();
+    }
+    // Handle special case for explore-data-card
+    if (stepId === 'explore-data-card') {
+      const query = this.contextData['exploreQuery'];
+      const connection = this.contextData['exploreConnection'];
+      if (query) {
+        await this.handleExploreCardClick(query, connection);
+      }
       return;
     }
 
@@ -216,8 +256,9 @@ export class ChatService {
 
     this.currentStepId = stepId;
 
-    // If step defines an API call, execute it before rendering
-    if ((step as any).api) {
+    // Only execute API automatically for the explicit pipeline creation step
+    // Avoid triggering any API on non-creation steps (e.g., prompt steps) or other workflows
+    if ((step as any).api && step.id === 'createPipeline') {
       try {
         const cfg: any = (step as any).api;
         const payload: any = {
@@ -668,6 +709,30 @@ export class ChatService {
     this.dispatch(addMessage({
       content: message,
       isUser: false
+    }));
+  }
+
+  async handleExploreCardClick(query: string, connection?: { id: number | string; connection_config_name: string } | null): Promise<void> {
+    // Get threadId from stored context data
+    const threadId = this.contextData['threadId'];
+    
+    // Use full query as title - RightAsideComponent will handle dynamic truncation
+    const title = query;
+    
+    // Open a right-aside requirement form (or any component you prefer) with the query
+    const rightComponent: RightComponent = {
+      componentType: 'RightAsideComponent',
+      componentId: 'explore-data',
+      title: title,
+      isVisible: true,
+      extra: { query, connection, threadId },
+    };
+    this.dispatch(setRightComponent(rightComponent));
+
+    // Optional: also drop a short assistant message in the chat
+    this.dispatch(addMessage({
+      content: `Opening data exploration panel for: "${query}" on ${connection?.connection_config_name || 'selected connection'}`,
+      isUser: false,
     }));
   }
 }

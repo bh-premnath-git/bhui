@@ -2,6 +2,9 @@ import { apiService } from "@/lib/api/api-service";
 import { API_PREFIX_URL, AGENT_REMOTE_URL } from "@/config/platformenv";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import type {
+    StreamingChunk,
+} from "@/types/streaming";
 
 interface UseConversationOptions {
     shouldFetch?: boolean;
@@ -21,7 +24,7 @@ interface ConversationResponse {
     }
 }
 
-type StreamCallback = (chunk: string) => void;
+type StreamCallback = (chunk: StreamingChunk) => void;
 
 const handleApiError = (error: unknown, options: ApiErrorOptions) => {
     const { action, context = "conversation", silent = false } = options;
@@ -60,17 +63,23 @@ export const useConversation = (options: UseConversationOptions = { shouldFetch:
     );
 
     const streamConversation = useCallback(
-        (connectionId: number | null , userRequest: string, threadId: string, onChunk: StreamCallback, onComplete?: () => void, onError?: (error: any) => void, module?: string): () => void => {
+        (
+            connectionId: number | null,
+            userRequest: string,
+            threadId: string,
+            onChunk: StreamCallback,
+            onComplete?: () => void,
+            onError?: (error: any) => void,
+            module?: string
+        ): () => void => {
             const controller = new AbortController();
             const { signal } = controller;
             const baseUrl = `${AGENT_REMOTE_URL}${API_PREFIX_URL}`;
-            let url: any;
-            if (module === "dataops") {
-                url = `${baseUrl}/conversation/conversation/query/stream`;
-            } else {
-                url = `${baseUrl}/conversation/conversation/query/stream?connection_config_id=${connectionId}`;
-            }
-            //const url = `${baseUrl}/conversation/conversation/query/stream?connection_config_id=${conversationId}`;
+            const url =
+                module === "dataops"
+                    ? `${baseUrl}/conversation/conversation/query/stream`
+                    : `${baseUrl}/conversation/conversation/query/stream?connection_config_id=${connectionId}`;
+
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -92,32 +101,50 @@ export const useConversation = (options: UseConversationOptions = { shouldFetch:
                     if (!reader) {
                         throw new Error('Failed to get stream reader');
                     }
-                    const processStream = ({ done, value }: ReadableStreamReadResult<Uint8Array>) => {
-                        if (done) {
-                            if (onComplete) onComplete();
-                            return;
-                        }
 
-                        const chunk = new TextDecoder().decode(value);
-                        try {
-                            const lines = chunk.split('\n').filter(line => line.trim() !== '');
+                    const decoder = new TextDecoder("utf-8");
+                    let buffer = "";
 
-                            for (const line of lines) {
-                                if (line.startsWith('data:')) {
-                                    const jsonStr = line.slice(5).trim();
-                                    onChunk(jsonStr);
+                    const flushEventsFromBuffer = () => {
+                        const events = buffer.split("\n\n");
+                        buffer = events.pop() ?? "";
+
+                        for (const evt of events) {
+                            const dataLines = evt
+                                .split("\n")
+                                .filter(l => l.startsWith("data:"))
+                                .map(l => l.slice(5).trim());
+
+                            if (!dataLines.length) continue;
+
+                            const payload = dataLines.join("\n");
+                            try {
+                                const parsed = JSON.parse(payload);
+
+                                const items: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
+                                for (const item of items) {
+                                    onChunk(item as StreamingChunk);
                                 }
+                            } catch (e) {
+                                console.error("Failed to parse SSE data JSON:", e, payload);
                             }
-                        } catch (e) {
-                            console.error('Error parsing SSE chunk:', e);
-                            onChunk(chunk);
                         }
-                        reader.read().then(processStream).catch(err => {
-                            if (onError) onError(err);
-                        });
                     };
-                    reader.read().then(processStream).catch(err => {
-                        if (onError) onError(err);
+
+                    const process = (): Promise<void> =>
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                flushEventsFromBuffer();
+                                onComplete?.();
+                                return;
+                            }
+                            buffer += decoder.decode(value, { stream: true });
+                            flushEventsFromBuffer();
+                            return process();
+                        });
+
+                    return process().catch(err => {
+                        onError?.(err);
                     });
                 })
                 .catch(error => {

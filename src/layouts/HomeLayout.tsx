@@ -1,13 +1,14 @@
 // src/layouts/HomeLayout.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, Home as HomeIcon } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { WidgetShowcase } from "@/components/chat/WidgetShowcase";
 import { RightAsideComponent } from "@/components/chat/RightAsideComponent";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { clearMessages, setContext, setOtherActions, setSelectedActionTitle } from "@/store/slices/chat/chatSlice";
+import { clearMessages, setContext, setOtherActions, setSelectedActionTitle, setCurrentInput } from "@/store/slices/chat/chatSlice";
+import { useRecommendation } from '@/hooks/useRecommendation'
 
 type ActionItem = {
   id: string;
@@ -16,8 +17,12 @@ type ActionItem = {
 };
 
 export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  const { context, messages, otherActions, layoutMode } = useAppSelector((s) => s.chat);
+  const { context, messages, otherActions, layoutMode, selectedConnection } = useAppSelector((s) => s.chat);
   const dispatch = useAppDispatch();
+  const { data: recommendedSuggestions, isLoading: isLoadingRecommendations, isError: isRecommendationsError } = useRecommendation(
+      'explorer',
+      selectedConnection?.id
+    );
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -31,6 +36,13 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
     dispatch(setOtherActions(null));
     dispatch(setSelectedActionTitle(null));
     dispatch(clearMessages());
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    // Clear any existing input and set the new suggestion
+    dispatch(setCurrentInput(suggestion));
+    // Optional: Focus the input after setting the text
+    // The ChatInput component will handle the focus
   };
 
   // ----- Resizable right pane setup -----
@@ -122,13 +134,20 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
                   const actionId = titleToActionId[action.title];
                   dispatch(setOtherActions(null));
                   dispatch(setSelectedActionTitle(action.title));
-                  try {
-                    const { getChatService } = await import("@/services/chatService");
-                    const chatService = getChatService(dispatch);
-                    await chatService.processAction(actionId);
-                  } catch (e) {
-                    // eslint-disable-next-line no-console
-                    console.error("Failed to process action", e);
+                  
+                  if (actionId === 'explore-data') {
+                    // For explore-data, only set context without triggering service call
+                    dispatch(clearMessages());
+                    dispatch(setContext(`action-${actionId}`));
+                  } else {
+                    try {
+                      const { getChatService } = await import("@/services/chatService");
+                      const chatService = getChatService(dispatch);
+                      await chatService.processAction(actionId);
+                    } catch (e) {
+                      // eslint-disable-next-line no-console
+                      console.error("Failed to process action", e);
+                    }
                   }
                 }}
                 className="justify-start h-10 px-3 text-sm hover:bg-accent hover:text-accent-foreground rounded-lg border border-transparent hover:border-border flex items-center"
@@ -189,11 +208,47 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
 
                 {messages.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-muted-foreground text-sm">
-                      {context === "other-items"
-                        ? "Select an action above or start typing..."
-                        : `Start your conversation about ${context.replace("-", " ")}...`}
-                    </p>
+                    <div className="text-center space-y-4">
+                      <p className="text-muted-foreground text-sm">
+                        {context === "other-items"
+                          ? "Select an action above or start typing..."
+                          : context === "action-explore-data"
+                          ? selectedConnection
+                            ? `Ask about data in ${selectedConnection.connection_config_name}`
+                            : 'Ask me about your data'
+                          : `Start your conversation about ${context.replace("-", " ")}...`}
+                      </p>
+                      {context === "action-explore-data" && selectedConnection && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground/80">Try these suggestions:</p>
+                          <div className="flex flex-col gap-2 max-w-md">
+                            {isLoadingRecommendations ? (
+                              <div className="px-4 py-2 text-sm bg-muted/30 rounded-lg border border-border/50 text-center">
+                                Loading suggestions...
+                              </div>
+                            ) : isRecommendationsError ? (
+                              <div className="px-4 py-2 text-sm bg-destructive/10 rounded-lg border border-destructive/20 text-center text-destructive">
+                                Failed to load suggestions
+                              </div>
+                            ) : recommendedSuggestions && recommendedSuggestions.length > 0 ? (
+                              recommendedSuggestions.map((suggestion, index) => (
+                                <button
+                                  key={index}
+                                  className="px-4 py-2 text-sm bg-muted/50 hover:bg-muted rounded-lg border border-border/50 hover:border-border transition-colors text-left"
+                                  onClick={() => handleSuggestionClick(suggestion)}
+                                >
+                                  "{suggestion}"
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm bg-muted/30 rounded-lg border border-border/50 text-center">
+                                No suggestions available
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex-1 pb-2">{children}</div>
@@ -254,11 +309,47 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
         <div className="flex-1 flex flex-col container mx-auto px-4 max-w-4xl py-6">
           {messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-muted-foreground">
-                {context === "other-items"
-                  ? "Select an action above or start typing..."
-                  : `Start your conversation about ${context.replace("-", " ")}...`}
-              </p>
+              <div className="text-center space-y-4">
+                <p className="text-muted-foreground">
+                  {context === "other-items"
+                    ? "Select an action above or start typing..."
+                    : context === "action-explore-data"
+                    ? selectedConnection
+                      ? `Ask about data in ${selectedConnection.connection_config_name}`
+                      : 'Ask me about your data'
+                    : `Start your conversation about ${context.replace("-", " ")}...`}
+                </p>
+                {context === "action-explore-data" && selectedConnection && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground/80">Try these suggestions:</p>
+                    <div className="flex flex-col gap-2 max-w-md mx-auto">
+                      {isLoadingRecommendations ? (
+                        <div className="px-4 py-2 text-sm bg-muted/30 rounded-lg border border-border/50 text-center">
+                          Loading suggestions...
+                        </div>
+                      ) : isRecommendationsError ? (
+                        <div className="px-4 py-2 text-sm bg-destructive/10 rounded-lg border border-destructive/20 text-center text-destructive">
+                          Failed to load suggestions
+                        </div>
+                      ) : recommendedSuggestions && recommendedSuggestions.length > 0 ? (
+                        recommendedSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            className="px-4 py-2 text-sm bg-muted/50 hover:bg-muted rounded-lg border border-border/50 hover:border-border transition-colors text-left"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                          >
+                            "{suggestion}"
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-sm bg-muted/30 rounded-lg border border-border/50 text-center">
+                          No suggestions available
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex-1 pb-2">{children}</div>

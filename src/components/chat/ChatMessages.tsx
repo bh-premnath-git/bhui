@@ -2,9 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { User, ChevronRight, Sparkles } from 'lucide-react';
 import { getChatService } from '@/services/chatService';
 import { motion } from 'framer-motion';
 import SuggestionButton from '@/features/designers/pipeline/components/SuggestionButton';
@@ -38,7 +38,7 @@ export const ChatMessages: React.FC = () => {
   if (messages.length === 0 && !isTyping) {
     return null;
   }
-
+  
   return (
     <div className="w-full h-full">
       <div className="h-full max-w-4xl mx-auto flex flex-col">

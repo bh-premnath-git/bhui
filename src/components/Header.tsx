@@ -97,7 +97,7 @@ export const Header = () => {
     if (isHomeRoute(location.pathname)) {
       return (
         <>
-          <div /> {/* Empty div to push the button to the right */}
+          {/* <div /> 
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -118,7 +118,7 @@ export const Header = () => {
                 transition={{ type: 'spring', stiffness: 150 }}
               />
             </motion.button>
-          </motion.div>
+          </motion.div> */}
         </>
       );
 
@@ -129,7 +129,8 @@ export const Header = () => {
   };
 
   return (
-    <header
+    <>
+    {location.pathname!=='/home'&&(<header
       className={cn(
         "fixed top-0 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[90]",
         "transition-all duration-300 flex-shrink-0 "
@@ -146,7 +147,8 @@ export const Header = () => {
         {renderHeaderContent()}
         {isNotebookRoute(location.pathname) && <NotebookAiButton />}
       </div>
-    </header>
+    </header>)}
+    </>
   );
 
 };

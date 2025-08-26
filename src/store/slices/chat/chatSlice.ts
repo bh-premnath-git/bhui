@@ -25,6 +25,15 @@ export interface Message {
         buttonLabel?: string;
       };
       stepId?: string;
+    } |
+    {
+      type: 'TextArea';
+      props: {
+        placeholder?: string;
+        buttonLabel?: string;
+        rows?: number;
+      };
+      stepId?: string;
     }
   );
 }
@@ -57,9 +66,15 @@ interface ChatState {
   isLoading: boolean;
   context: string;
   rightComponent: RightComponent | null;
+  isRightAsideComponent: boolean; // Track if right aside component is open
   layoutMode: 'centered' | 'split';
   otherActions: ActionItem[] | null;
   selectedActionTitle: string | null;
+  // Current workflow step that expects input
+  currentInputStep: {
+    stepId: string;
+    inputKey: string;
+  } | null;
   // Bottom drawer (scoped to RightAsideComponent)
   bottomDrawer: {
     isOpen: boolean;
@@ -76,9 +91,11 @@ const initialState: ChatState = {
   isLoading: false,
   context: '',
   rightComponent: null,
+  isRightAsideComponent: false,
   layoutMode: 'centered',
   otherActions: null,
   selectedActionTitle: null,
+  currentInputStep: null,
   bottomDrawer: {
     isOpen: false,
     title: '',
@@ -138,7 +155,11 @@ const chatSlice = createSlice({
     },
     setRightComponent: (state, action: PayloadAction<RightComponent | null>) => {
       state.rightComponent = action.payload;
+      state.isRightAsideComponent = action.payload !== null;
       state.layoutMode = action.payload ? 'split' : 'centered';
+    },
+    setIsRightAsideComponent: (state, action: PayloadAction<boolean>) => {
+      state.isRightAsideComponent = action.payload;
     },
     setLayoutMode: (state, action: PayloadAction<'centered' | 'split'>) => {
       state.layoutMode = action.payload;
@@ -151,6 +172,9 @@ const chatSlice = createSlice({
     },
     clearMessages: (state) => {
       state.messages = [];
+    },
+    setCurrentInputStep: (state, action: PayloadAction<{ stepId: string; inputKey: string } | null>) => {
+      state.currentInputStep = action.payload;
     },
     // Bottom drawer reducers (RightAside scoped)
     openChatBottomDrawer: (state, action: PayloadAction<{ title?: string; content: any; height?: number }>) => {
@@ -179,10 +203,12 @@ export const {
   updateMessageContent,
   setContext,
   setRightComponent,
+  setIsRightAsideComponent,
   setLayoutMode,
   setOtherActions,
   setSelectedActionTitle,
   clearMessages,
+  setCurrentInputStep,
   openChatBottomDrawer,
   closeChatBottomDrawer,
   setChatBottomDrawerHeight,

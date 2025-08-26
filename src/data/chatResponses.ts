@@ -1,3 +1,5 @@
+import { CATALOG_REMOTE_API_URL } from "@/config/platformenv";
+
 // Interactive workflow system based on JSON configuration
 export interface WorkflowStep {
   id: string;
@@ -39,8 +41,23 @@ export interface WorkflowStep {
         placeholder?: string;
         buttonLabel?: string;
       };
+    } |
+    {
+      type: 'TextArea';
+      props: {
+        placeholder?: string;
+        buttonLabel?: string;
+        rows?: number;
+      };
     }
   );
+  // Optional API call to perform on entering this step
+  api?: {
+    baseUrl?: string;
+    url: string;
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    usePrefix?: boolean;
+  };
   nextOnClick?: string;
   nextOnSelect?: string;
   nextOnSubmit?: string;
@@ -107,6 +124,7 @@ export const CONNECTION_WORKFLOW: WorkflowConfig = {
     }
   ]
 };
+
 
 // Project setup workflow
 export const PROJECT_WORKFLOW: WorkflowConfig = {
@@ -335,11 +353,14 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
     {
       id: "start",
       actor: "ai",
-      message: "Let's create a new pipeline. We'll configure a project and environment.",
-      options: [
-        { label: "Set up Project", next: "projectSetup" },
-        { label: "Browse sample pipelines", next: "showSamplePipelines" }
-      ]
+      message: "Select a project:",
+      dynamicOptions: {
+        endpoint: "bh_project/list/?limit=10&offset=0",
+        isResponseFormat: true,
+        displayName: "bh_project_name",
+        subName: null
+      },
+      nextOnSelect: "showSampleEnvironments"
     },
     
     // Project Setup Phase
@@ -450,19 +471,12 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       ]
     },
 
-    // Final Pipeline Creation - Refactored flow with input + selections
+    // Final Pipeline Creation - Refactored flow using chat input
    
     {
       id: "askPipelineName",
       actor: "ai",
       message: "Can you give the pipeline name?",
-      uiComponent: {
-        type: "Input",
-        props: {
-          placeholder: "Enter pipeline name",
-          buttonLabel: "Continue"
-        }
-      },
       inputKey: "pipelineName",
       nextOnSubmit: "askPipelineMode"
     },
@@ -470,10 +484,13 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       id: "askPipelineMode",
       actor: "ai",
       message: "What kind of pipeline do you want?",
-      options: [
-        { label: "Batch", next: "askPipelineKind" },
-        { label: "Streaming", next: "askPipelineKind" }
-      ],
+      // Dynamically provide options using a hook implemented in the chat panel
+      dynamicOptions: {
+        endpoint: "hook:useEngineTypes",
+        isResponseFormat: false,
+        displayName: "label",
+        subName: null
+      },
       nextOnSelect: "askPipelineKind"
     },
     {
@@ -481,10 +498,35 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       actor: "ai",
       message: "What kind of pipeline you need?",
       options: [
-        { label: "Requirement", next: "showRequirementCard" },
-        { label: "Design (Manual)", next: "showDesignCard" }
+        { label: "Requirement", next: "createPipeline" },
+        { label: "Design (Manual)", next: "createPipeline" }
       ],
-      nextOnSelect: "showDesignCard"
+      nextOnSelect: "createPipeline"
+    },
+    { 
+      id: "createPipeline",
+      actor: "system",
+      message: "Creating your pipeline...",
+      api: {
+        baseUrl: CATALOG_REMOTE_API_URL,
+        url: "/api/v1/pipeline",
+        method: "POST",
+        usePrefix: false
+      },
+      nextOnClick: "promptPipelineDescription"
+    },
+    {
+      id: "promptPipelineDescription",
+      actor: "ai",
+      message: "Describe your expected pipeline",
+      inputKey: "pipelineExpectation",
+      api: {
+        baseUrl: CATALOG_REMOTE_API_URL,
+        url: "/api/v1/agent/pipeline-description",
+        method: "POST",
+        usePrefix: false
+      },
+      nextOnSubmit: "openPipelineCanvas"
     },
     {
       id: "showDesignCard",
@@ -493,10 +535,10 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
         type: "Card",
         props: {
           title: "Design your pipeline",
-          description: "Click to open the canvas and design manually"
+          description: "Click to proceed with design"
         }
       },
-      nextOnClick: "openPipelineCanvas"
+      nextOnClick: "createPipeline"
     },
     {
       id: "showRequirementCard",

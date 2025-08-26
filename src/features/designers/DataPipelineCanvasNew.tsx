@@ -1,5 +1,5 @@
 // src/features/designers/DataPipelineCanvasNew.tsx
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useSidebar } from '@/context/SidebarContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,12 @@ import { Table as TableIcon } from 'lucide-react';
 // Drawer is rendered in RightAsideComponent via Redux
 import { openChatBottomDrawer, closeChatBottomDrawer } from '@/store/slices/chat/chatSlice';
 
-const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
+interface DataPipelineCanvasNewProps {
+  isInitializing?: boolean;
+  pipelineJson?: any; // optional direct pipeline json from AI agent
+}
+
+const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitializing, pipelineJson }) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded, setBottomDrawerContent, openBottomDrawer, bottomDrawerContent, bottomDrawerTitle } = useSidebar();
   const { id } = useParams();
   const dispatch = useAppDispatch();
@@ -85,6 +90,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     pipelines,
     updateSetNode,
     reactFlowInstance,
+    makePipeline,
   } = usePipelineContext();
 
   // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
@@ -140,8 +146,24 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
   
+  // Prevent repeated makePipeline calls when the same pipelineJson prop is passed
+  const lastAppliedJsonRef = useRef<string | null>(null);
+
   useEffect(() => {
-    // debugger
+    // If pipelineJson is provided directly (e.g., from AI agent), render it once per change
+    if (pipelineJson) {
+      const jsonKey = JSON.stringify(pipelineJson);
+      if (lastAppliedJsonRef.current !== jsonKey) {
+        try {
+          makePipeline({ pipeline_definition: pipelineJson });
+          lastAppliedJsonRef.current = jsonKey;
+        } catch (e) {
+          console.error('Failed to load provided pipelineJson', e);
+        }
+      }
+      return; // skip fetching
+    }
+
     if (id) {
       setIsLoadingPipeline(true);
       setCurrentPipelineId(id);
@@ -155,7 +177,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           setIsLoadingPipeline(false);
         });
     }
-  }, [id, fetchPipelineDetails]);
+  }, [id, pipelineJson]);
 
   // Separate effect to handle alignment after nodes are loaded
   useEffect(() => {

@@ -59,7 +59,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className=" mt-11 ml-2 hover:bg-gray-100 text-white h-6 w-6 bg-orange-600 rounded-full"
+              className=" mt-11 ml-2 hover:bg-gray-100 text-white h-6 w-6 bg-gray-600 rounded-full"
               onClick={onNewChat}
               aria-label="New Chat"
               onMouseEnter={() => !open && setShowNewChatTooltip(true)}

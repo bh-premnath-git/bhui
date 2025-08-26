@@ -47,7 +47,7 @@ export const ChatMessages: React.FC = () => {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                className={`group flex gap-3 ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!message.isUser && (
                   <motion.div
@@ -75,19 +75,33 @@ export const ChatMessages: React.FC = () => {
                 )}
 
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${message.isUser
-                      ? 'bg-primary text-primary-foreground ml-auto'
+                  className={`max-w-[80%] rounded-xl px-4 py-2 ${message.isUser
+                      ? "bg-[linear-gradient(135deg,rgba(0,0,0,0.14),rgba(0,0,0,0.06))] text-foreground ml-auto ring-1 ring-border/30 shadow-sm"
                       : 'bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20'
                     }`}
                 >
-                  {message.content && (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                      {message.isStreaming && (
-                        <span className="inline-block w-1 h-4 align-baseline bg-muted-foreground/60 animate-pulse ml-0.5 rounded-sm" />
-                      )}
-                    </p>
-                  )}
+                  {message.content && (() => {
+                    // Try to render JSON nicely if the content is JSON
+                    try {
+                      const trimmed = (message.content || '').trim();
+                      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')) ) {
+                        const parsed = JSON.parse(trimmed);
+                        return (
+                          <pre className="text-xs leading-relaxed whitespace-pre overflow-auto max-h-80 bg-muted/30 rounded p-2">
+                            {JSON.stringify(parsed, null, 2)}
+                          </pre>
+                        );
+                      }
+                    } catch {}
+                    return (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                        {message.isStreaming && (
+                          <span className="inline-block w-1 h-4 align-baseline bg-muted-foreground/60 animate-pulse ml-0.5 rounded-sm" />
+                        )}
+                      </p>
+                    );
+                  })()}
                   {!message.content && message.isStreaming && (
                     <div className="flex items-center gap-1 py-0.5">
                       <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" />
@@ -193,12 +207,37 @@ export const ChatMessages: React.FC = () => {
                     </div>
                   )}
 
-                  <p className={`text-xs mt-1 ${message.isUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                    }`}>
-                    {new Date(message.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                  {message.uiComponent && message.uiComponent.type === 'TextArea' && (
+                    <div className="mt-3">
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+                        placeholder={message.uiComponent.props.placeholder || 'Describe here'}
+                        rows={(message.uiComponent.props as any).rows || 4}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            const value = (e.target as HTMLTextAreaElement).value.trim();
+                            if (value) handleInputSubmit(message.uiComponent.stepId || '', value);
+                          }
+                        }}
+                      />
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            const container = (e.currentTarget.parentElement?.parentElement as HTMLElement);
+                            const input = container.querySelector('textarea');
+                            const value = (input as HTMLTextAreaElement)?.value.trim();
+                            if (value) handleInputSubmit(message.uiComponent.stepId || '', value);
+                          }}
+                        >
+                          {message.uiComponent.props.buttonLabel || 'Submit'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className={`text-[10px] leading-none mt-1 opacity-0 group-hover:opacity-70 transition-opacity duration-200 ${message.isUser ? 'text-foreground/70 text-right' : 'text-muted-foreground'}`}>
+                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
 

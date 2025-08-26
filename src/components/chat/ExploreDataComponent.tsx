@@ -196,8 +196,8 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
   })();
 
   return (
-    <div className="h-full overflow-auto p-6">
-      <div className="max-w-2xl mx-auto space-y-4">
+    <div className="h-full overflow-auto p-2">
+      <div className="w-full space-y-4">
         {/* Main analysis card */}
         <Card className="border-primary/20">
           <CardHeader className="pb-4">
@@ -431,12 +431,9 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
                       <>Identified source: <span className="font-medium text-foreground">{response.identify}</span></>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {typeof metrics.tablesGenerated === 'number' && (
-                      <Badge variant="secondary" className="rounded-full">Tables: {metrics.tablesGenerated}</Badge>
-                    )}
+                  <div className="flex flex-wrap">
                     {metrics.duration && (
-                      <Badge variant="secondary" className="rounded-full">Duration: {metrics.duration}</Badge>
+                      <Badge variant="secondary" className="rounded-full">Thought for: {metrics.duration}</Badge>
                     )}
                   </div>
                 </div>

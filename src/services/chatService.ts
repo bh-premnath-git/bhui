@@ -187,6 +187,7 @@ export class ChatService {
     // Handle special non-workflow cards
     if (stepId === 'viewPipelineSchema') {
       await this.showPipelineSchemaOnRightSide();
+      return; // stop workflow handling for non-workflow canvas action
     }
     // Handle special case for explore-data-card
     if (stepId === 'explore-data-card') {

@@ -322,8 +322,8 @@ const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitial
           className={`flex-1 relative p-1 transition-all duration-300 ${errorBanner ? 'mt-24' : ''}`}
           style={getMainContentStyle()}>
 
-          {/* Check if there are no pipelines and no current pipeline ID */}
-          {Array.isArray(pipelines) && pipelines.length === 0 && !id ? (
+          {/* Show empty state only when no pipelines, no route id, and no provided pipelineJson */}
+          {Array.isArray(pipelines) && pipelines.length === 0 && !id && !pipelineJson ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="p-6">
                 <EmptyState

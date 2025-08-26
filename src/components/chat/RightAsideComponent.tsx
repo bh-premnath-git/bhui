@@ -186,13 +186,13 @@ export const RightAsideComponent: React.FC = () => {
   };
 
   return (
-    <div className="w-full mt-14 h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
+    <div className="w-full mt-10 h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
       <Card className="h-full rounded-none border-0 shadow-none">
         <CardHeader 
           className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <CardTitle className="text-lg font-semibold truncate min-w-0" title={rightComponent.title}>
+            <CardTitle className="text-base font-medium truncate min-w-0" title={rightComponent.title}>
               {rightComponent.title}
             </CardTitle>
             {/* Toggle icons (visible when extra.toggles is provided) */}

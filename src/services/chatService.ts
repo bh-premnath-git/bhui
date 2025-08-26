@@ -331,11 +331,14 @@ export class ChatService {
     // Get threadId from stored context data
     const threadId = this.contextData['threadId'];
     
+    // Use full query as title - RightAsideComponent will handle dynamic truncation
+    const title = query;
+    
     // Open a right-aside requirement form (or any component you prefer) with the query
     const rightComponent: RightComponent = {
       componentType: 'RightAsideComponent',
       componentId: 'explore-data',
-      title: 'Explore Data',
+      title: title,
       isVisible: true,
       extra: { query, connection, threadId },
     };

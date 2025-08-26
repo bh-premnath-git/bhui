@@ -36,9 +36,6 @@ const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-
-
-
 export const RightAsideComponent: React.FC = () => {
   const dispatch = useAppDispatch();
   const rightComponent = useAppSelector((state) => state.chat.rightComponent);
@@ -48,10 +45,12 @@ export const RightAsideComponent: React.FC = () => {
 
   // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
   const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
+  
   React.useEffect(() => {
     if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
     if (!bottomDrawer.isOpen && isBottomDrawerOpen) closeBottomDrawer();
   }, [bottomDrawer.isOpen, isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer]);
+  
   React.useEffect(() => {
     // push height to context for consistent internal behavior of BottomDrawer
     updateBottomDrawerHeight(`${bottomDrawer.height}px`);
@@ -64,11 +63,11 @@ export const RightAsideComponent: React.FC = () => {
   const handleClose = async () => {
     // Close the right component
     dispatch(setRightComponent(null));
-    
+
     // Treat close as submit - add success message and trigger next step based on component type
     let successMessage = '✅ Configuration completed successfully!';
     let nextStep: string | null = null;
-    
+
     switch (rightComponent?.componentId) {
       case 'connection-form':
         successMessage = '✅ Connection configuration completed successfully!';
@@ -98,7 +97,7 @@ export const RightAsideComponent: React.FC = () => {
         // Don't show success message for canvas, just close
         return;
     }
-    
+
     dispatch(addMessage({
       content: successMessage,
       isUser: false
@@ -185,14 +184,16 @@ export const RightAsideComponent: React.FC = () => {
   return (
     <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
       <Card className="h-full rounded-none border-0 shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-semibold">
+        <CardHeader 
+          className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <CardTitle className="text-lg font-semibold truncate min-w-0" title={rightComponent.title}>
               {rightComponent.title}
             </CardTitle>
             {/* Toggle icons (visible when extra.toggles is provided) */}
             {Array.isArray((rightComponent as any).extra?.toggles) && (
-              <div className="flex items-center gap-1 ml-2">
+              <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                 {(rightComponent as any).extra.toggles.map((t: any) => {
                   const isActive = rightComponent.componentId === t.componentId;
                   const IconComp = t.componentId === 'requirement-form' ? FileText : GitBranch;

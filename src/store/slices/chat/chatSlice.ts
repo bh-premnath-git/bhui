@@ -4,7 +4,7 @@ import { type LucideIcon } from 'lucide-react';
 export interface Message {
   id: string;
   content: string;
-  timestamp: Date;
+  timestamp: string;
   isUser: boolean;
   // Indicates content is being streamed (partial)
   isStreaming?: boolean;
@@ -101,7 +101,7 @@ const chatSlice = createSlice({
       const newMessage: Message = {
         ...action.payload,
         id: crypto.randomUUID(),
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       state.messages.push(newMessage);
     },
@@ -114,7 +114,7 @@ const chatSlice = createSlice({
       const newMessage: Message = {
         ...message,
         id,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       state.messages.push(newMessage);
     },

@@ -114,7 +114,6 @@ export const ChatInput: React.FC = () => {
         isUser: true,
       })
     );
-    dispatch(addMessage({ content: currentInput, isUser: true }));
 
     if (context === 'action-explore-data') {
       const query = currentInput.trim();

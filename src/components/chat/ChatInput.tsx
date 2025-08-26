@@ -382,7 +382,7 @@ export const ChatInput: React.FC = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-full hover:bg-primary/10"
+                    className="h-8 w-8 rounded hover:bg-primary/10 border"
                     aria-label="Create actions"
                   >
                     <Plus className="h-4 w-4" />
@@ -469,7 +469,7 @@ export const ChatInput: React.FC = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-full hover:bg-primary/10"
+                    className="h-8 w-8 rounded hover:bg-primary/10 border"
                     aria-label="Settings actions"
                   >
                     <Sliders className="h-4 w-4" />

@@ -2,9 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, ChevronRight, Sparkles } from 'lucide-react';
+import { User, ChevronRight, Sparkles, Zap } from 'lucide-react';
 import { getChatService } from '@/services/chatService';
 import { motion } from 'framer-motion';
 import SuggestionButton from '@/features/designers/pipeline/components/SuggestionButton';
@@ -38,7 +38,7 @@ export const ChatMessages: React.FC = () => {
   if (messages.length === 0 && !isTyping) {
     return null;
   }
-  
+
   return (
     <div className="w-full h-full">
       <div className="h-full max-w-4xl mx-auto flex flex-col">
@@ -75,9 +75,9 @@ export const ChatMessages: React.FC = () => {
                 )}
 
                 <div
-                  className={`max-w-[80%] rounded-xl px-4 py-2 ${message.isUser
-                      ? "bg-[linear-gradient(135deg,rgba(0,0,0,0.14),rgba(0,0,0,0.06))] text-foreground ml-auto ring-1 ring-border/30 shadow-sm"
-                      : 'bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20'
+                  className={`group max-w-[80%] rounded-2xl px-4 py-2.5 ${message.isUser
+                      ? "relative ml-auto text-foreground ring-1 ring-border/40 shadow-sm bg-gradient-to-r from-muted/60 to-muted/30"
+                      : "bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20"
                     }`}
                 >
                   {message.content && (() => {
@@ -236,9 +236,12 @@ export const ChatMessages: React.FC = () => {
                     </div>
                   )}
 
-                  <p className={`text-[10px] leading-none mt-1 opacity-0 group-hover:opacity-70 transition-opacity duration-200 ${message.isUser ? 'text-foreground/70 text-right' : 'text-muted-foreground'}`}>
-                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className={`mt-1 flex items-center gap-1 text-[10px] leading-none text-muted-foreground/70 ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+                    <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/40" />
+                    <time dateTime={new Date(message.timestamp).toISOString()}>
+                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </time>
+                  </div>
                 </div>
 
                 {message.isUser && (

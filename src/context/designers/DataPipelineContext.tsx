@@ -193,6 +193,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const location = useLocation()
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    // Only enable autosave when on pipeline canvas routes
+    const isOnPipelineCanvas = useMemo(() => {
+        const path = location.pathname || '';
+        return path.startsWith('/designers/build-playground') || path.startsWith('/designers/data-flow-playground');
+    }, [location.pathname]);
     const [nodeCounters, setNodeCounters] = useState<{ [key: string]: number }>({});
     const reactFlowInstance = useReactFlow();
     const [debuggedNodes, setDebuggedNodes] = useState<string[]>([]);
@@ -235,6 +241,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [initialDataMap, setInitialDataMap] = useState<{ [key: string]: any }>({});
+
+    // Single autosave timer ref to ensure only one interval at a time
+    const autoSaveTimerRef = useRef<number | null>(null);
 
     const [isSaving, setIsSaving] = useState(false); 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -455,26 +464,29 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Update the auto-save effect
     useEffect(() => {
-        // Skip auto-save if isFlow is true
-        if (isFlow) {
+        // Enable auto-save only on canvas routes and when not in flow mode
+        if (!isOnPipelineCanvas || isFlow) {
+            // Ensure no timer is running when not on canvas
+            if (autoSaveTimerRef.current) {
+                window.clearInterval(autoSaveTimerRef.current);
+                autoSaveTimerRef.current = null;
+            }
             return;
         }
 
-        const intervalId = setInterval(async () => {
-            console.log('🔧 AutoSave - Interval triggered:', {
-                hasUnsavedChanges,
-                id,
-                nodesLength: nodes?.length,
-                edgesLength: edges?.length,
-                pipelineName,
-                
-                isFlow
-            });
-            
+        // Avoid creating multiple intervals
+        if (autoSaveTimerRef.current) {
+            window.clearInterval(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = null;
+        }
+
+        const intervalId = window.setInterval(async () => {
+            // Only log and act when on canvas to avoid noise while chatting
+            if (!isOnPipelineCanvas) return;
+
             if (hasUnsavedChanges) {
-                console.log('🔧 AutoSave - Starting save process...',selectedPipeline);
+                console.log('🔧 AutoSave - Starting save process...', selectedPipeline);
                 
-                // Check if there's meaningful content to save
                 const pipelineId = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
                 if (!pipelineId) {
                     console.warn('🔧 AutoSave - No pipeline ID available, cannot save');
@@ -482,11 +494,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     return;
                 }
                 
-                
                 try {
                     setSaving();
 
-                    // Convert nodes to ensure all data is serializable
                     const serializedNodes = nodes.map(node => ({
                         ...node,
                         data: {
@@ -498,82 +508,56 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                                     : []
                         }
                     }));
-                    // Your save logic here
-                    console.log('🔧 AutoSave - Converting pipeline JSON...');
+
                     const pipeline_json: any = await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl, pipelineName);
-                    console.log('🔧 AutoSave - Pipeline JSON converted:', !!pipeline_json);
 
                     if (pipeline_json?.pipeline_json?.transformations) {
                         pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json.transformations.map(transform => {
                             if (transform.transformation.toLowerCase() === "target") {
-                                return {
-                                    ...transform,
-                                    transformation: "Writer"
-                                };
+                                return { ...transform, transformation: "Writer" };
                             }
                             return transform;
                         });
                     }
 
-                    // Try to get pipeline ID from multiple sources
-                    const pipelineId = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
-                    
-                    if(pipelineId){
-                        console.log('🔧 AutoSave - Making API call to save pipeline...', {
-                            pipelineId,
-                            url: `/pipeline/${pipelineId}`,
-                            dataSize: JSON.stringify(pipeline_json).length,
-                            nodesCount: serializedNodes.length,
-                            edgesCount: edges.length
-                        });
-                        
+                    const pipelineIdFinal = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
+                    if (pipelineIdFinal) {
                         await apiService.patch({
                             baseUrl: CATALOG_REMOTE_API_URL,
-                            url: `/pipeline/${pipelineId}`,
+                            url: `/pipeline/${pipelineIdFinal}`,
                             usePrefix: true,
                             method: 'PATCH',
                             data: pipeline_json
                         });
-                        
-                        console.log('🔧 AutoSave - API call completed successfully');
                     } else {
-                        console.warn('🔧 AutoSave - No pipeline ID available in any source:', {
-                            id,
-                            pipeline_id,
-                            pipelineDtl_id: pipelineDtl?.pipeline_id,
-                            localStorage_id: localStorage.getItem("pipeline_id")
-                        });
-                        // Don't mark as saved if we couldn't save
                         setSaveError('No pipeline ID available for saving');
                         return;
                     }
+
                     if ('pipeline_json' in pipeline_json) {
                         let optimised = await resolveRefsPipelineJson(pipeline_json.pipeline_json, pipeline_json.pipeline_json)
                         setPipelineJson(optimised);
                     }
 
-                    // Ensure we're updating the save status after successful save
-                    // Add a small delay to ensure UI updates properly
-                    // setTimeout(() => {
                     setLastSaved(new Date());
                     setSaved();
-                    console.log('🔧 AutoSave - Save completed successfully at:', new Date().toISOString());
-                    // }, 100);
-
                 } catch (error) {
                     console.error('🔧 AutoSave - Error in auto-save:', error);
-                    console.error('🔧 AutoSave - Error details:', {
-                        message: error.message,
-                        stack: error.stack
-                    });
                     setSaveError(error.message || 'Unknown error occurred during save');
                 }
-            } else {
             }
         }, autoSaveInterval);
 
-        return () => clearInterval(intervalId);
-    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow, formStates]);
+        autoSaveTimerRef.current = intervalId;
+        return () => {
+            if (autoSaveTimerRef.current) {
+                window.clearInterval(autoSaveTimerRef.current);
+                autoSaveTimerRef.current = null;
+            } else {
+                window.clearInterval(intervalId);
+            }
+        };
+    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow, formStates, isOnPipelineCanvas]);
     
     // Track formStates changes to trigger autosave
     useEffect(() => {

@@ -28,7 +28,7 @@ import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch } from "@/hooks/useRedux";
-import { clearMessages, setContext, setOtherActions, setSelectedActionTitle } from "@/store/slices/chat/chatSlice";
+import { clearMessages, setContext, setOtherActions, setSelectedActionTitle, setIsRightAsideComponent } from "@/store/slices/chat/chatSlice";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -196,6 +196,7 @@ export function Sidebar() {
                   dispatch(setOtherActions(null));
                   dispatch(setSelectedActionTitle(null));
                   dispatch(clearMessages());
+                  dispatch(setIsRightAsideComponent(false));
               
               navigation.handleNavigation(ROUTES.HOME)}}>
               <Home className="h-4 w-4 text-gray-800 dark:text-gray-100" />
@@ -243,6 +244,7 @@ export function Sidebar() {
                         dispatch(setOtherActions(null));
                         dispatch(setSelectedActionTitle(null));
                         dispatch(clearMessages());
+                        dispatch(setIsRightAsideComponent(false));
                         navigation.handleNavigation(ROUTES.HOME);
                       }}
                       className={cn(
@@ -335,6 +337,8 @@ export function Sidebar() {
                     // Toggle section open/close on menu click
                     setOpenParents((prev) => ({ ...prev, [item.path]: !isOpen }));
                   } else {
+                    // Close any right aside content when navigating to a new menu item
+                    dispatch(setIsRightAsideComponent(false));
                     navigation.handleNavigation(item.path);
                     toggleSidebar();
                   }

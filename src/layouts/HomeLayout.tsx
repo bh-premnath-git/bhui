@@ -196,13 +196,13 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
                     </p>
                   </div>
                 ) : (
-                  <div className="flex-1 pb-4">{children}</div>
+                  <div className="flex-1 pb-2">{children}</div>
                 )}
               </div>
             </div>
 
             <div className="border-t border-chat-border/20 bg-background/80 backdrop-blur-sm sticky bottom-0">
-              <div className="p-4">
+              <div className="p-2">
                 <ChatInput />
               </div>
             </div>
@@ -261,11 +261,11 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
               </p>
             </div>
           ) : (
-            <div className="flex-1 pb-4">{children}</div>
+            <div className="flex-1 pb-2">{children}</div>
           )}
         </div>
         <div className="border-t border-chat-border/20 bg-background/80 backdrop-blur-sm sticky bottom-0">
-          <div className="container mx-auto px-4 py-4 max-w-4xl">
+          <div className="container mx-auto px-4 py-2 max-w-4xl">
             <ChatInput />
           </div>
         </div>

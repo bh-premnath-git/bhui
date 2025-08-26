@@ -13,7 +13,7 @@ import { setCurrentInput, addMessage, addMessageWithId, updateMessageContent, se
 import { ActionsList } from "./ActionsList";
 
 export const ChatInput: React.FC = () => {
-  const { currentInput, isLoading } = useAppSelector((state) => state.chat);
+  const { currentInput, isLoading, currentInputStep } = useAppSelector((state) => state.chat);
   const dispatch = useAppDispatch();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -78,9 +78,20 @@ export const ChatInput: React.FC = () => {
     setIsRecording(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!currentInput.trim() || isLoading) return;
 
+    // Check if there's a current workflow step expecting input
+    if (currentInputStep) {
+      // Route to workflow system
+      const { getChatService } = await import('@/services/chatService');
+      const chatService = getChatService(dispatch);
+      await chatService.handleInputSubmit(currentInputStep.stepId, currentInput);
+      dispatch(setCurrentInput(""));
+      return;
+    }
+
+    // Default behavior for general chat (when not in a workflow)
     // User message
     dispatch(
       addMessage({
@@ -286,9 +297,9 @@ export const ChatInput: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-3">
+    <div className="w-full max-w-3xl mx-auto px-2">
       {/* Inline suggestion chips (when a category is selected) */}
-      <div className="pb-2">
+      <div className="pb-1">
         {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
         {/* @ts-ignore - dynamic import prevents circular complaints */}
         <ActionsList variant="compact" />
@@ -300,7 +311,7 @@ export const ChatInput: React.FC = () => {
         aria-label="Chat input form"
       >
         {/* Input area */}
-        <div className="flex flex-col gap-2 px-3 py-2">
+        <div className="flex flex-col gap-2 px-3 py-1.5">
           {/* Textarea */}
           <Textarea
             ref={textareaRef}
@@ -310,7 +321,7 @@ export const ChatInput: React.FC = () => {
             onInput={autoGrow}
             placeholder="How Can I Help You ?"
             rows={2}
-            className="flex-1 resize-none border-0 bg-transparent pl-0 pr-2 py-2 text-sm leading-5 placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[60px] max-h-60 overflow-y-auto"
+            className="flex-1 resize-none border-0 bg-transparent pl-0 pr-2 py-1.5 text-sm leading-5 placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[56px] max-h-60 overflow-y-auto"
             aria-label="Chat message"
           />
 

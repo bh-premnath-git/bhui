@@ -96,6 +96,7 @@ export const RightAsideComponent: React.FC = () => {
       case 'pipeline-canvas':
         // Don't show success message for canvas, just close
         return;
+
     }
     
     dispatch(addMessage({
@@ -137,13 +138,16 @@ export const RightAsideComponent: React.FC = () => {
       case 'pipeline-canvas':
         return (
           <div className="flex flex-col h-full w-full">
-            {/* Inline playground header for pipeline */}
-            <div className="border-b">
-              <PlaygroundHeader playGroundHeader="pipeline" />
-            </div>
+            {/* Conditionally show playground header only when not in designer mode */}
+                <PlaygroundHeader playGroundHeader="pipeline" />
             {/* Canvas below header; hide its internal header */}
             <div className="flex-1 overflow-hidden">
-              <PipelineCanvasWrapper onClose={handleClose} hideHeader />
+              <PipelineCanvasWrapper 
+                onClose={handleClose} 
+                hideHeader 
+                pipelineType={rightComponent.extra?.pipelineType}
+                hideIcons={rightComponent.extra?.hideIcons}
+              />
             </div>
           </div>
         );
@@ -174,15 +178,18 @@ export const RightAsideComponent: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
+    <div className="w-full mt-14 h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
       <Card className="h-full rounded-none border-0 shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
+        <CardHeader className="p-2 flex flex-row items-center justify-between space-y-0 via-transparent to-transparent">
           <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-semibold">
-              {rightComponent.title}
-            </CardTitle>
-            {/* Toggle icons (visible when extra.toggles is provided) */}
-            {Array.isArray((rightComponent as any).extra?.toggles) && (
+            {/* Show title only when provided */}
+            {/* {Boolean(rightComponent.title && rightComponent.title.trim().length > 0) && (
+              <CardTitle className="text-lg font-semibold">
+                {rightComponent.title}
+              </CardTitle>
+            )} */}
+            {/* Toggle icons (visible when extra.toggles is provided and not hidden) */}
+            {Boolean(!(rightComponent as any).extra?.hideIcons) && Array.isArray((rightComponent as any).extra?.toggles) && (rightComponent as any).extra.toggles.length > 1 && (
               <div className="flex items-center gap-1 ml-2">
                 {(rightComponent as any).extra.toggles.map((t: any) => {
                   const isActive = rightComponent.componentId === t.componentId;

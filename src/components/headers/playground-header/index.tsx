@@ -37,6 +37,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
   const { pipelineDtl, pipelineType, selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
+  const { isRightAsideComponent } = useAppSelector((state: RootState) => state.chat);
   
   // Get actual autosave status from pipeline context (only for pipeline mode)
   let pipelineContext = null;
@@ -186,7 +187,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     <div className="bg-[#fff] w-full p-0 border-border z-50 overflow-hidden">
       <div className="flex items-center justify-between bg-card min-w-0 gap-2">
         {/* Left section - AutoSave, NameEditor, and action buttons */}
-        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
+        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0 ml-4">
           <AutoSaveStatus
             status={autoSaveStatus}
             lastSaved={lastSavedTime}
@@ -200,46 +201,50 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                 onSave={handleSave}
                 placeholder="Select flow..."
               />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCreateFlowDialogOpen(true)}
-                    className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
-                    aria-label="Create new flow"
-                  >
-                    <PlusCircle className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create new flow</p>
-                </TooltipContent>
-              </Tooltip>
+              {!isRightAsideComponent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCreateFlowDialogOpen(true)}
+                      className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
+                      aria-label="Create new flow"
+                    >
+                      <PlusCircle className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create new flow</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <PipelineSelector
+              {!isRightAsideComponent&&(<PipelineSelector
                 initialName={itemName || ''}
                 onSave={handleSave}
                 placeholder="Select pipeline..."
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCreatePipelineDialogOpen(true)}
-                    className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
-                    aria-label="Create new pipeline"
-                  >
-                    <PlusCircle className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create new pipeline</p>
-                </TooltipContent>
-              </Tooltip>
+              />)}
+              {!isRightAsideComponent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCreatePipelineDialogOpen(true)}
+                      className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
+                      aria-label="Create new pipeline"
+                    >
+                      <PlusCircle className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create new pipeline</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           )}
 
@@ -330,7 +335,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
         )}
 
         {/* Right section - Pipeline controls and AI button */}
-        <div className="flex items-center justify-end space-x-2 flex-shrink-0">
+        <div className="flex items-center justify-end space-x-2 flex-shrink-0  mr-4">
           {!isFlow && (
             <PipelineControls
               handleRunClick={handleRun}
@@ -359,9 +364,11 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           )}
 
           {!isRightAsideOpen && (
-            <div className="border-l border-border pl-2 flex-shrink-0">
+           <>
+           {!isRightAsideComponent&&( <div className="border-l border-border pl-2 flex-shrink-0">
               <AIButton variant={playGroundHeader} color="#009f59" />
-            </div>
+            </div>)}
+           </>
           )}
         </div>
       </div>

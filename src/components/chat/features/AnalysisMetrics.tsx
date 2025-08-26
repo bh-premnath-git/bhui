@@ -33,11 +33,6 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
             Thought for: {duration}
           </Badge>
         )}
-        {tablesGenerated && (
-          <Badge variant="secondary" className="rounded-full">
-            Tables: {tablesGenerated}
-          </Badge>
-        )}
       </div>
     </div>
   );

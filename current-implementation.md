@@ -1,109 +1,217 @@
-# Chat UI and Layout Architecture: Knowledge Model
+# Current Implementation Documentation
 
-## 1. Introduction
+## OverviewTab Chart Integration System
 
-This document provides a comprehensive overview of the architecture, components, data flow, and technical patterns of the chat UI and its associated layout files. The goal is to create a detailed knowledge model for future development, maintenance, and onboarding.
+### Overview
+The OverviewTab component integrates with the bh-plotly-charts system to provide real-time data visualization for streaming analysis results from the ExploreDataComponent.
 
-## 2. High-Level Architecture
+**Location**: `src/components/chat/tabs/OverviewTab.tsx`
 
-The chat interface is built as a modular, single-page application using React, Redux for state management, and Tailwind CSS for styling. The architecture is designed to be scalable and maintainable, with a clear separation of concerns between layout, state, and UI components.
+### Data Flow Architecture
 
-- **`HomeLayout.tsx`**: The primary layout component that structures the main application screen. It is responsible for orchestrating the display of the sidebar, the central chat area, and a resizable right-hand panel. It manages different layout modes (e.g., `split`, `full`, `onboarding`) and handles the visibility and resizing of its child components.
+#### Streaming Data Structure
+The OverviewTab receives streaming data with the following structure:
+```typescript
+interface TableEvent['content'] {
+  column_names: string[];           // ["Product Name", "Unit Price"]
+  column_values: (string | number | null)[][];  // [["Côte de Blaye", "263.5"], ...]
+  metadata: {
+    total_rows: number;             // 10
+    columns_count: number;          // 2
+  };
+}
+```
 
-- **`withHomeLayout.tsx`**: A Higher-Order Component (HOC) that wraps page components (like `Home.tsx`) to apply the `HomeLayout`. This pattern promotes reusability and keeps the page components clean and focused on their specific content.
+#### Data Processing Pipeline
+1. **FieldTypeDetector**: Analyzes sample data to determine field types (string/number)
+2. **DataNormalizer**: Converts column-based data to row-based objects for chart processing
+3. **DataAggregator**: Handles data aggregation (sum, avg, min, max)
+4. **ColorProvider**: Manages color schemes (default, viridis, plasma, blues, greens, custom)
+5. **PlotlyChartRenderer**: Renders interactive charts using Plotly.js
 
-## 3. Component Breakdown
+### bh-plotly-charts System Architecture
 
-The chat system is composed of several key React components:
+#### Core Components
 
-### `src/layouts/HomeLayout.tsx`
+##### 1. FieldTypeDetector (`src/components/bh-plotly-charts/FieldTypeDetector.ts`)
+- **Purpose**: Automatic field type detection from data samples
+- **Interface**: `IFieldTypeDetector`
+- **Method**: `detectTypes(data: any[]): FieldTypes`
+- **Logic**: Samples up to 10 rows to determine if fields are numeric or string
+- **Output**: `{ [fieldName: string]: 'string' | 'number' }`
 
-- **Purpose**: Manages the overall UI structure.
-- **Features**:
-    - **Sidebar**: A collapsible sidebar for navigation.
-    - **Chat Area**: The main content area where the chat conversation takes place.
-    - **Resizable Right Aside**: A panel on the right that can be resized horizontally using a draggable handle. The width is managed via component state and local storage for persistence.
-    - **Layout Modes**: Supports different view configurations like `split` (showing chat and right panel) and `full` (showing only the chat area).
-    - **Onboarding View**: A special state for new users.
+##### 2. DataNormalizer (`src/components/bh-plotly-charts/DataNormalizer.ts`)
+- **Purpose**: Converts streaming table format to chart-ready row objects
+- **Interface**: `IDataNormalizer`
+- **Method**: `normalize(data: TableContent): NormalizedData`
+- **Transformation**: `column_names + column_values` → `rows[]` with field type metadata
+- **Output**: 
+  ```typescript
+  {
+    rows: any[];
+    fieldTypes: FieldTypes;
+    numericFields: string[];
+    stringFields: string[];
+  }
+  ```
 
-### `src/components/chat/ChatMessages.tsx`
+##### 3. DataAggregator (`src/components/bh-plotly-charts/DataAggregator.ts`)
+- **Purpose**: Data aggregation and grouping operations
+- **Interface**: `IDataAggregator`
+- **Methods**:
+  - `aggregate(values: number[], method: AggregationMethod): number`
+  - `groupBy<T>(data: T[], keys: string[]): GroupedData<T>`
+- **Aggregation Types**: sum, avg, min, max
+- **Grouping**: Creates key-based data groups for chart rendering
 
-- **Purpose**: Renders the list of chat messages.
-- **Features**:
-    - **Message Rendering**: Iterates over an array of message objects from the Redux store and renders them.
-    - **User vs. AI Styling**: Applies different styles for messages sent by the user versus those from the AI assistant.
-    - **Embedded UI**: Can render other React components directly within a message, such as interactive cards or input fields.
-    - **Typing Indicator**: Displays an animated typing indicator when the AI is preparing a response.
-    - **Animations**: Uses `framer-motion` to animate the appearance of new messages and the AI avatar.
-    - **Auto-Scrolling**: Automatically scrolls to the latest message.
+##### 4. ColorProvider (`src/components/bh-plotly-charts/ColorProvider.ts`)
+- **Purpose**: Color scheme management for charts
+- **Interface**: `IColorProvider`
+- **Method**: `getColors(scheme: ColorScheme, customColor?: string): string[]`
+- **Schemes**: default, viridis, plasma, blues, greens, custom
+- **Output**: Array of hex color codes for chart styling
 
-### `src/components/chat/ChatInput.tsx`
+##### 5. PlotlyChartRenderer (`src/components/bh-plotly-charts/PlotlyChartRenderer.ts`)
+- **Purpose**: Chart rendering using Plotly.js library
+- **Interface**: `IChartRenderer`
+- **Methods**:
+  - `render(container: HTMLElement, data: ChartRenderData): void`
+  - `download(container: HTMLElement, filename: string): void`
+- **Chart Types**: bar, column, line, scatter, pie, histogram, box, heatmap, number
+- **Features**: Responsive design, error handling, custom HTML for number charts
 
-- **Purpose**: Provides the user interface for sending messages.
-- **Features**:
-    - **Text Input**: A `textarea` that automatically grows with the content.
-    - **Voice Input**: Integrates with the browser's `SpeechRecognition` API to allow for voice-to-text input. It provides visual feedback during recording.
-    - **Message Submission**: Dispatches a Redux action to add the new message to the chat history.
-    - **Action Menus**: Includes dropdown menus that allow the user to trigger specific actions or workflows (e.g., "Create Pipeline", "Add User").
+##### 6. ChartControls (`src/components/bh-plotly-charts/ChartControls.tsx`)
+- **Purpose**: Interactive chart configuration UI
+- **Controls**:
+  - Chart type selection (9 types)
+  - X/Y axis field selection
+  - Aggregation method selection
+  - Color scheme selection
+  - Custom color picker
+- **Layout**: Responsive grid layout with proper form controls
 
-### `src/pages/Home.tsx`
+### Chart Type Implementations
 
-- **Purpose**: The main page component for the chat experience.
-- **Functionality**: This component is straightforward. It renders the `ChatMessages` component and is wrapped by the `withHomeLayout` HOC to place it within the application's main layout.
+#### Supported Chart Types
+1. **Bar Chart**: Horizontal bars with aggregated data
+2. **Column Chart**: Vertical bars with aggregated data
+3. **Line Chart**: Connected data points with markers
+4. **Scatter Plot**: Individual data points without aggregation
+5. **Pie Chart**: Circular segments showing proportions
+6. **Histogram**: Frequency distribution of numeric values
+7. **Box Plot**: Statistical distribution visualization
+8. **Heatmap**: 2D data visualization with color intensity
+9. **Number Chart**: Large numeric display with custom HTML
 
-## 4. Data Flow and State Management
+#### Chart Configuration
+```typescript
+interface ChartConfig {
+  type: ChartType;
+  xField: string;           // Selected field for X-axis
+  yField: string;           // Selected field for Y-axis (must be numeric)
+  seriesField?: string;     // Optional series field for heatmaps
+  aggregation: AggregationMethod;  // sum, avg, min, max
+}
+```
 
-- **Redux**: The application uses Redux as the single source of truth for the chat's state. A dedicated `chatSlice` manages messages, typing status, and other UI-related state.
-- **Actions and Reducers**: Components dispatch actions to the Redux store to update the state. For example, `ChatInput` dispatches an action to send a message, which is then handled by a reducer to add the message to the state array.
-- **Selectors**: Components use `useAppSelector` to subscribe to changes in the Redux store and re-render when the relevant state updates.
-- **`chatService`**: A service layer is used to encapsulate business logic related to the chat, such as handling user choices from interactive cards or submitting data from embedded forms. This keeps the components focused on the UI.
+### OverviewTab Implementation Details
 
-## 5. Styling and UI/UX Patterns
+#### Component State Management
+```typescript
+// Auto-configuration based on detected field types
+const [chartConfig, setChartConfig] = useState<ChartConfig>(() => {
+  const firstStringField = normalizedData?.stringFields[0] || '';
+  const firstNumericField = normalizedData?.numericFields[0] || '';
+  
+  return {
+    type: 'column',
+    xField: firstStringField,
+    yField: firstNumericField,
+    aggregation: 'sum'
+  };
+});
+```
 
-- **Tailwind CSS**: The UI is styled using Tailwind CSS, a utility-first CSS framework. This allows for rapid development and easy maintenance of styles directly within the components. Arbitrary values (e.g., `mt-[22px]`) are used for fine-tuned styling.
-- **Framer Motion**: Animations are handled by `framer-motion`, providing a fluid and modern user experience.
-- **Resizable Panels**: The resizable right aside panel is a key UX pattern, allowing users to customize their workspace.
-- **Icons**: `lucide-react` is used for a consistent and clean set of icons throughout the application.
+#### Real-time Chart Rendering
+```typescript
+useEffect(() => {
+  if (chartContainerRef.current && normalizedData && chartConfig.xField && chartConfig.yField) {
+    const colors = colorProvider.getColors(colorScheme, customColor);
+    
+    renderer.render(chartContainerRef.current, {
+      config: chartConfig,
+      data: normalizedData.rows,
+      colors
+    });
+  }
+}, [chartConfig, normalizedData, colorScheme, customColor]);
+```
 
-## 6. Key Dependencies and APIs
+#### Key Features
+1. **Auto-field Selection**: Automatically selects appropriate X/Y fields based on data types
+2. **Real-time Updates**: Charts re-render when streaming data changes
+3. **Interactive Controls**: Full user customization of chart appearance and configuration
+4. **Responsive Design**: Charts adapt to container size (minimum 384px height)
+5. **Error Handling**: Graceful fallbacks for missing data or rendering errors
+6. **Data Summary**: Displays metadata about columns, rows, and field types
+7. **Memory Optimization**: Uses useMemo for expensive operations
 
-- **`react` & `react-dom`**: Core library for building the UI.
-- **`@reduxjs/toolkit` & `react-redux`**: For state management.
-- **`tailwindcss`**: For styling.
-- **`framer-motion`**: For animations.
-- **`lucide-react`**: For icons.
-- **Web Speech API**: A browser API used for voice input in `ChatInput.tsx`.
+### Integration Points
 
-## 7. Type Definitions
+#### ExploreDataComponent Integration
+- **Data Source**: Receives processed streaming data from analysis pipeline
+- **Display Context**: Shown in CompletedAnalysis component's Overview tab
+- **Real-time Updates**: Responds to streaming data changes automatically
 
-- **`src/types/home/home.ts`**: This file contains TypeScript interfaces for the data structures used in the chat UI, such as `ActionItem` and `ActionCategory`. This ensures type safety and provides clear contracts for the data being passed between components.
+#### Type System Integration
+```typescript
+// Shared types from streaming system
+import type { TableEvent } from '@/types/streaming';
 
+// Chart system types
+import type {
+  TableContent,
+  ChartConfig,
+  ChartType,
+  ColorScheme,
+} from '@/types/plotly/systemtype';
+```
 
-## 4. Data Flow and State Management
+### Performance Optimizations
 
-- **Redux**: The application uses Redux as the single source of truth for the chat's state. A dedicated `chatSlice` manages messages, typing status, and other UI-related state.
+#### Memory Management
+- **useMemo**: Expensive operations cached (data normalization, component instances)
+- **useEffect Dependencies**: Precise dependency arrays prevent unnecessary re-renders
+- **Component Instances**: Chart system components instantiated once and reused
 
-### `src/store/slices/chat/chatSlice.ts`
+#### Rendering Optimizations
+- **Container Refs**: Direct DOM manipulation for Plotly charts
+- **Error Boundaries**: Isolated error handling prevents component crashes
+- **Progressive Enhancement**: Placeholder shown while data loads
 
-This file is the heart of the chat's state management, built using Redux Toolkit's `createSlice`.
+### Error Handling Strategy
 
-- **`ChatState` Interface**: Defines the shape of the chat's state, including:
-    - `messages`: An array of `Message` objects representing the conversation.
-    - `currentInput`: The text currently in the input field.
-    - `isTyping` & `isLoading`: Boolean flags for UI feedback.
-    - `context`: The current topic or context of the chat.
-    - `rightComponent`: State for the component displayed in the right-hand panel.
-    - `layoutMode`: The current layout (`centered` or `split`).
-    - `bottomDrawer`: State for a collapsible drawer at the bottom of the right panel.
+#### Data Validation
+- **Null Checks**: Handles missing or invalid streaming data
+- **Type Validation**: Ensures proper field types before chart rendering
+- **Empty State**: Shows appropriate messages when no data available
 
-- **Reducers**: A set of functions that handle state transitions:
-    - `addMessage` / `addMessageWithId`: Adds new messages to the conversation.
-    - `updateMessageContent`: Updates a message's content, crucial for handling real-time streaming from the AI.
-    - `setRightComponent`: Controls the visibility and content of the right-hand panel, and toggles the `layoutMode`.
-    - `setContext`, `setLayoutMode`, `setSelectedActionTitle`: Manage various UI states.
-    - `openChatBottomDrawer` / `closeChatBottomDrawer`: Control the bottom drawer's state.
+#### Chart Rendering Errors
+- **Try-Catch Blocks**: Wraps chart rendering operations
+- **Error Display**: Shows user-friendly error messages in chart container
+- **Fallback UI**: Maintains layout integrity during error states
 
-- **Exports**: The slice exports all action creators and the main reducer, which is then integrated into the global Redux store.
+### Future Extensibility
 
-- **Actions and Reducers**: Components dispatch actions to the Redux store to update the state. For example, `ChatInput` dispatches an action to send a message, which is then handled by a reducer to add the message to the state array.
-{{ ... }}
+#### Plugin Architecture
+The system is designed for easy extension:
+- **New Chart Types**: Add to PlotlyChartRenderer chart builders
+- **Custom Aggregations**: Extend DataAggregator methods
+- **Color Schemes**: Add to ColorProvider schemes object
+- **Field Types**: Extend FieldTypeDetector logic
+
+#### API Integration
+Ready for backend integration:
+- **Chart Persistence**: Save/load chart configurations
+- **Export Functionality**: Download charts as images
+- **Sharing**: Generate shareable chart URLs

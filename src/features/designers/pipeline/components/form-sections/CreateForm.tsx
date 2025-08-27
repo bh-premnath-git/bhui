@@ -1052,16 +1052,10 @@ const CreateFormFormik: React.FC<CreateFormProps> = ({ schema, onSubmit, initial
 
     // Update SchemaTransformation validation
     if (schema.title === 'SchemaTransformation') {
-      // Check if name is required and provided
-      if (!cleanValues.name || cleanValues.name.trim() === '') {
-        alert('SchemaTransformation requires a name. Please provide a name for the transformation.');
-        return;
-      }
-
+     
       // Only require derived_fields if it's specified as required in the schema
       const isDerivedFieldsRequired = schema && Array.isArray(schema.required) && schema.required.includes('derived_fields');
       if (isDerivedFieldsRequired && (!cleanValues.derived_fields || !cleanValues.derived_fields.length)) {
-        alert('SchemaTransformation requires at least one valid derived field.');
         return;
       }
     }

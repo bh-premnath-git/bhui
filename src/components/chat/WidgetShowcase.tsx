@@ -68,7 +68,7 @@ const baseConfig = { displayModeBar: false };
 const getBaseLayout = (isPie: boolean = false) => ({
   margin: isPie 
     ? { l: 20, r: 80, t: 20, b: 20 } // More right margin for pie legend
-    : { l: 50, r: 20, t: 30, b: 60 }, // More bottom margin for axis labels
+    : { l: 50, r: 20, t: 30, b: 90 }, // Increased bottom margin for more space below x-axis
   plot_bgcolor: 'transparent',
   paper_bgcolor: 'transparent',
   autosize: true,
@@ -84,7 +84,7 @@ const getBaseLayout = (isPie: boolean = false) => ({
     : { 
         font: { size: 9 }, 
         x: 0.5, 
-        y: -0.15,
+        y: -0.28, // Move legend further down below the plot area
         xanchor: 'center' as const,
         yanchor: 'top' as const,
         orientation: 'h' as const
@@ -333,7 +333,7 @@ export const WidgetShowcase = () => {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {widgets.map((w) => {
           const ChartComp = w.chart;
           const ui = stateById[w.id];

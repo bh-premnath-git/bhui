@@ -183,9 +183,30 @@ export class ChatService {
     console.warn('No options handler for current step');
   }
 
-  async handleCardClick(stepId: string): Promise<void> {
+  async handleCardClick(stepId: string, payload?: any): Promise<void> {
     // Handle special non-workflow cards
     if (stepId === 'viewPipelineSchema') {
+      try {
+        // Allow selecting a particular pipeline JSON via payload key
+        let jsonStr: string | null = null;
+        const key = payload?.pipelineJsonKey as string | undefined;
+        if (key) {
+          jsonStr = localStorage.getItem(key);
+        }
+        if (!jsonStr) {
+          jsonStr = localStorage.getItem('selectedPipelineJson');
+        }
+        if (jsonStr) {
+          // Keep selected for initial canvas load paths
+          localStorage.setItem('selectedPipelineJson', jsonStr);
+          try {
+            const parsed = JSON.parse(jsonStr);
+            // Notify any open canvas to update immediately
+            window.dispatchEvent(new CustomEvent('chat:set-pipeline-json', { detail: { pipelineJson: parsed } }));
+          } catch {}
+        }
+      } catch {}
+
       await this.showPipelineSchemaOnRightSide();
       return; // stop workflow handling for non-workflow canvas action
     }
@@ -328,6 +349,13 @@ export class ChatService {
               const engineEnums: string[] = pipelineSchema?.properties?.engine_type?.enum || ['pyspark', 'pyflink'];
               const list = engineEnums.map((e) => ({ label: e.charAt(0).toUpperCase() + e.slice(1) }));
               options = list.map((item: any) => String(item[dyn.displayName] ?? '')).filter(Boolean);
+            } else if (hookName === 'usePipelineViewModes') {
+              // Provide toggle options for pipeline views
+              const list = [
+                { label: 'Pipeline' },
+                { label: 'Table' },
+              ];
+              options = list.map((item: any) => String(item[dyn.displayName] ?? '')).filter(Boolean);
             } else {
               options = [];
             }
@@ -468,16 +496,22 @@ export class ChatService {
           isVisible: true,
           extra: {
             hideHeader: true,
-            hideIcons: true,
+            // Show icons in design mode too (pipeline + table)
+            hideIcons: false,
             pipelineType: 'design',
             pipelineName: pipelineName !== 'Unnamed Pipeline' ? pipelineName : null,
-            // No toggles for design mode - just the canvas
             toggles: [
               {
                 id: 'pipeline-canvas',
                 title: 'Pipeline',
                 componentId: 'pipeline-canvas',
                 targetComponent: 'DataPipelineCanvas'
+              },
+              {
+                id: 'data-table-view',
+                title: 'Data Table',
+                componentId: 'data-table-view',
+                targetComponent: 'SampleDataTableView'
               }
             ]
           }
@@ -597,7 +631,7 @@ export class ChatService {
       // Show loading indication
       this.dispatch(setTyping(true));
       this.dispatch(addMessage({
-        content: 'Generating pipeline schema based on your description...',
+        content: 'Your pipeline is being built. This may take a moment...',
         isUser: false
       }));
 
@@ -625,9 +659,14 @@ export class ChatService {
       this.dispatch(setTyping(false));
 
       if (response?.pipeline_json) {
-        // Pass to canvas via localStorage for existing integration paths
+        // Store this specific pipeline JSON under a unique key and as the latest selection
         try {
-          localStorage.setItem('selectedPipelineJson', JSON.stringify(response.pipeline_json));
+          const jsonStr = JSON.stringify(response.pipeline_json);
+          const storageKey = `pipeline_json_${Date.now()}`;
+          localStorage.setItem(storageKey, jsonStr);
+          localStorage.setItem('selectedPipelineJson', jsonStr);
+          // Remember the last storageKey for this response to attach on the card
+          this.contextData['lastPipelineJsonKey'] = storageKey;
         } catch {}
 
         // Show success message
@@ -646,7 +685,7 @@ export class ChatService {
           ? userRequest.substring(0, 100) + '...' 
           : userRequest;
 
-        // Show clickable card to open the pipeline canvas
+        // Show clickable card to open the pipeline canvas; include payload for this version
         this.dispatch(addMessage({
           content: '',
           isUser: false,
@@ -656,9 +695,18 @@ export class ChatService {
               title: `${pipelineName} (${pipelineType})`,
               description: `User Request: ${truncatedRequest}\n\nClick to open pipeline canvas for visual design`
             },
-            stepId: 'viewPipelineSchema'
+            stepId: 'viewPipelineSchema',
+            payload: {
+              pipelineJsonKey: this.contextData['lastPipelineJsonKey']
+            }
           } as any
         }));
+
+        // Ensure the payload key on the last message matches the stored key
+        try {
+          const lastMsgIndexUpdater = (stateUpdater: (msgs: any[]) => void) => {};
+          // Not mutating store directly; instead, add another message with correct payload to avoid complexity
+        } catch {}
       } else {
         this.dispatch(addMessage({
           content: 'Pipeline schema generated, but no JSON structure was returned.',

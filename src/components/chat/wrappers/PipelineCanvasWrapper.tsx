@@ -15,20 +15,40 @@ export const PipelineCanvasWrapper: React.FC<PipelineCanvasWrapperProps> = ({
   hideIcons = false 
 }) => {
   const [pipelineData, setPipelineData] = useState<any>(null);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    // Check if there's sample pipeline JSON data
-    const storedPipelineJson = localStorage.getItem('selectedPipelineJson');
-    if (storedPipelineJson) {
-      try {
-        const pipelineJson = JSON.parse(storedPipelineJson);
-        setPipelineData(pipelineJson);
-        // Clear the stored data after using it
-        localStorage.removeItem('selectedPipelineJson');
-      } catch (error) {
-        console.error('Error parsing pipeline JSON:', error);
+    const applyFromStorage = () => {
+      const storedPipelineJson = localStorage.getItem('selectedPipelineJson');
+      if (storedPipelineJson) {
+        try {
+          const pipelineJson = JSON.parse(storedPipelineJson);
+          setPipelineData(pipelineJson);
+          setVersion(v => v + 1); // bump to force re-render
+        } catch (error) {
+          console.error('Error parsing pipeline JSON:', error);
+        }
       }
-    }
+    };
+
+    // Initial load from storage
+    applyFromStorage();
+
+    // Listen to live updates from chat cards
+    const handler = (e: any) => {
+      const detail = (e as CustomEvent).detail as any;
+      if (detail?.pipelineJson) {
+        setPipelineData(detail.pipelineJson);
+        setVersion(v => v + 1);
+      } else {
+        applyFromStorage();
+      }
+    };
+    window.addEventListener('chat:set-pipeline-json', handler as EventListener);
+
+    return () => {
+      window.removeEventListener('chat:set-pipeline-json', handler as EventListener);
+    };
   }, []);
 
   return (
@@ -47,7 +67,7 @@ export const PipelineCanvasWrapper: React.FC<PipelineCanvasWrapperProps> = ({
                     {pipelineData.name || 'Sample Pipeline'}
                   </p>
                 )}
-              </>
+              </> 
             )}
           </div>
           {!hideIcons && (
@@ -67,17 +87,20 @@ export const PipelineCanvasWrapper: React.FC<PipelineCanvasWrapperProps> = ({
       {/* Canvas content */}
       <div className="flex-1 overflow-hidden">
         {pipelineData ? (
-          <div className="h-full w-full">
+          <div key={version} className="h-full w-full">
             <DataPipelineCanvasNew 
               pipelineJson={pipelineData} 
               pipelineType={pipelineType}
               hideIcons={hideIcons}
+              skipFetchOnMount
             />
           </div>
         ) : (
           <DataPipelineCanvasNew 
+            key={`empty-${version}`}
             pipelineType={pipelineType}
             hideIcons={hideIcons}
+            skipFetchOnMount
           />
         )}
       </div>

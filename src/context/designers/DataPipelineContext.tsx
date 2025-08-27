@@ -196,7 +196,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Only enable autosave when on pipeline canvas routes
     const isOnPipelineCanvas = useMemo(() => {
-        const path = location.pathname || '';
+        const path = location.pathname || ''; 
         return path.startsWith('/designers/build-playground') || path.startsWith('/designers/data-flow-playground');
     }, [location.pathname]);
     const [nodeCounters, setNodeCounters] = useState<{ [key: string]: number }>({});
@@ -387,6 +387,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Add this at the component level, outside any callbacks
     const { selectedPipeline } = useAppSelector((state) => state.pipeline);
     const fetchedIdsRef = useRef(new Set<string>());
+    const isHydratingRef = useRef(false);
     const setSaving = useCallback(() => {
         setIsSaving(true);
         setHasUnsavedChanges(true);
@@ -695,65 +696,73 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 
     const makePipeline = async (result: any, isModify = true) => {
-        let optimised;
-        optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-        let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+        // Set a global hydration flag to guard source updates during initial apply
+        (window as any).__bh_isHydratingPipeline = true;
+        isHydratingRef.current = true;
+        try {
+            const optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+            const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+            // Set the pipeline JSON first
+            setPipelineJson(optimised);
 
-        // Set the pipeline JSON first
-        setPipelineJson(optimised);
-
-        if (!uiJson || !uiJson.nodes) {
-            throw new Error('Failed to convert pipeline to UI format');
-        }
-
-        const nodesWithTitles = await uiJson.nodes.map(node => {
-            const matchingTransformation = result.pipeline_definition.transformations?.find(
-                (t: any) => t?.title === node?.data?.title && t?.name
-            );
-
-            if (matchingTransformation) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        title: matchingTransformation.name,
-                        transformationData: {
-                            ...node.data.transformationData,
-                            name: matchingTransformation.name
-                        }
-                    }
-                };
+            if (!uiJson || !uiJson.nodes) {
+                throw new Error('Failed to convert pipeline to UI format');
             }
-            return node;
-        });
 
-        if (result.pipeline_definition == null) {
-            setPipelineJson(null);
-            setNodes([]);
-            setEdges([]);
-        } else {
-            setNodes([]);
+            const nodesWithTitles = uiJson.nodes.map(node => {
+                const matchingTransformation = result.pipeline_definition.transformations?.find(
+                    (t: any) => t?.title === node?.data?.title && t?.name
+                );
 
-            // Set nodes and edges with the new data
-            await setNodes(nodesWithTitles);
-            await setEdges(uiJson.edges);
-
-            // Center and align the nodes
-            await handleCenter();
-            // Use enhanced ELK-based hierarchical layout for professional results
-            await alignTopLeftHierarchical({ 
-                startX: 0, 
-                startY: 0, 
-                direction: 'RIGHT',
-                nodeNodeSpacing: 120,
-                layerSpacing: 200,
-                fitView: true 
+                if (matchingTransformation) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            title: matchingTransformation.name,
+                            transformationData: {
+                                ...node.data.transformationData,
+                                name: matchingTransformation.name
+                            }
+                        }
+                    };
+                }
+                return node;
             });
-        }
 
-        // Initialize form states for the new nodes
-        const initialFormStates = {};
-        const getInitialFormState = (transformation: any, nodeId: string, matchingNode?: any) => {
+            if (result.pipeline_definition == null) {
+                setPipelineJson(null);
+                setNodes([]);
+                setEdges([]);
+            } else {
+                console.log(nodesWithTitles)
+                // Apply nodes and edges atomically without intermediate clears
+                setNodes(nodesWithTitles);
+                setEdges(uiJson.edges);
+updateSetNode(nodesWithTitles, uiJson.edges);
+                // Defer layout until after nodes/edges are committed
+                // setTimeout(async () => {
+                //     try {
+                //         await handleCenter();
+                //         await alignTopLeftHierarchical({ 
+                //             startX: 0, 
+                //             startY: 0, 
+                //             direction: 'RIGHT',
+                //             nodeNodeSpacing: 120,
+                //             layerSpacing: 200,
+                //             fitView: true 
+                //         });
+                //     } finally {
+                //         // Release hydration guard after layout
+                //         (window as any).__bh_isHydratingPipeline = false;
+                //         isHydratingRef.current = false;
+                //     }
+                // }, 0);
+            }
+
+            // Initialize form states for the new nodes
+            const initialFormStates = {};
+            const getInitialFormState = (transformation: any, nodeId: string, matchingNode?: any) => {
             if (!transformation || !nodeId) {
                 return {};
             }
@@ -947,7 +956,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Set the form states with the new data
         setFormStates(initialFormStates);
+    } finally {
+        // Ensure hydration flag is cleared even if errors occur
+        if ((window as any).__bh_isHydratingPipeline) {
+            (window as any).__bh_isHydratingPipeline = false;
+        }
+        if (isHydratingRef.current) {
+            isHydratingRef.current = false;
+        }
     }
+    };
 
 
  const updateAllNodeDependencies = useCallback(() => {

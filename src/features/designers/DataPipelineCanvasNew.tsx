@@ -31,9 +31,11 @@ import { openChatBottomDrawer, closeChatBottomDrawer } from '@/store/slices/chat
 interface DataPipelineCanvasNewProps {
   isInitializing?: boolean;
   pipelineJson?: any; // optional direct pipeline json from AI agent
+  // When true, do not fetch pipeline by id on mount (used by chat wrapper to avoid overwriting AI pipeline)
+  skipFetchOnMount?: boolean;
 }
 
-const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitializing, pipelineJson }) => {
+const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitializing, pipelineJson, skipFetchOnMount }) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded, setBottomDrawerContent, openBottomDrawer, bottomDrawerContent, bottomDrawerTitle } = useSidebar();
   const { id } = useParams();
   const dispatch = useAppDispatch();
@@ -148,38 +150,10 @@ const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitial
   
   // Prevent repeated makePipeline calls when the same pipelineJson prop is passed
   const lastAppliedJsonRef = useRef<string | null>(null);
+useEffect(() => {
+makePipeline({ pipeline_definition: pipelineJson });
+},[pipelineJson])
 
-  useEffect(() => {
-    // If pipelineJson is provided directly (e.g., from AI agent), render it once per change
-    if (pipelineJson) {
-      const jsonKey = JSON.stringify(pipelineJson);
-      if (lastAppliedJsonRef.current !== jsonKey) {
-        try {
-          makePipeline({ pipeline_definition: pipelineJson });
-          lastAppliedJsonRef.current = jsonKey;
-        } catch (e) {
-          console.error('Failed to load provided pipelineJson', e);
-        }
-      }
-      return; // skip fetching
-    }
-
-    if (id) {
-      setIsLoadingPipeline(true);
-      setCurrentPipelineId(id);
-
-      // Fetch pipeline details
-      fetchPipelineDetails().then(() => {
-        setIsLoadingPipeline(false);
-      })
-        .catch((error) => {
-          console.error('Error loading pipeline:', error);
-          setIsLoadingPipeline(false);
-        });
-    }
-  }, [id, pipelineJson]);
-
-  // Separate effect to handle alignment after nodes are loaded
   useEffect(() => {
     console.log('🔧 Alignment effect triggered:', {
       id,
@@ -272,7 +246,16 @@ const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitial
         pipelineDtl={pipelineDtl}
         debuggedNodesList={debuggedNodesList}
       />
-    )
+    ),
+    // Alias to support edges that explicitly set type: 'custom'
+    custom: (props: any) => (
+      <CustomEdge
+        {...props}
+        transformationCounts={transformationCounts}
+        pipelineDtl={pipelineDtl}
+        debuggedNodesList={debuggedNodesList}
+      />
+    ),
   }), [transformationCounts, pipelineDtl, debuggedNodesList]);
 
 
@@ -382,59 +365,7 @@ const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitial
                         terminalLogs={terminalLogs}
                         proplesLogs={conversionLogs}
                       />
-                      <Button
-                        className="rounded-full h-10 w-10 shadow-lg"
-                        size="icon"
-                        variant="default"
-                        onClick={() => {
-                          // Toggle bottom drawer: close if already open, else open with preview content
-                          const state = (window as any).__bh_store__?.getState?.();
-                          const isOpen = state?.chat?.bottomDrawer?.isOpen;
-                          if (isOpen) {
-                            dispatch(closeChatBottomDrawer());
-                            return;
-                          }
-                          dispatch(openChatBottomDrawer({
-                            title: 'Preview',
-                            height: 300,
-                            content: (
-                              <div className="p-4">
-                                <div className="mb-2 font-medium">Sample Data</div>
-                                <UITable>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>ID</TableHead>
-                                      <TableHead>Name</TableHead>
-                                      <TableHead>Status</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    <TableRow>
-                                      <TableCell>1</TableCell>
-                                      <TableCell>Alice</TableCell>
-                                      <TableCell>Active</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                      <TableCell>2</TableCell>
-                                      <TableCell>Bob</TableCell>
-                                      <TableCell>Pending</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                      <TableCell>3</TableCell>
-                                      <TableCell>Charlie</TableCell>
-                                      <TableCell>Inactive</TableCell>
-                                    </TableRow>
-                                  </TableBody>
-                                </UITable>
-                              </div>
-                            )
-                          }));
-                        }}
-                        aria-label="Show sample data"
-                        title="Show sample data"
-                      >
-                        <TableIcon className="h-5 w-5" />
-                      </Button>
+                     
                     </div>
                   </div>}
                 loading={isCanvasLoading}

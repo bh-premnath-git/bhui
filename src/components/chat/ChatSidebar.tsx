@@ -25,9 +25,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [showNewChatTooltip, setShowNewChatTooltip] = useState(false);
 
   return (
-    <div className="relative top-10">
+    <div className="relative h-full">
       <aside
-        className={`h-full flex flex-col bg-white transition-all duration-200
+        className={`h-full flex flex-col overflow-y-auto bg-white transition-all duration-200
           ${open ? 'w-80 min-w-[320px] border-r border-gray-200' : 'w-14 min-w-[56px]'}
         `}
         style={{ zIndex: 30 }}
@@ -55,11 +55,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             )}
           </div> */}
           
-          <div className="relative">
-            <Button
+          <div className="relative top-24">
+              <Button
               variant="ghost"
               size="icon"
-              className=" mt-11 ml-2 hover:bg-gray-100 text-white h-6 w-6 bg-gray-600 rounded-full"
+              className="ml-2 hover:bg-gray-100 text-white h-6 w-6 bg-gray-600 rounded-full"
               onClick={onNewChat}
               aria-label="New Chat"
               onMouseEnter={() => !open && setShowNewChatTooltip(true)}
@@ -79,7 +79,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
 
         {/* Chat History List */}
-        <div className={`flex-1 overflow-y-auto ${open ? 'block' : 'hidden'}`}>
+        <div className={`flex-1 ${open ? 'block' : 'hidden'}`}>
           {/* Today Section */}
           <div className="px-3 py-2">
             <h3 className="text-xs font-medium text-gray-600 mb-2 px-3">Today</h3>

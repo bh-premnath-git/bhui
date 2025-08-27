@@ -27,8 +27,8 @@ export const ChatMessages: React.FC = () => {
     chatService.handleUserChoice(option);
   };
 
-  const handleCardClick = (stepId: string) => {
-    chatService.handleCardClick(stepId);
+  const handleCardClick = (stepId: string, payload?: any) => {
+    chatService.handleCardClick(stepId, payload);
   };
 
   const handleInputSubmit = (stepId: string, value: string) => {
@@ -134,11 +134,11 @@ export const ChatMessages: React.FC = () => {
                       tabIndex={0}
                       aria-label={`Open ${message.uiComponent.props.title || 'action'}`}
                       aria-disabled={!message.uiComponent?.stepId}
-                      onClick={() => message.uiComponent?.stepId && handleCardClick(message.uiComponent.stepId)}
+                      onClick={() => message.uiComponent?.stepId && handleCardClick(message.uiComponent.stepId, (message.uiComponent as any).payload)}
                       onKeyDown={(e) => {
                         if ((e.key === 'Enter' || e.key === ' ') && message.uiComponent?.stepId) {
                           e.preventDefault();
-                          handleCardClick(message.uiComponent.stepId);
+                          handleCardClick(message.uiComponent.stepId, (message.uiComponent as any).payload);
                         }
                       }}
                     >

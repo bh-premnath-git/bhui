@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, FileText, GitBranch } from 'lucide-react';
+import { X, FileText, GitBranch, Table as TableIcon, Eye, Code2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { setRightComponent, addMessage, openChatBottomDrawer, closeChatBottomDrawer, setChatBottomDrawerHeight } from '@/store/slices/chat/chatSlice';
 import { getChatService } from '@/services/chatService';
@@ -19,6 +19,8 @@ import { PipelineCanvasWrapper } from './wrappers/PipelineCanvasWrapper';
 import { PlaygroundHeader } from '@/components/headers/playground-header';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
 import { ExploreDataComponent } from './ExploreDataComponent';
+import SampleDataTableView from './SampleDataTableView';
+// import { SampleDataTableView } from './SampleDataTableView';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -151,6 +153,14 @@ export const RightAsideComponent: React.FC = () => {
             </div>
           </div>
         );
+      case 'data-table-view':
+        return (
+          <div className="flex flex-col h-full w-full">
+            <div className="flex-1 overflow-auto">
+              <SampleDataTableView />
+            </div>
+          </div>
+        );
       case 'requirement-form':
         return (
           <div className="h-full overflow-auto">
@@ -186,36 +196,64 @@ export const RightAsideComponent: React.FC = () => {
   };
 
   return (
-    <div className="w-full mt-14 h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20 mt-8">
+    <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20">
       <Card className="h-full rounded-none border-0 shadow-none">
         <CardHeader 
-          className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
+          className="flex p-1 flex-row items-center justify-between space-y-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <CardTitle className="text-lg font-semibold truncate min-w-0" title={rightComponent.title}>
               {rightComponent.title}
             </CardTitle>
-            {/* Toggle icons (visible when extra.toggles is provided) */}
+            {/* Segmented toggle (visible when extra.toggles is provided) */}
             {Array.isArray((rightComponent as any).extra?.toggles) && (
-              <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                {(rightComponent as any).extra.toggles.map((t: any) => {
-                  const isActive = rightComponent.componentId === t.componentId;
-                  const IconComp = t.componentId === 'requirement-form' ? FileText : GitBranch;
-                  return (
-                    <Button
-                      key={t.id}
-                      variant="ghost"
-                      size="icon"
-                      className={`h-8 w-8 rounded-full transition-colors ${isActive ? 'bg-primary text-primary-foreground shadow ring-2 ring-primary' : 'hover:bg-muted/60 text-muted-foreground'}`}
-                      title={t.title}
-                      aria-label={t.title}
-                      aria-pressed={isActive}
-                      onClick={() => handleToggle(t.componentId)}
-                    >
-                      <IconComp className="h-4 w-4" />
-                    </Button>
-                  );
-                })}
+              <div className="ml-2 flex-shrink-0">
+                <div className="inline-flex items-center rounded-md bg-[#F2F0EB] p-1 shadow-sm border border-[#E5E1D8]">
+                  {(() => {
+                    // Expect two options: left=view (data-table-view) with eye, right=code (pipeline-canvas) with </>
+                    const toggles = (rightComponent as any).extra.toggles as any[];
+                    // Derive order: left = data-table-view, right = pipeline-canvas; fallback to existing order
+                    const left = toggles.find(t => t.componentId === 'data-table-view') || toggles[0];
+                    const right = toggles.find(t => t.componentId === 'pipeline-canvas') || toggles[1] || toggles[0];
+                    const items = [left, right];
+                    return items.map((t, idx) => {
+                      const isActive = rightComponent.componentId === t.componentId;
+                      const isLeft = idx === 0;
+                      const commonClasses = 'px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center justify-center';
+                      const activeClasses = 'bg-white border border-[#E5E1D8] text-foreground shadow-sm';
+                      const inactiveClasses = 'bg-transparent text-[#6B6A65] hover:text-foreground';
+                      const radius = isLeft ? 'rounded-md' : 'rounded-md';
+                      const onClick = () => handleToggle(t.componentId);
+                      return (
+                        <button
+                          key={t.id || t.componentId}
+                          onClick={onClick} 
+                          className={`${commonClasses} ${radius} ${isActive ? activeClasses : inactiveClasses}`}
+                          title={t.title}
+                          aria-label={t.title}
+                          aria-pressed={isActive}
+                        >
+                          <span className="flex items-center justify-center">
+                            {(() => {
+                              const iconMap: Record<string, React.ComponentType<any>> = {
+                                eye: Eye,
+                                code: Code2,
+                                table: TableIcon,
+                                branch: GitBranch,
+                                file: FileText,
+                              };
+                              const FallbackIcon = t.componentId === 'data-table-view' ? Eye
+                                : t.componentId === 'pipeline-canvas' ? Code2
+                                : GitBranch;
+                              const IconComp = (t.icon && iconMap[t.icon]) ? iconMap[t.icon] : FallbackIcon;
+                              return <IconComp className="h-4 w-4" />;
+                            })()}
+                          </span>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
             )}
           </div>

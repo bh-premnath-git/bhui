@@ -95,14 +95,17 @@ export const ChatInput: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!currentInput.trim() || isLoading) return;
+    const input = currentInput.trim();
+    if (!input || isLoading) return;
+
+    // Clear input immediately for better UX
+    dispatch(setCurrentInput(""));
 
     if (currentInputStep) {
-      // Route to workflow system
+      // Route to workflow system with captured input
       const { getChatService } = await import('@/services/chatService');
       const chatService = getChatService(dispatch);
-      await chatService.handleInputSubmit(currentInputStep.stepId, currentInput);
-      dispatch(setCurrentInput(""));
+      await chatService.handleInputSubmit(currentInputStep.stepId, input);
       return;
     }
 
@@ -110,14 +113,13 @@ export const ChatInput: React.FC = () => {
     // User message
     dispatch(
       addMessage({
-        content: currentInput,
+        content: input,
         isUser: true,
       })
     );
 
     if (context === 'action-explore-data') {
-      const query = currentInput.trim();
-      dispatch(setCurrentInput(''));
+      const query = input;
 
       const { getChatService } = await import('@/services/chatService');
       const chatService = getChatService(dispatch);
@@ -167,8 +169,6 @@ export const ChatInput: React.FC = () => {
         dispatch(setTyping(false));
       }
     }, 350);
-
-    dispatch(setCurrentInput(""));
   };
 
   const handleInputChange = (value: string) => {

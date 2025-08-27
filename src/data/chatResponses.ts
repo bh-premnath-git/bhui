@@ -573,6 +573,12 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
                 title: 'Pipeline',
                 componentId: 'pipeline-canvas',
                 targetComponent: 'DataPipelineCanvas'
+              },
+              {
+                id: 'data-table-view',
+                title: 'Data Table',
+                componentId: 'data-table-view',
+                targetComponent: 'SampleDataTableView'
               }
             ]
           }
@@ -601,6 +607,12 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
                 title: 'Pipeline',
                 componentId: 'pipeline-canvas',
                 targetComponent: 'DataPipelineCanvas'
+              },
+              {
+                id: 'data-table-view',
+                title: 'Data Table',
+                componentId: 'data-table-view',
+                targetComponent: 'SampleDataTableView'
               }
             ]
           }
@@ -643,6 +655,12 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
                 title: 'Pipeline',
                 componentId: 'pipeline-canvas',
                 targetComponent: 'DataPipelineCanvas'
+              },
+              {
+                id: 'data-table-view',
+                title: 'Data Table',
+                componentId: 'data-table-view',
+                targetComponent: 'SampleDataTableView'
               }
             ]
           }

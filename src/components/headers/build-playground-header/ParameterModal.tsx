@@ -177,8 +177,6 @@ export const ParameterModal: React.FC<ParameterModalProps> = ({ isOpen, onClose 
   const selectedEngineType = useAppSelector((state) => state.buildPipeline.selectedEngineType);
   const { id } = useParams();
 let engineConfig = engineConfigs;
-console.log(engineConfig)
-console.log(selectedEngineType)
 
 // Normalize engine type (UI may use 'flink' while config uses 'pyflink')
 const normalizedEngineType = selectedEngineType === 'flink' ? 'pyflink' : selectedEngineType;
@@ -212,7 +210,6 @@ const keyconfig = React.useMemo(() => {
     return [] as any[];
   }
 }, [engineConfig, normalizedEngineType]);
-console.log(keyconfig) 
   React.useEffect(() => {
     const fetchParameters = async (type: 'pipeline' | 'spark') => {
       if (id) {

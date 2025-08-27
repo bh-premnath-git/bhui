@@ -35,7 +35,6 @@ export function usePipelineModules(selectedEngineType: 'pyspark' | 'pyflink' = '
         const transformationType = transformation?.if.properties?.transformation?.const;
         const uiProperties = transformation.then?.ui_properties;
         const description = transformation.then?.description || '';
-        
         if (!transformationType || !uiProperties) { 
           console.warn(`Missing type or ui_properties for transformation at index ${index}`);
           return null;

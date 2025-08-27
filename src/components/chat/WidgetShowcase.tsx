@@ -62,19 +62,48 @@ const projectStatusData = [
 /* ------------------------------------------------------------------ */
 /*  Plotly base config                                                 */
 /* ------------------------------------------------------------------ */
-const baseConfig = { displayModeBar: false }; // useResizeHandler handles responsivity
-const baseLayout = {
-  margin: { l: 40, r: 10, t: 10, b: 40 },
+const baseConfig = { displayModeBar: false };
+
+// Separate layouts for pie vs other chart types
+const getBaseLayout = (isPie: boolean = false) => ({
+  margin: isPie 
+    ? { l: 20, r: 80, t: 20, b: 20 } // More right margin for pie legend
+    : { l: 50, r: 20, t: 30, b: 60 }, // More bottom margin for axis labels
   plot_bgcolor: 'transparent',
   paper_bgcolor: 'transparent',
   autosize: true,
-} as const;
+  showlegend: true,
+  legend: isPie 
+    ? { 
+        font: { size: 10 }, 
+        x: 1.02, 
+        y: 0.5,
+        xanchor: 'left' as const,
+        yanchor: 'middle' as const
+      }
+    : { 
+        font: { size: 9 }, 
+        x: 0.5, 
+        y: -0.15,
+        xanchor: 'center' as const,
+        yanchor: 'top' as const,
+        orientation: 'h' as const
+      },
+  xaxis: isPie ? undefined : {
+    tickangle: -45,
+    tickfont: { size: 10 }
+  },
+  yaxis: isPie ? undefined : {
+    tickfont: { size: 10 }
+  }
+});
 
 /* ------------------------------------------------------------------ */
 /*  Chart renderers (accept type + colors)                             */
 /* ------------------------------------------------------------------ */
 function DepartmentBudgetChart({ type, colors }: { type: ChartType; colors: readonly string[] }) {
   const x = departmentBudgetData.map(d => d.name);
+  const layout = getBaseLayout(type === 'pie');
   
   if (type === 'pie') {
     const total = departmentBudgetData.reduce(
@@ -94,8 +123,11 @@ function DepartmentBudgetChart({ type, colors }: { type: ChartType; colors: read
           labels: ['Public', 'Transport', 'Education', 'Environment'],
           type: 'pie',
           marker: { colors: [...colors] },
+          textinfo: 'label+percent',
+          textfont: { size: 10 },
+          hovertemplate: '%{label}<br>%{value}<br>%{percent}<extra></extra>'
         }]}
-        layout={{ ...baseLayout, showlegend: true, legend: { font: { size: 10 } } }}
+        layout={layout}
         config={baseConfig}
         style={{ width: '100%', height: '100%' }}
       />
@@ -106,17 +138,17 @@ function DepartmentBudgetChart({ type, colors }: { type: ChartType; colors: read
   
   if (type === 'line') {
     plotData = [
-      { x, y: departmentBudgetData.map(d => d.Public), name: 'Public', type: 'scatter', mode: 'lines+markers', marker: { color: colors[0] } },
-      { x, y: departmentBudgetData.map(d => d.Transport), name: 'Transport', type: 'scatter', mode: 'lines+markers', marker: { color: colors[1] } },
-      { x, y: departmentBudgetData.map(d => d.Education), name: 'Education', type: 'scatter', mode: 'lines+markers', marker: { color: colors[2] } },
-      { x, y: departmentBudgetData.map(d => d.Environment), name: 'Environment', type: 'scatter', mode: 'lines+markers', marker: { color: colors[3] } },
+      { x, y: departmentBudgetData.map(d => d.Public), name: 'Public', type: 'scatter', mode: 'lines+markers', marker: { color: colors[0], size: 6 }, line: { width: 2 } },
+      { x, y: departmentBudgetData.map(d => d.Transport), name: 'Transport', type: 'scatter', mode: 'lines+markers', marker: { color: colors[1], size: 6 }, line: { width: 2 } },
+      { x, y: departmentBudgetData.map(d => d.Education), name: 'Education', type: 'scatter', mode: 'lines+markers', marker: { color: colors[2], size: 6 }, line: { width: 2 } },
+      { x, y: departmentBudgetData.map(d => d.Environment), name: 'Environment', type: 'scatter', mode: 'lines+markers', marker: { color: colors[3], size: 6 }, line: { width: 2 } },
     ];
   } else if (type === 'scatter') {
     plotData = [
-      { x, y: departmentBudgetData.map(d => d.Public), name: 'Public', type: 'scatter', mode: 'markers', marker: { color: colors[0] } },
-      { x, y: departmentBudgetData.map(d => d.Transport), name: 'Transport', type: 'scatter', mode: 'markers', marker: { color: colors[1] } },
-      { x, y: departmentBudgetData.map(d => d.Education), name: 'Education', type: 'scatter', mode: 'markers', marker: { color: colors[2] } },
-      { x, y: departmentBudgetData.map(d => d.Environment), name: 'Environment', type: 'scatter', mode: 'markers', marker: { color: colors[3] } },
+      { x, y: departmentBudgetData.map(d => d.Public), name: 'Public', type: 'scatter', mode: 'markers', marker: { color: colors[0], size: 8 } },
+      { x, y: departmentBudgetData.map(d => d.Transport), name: 'Transport', type: 'scatter', mode: 'markers', marker: { color: colors[1], size: 8 } },
+      { x, y: departmentBudgetData.map(d => d.Education), name: 'Education', type: 'scatter', mode: 'markers', marker: { color: colors[2], size: 8 } },
+      { x, y: departmentBudgetData.map(d => d.Environment), name: 'Environment', type: 'scatter', mode: 'markers', marker: { color: colors[3], size: 8 } },
     ];
   } else {
     plotData = [
@@ -132,10 +164,8 @@ function DepartmentBudgetChart({ type, colors }: { type: ChartType; colors: read
       useResizeHandler
       data={plotData}
       layout={{
-        ...baseLayout,
+        ...layout,
         barmode: type === 'bar' ? 'group' : undefined,
-        showlegend: true,
-        legend: { font: { size: 10 } }
       }}
       config={baseConfig}
       style={{ width: '100%', height: '100%' }}
@@ -145,14 +175,23 @@ function DepartmentBudgetChart({ type, colors }: { type: ChartType; colors: read
 
 function PassFailChart({ type, colors }: { type: ChartType; colors: readonly string[] }) {
   const x = passFailData.map(d => d.name);
+  const layout = getBaseLayout(type === 'pie');
   
   if (type === 'pie') {
     const total = passFailData.reduce((a, c) => ({ Pass: a.Pass + c.Pass, Fail: a.Fail + c.Fail }), { Pass: 0, Fail: 0 });
     return (
       <Plot
         useResizeHandler
-        data={[{ values: [total.Pass, total.Fail], labels: ['Pass', 'Fail'], type: 'pie', marker: { colors: [...colors] } }]}
-        layout={{ ...baseLayout, showlegend: true, legend: { font: { size: 10 } } }}
+        data={[{ 
+          values: [total.Pass, total.Fail], 
+          labels: ['Pass', 'Fail'], 
+          type: 'pie', 
+          marker: { colors: [...colors] },
+          textinfo: 'label+percent',
+          textfont: { size: 10 },
+          hovertemplate: '%{label}<br>%{value}<br>%{percent}<extra></extra>'
+        }]}
+        layout={layout}
         config={baseConfig}
         style={{ width: '100%', height: '100%' }}
       />
@@ -163,13 +202,13 @@ function PassFailChart({ type, colors }: { type: ChartType; colors: readonly str
   
   if (type === 'line') {
     plotData = [
-      { x, y: passFailData.map(d => d.Pass), name: 'Pass', type: 'scatter', mode: 'lines+markers', marker: { color: colors[0] } },
-      { x, y: passFailData.map(d => d.Fail), name: 'Fail', type: 'scatter', mode: 'lines+markers', marker: { color: colors[1] } },
+      { x, y: passFailData.map(d => d.Pass), name: 'Pass', type: 'scatter', mode: 'lines+markers', marker: { color: colors[0], size: 6 }, line: { width: 2 } },
+      { x, y: passFailData.map(d => d.Fail), name: 'Fail', type: 'scatter', mode: 'lines+markers', marker: { color: colors[1], size: 6 }, line: { width: 2 } },
     ];
   } else if (type === 'scatter') {
     plotData = [
-      { x, y: passFailData.map(d => d.Pass), name: 'Pass', type: 'scatter', mode: 'markers', marker: { color: colors[0] } },
-      { x, y: passFailData.map(d => d.Fail), name: 'Fail', type: 'scatter', mode: 'markers', marker: { color: colors[1] } },
+      { x, y: passFailData.map(d => d.Pass), name: 'Pass', type: 'scatter', mode: 'markers', marker: { color: colors[0], size: 8 } },
+      { x, y: passFailData.map(d => d.Fail), name: 'Fail', type: 'scatter', mode: 'markers', marker: { color: colors[1], size: 8 } },
     ];
   } else {
     plotData = [
@@ -183,10 +222,8 @@ function PassFailChart({ type, colors }: { type: ChartType; colors: readonly str
       useResizeHandler
       data={plotData}
       layout={{
-        ...baseLayout,
+        ...layout,
         barmode: type === 'bar' ? 'group' : undefined,
-        showlegend: true,
-        legend: { font: { size: 10 } }
       }}
       config={baseConfig}
       style={{ width: '100%', height: '100%' }}
@@ -196,6 +233,7 @@ function PassFailChart({ type, colors }: { type: ChartType; colors: readonly str
 
 function ProjectStatusChart({ type, colors }: { type: ChartType; colors: readonly string[] }) {
   const x = projectStatusData.map(d => d.name);
+  const layout = getBaseLayout(type === 'pie');
   
   if (type === 'pie') {
     const total = projectStatusData.reduce(
@@ -205,8 +243,16 @@ function ProjectStatusChart({ type, colors }: { type: ChartType; colors: readonl
     return (
       <Plot
         useResizeHandler
-        data={[{ values: [total.success, total.failed, total.in_progress], labels: ['Success', 'Failed', 'In Progress'], type: 'pie', marker: { colors: [...colors] } }]}
-        layout={{ ...baseLayout, showlegend: true, legend: { font: { size: 10 } } }}
+        data={[{ 
+          values: [total.success, total.failed, total.in_progress], 
+          labels: ['Success', 'Failed', 'In Progress'], 
+          type: 'pie', 
+          marker: { colors: [...colors] },
+          textinfo: 'label+percent',
+          textfont: { size: 10 },
+          hovertemplate: '%{label}<br>%{value}<br>%{percent}<extra></extra>'
+        }]}
+        layout={layout}
         config={baseConfig}
         style={{ width: '100%', height: '100%' }}
       />
@@ -217,15 +263,15 @@ function ProjectStatusChart({ type, colors }: { type: ChartType; colors: readonl
   
   if (type === 'line') {
     plotData = [
-      { x, y: projectStatusData.map(d => d.success), name: 'Success', type: 'scatter', mode: 'lines+markers', marker: { color: colors[0] } },
-      { x, y: projectStatusData.map(d => d.failed), name: 'Failed', type: 'scatter', mode: 'lines+markers', marker: { color: colors[1] } },
-      { x, y: projectStatusData.map(d => d.in_progress), name: 'In Progress', type: 'scatter', mode: 'lines+markers', marker: { color: colors[2] } },
+      { x, y: projectStatusData.map(d => d.success), name: 'Success', type: 'scatter', mode: 'lines+markers', marker: { color: colors[0], size: 6 }, line: { width: 2 } },
+      { x, y: projectStatusData.map(d => d.failed), name: 'Failed', type: 'scatter', mode: 'lines+markers', marker: { color: colors[1], size: 6 }, line: { width: 2 } },
+      { x, y: projectStatusData.map(d => d.in_progress), name: 'In Progress', type: 'scatter', mode: 'lines+markers', marker: { color: colors[2], size: 6 }, line: { width: 2 } },
     ];
   } else if (type === 'scatter') {
     plotData = [
-      { x, y: projectStatusData.map(d => d.success), name: 'Success', type: 'scatter', mode: 'markers', marker: { color: colors[0] } },
-      { x, y: projectStatusData.map(d => d.failed), name: 'Failed', type: 'scatter', mode: 'markers', marker: { color: colors[1] } },
-      { x, y: projectStatusData.map(d => d.in_progress), name: 'In Progress', type: 'scatter', mode: 'markers', marker: { color: colors[2] } },
+      { x, y: projectStatusData.map(d => d.success), name: 'Success', type: 'scatter', mode: 'markers', marker: { color: colors[0], size: 8 } },
+      { x, y: projectStatusData.map(d => d.failed), name: 'Failed', type: 'scatter', mode: 'markers', marker: { color: colors[1], size: 8 } },
+      { x, y: projectStatusData.map(d => d.in_progress), name: 'In Progress', type: 'scatter', mode: 'markers', marker: { color: colors[2], size: 8 } },
     ];
   } else {
     plotData = [
@@ -240,10 +286,8 @@ function ProjectStatusChart({ type, colors }: { type: ChartType; colors: readonl
       useResizeHandler
       data={plotData}
       layout={{
-        ...baseLayout,
+        ...layout,
         barmode: type === 'bar' ? 'group' : undefined,
-        showlegend: true,
-        legend: { font: { size: 10 } }
       }}
       config={baseConfig}
       style={{ width: '100%', height: '100%' }}
@@ -275,9 +319,9 @@ export const WidgetShowcase = () => {
   const handleViewWidget = (id: string) => console.log(`Viewing widget: ${id}`);
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6">
+    <div className="w-full mx-auto p-6">
       {/* Header */}
-      <div className="flex items-center justify-end mb-8 w-full">
+      <div className="flex items-center justify-end mb-4 w-full">
         <Button
           variant="outline"
           className="ml-0 flex items-center gap-2 hover:bg-gray-50"
@@ -289,7 +333,7 @@ export const WidgetShowcase = () => {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {widgets.map((w) => {
           const ChartComp = w.chart;
           const ui = stateById[w.id];
@@ -303,7 +347,7 @@ export const WidgetShowcase = () => {
               onClick={() => handleViewWidget(w.id)}
             >
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-gray-900">{w.title}</h3>
 
                   {/* Three dots menu */}
@@ -377,11 +421,9 @@ export const WidgetShowcase = () => {
                   </DropdownMenu>
                 </div>
 
-                {/* Chart area: absolute fill so Plotly gets a real height */}
-                <div className="relative aspect-[4/3] border border-gray-100 rounded-lg min-h-[220px]">
-                  <div className="absolute inset-0 p-2">
-                    <ChartComp type={ui.type} colors={colors} />
-                  </div>
+                {/* Chart container with proper height for legend positioning */}
+                <div className="w-full h-80 border border-gray-100 rounded-lg overflow-hidden">
+                  <ChartComp type={ui.type} colors={colors} />
                 </div>
               </CardContent>
             </Card>

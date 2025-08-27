@@ -91,9 +91,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ explanation, table }) 
         }
     }, [chartConfig, normalizedData, colorScheme, customColor, renderer, colorProvider]);
 
-    console.log('OverviewTab table', table);
-    console.log('OverviewTab normalizedData', normalizedData);
-
     return (
         <div className="space-y-4">
             {/* Chart Controls */}

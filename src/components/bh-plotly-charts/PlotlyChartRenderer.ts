@@ -79,14 +79,8 @@ export class PlotlyChartRenderer implements IChartRenderer {
       };
     }
 
-    private getEnterpriseLayoutDefaults(title: string, margins: any) {
+    private getEnterpriseLayoutDefaults(margins: any) {
       return {
-        title: {
-          text: title,
-          font: { size: 16, family: 'Inter, system-ui, sans-serif', weight: 600 },
-          x: 0.5,
-          xanchor: 'center'
-        },
         font: { 
           family: 'Inter, system-ui, sans-serif',
           size: 12,
@@ -177,7 +171,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Bar Chart', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         xaxis: this.getAxisDefaults(config.yField),
         yaxis: this.getAxisDefaults(config.xField, true)
       };
@@ -204,7 +198,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Column Chart', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         xaxis: this.getAxisDefaults(config.xField, true),
         yaxis: this.getAxisDefaults(config.yField)
       };
@@ -238,7 +232,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Line Chart', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         xaxis: this.getAxisDefaults(config.xField, true),
         yaxis: this.getAxisDefaults(config.yField)
       };
@@ -264,7 +258,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Scatter Plot', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         xaxis: this.getAxisDefaults(config.xField, true),
         yaxis: this.getAxisDefaults(config.yField)
       };
@@ -295,7 +289,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Pie Chart', { t: 60, l: 50, r: 50, b: 50 }),
+        ...this.getEnterpriseLayoutDefaults({ t: 60, l: 50, r: 50, b: 50 }),
         showlegend: true,
         legend: {
           orientation: 'v',
@@ -323,7 +317,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Histogram', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         xaxis: this.getAxisDefaults(config.yField),
         yaxis: this.getAxisDefaults('Frequency'),
         bargap: 0.05
@@ -346,7 +340,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Box Plot', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         yaxis: this.getAxisDefaults(config.yField),
         xaxis: { showticklabels: false, showgrid: false }
       };
@@ -383,7 +377,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
       }];
       
       const layout = {
-        ...this.getEnterpriseLayoutDefaults('Heatmap', margins),
+        ...this.getEnterpriseLayoutDefaults(margins),
         xaxis: this.getAxisDefaults(config.xField, true),
         yaxis: this.getAxisDefaults(config.seriesField, true)
       };

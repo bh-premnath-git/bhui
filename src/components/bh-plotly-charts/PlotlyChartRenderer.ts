@@ -27,8 +27,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
         
         Plotly.newPlot(container, result.traces, result.layout, {
           responsive: true,
-          displayModeBar: true,
-          modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
+          displayModeBar: false,
         });
       } catch (error) {
         this.renderErrorState(container, error);
@@ -42,6 +41,93 @@ export class PlotlyChartRenderer implements IChartRenderer {
         width: 1200,
         height: 800
       });
+    }
+
+    private calculateDynamicMargins(data: any[], config: ChartConfig, chartType: ChartType) {
+      const baseMargins = { t: 60, l: 100, r: 60, b: 80 };
+      
+      // Calculate maximum label lengths
+      let maxYLabelLength = 0;
+      let maxXLabelLength = 0;
+      
+      if (chartType === 'bar') {
+        // For horizontal bars, y-axis shows categories
+        const categories = [...new Set(data.map(r => String(r[config.xField])))];
+        maxYLabelLength = Math.max(...categories.map(cat => cat.length));
+        maxXLabelLength = config.yField.length;
+      } else if (chartType === 'heatmap' && config.seriesField) {
+        const yCategories = [...new Set(data.map(r => String(r[config.seriesField])))];
+        const xCategories = [...new Set(data.map(r => String(r[config.xField])))];
+        maxYLabelLength = Math.max(...yCategories.map(cat => cat.length));
+        maxXLabelLength = Math.max(...xCategories.map(cat => cat.length));
+      } else {
+        // For vertical charts, x-axis shows categories
+        const categories = [...new Set(data.map(r => String(r[config.xField])))];
+        maxXLabelLength = Math.max(...categories.map(cat => cat.length));
+        maxYLabelLength = config.yField.length;
+      }
+      
+      // Dynamic margin calculation
+      const leftMargin = Math.max(baseMargins.l, Math.min(maxYLabelLength * 8 + 40, 200));
+      const bottomMargin = Math.max(baseMargins.b, Math.min(maxXLabelLength * 6 + 40, 120));
+      
+      return {
+        t: baseMargins.t,
+        l: leftMargin,
+        r: baseMargins.r,
+        b: bottomMargin
+      };
+    }
+
+    private getEnterpriseLayoutDefaults(margins: any) {
+      return {
+        font: { 
+          family: 'Inter, system-ui, sans-serif',
+          size: 12,
+          color: '#374151'
+        },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: margins,
+        showlegend: false,
+        hoverlabel: {
+          bgcolor: '#1f2937',
+          bordercolor: '#374151',
+          font: { color: 'white', family: 'Inter, system-ui, sans-serif' }
+        }
+      };
+    }
+
+    private getAxisDefaults(title: string, isCategory: boolean = false) {
+      const baseConfig = {
+        title: {
+          text: title,
+          font: { size: 14, family: 'Inter, system-ui, sans-serif', weight: 500 },
+          standoff: 20
+        },
+        tickfont: { 
+          size: 11, 
+          family: 'Inter, system-ui, sans-serif',
+          color: '#6b7280'
+        },
+        gridcolor: '#f3f4f6',
+        gridwidth: 1,
+        zeroline: false,
+        linecolor: '#d1d5db',
+        linewidth: 1
+      };
+
+      if (isCategory) {
+        return {
+          ...baseConfig,
+          tickmode: 'array',
+          automargin: true,
+          tickangle: -45,
+          ticklen: 8
+        };
+      }
+
+      return baseConfig;
     }
     
     private buildChart(config: ChartConfig, data: any[], colors: string[]): ChartBuildResult {
@@ -67,6 +153,8 @@ export class PlotlyChartRenderer implements IChartRenderer {
     
     private buildBarChart(config: ChartConfig, data: any[], colors: string[], aggregator: IDataAggregator): ChartBuildResult {
       const grouped = aggregator.groupBy(data, [config.xField]);
+      const margins = this.calculateDynamicMargins(data, config, 'bar');
+      
       const traces = [{
         x: grouped.entries.map(entry => {
           const values = entry.rows.map(r => Number(r[config.yField])).filter(v => Number.isFinite(v));
@@ -75,14 +163,17 @@ export class PlotlyChartRenderer implements IChartRenderer {
         y: grouped.entries.map(entry => entry.key[0]),
         type: 'bar',
         orientation: 'h',
-        marker: { color: colors[0] }
+        marker: { 
+          color: colors[0],
+          line: { color: 'rgba(0,0,0,0.1)', width: 1 }
+        },
+        hovertemplate: '<b>%{y}</b><br>%{x}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Bar Chart',
-        xaxis: { title: config.yField },
-        yaxis: { title: config.xField },
-        margin: { t: 40, l: 80, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        xaxis: this.getAxisDefaults(config.yField),
+        yaxis: this.getAxisDefaults(config.xField, true)
       };
       
       return { traces, layout };
@@ -90,6 +181,8 @@ export class PlotlyChartRenderer implements IChartRenderer {
     
     private buildColumnChart(config: ChartConfig, data: any[], colors: string[], aggregator: IDataAggregator): ChartBuildResult {
       const grouped = aggregator.groupBy(data, [config.xField]);
+      const margins = this.calculateDynamicMargins(data, config, 'column');
+      
       const traces = [{
         x: grouped.entries.map(entry => entry.key[0]),
         y: grouped.entries.map(entry => {
@@ -97,14 +190,17 @@ export class PlotlyChartRenderer implements IChartRenderer {
           return aggregator.aggregate(values, config.aggregation);
         }),
         type: 'bar',
-        marker: { color: colors[0] }
+        marker: { 
+          color: colors[0],
+          line: { color: 'rgba(0,0,0,0.1)', width: 1 }
+        },
+        hovertemplate: '<b>%{x}</b><br>%{y}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Column Chart',
-        xaxis: { title: config.xField },
-        yaxis: { title: config.yField },
-        margin: { t: 40, l: 50, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        xaxis: this.getAxisDefaults(config.xField, true),
+        yaxis: this.getAxisDefaults(config.yField)
       };
       
       return { traces, layout };
@@ -112,6 +208,8 @@ export class PlotlyChartRenderer implements IChartRenderer {
     
     private buildLineChart(config: ChartConfig, data: any[], colors: string[], aggregator: IDataAggregator): ChartBuildResult {
       const grouped = aggregator.groupBy(data, [config.xField]);
+      const margins = this.calculateDynamicMargins(data, config, 'line');
+      
       const traces = [{
         x: grouped.entries.map(entry => entry.key[0]),
         y: grouped.entries.map(entry => {
@@ -120,33 +218,49 @@ export class PlotlyChartRenderer implements IChartRenderer {
         }),
         type: 'scatter',
         mode: 'lines+markers',
-        line: { color: colors[0] }
+        line: { 
+          color: colors[0], 
+          width: 3,
+          shape: 'spline'
+        },
+        marker: { 
+          color: colors[0], 
+          size: 6,
+          line: { color: 'white', width: 2 }
+        },
+        hovertemplate: '<b>%{x}</b><br>%{y}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Line Chart',
-        xaxis: { title: config.xField },
-        yaxis: { title: config.yField },
-        margin: { t: 40, l: 50, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        xaxis: this.getAxisDefaults(config.xField, true),
+        yaxis: this.getAxisDefaults(config.yField)
       };
       
       return { traces, layout };
     }
     
     private buildScatterChart(config: ChartConfig, data: any[], colors: string[]): ChartBuildResult {
+      const margins = this.calculateDynamicMargins(data, config, 'scatter');
+      
       const traces = [{
         x: data.map(r => r[config.xField]),
         y: data.map(r => Number(r[config.yField])),
         type: 'scatter',
         mode: 'markers',
-        marker: { color: colors[0] }
+        marker: { 
+          color: colors[0],
+          size: 8,
+          opacity: 0.7,
+          line: { color: 'rgba(0,0,0,0.2)', width: 1 }
+        },
+        hovertemplate: '<b>%{x}</b><br>%{y}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Scatter Plot',
-        xaxis: { title: config.xField },
-        yaxis: { title: config.yField },
-        margin: { t: 40, l: 50, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        xaxis: this.getAxisDefaults(config.xField, true),
+        yaxis: this.getAxisDefaults(config.yField)
       };
       
       return { traces, layout };
@@ -154,6 +268,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
     
     private buildPieChart(config: ChartConfig, data: any[], colors: string[], aggregator: IDataAggregator): ChartBuildResult {
       const grouped = aggregator.groupBy(data, [config.xField]);
+      
       const traces = [{
         labels: grouped.entries.map(entry => entry.key[0]),
         values: grouped.entries.map(entry => {
@@ -161,47 +276,73 @@ export class PlotlyChartRenderer implements IChartRenderer {
           return aggregator.aggregate(values, config.aggregation);
         }),
         type: 'pie',
-        marker: { colors }
+        marker: { 
+          colors,
+          line: { color: 'white', width: 2 }
+        },
+        textinfo: 'label+percent',
+        textfont: { 
+          family: 'Inter, system-ui, sans-serif',
+          size: 12
+        },
+        hovertemplate: '<b>%{label}</b><br>%{value}<br>%{percent}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Pie Chart',
-        margin: { t: 40, l: 50, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults({ t: 60, l: 50, r: 50, b: 50 }),
+        showlegend: true,
+        legend: {
+          orientation: 'v',
+          x: 1.02,
+          y: 0.5,
+          font: { family: 'Inter, system-ui, sans-serif', size: 11 }
+        }
       };
       
       return { traces, layout };
     }
     
     private buildHistogram(config: ChartConfig, data: any[], colors: string[]): ChartBuildResult {
+      const margins = this.calculateDynamicMargins(data, config, 'histogram');
+      
       const traces = [{
         x: data.map(r => Number(r[config.yField])).filter(v => Number.isFinite(v)),
         type: 'histogram',
-        marker: { color: colors[0] },
-        opacity: 0.8
+        marker: { 
+          color: colors[0],
+          opacity: 0.8,
+          line: { color: 'rgba(0,0,0,0.1)', width: 1 }
+        },
+        hovertemplate: 'Range: %{x}<br>Count: %{y}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Histogram',
-        xaxis: { title: config.yField },
-        yaxis: { title: 'Frequency' },
-        margin: { t: 40, l: 50, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        xaxis: this.getAxisDefaults(config.yField),
+        yaxis: this.getAxisDefaults('Frequency'),
+        bargap: 0.05
       };
       
       return { traces, layout };
     }
     
     private buildBoxChart(config: ChartConfig, data: any[], colors: string[]): ChartBuildResult {
+      const margins = this.calculateDynamicMargins(data, config, 'box');
+      
       const traces = [{
         y: data.map(r => Number(r[config.yField])),
         type: 'box',
         name: config.yField,
-        marker: { color: colors[0] }
+        marker: { color: colors[0] },
+        line: { color: colors[0] },
+        fillcolor: colors[0] + '40',
+        hovertemplate: '%{y}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Box Plot',
-        yaxis: { title: config.yField },
-        margin: { t: 40, l: 50, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        yaxis: this.getAxisDefaults(config.yField),
+        xaxis: { showticklabels: false, showgrid: false }
       };
       
       return { traces, layout };
@@ -212,6 +353,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
         throw new Error('Heatmap requires a series field');
       }
       
+      const margins = this.calculateDynamicMargins(data, config, 'heatmap');
       const xCategories = [...new Set(data.map(r => String(r[config.xField])))];
       const yCategories = [...new Set(data.map(r => String(r[config.seriesField])))];
       
@@ -229,14 +371,15 @@ export class PlotlyChartRenderer implements IChartRenderer {
         y: yCategories,
         z,
         type: 'heatmap',
-        colorscale: 'Viridis'
+        colorscale: 'Viridis',
+        hoverongaps: false,
+        hovertemplate: '<b>%{x}</b><br><b>%{y}</b><br>Value: %{z}<extra></extra>'
       }];
       
       const layout = {
-        title: 'Heatmap',
-        xaxis: { title: config.xField },
-        yaxis: { title: config.seriesField },
-        margin: { t: 40, l: 80, r: 50, b: 50 }
+        ...this.getEnterpriseLayoutDefaults(margins),
+        xaxis: this.getAxisDefaults(config.xField, true),
+        yaxis: this.getAxisDefaults(config.seriesField, true)
       };
       
       return { traces, layout };
@@ -250,9 +393,9 @@ export class PlotlyChartRenderer implements IChartRenderer {
         traces: [],
         layout: {},
         customHtml: `
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
-            <div style="font-size: 3.6rem; font-weight: 800; color: ${colors[0]}; margin: 0;">${Math.round(result).toLocaleString()}</div>
-            <div style="font-size: 1.05rem; color: #6c757d; margin-top: 8px;">${config.yField} (${config.aggregation})</div>
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; font-family: 'Inter', system-ui, sans-serif;">
+            <div style="font-size: 3.6rem; font-weight: 800; color: ${colors[0]}; margin: 0; line-height: 1;">${Math.round(result).toLocaleString()}</div>
+            <div style="font-size: 1.05rem; color: #6b7280; margin-top: 12px; font-weight: 500;">${config.yField} (${config.aggregation})</div>
           </div>
         `
       };
@@ -260,8 +403,13 @@ export class PlotlyChartRenderer implements IChartRenderer {
     
     private renderEmptyState(container: HTMLElement, message: string): void {
       container.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d; font-style: italic;">
-          ${message}
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #9ca3af; font-family: 'Inter', system-ui, sans-serif;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px;">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21,15 16,10 5,21"/>
+          </svg>
+          <div style="font-size: 1rem; font-weight: 500;">${message}</div>
         </div>
       `;
     }
@@ -269,8 +417,14 @@ export class PlotlyChartRenderer implements IChartRenderer {
     private renderErrorState(container: HTMLElement, error: unknown): void {
       const message = error instanceof Error ? error.message : 'Unknown error';
       container.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #dc3545;">
-          Error rendering chart: ${message}
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #ef4444; font-family: 'Inter', system-ui, sans-serif;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px;">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <div style="font-size: 1rem; font-weight: 500; margin-bottom: 4px;">Chart Error</div>
+          <div style="font-size: 0.875rem; opacity: 0.8;">${message}</div>
         </div>
       `;
     }

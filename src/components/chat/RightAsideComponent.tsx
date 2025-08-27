@@ -202,7 +202,7 @@ export const RightAsideComponent: React.FC = () => {
           className="flex p-1 flex-row items-center justify-between space-y-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <CardTitle className="text-lg font-semibold truncate min-w-0" title={rightComponent.title}>
+            <CardTitle className="text-base font-medium truncate min-w-0" title={rightComponent.title}>
               {rightComponent.title}
             </CardTitle>
             {/* Segmented toggle (visible when extra.toggles is provided) */}

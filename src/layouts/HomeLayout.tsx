@@ -59,7 +59,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
       if (!isDraggingRef.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const handleWidth = 8;
-      const minRight = 300;
+      const minRight = context === 'action-explore-data' ? 750 : 300;
       const minLeft = 420;
       let newRight = rect.right - e.clientX - handleWidth / 2;
       newRight = Math.min(Math.max(newRight, minRight), rect.width - handleWidth - minLeft);
@@ -77,7 +77,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, []);
+  }, [context]);
 
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -86,7 +86,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
   };
 
   const clampRight = (val: number, rect: DOMRect, handleWidth = 8) => {
-    const minRight = 300;
+    const minRight = context === 'action-explore-data' ? 750 : 300;
     const minLeft = 420;
     return Math.min(Math.max(val, minRight), rect.width - handleWidth - minLeft);
   };

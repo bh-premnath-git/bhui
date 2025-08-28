@@ -596,7 +596,7 @@ export class ChatService {
       // Call localhost:8011/api/v1/pipeline (no prefix)
       const response: any = await apiService.post({
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: '/api/v1/pipeline',
+        url: '/api/v1/pipeline/',
         method: 'POST',
         usePrefix: false,
         data: payload

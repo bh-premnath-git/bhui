@@ -9,6 +9,7 @@ import { RightAsideComponent } from "@/components/chat/RightAsideComponent";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { clearMessages, setContext, setOtherActions, setSelectedActionTitle, setCurrentInput } from "@/store/slices/chat/chatSlice";
 import { useRecommendation } from '@/hooks/useRecommendation'
+import { sizeToPixels, createSizeContext } from "@/lib/sizeHelper";
 
 type ActionItem = {
   id: string;
@@ -39,10 +40,7 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    // Clear any existing input and set the new suggestion
     dispatch(setCurrentInput(suggestion));
-    // Optional: Focus the input after setting the text
-    // The ChatInput component will handle the focus
   };
 
   // ----- Resizable right pane setup -----
@@ -50,16 +48,38 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
     if (layoutMode !== "split" || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     if (rightWidth === null) {
-      setRightWidth(Math.max(360, Math.floor(rect.width / 2)));
+      const handleWidth = 8;
+      const ctx = createSizeContext(rect.width);
+      // CHANGED: prefer 70% when exploring data
+      const desiredStr = context === 'action-explore-data' ? '70%' : '50%'; // CHANGED
+      const minRightStr = context === 'action-explore-data' ? '750px' : '300px';
+      const desired = sizeToPixels(desiredStr, ctx);
+      const minRight = sizeToPixels(minRightStr, ctx);
+      const minLeft = 420;
+      const initial = Math.max(minRight, Math.floor(desired));
+      const clamped = Math.min(Math.max(initial, minRight), rect.width - handleWidth - minLeft);
+      setRightWidth(clamped);
     }
-  }, [layoutMode, rightWidth]);
+  }, [layoutMode, rightWidth, context]);
+
+  useEffect(() => {
+    if (!containerRef.current || rightWidth == null) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const handleWidth = 8;
+    const ctx = createSizeContext(rect.width);
+    const minRight = sizeToPixels(context === 'action-explore-data' ? '750px' : '300px', ctx);
+    const minLeft = 420;
+    const clamped = Math.min(Math.max(rightWidth, minRight), rect.width - handleWidth - minLeft);
+    if (clamped !== rightWidth) setRightWidth(clamped);
+  }, [context, rightWidth]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!isDraggingRef.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const handleWidth = 8;
-      const minRight = context === 'action-explore-data' ? 750 : 300;
+      const ctx = createSizeContext(rect.width);
+      const minRight = sizeToPixels(context === 'action-explore-data' ? '750px' : '300px', ctx);
       const minLeft = 420;
       let newRight = rect.right - e.clientX - handleWidth / 2;
       newRight = Math.min(Math.max(newRight, minRight), rect.width - handleWidth - minLeft);
@@ -86,7 +106,8 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
   };
 
   const clampRight = (val: number, rect: DOMRect, handleWidth = 8) => {
-    const minRight = context === 'action-explore-data' ? 750 : 300;
+    const ctx = createSizeContext(rect.width);
+    const minRight = sizeToPixels(context === 'action-explore-data' ? '750px' : '300px', ctx);
     const minLeft = 420;
     return Math.min(Math.max(val, minRight), rect.width - handleWidth - minLeft);
   };
@@ -105,7 +126,6 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
     }
   };
 
-  // ----- Actions chooser for "other-items" -----
   const OtherActionsPanel: React.FC<{ items: ActionItem[] }> = ({ items }) => {
     const titleToActionId: Record<string, string> = useMemo(
       () => ({
@@ -136,7 +156,6 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
                   dispatch(setSelectedActionTitle(action.title));
                   
                   if (actionId === 'explore-data') {
-                    // For explore-data, only set context without triggering service call
                     dispatch(clearMessages());
                     dispatch(setContext(`action-${actionId}`));
                   } else {
@@ -145,7 +164,6 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
                       const chatService = getChatService(dispatch);
                       await chatService.processAction(actionId);
                     } catch (e) {
-                      // eslint-disable-next-line no-console
                       console.error("Failed to process action", e);
                     }
                   }
@@ -266,7 +284,11 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
           {/* Right: Aside with floating handle */}
           <div
             className="bg-background relative"
-            style={{ width: rightWidth ? `${rightWidth}px` : "50%", minWidth: 300 }}
+            // CHANGED: fallback width now 70% when exploring data
+            style={{
+              width: rightWidth ? `${rightWidth}px` : (context === 'action-explore-data' ? '70%' : '50%'), // CHANGED
+              minWidth: context === 'action-explore-data' ? '750px' : '300px'
+            }}
           >
             <div
               role="separator"

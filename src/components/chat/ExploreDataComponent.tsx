@@ -4,8 +4,10 @@ import { useConversation } from '@/hooks/useConversation'
 import { toNumber } from '@/lib/utils'
 import { StreamingStepIndicator, type StreamingStep, type StreamingStatus } from './features/StreamingStepIndicator';
 import { StreamingContent } from './features/StreamingContent';
-import { CompletedAnalysis } from './features/CompletedAnalysis';
 import { AnalysisMetrics } from './features/AnalysisMetrics';
+import { OverviewTab } from './tabs/OverviewTab';
+import { TableTab } from './tabs/TableTab';
+import { SqlTab } from './tabs/SqlTab';
 import type {
   StreamingChunk,
   TableEvent,
@@ -63,11 +65,13 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
   const { streamConversation } = useConversation();
   const streamAbortRef = useRef<(() => void) | null>(null);
   const [response, setResponse] = useState<StreamResponse>({});
+  const [activeTab, setActiveTab] = useState<'overview' | 'table' | 'sql'>('overview');
 
   const isStreaming = response.status === 'streaming';
 
   const onComplete = () => {
     setResponse(prev => ({ ...prev, status: 'complete', currentStep: 'complete' }));
+    setActiveTab('overview'); // Reset to overview on completion
     streamAbortRef.current = null;
   };
 
@@ -187,6 +191,27 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
     }
   };
 
+  const renderCompletedContent = () => {
+    if (response.error) {
+      return (
+        <div className="text-left text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3 animate-in fade-in duration-300">
+          {response.error}
+        </div>
+      );
+    }
+
+    switch (activeTab) {
+      case 'overview':
+        return <OverviewTab explanation={response.explanation} table={response.table} />;
+      case 'table':
+        return <TableTab table={response.table} />;
+      case 'sql':
+        return <SqlTab sql={response.sql} />;
+      default:
+        return <OverviewTab explanation={response.explanation} table={response.table} />;
+    }
+  };
+
   const renderContent = () => {
     if (!connection || !query) {
       return (
@@ -225,12 +250,9 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
           duration_ms={response.duration_ms}
           results_summary={response.results_summary}
         />
-        <CompletedAnalysis
-          sql={response.sql}
-          table={response.table}
-          explanation={response.explanation}
-          error={response.error}
-        />
+        <div className="animate-in fade-in duration-300">
+          {renderCompletedContent()}
+        </div>
       </div>
     );
   };
@@ -245,6 +267,8 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
                 <StreamingStepIndicator
                   currentStep={response.currentStep}
                   status={response.status || 'streaming'}
+                  activeTab={response.status === 'complete' ? activeTab : undefined}
+                  onTabChange={response.status === 'complete' ? setActiveTab : undefined}
                 />
               </CardTitle>
             </div>

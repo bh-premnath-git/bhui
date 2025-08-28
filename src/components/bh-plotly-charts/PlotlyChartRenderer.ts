@@ -44,7 +44,7 @@ export class PlotlyChartRenderer implements IChartRenderer {
     }
 
     private calculateDynamicMargins(data: any[], config: ChartConfig, chartType: ChartType) {
-      const baseMargins = { t: 60, l: 100, r: 60, b: 80 };
+      const baseMargins = { t: 0, l: 0, r: 0, b: 0 };
       
       // Calculate maximum label lengths
       let maxYLabelLength = 0;
@@ -75,7 +75,13 @@ export class PlotlyChartRenderer implements IChartRenderer {
         t: baseMargins.t,
         l: leftMargin,
         r: baseMargins.r,
-        b: bottomMargin
+        b: bottomMargin,
+        pad: {
+          t: 0,
+          l: 0,
+          r: 0,
+          b: 0
+        }
       };
     }
 

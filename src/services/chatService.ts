@@ -108,7 +108,7 @@ export class ChatService {
       uiComponent: {
         type: 'Card',
         props: {
-          title: 'Data Analysis Ready',
+          title: 'Click here to view the report',
           description: `Click to open the analysis panel for: "${query}" on ${connection?.connection_config_name || 'selected connection'}`
         },
         stepId: 'explore-data-card'

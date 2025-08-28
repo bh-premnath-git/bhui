@@ -499,7 +499,7 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       message: "What kind of pipeline you need?",
       options: [
         { label: "Requirement", next: "createPipeline" },
-        { label: "Design (Manual)", next: "createPipeline" }
+        { label: "Natural Language", next: "createPipeline" }
       ],
       nextOnSelect: "createPipeline"
     },
@@ -509,7 +509,7 @@ export const PIPELINE_WORKFLOW: WorkflowConfig = {
       message: "Creating your pipeline...",
       api: {
         baseUrl: CATALOG_REMOTE_API_URL,
-        url: "/api/v1/pipeline",
+        url: "/api/v1/pipeline/",
         method: "POST",
         usePrefix: false
       },

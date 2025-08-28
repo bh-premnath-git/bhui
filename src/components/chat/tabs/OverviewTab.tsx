@@ -26,6 +26,19 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ explanation, table }) 
 
     const chartContainerRef = useRef<HTMLDivElement>(null);
 
+    // Observe container size changes (NOT just window resizes)
+    useEffect(() => {
+        const el = chartContainerRef.current;
+        if (!el) return;
+
+        const ro = new ResizeObserver(() => {
+            renderer.resize(el);
+        });
+
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [renderer]);
+
     // Normalize the table data
     const normalizedData = useMemo(() => {
         if (!table) return null;

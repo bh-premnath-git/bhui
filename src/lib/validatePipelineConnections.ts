@@ -1,5 +1,5 @@
 import { UINode } from "./pipelineJsonConverter";
-import { Node, Edge } from 'reactflow';
+import { Node, Edge } from '@xyflow/react';
 
 interface ValidationResult {
     isValid: boolean;

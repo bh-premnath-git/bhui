@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useState } from "react"
-import { Position, NodeToolbar } from "reactflow"
+import { Position, NodeToolbar } from "@xyflow/react"
 import { Copy, Trash2, Info, PenLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"

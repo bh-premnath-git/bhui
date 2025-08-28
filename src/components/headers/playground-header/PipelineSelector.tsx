@@ -43,6 +43,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 import { setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import { setIsRightAsideComponent } from '@/store/slices/chat/chatSlice';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useDeletePipeline } from '@/hooks/useDeletePipeline';
@@ -219,6 +220,9 @@ export const PipelineSelector: React.FC<PipelineSelectorProps> = ({
     if (pipeline.engine_type) {
       dispatch(setSelectedEngineType(pipeline.engine_type));
     }
+
+    // Close right aside component when navigating to a different pipeline
+    dispatch(setIsRightAsideComponent(false));
 
     try {
       // Navigate to the new pipeline

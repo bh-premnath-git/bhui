@@ -9,7 +9,6 @@ import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { ComposableCanvas } from '@/components/ComposableCanvas';
-import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 import { PipelineForm } from '@/features/designers/pipeline/components/PipelineForm';
 import LookupForm from '@/features/designers/pipeline/components/form-sections/LookupForm';
 import '@/features/designers/pipeline/styles/PipelineCanvas.css';
@@ -22,7 +21,6 @@ import TargetPopUp from '@/components/bh-reactflow-comps/TargetPopUp';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Workflow } from 'lucide-react';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
-import { setEnabled } from '@/store/slices/gitSlice';
 import { GitControlsFooterPortal } from '@/components/git/GitControlsFooter';
 import { CommitModal } from '@/components/git/CommitModal';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,7 +28,14 @@ import { Table as TableIcon } from 'lucide-react';
 // Drawer is rendered in RightAsideComponent via Redux
 import { openChatBottomDrawer, closeChatBottomDrawer } from '@/store/slices/chat/chatSlice';
 
-const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
+interface DataPipelineCanvasNewProps {
+  isInitializing?: boolean;
+  pipelineJson?: any; // optional direct pipeline json from AI agent
+  // When true, do not fetch pipeline by id on mount (used by chat wrapper to avoid overwriting AI pipeline)
+  skipFetchOnMount?: boolean;
+}
+
+const DataPipelineCanvasNew: React.FC<DataPipelineCanvasNewProps> = ({ isInitializing, pipelineJson, skipFetchOnMount }) => {
   const { isRightAsideOpen, isBottomDrawerOpen, rightAsideWidth, isExpanded, setBottomDrawerContent, openBottomDrawer, bottomDrawerContent, bottomDrawerTitle } = useSidebar();
   const { id } = useParams();
   const dispatch = useAppDispatch();
@@ -87,6 +92,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     pipelines,
     updateSetNode,
     reactFlowInstance,
+    makePipeline,
   } = usePipelineContext();
 
   // Add resize event handler to force canvas resizing when right aside or bottom drawer opens/closes
@@ -141,34 +147,13 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
     };
   }, [isRightAsideOpen, isBottomDrawerOpen, handleCenter, nodes.length]);
 
-  // Enable git integration when component mounts (top-level hook)
-  // useEffect(() => {
-  //   dispatch(setEnabled(true));
-  //   return () => {
-  //     dispatch(setEnabled(false));
-  //   };
-  // }, [dispatch]);
-
-  // Listen for RightAside panel resize events
   
-  useEffect(() => {
-    // debugger
-    if (id) {
-      setIsLoadingPipeline(true);
-      setCurrentPipelineId(id);
+  // Prevent repeated makePipeline calls when the same pipelineJson prop is passed
+  const lastAppliedJsonRef = useRef<string | null>(null);
+useEffect(() => {
+makePipeline({ pipeline_definition: pipelineJson });
+},[pipelineJson])
 
-      // Fetch pipeline details
-      fetchPipelineDetails().then(() => {
-        setIsLoadingPipeline(false);
-      })
-        .catch((error) => {
-          console.error('Error loading pipeline:', error);
-          setIsLoadingPipeline(false);
-        });
-    }
-  }, [id, fetchPipelineDetails]);
-
-  // Separate effect to handle alignment after nodes are loaded
   useEffect(() => {
     console.log('🔧 Alignment effect triggered:', {
       id,
@@ -261,7 +246,16 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
         pipelineDtl={pipelineDtl}
         debuggedNodesList={debuggedNodesList}
       />
-    )
+    ),
+    // Alias to support edges that explicitly set type: 'custom'
+    custom: (props: any) => (
+      <CustomEdge
+        {...props}
+        transformationCounts={transformationCounts}
+        pipelineDtl={pipelineDtl}
+        debuggedNodesList={debuggedNodesList}
+      />
+    ),
   }), [transformationCounts, pipelineDtl, debuggedNodesList]);
 
 
@@ -311,8 +305,8 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
           className={`flex-1 relative p-1 transition-all duration-300 ${errorBanner ? 'mt-24' : ''}`}
           style={getMainContentStyle()}>
 
-          {/* Check if there are no pipelines and no current pipeline ID */}
-          {Array.isArray(pipelines) && pipelines.length === 0 && !id ? (
+          {/* Show empty state only when no pipelines, no route id, and no provided pipelineJson */}
+          {Array.isArray(pipelines) && pipelines.length === 0 && !id && !pipelineJson ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="p-6">
                 <EmptyState
@@ -371,59 +365,7 @@ const DataPipelineCanvasNew: React.FC = ({ isInitializing }: any) => {
                         terminalLogs={terminalLogs}
                         proplesLogs={conversionLogs}
                       />
-                      <Button
-                        className="rounded-full h-10 w-10 shadow-lg"
-                        size="icon"
-                        variant="default"
-                        onClick={() => {
-                          // Toggle bottom drawer: close if already open, else open with preview content
-                          const state = (window as any).__bh_store__?.getState?.();
-                          const isOpen = state?.chat?.bottomDrawer?.isOpen;
-                          if (isOpen) {
-                            dispatch(closeChatBottomDrawer());
-                            return;
-                          }
-                          dispatch(openChatBottomDrawer({
-                            title: 'Preview',
-                            height: 300,
-                            content: (
-                              <div className="p-4">
-                                <div className="mb-2 font-medium">Sample Data</div>
-                                <UITable>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>ID</TableHead>
-                                      <TableHead>Name</TableHead>
-                                      <TableHead>Status</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    <TableRow>
-                                      <TableCell>1</TableCell>
-                                      <TableCell>Alice</TableCell>
-                                      <TableCell>Active</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                      <TableCell>2</TableCell>
-                                      <TableCell>Bob</TableCell>
-                                      <TableCell>Pending</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                      <TableCell>3</TableCell>
-                                      <TableCell>Charlie</TableCell>
-                                      <TableCell>Inactive</TableCell>
-                                    </TableRow>
-                                  </TableBody>
-                                </UITable>
-                              </div>
-                            )
-                          }));
-                        }}
-                        aria-label="Show sample data"
-                        title="Show sample data"
-                      >
-                        <TableIcon className="h-5 w-5" />
-                      </Button>
+                     
                     </div>
                   </div>}
                 loading={isCanvasLoading}

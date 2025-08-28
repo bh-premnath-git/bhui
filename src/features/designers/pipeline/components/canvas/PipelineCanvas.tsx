@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactFlow, { Node, Edge } from 'reactflow';
+import {ReactFlow,  Node, Edge } from '@xyflow/react';
 
 interface PipelineCanvasProps {
   nodes: Node[];

@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { apiService } from "@/lib/api/api-service"
 import { usePipelineContext } from "@/context/designers/DataPipelineContext"
+import { useFlow } from "@/context/designers/FlowContext"
 
 
 // Query keys
@@ -38,19 +39,46 @@ interface NodeDropListProps {
 const ITEMS_PER_PAGE = 10;
 const MAX_VISIBLE_NODES = 5;
 
+// Unified context hook to handle both pipeline and flow contexts
+const useUnifiedContext = () => {
+  let pipelineContext = null;
+  let flowContext = null;
+  
+  try {
+    pipelineContext = usePipelineContext();
+  } catch (error) {
+    // Pipeline context not available
+  }
+  
+  try {
+    flowContext = useFlow();
+  } catch (error) {
+    // Flow context not available
+  }
+  
+  // Determine which context to use based on current URL/route
+  const isFlowMode = window.location.pathname.includes('data-flow-playground');
+  const context = isFlowMode ? flowContext : pipelineContext;
+  
+  return {
+    setUnsavedChanges: context?.setUnsavedChanges || (() => {}),
+    addNodeToHistory: context?.addNodeToHistory || (() => {}),
+    handleNodeClick: context?.handleNodeClick || (() => {}),
+    contextType: isFlowMode ? 'flow' : 'pipeline'
+  };
+};
+
 const NodeDropList: React.FC<NodeDropListProps> = ({
   filteredNodes,
   handleNodeClick,
   addNodeToHistory,
 }) => {
   const dispatch = useDispatch()
+  const { setUnsavedChanges, addNodeToHistory: contextAddNodeToHistory } = useUnifiedContext();
 
   const [dropdownVisible, setDropdownVisible] = useState<string | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const { setUnsavedChanges } = usePipelineContext();
-
-  // Responsive: compute visible nodes based on container width
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [visibleCount, setVisibleCount] = useState<number>(Math.min(MAX_VISIBLE_NODES, filteredNodes.length))
 
@@ -154,7 +182,7 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
     setHoveredNode(nodeName)
   }
 
-  const handleButtonClick = (node: Node) => {
+  const handleButtonClick = useCallback((node: Node) => {
     console.log("Button clicked for node:", node.ui_properties.module_name)
     
     if (node.ui_properties.module_name === "Reader") {
@@ -169,10 +197,10 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
       // For non-Reader nodes, add to history and handle click
       console.log("Non-Reader node clicked, handling node click")
       setUnsavedChanges()
-      addNodeToHistory()
-      handleNodeClick(node)
+      contextAddNodeToHistory()
+      handleNodeClick(node) // Use the prop parameter
     }
-  }
+  }, [handleNodeClick, setUnsavedChanges, contextAddNodeToHistory])
 
   return (
     <div ref={containerRef} className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 px-2 w-full overflow-visible">
@@ -264,7 +292,6 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                           e.stopPropagation()
                           console.log("Source item clicked:", source.data_src_name)
                           setUnsavedChanges()
-                          addNodeToHistory()
                           handleNodeClick(node, source)
                           setDropdownVisible(null)
                         }}
@@ -301,7 +328,6 @@ const NodeDropList: React.FC<NodeDropListProps> = ({
                       e.stopPropagation()
                       console.log("Add Source button clicked")
                       setUnsavedChanges()
-                      addNodeToHistory()
                       handleNodeClick(node)
                       setDropdownVisible(null)
                     }}

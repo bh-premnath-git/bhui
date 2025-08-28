@@ -10,7 +10,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges, ReactFlowInstance,
   MarkerType
-} from 'reactflow';
+} from '@xyflow/react';
 import {
   FlowContextType,
   CustomNodeData,
@@ -101,6 +101,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
 
   // Add flowConfigMap state
   const [flowConfigMap, setFlowConfigMap] = useState<Record<string, any>>({});
+
+  // Add history management states
+  const [history, setHistory] = useState<Array<{ nodes: Node<CustomNodeData>[]; edges: Edge[] }>>([]);
+  const [redoStack, setRedoStack] = useState<Array<{ nodes: Node<CustomNodeData>[]; edges: Edge[] }>>([]);
 
   // Import the RootState and useAppSelector for accessing the Redux store
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
@@ -272,7 +276,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         ...node,
         data: {
           ...node.data,
-        },
+        } as CustomNodeData,
       })));
     },
     [setNodes]
@@ -351,8 +355,105 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const addNodeToHistory = useCallback(() => {
+    setHistory((prev) => [...prev, { nodes, edges }]);
+    setRedoStack([]); // Clear redo stack on new action
+  }, [nodes, edges]);
 
-  
+  const handleNodeClick = useCallback((node: any, source?: any) => {
+    console.log('FlowContext handleNodeClick called with:', node, source);
+    
+    if (!node?.ui_properties?.module_name) {
+      console.error('Invalid node data - missing ui_properties.module_name:', node);
+      return;
+    }
+
+    const baseModuleName = node.ui_properties.module_name;
+    console.log('Creating node with module name:', baseModuleName);
+    
+    const existingNodes = nodes.filter(n =>
+      n.data.label?.toLowerCase().startsWith(baseModuleName.toLowerCase())
+    );
+    const nodeNumber = existingNodes.length + 1;
+    const nodeLabel = existingNodes.length > 0
+      ? `${baseModuleName} ${nodeNumber}`
+      : baseModuleName;
+
+    // Find the last selected node's position
+    const lastNode = nodes[nodes.length - 1];
+    const basePosition = lastNode ? {
+      x: lastNode.position.x + 150,
+      y: lastNode.position.y
+    } : {
+      x: 50,
+      y: 100
+    };
+
+    const uniqueId = `${node.ui_properties.module_name}_${Date.now()}`;
+    console.log('Generated unique ID:', uniqueId);
+
+    // Use type from ui_properties or fallback to module_name for type
+    const nodeType = node.ui_properties.type || baseModuleName;
+    console.log('Using node type:', nodeType);
+
+    // Create node data structure compatible with flow context
+    const newNodeData = {
+      tempSave: true,
+      label: baseModuleName,
+      selectedData: nodeType,
+      type: nodeType,
+      status: 'pending',
+      meta: {
+        type: nodeType,
+        moduleInfo: {
+          color: node.ui_properties.color,
+          icon: node.ui_properties.icon,
+          label: node.ui_properties.module_name,
+        },
+        properties: node.ui_properties.meta?.properties || [],
+        description: node.ui_properties.meta?.description,
+        fullyOptimized: false,
+      },
+      requiredFields: node.ui_properties.meta?.requiredFields || [],
+    };
+
+    console.log('Created node data:', newNodeData);
+
+    // Use the addNode function from flow context
+    console.log('Calling addNode with:', {
+      id: uniqueId,
+      type: 'custom',
+      tempSave: true,
+      data: newNodeData,
+    });
+    
+    addNode({
+      id: uniqueId,
+      type: 'custom',
+      tempSave: true,
+      data: newNodeData,
+    });
+
+    console.log('Node added, current nodes length:', nodes.length + 1);
+
+    // Add node form data if source is provided
+    if (source) {
+      console.log('Adding node form data for source:', source);
+      updateNodeFormData(uniqueId, {
+        nodeId: uniqueId,
+        name: source.data_src_name || nodeLabel,
+        source: source,
+      });
+    }
+
+    // Add to history
+    console.log('Adding to history');
+    addNodeToHistory();
+  }, [nodes, addNode, updateNodeFormData, addNodeToHistory]);
+
+  const setUnsavedChanges = useCallback(() => {
+    setIsDirty(true);
+  }, []);
 
   const revertOrSaveData = useCallback(
     (nodeId: string, save: boolean) => {
@@ -657,76 +758,6 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const setConsequentTaskDetail = (task: any, detail: any) => {
   }
 
-
-  // Added effect to handle flow data loading
-  useEffect(() => {
-    if (selectedFlowId) {
-      // alert()
-      const savedFlow = loadFlow(selectedFlowId);
-      setNodes(savedFlow ? savedFlow.nodes : []);
-      setEdges(savedFlow ? savedFlow.edges : []);
-      setNodeFormData(savedFlow ? savedFlow.nodeFormData : []);
-      setSelectedNode(null);
-      setIsSaved(true);
-      setIsSaving(false);
-      setIsDirty(false);
-      
-      // Explicitly set hasFlowConfig to false when loading a new flow
-      // This ensures we start from a clean state for the new flow
-      setHasFlowConfig(false);
-      setFlowPipeline(null);
-    } else {
-      setNodes([]);
-      setEdges([]);
-      setNodeFormData([]);
-      setSelectedNode(null);
-      setIsSaved(true);
-      setIsSaving(false);
-      setIsDirty(false);
-      setHasFlowConfig(false);
-      setFlowPipeline(null);
-    }
-  }, [selectedFlowId, loadFlow]);
-
-  const prevNodesRef = useRef(nodes);
-  const prevEdgesRef = useRef(edges);
-  const prevFormDataRef = useRef(nodeFormData);
-
-  // Track changes to nodes, edges, and formData with safeguards against infinite loops
-  useEffect(() => {
-    // Skip if no selectedFlowId or if we're already at our change limit
-    if (!selectedFlowId || changeTriggerCount >= 2) return;
-    
-    // Use refs to compare previous and current values without causing re-renders
-    const nodesChanged = JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes);
-    const edgesChanged = JSON.stringify(prevEdgesRef.current) !== JSON.stringify(edges);
-    const formDataChanged = JSON.stringify(prevFormDataRef.current) !== JSON.stringify(nodeFormData);
-
-    // Only trigger updates if something actually changed
-    if (nodesChanged || edgesChanged || formDataChanged) {
-      setIsDirty(true); 
-      setChangeTriggerCount((prev) => prev + 1);
-      
-      // Update our references to current state
-      prevNodesRef.current = [...nodes];
-      prevEdgesRef.current = [...edges];
-      prevFormDataRef.current = [...nodeFormData];
-      
-      // Only save if autoSave is enabled
-      if (autoSave) {
-        console.log("modification", { flowId: selectedFlowId });
-        debouncedSave();
-      }
-    }
-  }, [nodes, edges, nodeFormData, selectedFlowId, autoSave, debouncedSave]);
-
-  useEffect(() => {
-    if (changeTriggerCount >= 2) {
-      const timer = setTimeout(() => setChangeTriggerCount(0), 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [changeTriggerCount]);
-
   const value: FlowContextType = {
     selectedFlowId,
     nodes,
@@ -790,7 +821,14 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setSelectedNode,
     setIsSaving,
     setIsSaved,
-    setNodeFormData
+    setNodeFormData,
+    history,
+    redoStack,
+    setHistory,
+    setRedoStack,
+    addNodeToHistory,
+    handleNodeClick,
+    setUnsavedChanges
   };
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

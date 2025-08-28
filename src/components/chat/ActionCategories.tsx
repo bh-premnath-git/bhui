@@ -1,20 +1,9 @@
 import React from 'react';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { setContext, setOtherActions, clearMessages, setSelectedActionTitle } from '@/store/slices/chat/chatSlice';
-import { type LucideIcon, Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3, FolderPlus, Settings } from 'lucide-react';
+import {  Plus, Database, ListChecks, MoreHorizontal, Users, Cable, Upload, BarChart3, FolderPlus, Settings } from 'lucide-react';
 import SuggestionButton from '@/features/designers/pipeline/components/SuggestionButton';
-
-interface ActionItem {
-  id: number;
-  title: string;
-  icon: LucideIcon;
-}
-
-interface ActionCategory {
-  id: string;
-  title: string;
-  icon: LucideIcon;
-}
+import { ActionCategory, ActionItem } from '@/types/home/home';
 
 const categories: ActionCategory[] = [
   {
@@ -82,11 +71,16 @@ export const ActionCategories: React.FC = () => {
       };
       if (titles[actionId]) dispatch(setSelectedActionTitle(titles[actionId]));
 
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-
       // Set context to action-* for consistency with ActionsList clicks
       dispatch(setContext(`action-${actionId}`));
+
+      if (actionId === 'explore-data') {
+        // For explore-data, only set context without triggering service call
+        return;
+      }
+
+      const { getChatService } = await import('@/services/chatService');
+      const chatService = getChatService(dispatch);
       await chatService.processAction(actionId);
     } catch (e) {
       // Fallback: at least set context so user sees conversation view

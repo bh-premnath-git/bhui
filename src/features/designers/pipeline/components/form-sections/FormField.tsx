@@ -32,6 +32,10 @@ interface FormFieldProps {
   onKeyDown?: (event: React.KeyboardEvent) => void;
   isAiEnabled?: boolean;
   isLoading?: boolean;
+  control?: any;
+  formInitialValues?: any;
+  columnSuggestions?: any;
+  setValue?: any;
 }
 
 interface SourceColumn {

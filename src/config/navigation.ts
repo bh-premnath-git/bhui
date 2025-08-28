@@ -54,13 +54,13 @@ export const navigationItems: NavItem[] = [
       {
         title: "Data Pipeline",
         icon: Share2,
-        path: ROUTES.DESIGNERS.BUILD_PIPELINE,
+        path: ROUTES.DESIGNERS.BUILD_PLAYGROUND(null),
         parent: ROUTES.DESIGNERS.INDEX,
       },
       {
         title: "Data Flow",
         icon: GitBranch,
-        path: "/designers/data-flow-playground",
+        path: ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(null),
         parent: ROUTES.DESIGNERS.INDEX,
       },
       // {

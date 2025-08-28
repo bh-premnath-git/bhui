@@ -289,6 +289,13 @@ export const usePipelineActions = ({
     }, []);
 
     const handleSourceUpdate = useCallback(async ({ nodeId, sourceData }: { nodeId: string, sourceData: any }) => {
+        // Guard: if pipeline is hydrating from AI/canvas init, skip source updates to avoid reverting nodes
+        // const isHydrating = (window as any).__bh_isHydratingPipeline === true;
+        // if (isHydrating) {
+        //     console.log('🔧 usePipelineActions: Skipping handleSourceUpdate during initial hydration');
+        //     return;
+        // }
+
         console.log('🔧 usePipelineActions: handleSourceUpdate called with:', { nodeId, sourceData });
 
         let data;

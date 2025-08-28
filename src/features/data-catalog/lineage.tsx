@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
-import ReactFlow, { 
+import  {
+  ReactFlow, 
   Background, 
   Controls,
   Panel,
@@ -12,8 +13,8 @@ import ReactFlow, {
   Edge,
   Handle,
   Position
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { Database, Server, GitBranch, Play, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +136,9 @@ const Lineage = () => {
           node.data.type !== filters.connectionType) {
         return false;
       }
-      if (filters.search && !node.data.label.toLowerCase().includes(filters.search.toLowerCase())) {
+      if (filters.search && 
+          typeof node.data.label === 'string' && 
+          !node.data.label.toLowerCase().includes(filters.search.toLowerCase())) {
         return false;
       }
       return true;

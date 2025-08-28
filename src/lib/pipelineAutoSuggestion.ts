@@ -1,4 +1,4 @@
-import { Node, Edge } from 'reactflow';
+import { Node, Edge } from '@xyflow/react';
 import { UINode } from "./pipelineJsonConverter";
 import { apiService } from './api/api-service';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
@@ -77,7 +77,7 @@ export const getColumnSuggestions = async (
     // Find the current node first
     const currentNode = nodes.find(n => n.id === currentNodeId);
     if (currentNode?.id.startsWith('Reader_')) {
-      const dataSrcId = currentNode.data.source?.data_src_id;
+      const dataSrcId = (currentNode.data.source as any)?.data_src_id;
       if (dataSrcId) {
         const layoutFields = await fetchLayoutFields(dataSrcId);
         layoutFields.forEach((field: LayoutField) => {
@@ -94,7 +94,7 @@ export const getColumnSuggestions = async (
       // Process each node to build up available columns
       for (const node of processedNodes) {
         if (node.id.startsWith('Reader_')) {
-          const dataSrcId = node.data.source?.data_src_id;
+          const dataSrcId = (node.data.source as any)?.data_src_id;
           if (dataSrcId) {
             const layoutFields = await fetchLayoutFields(dataSrcId);
             layoutFields.forEach((field: LayoutField) => {
@@ -106,29 +106,29 @@ export const getColumnSuggestions = async (
           switch (node.data.label) {
             case 'SchemaTransformation':
               // Add derived fields from schema transformation
-              node.data.transformationData?.derived_fields?.forEach((field: { name: string }) => {
+              (node.data.transformationData as any )?.derived_fields?.forEach((field: { name: string }) => {
                 columns.add(field.name);
               });
               break;
               
             case 'Joiner':
               // Add new columns from join expressions
-              node.data.transformationData?.expressions?.forEach((expr: { target_column: string }) => {
+              (node.data.transformationData as any)?.expressions?.forEach((expr: { target_column: string }) => {
                 columns.add(expr.target_column);
               });
               break;
               
             case 'Drop':
               // Remove dropped columns
-              node.data.transformationData?.column_list?.forEach((column: string) => {
+              (node.data.transformationData as any)?.column_list?.forEach((column: string) => {
                 columns.delete(column);
               });
               break;
               
             case 'Select':
               // Keep only selected columns
-              if (node.data.transformationData?.column_list?.length > 0) {
-                const selectedColumns = new Set(node.data.transformationData.column_list);
+              if ((node.data.transformationData as any)?.column_list?.length > 0) {
+                const selectedColumns = new Set((node.data.transformationData as any)?.column_list);
                 [...columns].forEach(col => {
                   if (!selectedColumns.has(col)) {
                     columns.delete(col);

@@ -230,9 +230,7 @@ function SchemaTable({ dataSourceId, onSwitchToReaderOptions }: any) {
                                 <button 
                                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                                     onClick={() => {
-                                        console.log('🔧 Manual schema discovery triggered for data_src_id:', currentData?.source?.data_src_id || currentData?.data_src_id);
                                         // TODO: Implement schema discovery API call
-                                        alert('Schema discovery feature needs to be implemented');
                                     }}
                                 >
                                     Discover Schema

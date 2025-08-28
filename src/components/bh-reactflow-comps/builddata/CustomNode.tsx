@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState, useEffect } from 'react';
-import { Handle, Position, useEdges, useReactFlow, useNodes } from 'reactflow';
+import { useEdges, useReactFlow, useNodes } from '@xyflow/react';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
 import OrderPopUp from './OrderPopUp';
 import { validateFormData } from './validation';
@@ -7,7 +7,6 @@ import { NodeToolbar } from './components/NodeToolbar';
 import { NodeTitle } from './components/NodeTitle';
 import { NodeImage } from './components/NodeImage';
 import { NodeHandles } from './components/NodeHandles';
-import { NodeInfo } from './components/NodeInfo';
 import { ValidationIndicator } from './components/ValidationIndicator';
 import TargetPopUp from '../TargetPopUp';
 import { useFlow } from "@/context/designers/FlowContext";
@@ -18,7 +17,6 @@ import { useSidebar } from "@/context/SidebarContext";
 import { setIsRightPanelOpen } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { RowCountBadge } from './components';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AiChatComponent from './AiChatComponent';
 import { alignNodesToTopLeft } from '@/utils/nodeAlignment';
 import { pipelineSchema } from "@bh-ai/schemas";
@@ -69,7 +67,7 @@ export const CustomNode = memo(({ data, id, setNodes, setSelectedSchema, setForm
     const [selectedSource, setSelectedSource] = useState(null);
     const [isSelected, setIsSelected] = useState(false);
     const [titleError, setTitleError] = useState<string | null>(null);
-    const { selectNode, revertOrSaveData, updateNodeDimensions, setSelectedNode } = useFlow();
+    const { setSelectedNode } = useFlow();
     const { 
         setIsNodeFormOpen,
         setSelectedNodeId, 

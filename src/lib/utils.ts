@@ -189,3 +189,9 @@ export const mapFileTypeToLayoutType = (fileType: string): 'delimiter' | 'json' 
           throw new Error(`Unsupported file type: ${fileType}`)
   }
 }
+
+export const toNumber = (v: number | string): number | null => {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};

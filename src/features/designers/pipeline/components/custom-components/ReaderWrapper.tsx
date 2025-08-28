@@ -32,20 +32,8 @@ export const ReaderWrapper: React.FC<ReaderWrapperProps> = ({
   // Get initial values from schema (this comes from the pipeline JSON)
   const initialValues = schema?.initialValues;
   
-  useEffect(() => {
-    console.log('🔧 ReaderWrapper successfully rendered!');
-    console.log('🔧 Schema title:', schema?.title);
-    console.log('🔧 Schema object:', schema);
-    console.log('🔧 Initial values from schema:', initialValues);
-    console.log('🔧 Current form values:', formValues);
-    console.log('🔧 Data being passed to ReaderOptionsForm:', initialValues || formValues);
-    debugger; // Check what data ReaderWrapper is receiving and passing
-  }, [schema, formValues, initialValues]);
-
   // Handle form submission from ReaderOptionsForm
   const handleSubmit = (data: any) => {
-    console.log('🔧 ReaderWrapper: Form submitted with data:', data);
-    
     // Update form values using react-hook-form setValue
     Object.keys(data).forEach(key => {
       setValue(key, data[key], { shouldValidate: true, shouldDirty: true });
@@ -54,7 +42,6 @@ export const ReaderWrapper: React.FC<ReaderWrapperProps> = ({
 
   // Handle close (if needed)
   const handleClose = () => {
-    console.log('🔧 ReaderWrapper: Form closed');
     // Could emit an event or call a callback if needed
   };
 

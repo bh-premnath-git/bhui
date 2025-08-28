@@ -1,4 +1,4 @@
-import { Node, Edge } from 'reactflow';
+import { Node, Edge } from '@xyflow/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { apiService } from './api/api-service';
@@ -756,10 +756,14 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
         }
     }
 
+    // Fallback: if sort produced no items, use original list to avoid losing nodes
+    const orderedTransforms = sortedTransformations.length > 0
+        ? sortedTransformations
+        : nonReaderWriterTransformations;
 
     // Process non-Reader, non-Writer transformations in sorted order
     // First pass: create all nodes
-    for (const transform of sortedTransformations) {
+    for (const transform of orderedTransforms) {
         const type = transform.transformation;
         const nodeId = `${type}_${nodes.length + 1}`;
 
@@ -790,7 +794,7 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     // Second pass: create all edges after all nodes have been created
     // This ensures that all node IDs are available in the transformationNodes map
     // Use the sorted transformations to maintain the correct order
-    for (const transform of sortedTransformations) {
+    for (const transform of orderedTransforms) {
         // Get the node ID for this transformation
         const nodeId = transformationNodes.get(transform.name);
 
@@ -811,6 +815,9 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
                         targetHandle: `input-${index}`,
                         id: `reactflow__edge-${sourceNodeId}output-0-${nodeId}input-${index}`
                     });
+                } else {
+                    // Avoid dangling edges
+                    console.warn(`Source node ID not found for dependency: ${dependentName}`);
                 }
             });
         }
@@ -824,7 +831,9 @@ export const convertPipelineToUIJson = async (pipelineJson: any, handleSourceUpd
     if (writerTransformation) {
         const targetId = `Target_${nodes.length + 1}`;
         const targetTitle = writerTransformation.name || generateUniqueTitle('Target', existingTitles);
-        transformationNodes.set(writerTransformation.name, targetId);
+        if (writerTransformation.name) {
+            transformationNodes.set(writerTransformation.name, targetId);
+        }
         // Resolve target reference if it exists
         let targetData = writerTransformation.target || writerTransformation;
         if (targetData && targetData.$ref) {

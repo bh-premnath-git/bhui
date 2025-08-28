@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import ReactFlow, { Background, Controls } from 'reactflow';
-import 'reactflow/dist/style.css';
+import {ReactFlow,  Background, Controls } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { Table, Pencil, Trash2, ChevronDown, Hammer } from 'lucide-react';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/api/api-service';
 import { AGENT_REMOTE_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
-import { use } from 'marked';
 
 const ITEMS_PER_PAGE = 1000;
 

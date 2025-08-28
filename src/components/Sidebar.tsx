@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { shouldShowAdminNavItems } from "@/utils/roleUtils";
 import { useLocation } from "react-router-dom";
-import { ChevronDown, LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
+import { LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { useSidebar } from "@/context/SidebarContext";
 import { useNavigation } from "@/hooks/useNavigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -28,10 +27,12 @@ import { useCreateDashboard, useListDashboards, useUpdateDashboard, useDeleteDas
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAppDispatch } from "@/hooks/useRedux";
+import { clearMessages, setContext, setOtherActions, setSelectedActionTitle, setIsRightAsideComponent } from "@/store/slices/chat/chatSlice";
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { theme, toggleTheme, setThemeMode } = useTheme();
+  const { toggleTheme, setThemeMode } = useTheme();
   const navigation = useNavigation();
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
@@ -54,7 +55,7 @@ export function Sidebar() {
   const [openParents, setOpenParents] = useState<Record<string, boolean>>({});
  
   const showAdminNavItems = shouldShowAdminNavItems(userInfo?.roles || []);
-  
+  const dispatch = useAppDispatch();
   const navItems = useMemo(() => {
     const items: any[] = [];
     const seen = new Set<string>();
@@ -133,7 +134,7 @@ export function Sidebar() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigation.handleNavigation('/');
+      navigation.handleNavigation(ROUTES.INDEX);
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -189,43 +190,21 @@ export function Sidebar() {
       <div className="h-16 flex items-center px-4 border-b border-gray-100 dark:border-gray-800">
         {isExpanded ? (
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 cursor-pointer overflow-hidden" onClick={() => navigation.handleNavigation(ROUTES.HOME)}>
+            <div className="flex items-center gap-2 cursor-pointer overflow-hidden" onClick={() =>{
+              
+                  dispatch(setContext(''));
+                  dispatch(setOtherActions(null));
+                  dispatch(setSelectedActionTitle(null));
+                  dispatch(clearMessages());
+                  dispatch(setIsRightAsideComponent(false));
+              
+              navigation.handleNavigation(ROUTES.HOME)}}>
               <Home className="h-4 w-4 text-gray-800 dark:text-gray-100" />
               <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap">
                 Bighammer.ai
               </h1>
             </div>
             <div className="flex items-center gap-1">
-              {/* Settings small icon with theme options */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="z-[120] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                  <DropdownMenuItem className="flex items-center gap-2" onClick={() => toggleTheme()}>
-                    <Sun className="h-4 w-4" />
-                    <span>Toggle Theme</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2" onClick={() => setThemeMode('light')}>
-                    <Sun className="h-4 w-4" />
-                    <span>Light</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2" onClick={() => setThemeMode('dark')}>
-                    <Moon className="h-4 w-4" />
-                    <span>Dark</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2" onClick={async () => { await logout(); navigation.handleNavigation('/'); }}>
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
               <Button
                 variant="ghost"
                 size="icon"
@@ -241,18 +220,47 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex items-center justify-center">
-            {/* Floating toggle when collapsed */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className={cn(
-                "fixed top-4 left-4 z-[110] transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
-              )}
-              style={{ boxShadow: "none", border: "none", background: "transparent" }}
-            >
-              <PanelRight className="h-5 w-5" />
-            </Button>
+            {/* Home icon and toggle when collapsed */}
+            <div className="fixed top-4 left-4 z-[110] flex flex-col items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className={cn(
+                  "h-8 w-8 transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
+                )}
+                style={{ boxShadow: "none", border: "none", background: "transparent" }}
+              >
+                <PanelRight className="h-5 w-5" />
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        dispatch(setContext(''));
+                        dispatch(setOtherActions(null));
+                        dispatch(setSelectedActionTitle(null));
+                        dispatch(clearMessages());
+                        dispatch(setIsRightAsideComponent(false));
+                        navigation.handleNavigation(ROUTES.HOME);
+                      }}
+                      className={cn(
+                        "h-8 w-8 transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
+                      )}
+                      style={{ boxShadow: "none", border: "none", background: "transparent" }}
+                    >
+                      <Home className="h-5 w-5 text-gray-800 dark:text-gray-100" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-gray-900">
+                    <p>Home</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         )}
       </div>
@@ -329,6 +337,8 @@ export function Sidebar() {
                     // Toggle section open/close on menu click
                     setOpenParents((prev) => ({ ...prev, [item.path]: !isOpen }));
                   } else {
+                    // Close any right aside content when navigating to a new menu item
+                    dispatch(setIsRightAsideComponent(false));
                     navigation.handleNavigation(item.path);
                     toggleSidebar();
                   }
@@ -530,7 +540,7 @@ export function Sidebar() {
                                             className={cn(
                                               "flex items-center px-2 py-1.5 rounded-md flex-1 text-sm transition-colors",
                                               isSubActive
-                                                ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300 font-medium"
+                                                ? "bg-gray-50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300"
                                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white"
                                             )}
                                           >
@@ -617,6 +627,41 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
+
+      {/* Settings Footer - only show when expanded */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 dark:border-gray-800 p-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full flex items-center justify-start gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-all duration-200"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="text-sm font-medium">Settings</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="z-[120] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-2">
+              <DropdownMenuItem className="flex items-center gap-2" onClick={() => toggleTheme()}>
+                <Sun className="h-4 w-4" />
+                <span>Toggle Theme</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2" onClick={() => setThemeMode('light')}>
+                <Sun className="h-4 w-4" />
+                <span>Light</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2" onClick={() => setThemeMode('dark')}>
+                <Moon className="h-4 w-4" />
+                <span>Dark</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2" onClick={async () => { await logout(); navigation.handleNavigation('/'); }}>
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       {/* Search Modal */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>

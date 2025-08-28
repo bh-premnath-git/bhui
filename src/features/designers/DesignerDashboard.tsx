@@ -10,7 +10,7 @@ const designerOptions = [
     title: "Data Pipeline",
     desc: "Transform and enrich data via UI driven approach. Combine multiple datasets and create enriched data sets.",
     buttonText: 'Build Pipeline',
-    link: ROUTES.DESIGNERS.BUILD_PIPELINE,
+    link: ROUTES.DESIGNERS.BUILD_PLAYGROUND(null),
     gradient: "from-blue-500/20 via-blue-300/20 to-purple-500/20"
   },
   {
@@ -19,7 +19,7 @@ const designerOptions = [
     title: "Data Flow",
     desc: "Manage pipeline flows in Airflow. Schedule flows using cron expressions.",
     buttonText: 'Build Flow',
-    link: "/designers/data-flow-playground",
+    link: ROUTES.DESIGNERS.Data_FLOW_PLAYGROUND(null),
     gradient: "from-emerald-500/20 via-emerald-300/20 to-blue-500/20"
   },
   {

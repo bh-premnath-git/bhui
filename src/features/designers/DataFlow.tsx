@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import ReactFlow from 'reactflow';
-import 'reactflow/dist/style.css';
+import {ReactFlow} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomNode } from '@/components/bh-reactflow-comps/builddata/CustomNode';
 import { CustomEdge } from '@/components/bh-reactflow-comps/builddata/customEdge';
 import { Terminal } from '@/components/bh-reactflow-comps/builddata/LogsPage';
 import { FlowControls } from '@/features/designers/pipeline/components/FlowControls';
-import KeyboardShortcutsPanel from '@/features/designers/pipeline/components/ShortcutsInfoPanel';
 import { LoaderCircle, GitBranch } from 'lucide-react';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
 import { useSidebar } from '@/context/SidebarContext';
@@ -20,7 +19,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { setSelectedEnv, setSelectedFlow } from '@/store/slices/designer/flowSlice';
-import { useFlowOperations } from '@/hooks/useFlowOperations';
+
 import { convertFlowJsonToReactFlow } from '@/lib/pipelineJsonConverter';
 import { useModules } from '@/hooks/useModules';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -32,7 +31,21 @@ import { setEnabled } from '@/store/slices/gitSlice';
 
 const BuildPlayGround: React.FC = () => {
     const { isRightAsideOpen, isBottomDrawerOpen } = useSidebar();
-    const { selectNode, revertOrSaveData, setSelectedFlowId, reactFlowInstance, selectedFlowId, setIsSaving, setIsSaved, prevNodeFn, setNodeFormData } = useFlow();
+    const { 
+        selectNode, 
+        revertOrSaveData, 
+        setSelectedFlowId, 
+        reactFlowInstance, 
+        selectedFlowId, 
+        setIsSaving, 
+        setIsSaved, 
+        prevNodeFn, 
+        setNodeFormData,
+        nodes: flowNodes,
+        edges: flowEdges,
+        onNodesChange: flowOnNodesChange,
+        onEdgesChange: flowOnEdgesChange
+    } = useFlow();
     const navigate = useNavigate();
     const [nodeFormData, setNodeFormDataLocal] = useState<any[]>([]);
     const {
@@ -73,8 +86,6 @@ const BuildPlayGround: React.FC = () => {
         transformationCounts,
         highlightedNodeId,
         showLogs,
-        nodes,
-        edges,
         selectedSchema,
         sourceColumns,
         isFormOpen,
@@ -88,6 +99,10 @@ const BuildPlayGround: React.FC = () => {
         setSelectedNodeId,
         setNodes,
     } = usePipelineContext();
+
+    // Use flow nodes and edges for the ReactFlow component
+    const nodes = flowNodes;
+    const edges = flowEdges;
 
     const onError = useCallback((id: string) => {
         // console.log('Flow Error:', id);
@@ -485,8 +500,8 @@ const BuildPlayGround: React.FC = () => {
                                 }
                             }))}
                             edges={edges}
-                            onNodesChange={handleNodesChange}
-                            onEdgesChange={handleEdgesChange}
+                            onNodesChange={flowOnNodesChange}
+                            onEdgesChange={flowOnEdgesChange}
                             onConnect={onConnect}
                             nodeTypes={memoizedNodeTypes}
                             edgeTypes={edgeTypes}

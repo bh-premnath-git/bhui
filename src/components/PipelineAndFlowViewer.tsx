@@ -1,6 +1,6 @@
 import React from 'react';
-import ReactFlow, { Background, Controls, Panel } from 'reactflow';
-import 'reactflow/dist/style.css';
+import { ReactFlow, Background, Controls, Panel } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 const pipelineNodes = [
   { id: '1', data: { label: 'Read Data' }, position: { x: 0, y: 0 } },

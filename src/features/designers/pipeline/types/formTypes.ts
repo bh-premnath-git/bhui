@@ -4,9 +4,13 @@ export interface Schema {
   properties: Record<string, any>;
   items?: any;
   minItems?: number;
-  required?: boolean;
+  required?: string[];
   enum?: string[];
   description?: string;
+  title?: string;
+  nodeId?: string;
+  anyOf?: any[];
+  [key: string]: any;
 }
 
 export interface FormValues {
@@ -74,7 +78,6 @@ export interface Node {
   [key: string]: any;
 }
 
-
 export interface UIProperties {
   color: string;
   icon: string;
@@ -82,17 +85,8 @@ export interface UIProperties {
   ports: any;
 }
 
-
-export interface Schema {
-  title: string;
-  nodeId?: string;
-  [key: string]: any;
-}
-
 export type ArraySchema = {
   type: string;
   items: Record<string, any>;
   minItems?: number;
 };
-
-

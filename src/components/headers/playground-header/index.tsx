@@ -20,6 +20,7 @@ import { ParameterModal } from '../build-playground-header/ParameterModal';
 import { AIButton } from './AIChatButton';
 import NodeDropList from '@/components/bh-reactflow-comps/builddata/NodeDropList';
 import { usePipelineContext } from '@/context/designers/DataPipelineContext';
+import { useFlow } from '@/context/designers/FlowContext';
 import PipelineControls from '../build-playground-header/components/PipelineControls';
 import { useModules } from '@/hooks/useModules';
 import { usePipelineModules } from '@/hooks/usePipelineModules';
@@ -36,12 +37,16 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
   const { selectedFlow } = useAppSelector((state: RootState) => state.flow);
   const { selectedPipeline } = useAppSelector((state: RootState) => state.pipeline);
   const { pipelineDtl, pipelineType, selectedEngineType } = useAppSelector((state: RootState) => state.buildPipeline);
+  const { isRightAsideComponent } = useAppSelector((state: RootState) => state.chat);
   
   // Get actual autosave status from pipeline context (only for pipeline mode)
   let pipelineContext = null;
+  let flowContext = null;
   try {
     if (!isFlow) {
       pipelineContext = usePipelineContext();
+    } else {
+      flowContext = useFlow();
     }
   } catch (error) {
     // Pipeline context not available
@@ -116,6 +121,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     return {
       "ui_properties": {
         "module_name": type.label,
+        "type": type.type,
         "color": type.color,
         "icon": type.icon,
         "id": type.id,
@@ -131,7 +137,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
             icon: type?.icon,
             label: type?.label,
           },
-          properties: type.operators.map((op) => op.properties),
+          properties: type.operators?.map((op) => op.properties) || [],
           description: type?.description,
           fullyOptimized: false,
         }
@@ -139,11 +145,14 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     };
   });
   const {
-    handleNodeClick, addNodeToHistory,
     isPipelineRunning, handleNext, handleStop, handleRun,
     isPipelineValid, pipelineValidationErrors, pipelineValidationWarnings,
     attachedCluster,
-  } = pipelineContext || {};
+  } = isFlow ? flowContext : pipelineContext;
+
+  const contextHandleNodeClick = isFlow ? flowContext?.handleNodeClick : pipelineContext?.handleNodeClick;
+  const contextAddNodeToHistory = isFlow ? flowContext?.addNodeToHistory : pipelineContext?.addNodeToHistory;
+
   const isClusterAttached = !!attachedCluster;
   const { isRightAsideOpen } = useSidebar();
 
@@ -178,7 +187,7 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
     <div className="bg-[#fff] w-full p-0 border-border z-50 overflow-hidden">
       <div className="flex items-center justify-between bg-card min-w-0 gap-2">
         {/* Left section - AutoSave, NameEditor, and action buttons */}
-        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
+        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0 ml-4">
           <AutoSaveStatus
             status={autoSaveStatus}
             lastSaved={lastSavedTime}
@@ -192,46 +201,50 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
                 onSave={handleSave}
                 placeholder="Select flow..."
               />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCreateFlowDialogOpen(true)}
-                    className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
-                    aria-label="Create new flow"
-                  >
-                    <PlusCircle className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create new flow</p>
-                </TooltipContent>
-              </Tooltip>
+              {!isRightAsideComponent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCreateFlowDialogOpen(true)}
+                      className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
+                      aria-label="Create new flow"
+                    >
+                      <PlusCircle className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create new flow</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <PipelineSelector
+              {!isRightAsideComponent&&(<PipelineSelector
                 initialName={itemName || ''}
                 onSave={handleSave}
                 placeholder="Select pipeline..."
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCreatePipelineDialogOpen(true)}
-                    className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
-                    aria-label="Create new pipeline"
-                  >
-                    <PlusCircle className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create new pipeline</p>
-                </TooltipContent>
-              </Tooltip>
+              />)}
+              {!isRightAsideComponent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCreatePipelineDialogOpen(true)}
+                      className="h-9 w-9 text-primary hover:text-primary/80 hover:bg-primary/10"
+                      aria-label="Create new pipeline"
+                    >
+                      <PlusCircle className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create new pipeline</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           )}
 
@@ -310,18 +323,19 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           )}
         </div>
 
-        {/* Middle section - Node controls */}
-        {pipelineType?.toLowerCase() != "requirement" &&
-          (<div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
+        {/* Middle section - Node controls (pipeline only, requires context) */}
+        {!isFlow && pipelineContext && pipelineType?.toLowerCase() !== "requirement" && (
+          <div className="flex items-center justify-center gap-2 px-1 flex-1 min-w-0">
             <NodeDropList
               filteredNodes={isFlow ? flowNodes : filteredNodes}
-              handleNodeClick={handleNodeClick}
-              addNodeToHistory={addNodeToHistory}
+              handleNodeClick={contextHandleNodeClick}
+              addNodeToHistory={contextAddNodeToHistory}
             />
-          </div>)}
+          </div>
+        )}
 
         {/* Right section - Pipeline controls and AI button */}
-        <div className="flex items-center justify-end space-x-2 flex-shrink-0">
+        <div className="flex items-center justify-end space-x-2 flex-shrink-0  mr-4">
           {!isFlow && (
             <PipelineControls
               handleRunClick={handleRun}
@@ -350,9 +364,11 @@ export function PlaygroundHeader({ playGroundHeader }: PlayGroundHeaderProps) {
           )}
 
           {!isRightAsideOpen && (
-            <div className="border-l border-border pl-2 flex-shrink-0">
+           <>
+           {!isRightAsideComponent&&( <div className="border-l border-border pl-2 flex-shrink-0">
               <AIButton variant={playGroundHeader} color="#009f59" />
-            </div>
+            </div>)}
+           </>
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Node, Edge } from 'reactflow';
+import { Node, Edge } from '@xyflow/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store';
 import { Button } from '@/components/ui/button';
@@ -256,13 +256,25 @@ const LookupForm: React.FC<LookupFormProps> = ({
         key={safeFieldKey}
         fieldKey={safeFieldKey}
         fieldSchema={fieldSchema}
+        name={safeFieldKey}
+        value={(() => {
+          const watchedValue = watch(safeFieldKey as keyof LookupFormValues);
+          if (Array.isArray(watchedValue)) {
+            return watchedValue.join(', ');
+          }
+          if (typeof watchedValue === 'object' && watchedValue !== null) {
+            return JSON.stringify(watchedValue);
+          }
+          return String(watchedValue || '');
+        })()}
+        onChange={(value) => setValue(safeFieldKey as keyof LookupFormValues, value)}
         control={control}
         formInitialValues={initialFormValues}
         columnSuggestions={columnSuggestions}
         setValue={setValue}
       />
     );
-  }, [initialFormValues, setValue]);
+  }, [initialFormValues, setValue, watch]);
 
   // Render tab content for lookup-specific fields
   const renderTabContent = useCallback((key: string, value: any, control: any, formInitialValues = {}, columnSuggestions: string[] = [], setValue: any) => {

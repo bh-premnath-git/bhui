@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, FileText, GitBranch } from 'lucide-react';
+import { X, FileText, GitBranch, Table as TableIcon, Eye, Code2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { setRightComponent, addMessage, openChatBottomDrawer, closeChatBottomDrawer, setChatBottomDrawerHeight } from '@/store/slices/chat/chatSlice';
 import { getChatService } from '@/services/chatService';
@@ -18,6 +18,9 @@ import { PipelineForm } from './forms/PipelineForm';
 import { PipelineCanvasWrapper } from './wrappers/PipelineCanvasWrapper';
 import { PlaygroundHeader } from '@/components/headers/playground-header';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
+import { ExploreDataComponent } from './ExploreDataComponent';
+import SampleDataTableView from './SampleDataTableView';
+// import { SampleDataTableView } from './SampleDataTableView';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -35,9 +38,6 @@ const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-
-
-
 export const RightAsideComponent: React.FC = () => {
   const dispatch = useAppDispatch();
   const rightComponent = useAppSelector((state) => state.chat.rightComponent);
@@ -47,10 +47,12 @@ export const RightAsideComponent: React.FC = () => {
 
   // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
   const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
+  
   React.useEffect(() => {
     if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
     if (!bottomDrawer.isOpen && isBottomDrawerOpen) closeBottomDrawer();
   }, [bottomDrawer.isOpen, isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer]);
+  
   React.useEffect(() => {
     // push height to context for consistent internal behavior of BottomDrawer
     updateBottomDrawerHeight(`${bottomDrawer.height}px`);
@@ -63,11 +65,11 @@ export const RightAsideComponent: React.FC = () => {
   const handleClose = async () => {
     // Close the right component
     dispatch(setRightComponent(null));
-    
+
     // Treat close as submit - add success message and trigger next step based on component type
     let successMessage = '✅ Configuration completed successfully!';
     let nextStep: string | null = null;
-    
+
     switch (rightComponent?.componentId) {
       case 'connection-form':
         successMessage = '✅ Connection configuration completed successfully!';
@@ -96,8 +98,9 @@ export const RightAsideComponent: React.FC = () => {
       case 'pipeline-canvas':
         // Don't show success message for canvas, just close
         return;
+
     }
-    
+
     dispatch(addMessage({
       content: successMessage,
       isUser: false
@@ -137,13 +140,24 @@ export const RightAsideComponent: React.FC = () => {
       case 'pipeline-canvas':
         return (
           <div className="flex flex-col h-full w-full">
-            {/* Inline playground header for pipeline */}
-            <div className="border-b">
-              <PlaygroundHeader playGroundHeader="pipeline" />
-            </div>
+            {/* Conditionally show playground header only when not in designer mode */}
+                <PlaygroundHeader playGroundHeader="pipeline" />
             {/* Canvas below header; hide its internal header */}
             <div className="flex-1 overflow-hidden">
-              <PipelineCanvasWrapper onClose={handleClose} hideHeader />
+              <PipelineCanvasWrapper 
+                onClose={handleClose} 
+                hideHeader 
+                pipelineType={rightComponent.extra?.pipelineType}
+                hideIcons={rightComponent.extra?.hideIcons}
+              />
+            </div>
+          </div>
+        );
+      case 'data-table-view':
+        return (
+          <div className="flex flex-col h-full w-full">
+            <div className="flex-1 overflow-auto">
+              <SampleDataTableView />
             </div>
           </div>
         );
@@ -152,6 +166,14 @@ export const RightAsideComponent: React.FC = () => {
           <div className="h-full overflow-auto">
             <RequirementForm />
           </div>
+        );
+      case 'explore-data':
+        return (
+          <ExploreDataComponent 
+            query={(rightComponent as any).extra?.query}
+            connection={(rightComponent as any).extra?.connection}
+            threadId={(rightComponent as any).extra?.threadId}
+          />
         );
       default:
         return (
@@ -176,32 +198,62 @@ export const RightAsideComponent: React.FC = () => {
   return (
     <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20">
       <Card className="h-full rounded-none border-0 shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-semibold">
+        <CardHeader 
+          className="flex p-1 flex-row items-center justify-between space-y-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <CardTitle className="text-base font-medium truncate min-w-0" title={rightComponent.title}>
               {rightComponent.title}
             </CardTitle>
-            {/* Toggle icons (visible when extra.toggles is provided) */}
+            {/* Segmented toggle (visible when extra.toggles is provided) */}
             {Array.isArray((rightComponent as any).extra?.toggles) && (
-              <div className="flex items-center gap-1 ml-2">
-                {(rightComponent as any).extra.toggles.map((t: any) => {
-                  const isActive = rightComponent.componentId === t.componentId;
-                  const IconComp = t.componentId === 'requirement-form' ? FileText : GitBranch;
-                  return (
-                    <Button
-                      key={t.id}
-                      variant="ghost"
-                      size="icon"
-                      className={`h-8 w-8 rounded-full transition-colors ${isActive ? 'bg-primary text-primary-foreground shadow ring-2 ring-primary' : 'hover:bg-muted/60 text-muted-foreground'}`}
-                      title={t.title}
-                      aria-label={t.title}
-                      aria-pressed={isActive}
-                      onClick={() => handleToggle(t.componentId)}
-                    >
-                      <IconComp className="h-4 w-4" />
-                    </Button>
-                  );
-                })}
+              <div className="ml-2 flex-shrink-0">
+                <div className="inline-flex items-center rounded-md bg-[#F2F0EB] p-1 shadow-sm border border-[#E5E1D8]">
+                  {(() => {
+                    // Expect two options: left=view (data-table-view) with eye, right=code (pipeline-canvas) with </>
+                    const toggles = (rightComponent as any).extra.toggles as any[];
+                    // Derive order: left = data-table-view, right = pipeline-canvas; fallback to existing order
+                    const left = toggles.find(t => t.componentId === 'data-table-view') || toggles[0];
+                    const right = toggles.find(t => t.componentId === 'pipeline-canvas') || toggles[1] || toggles[0];
+                    const items = [left, right];
+                    return items.map((t, idx) => {
+                      const isActive = rightComponent.componentId === t.componentId;
+                      const isLeft = idx === 0;
+                      const commonClasses = 'px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center justify-center';
+                      const activeClasses = 'bg-white border border-[#E5E1D8] text-foreground shadow-sm';
+                      const inactiveClasses = 'bg-transparent text-[#6B6A65] hover:text-foreground';
+                      const radius = isLeft ? 'rounded-md' : 'rounded-md';
+                      const onClick = () => handleToggle(t.componentId);
+                      return (
+                        <button
+                          key={t.id || t.componentId}
+                          onClick={onClick} 
+                          className={`${commonClasses} ${radius} ${isActive ? activeClasses : inactiveClasses}`}
+                          title={t.title}
+                          aria-label={t.title}
+                          aria-pressed={isActive}
+                        >
+                          <span className="flex items-center justify-center">
+                            {(() => {
+                              const iconMap: Record<string, React.ComponentType<any>> = {
+                                eye: Eye,
+                                code: Code2,
+                                table: TableIcon,
+                                branch: GitBranch,
+                                file: FileText,
+                              };
+                              const FallbackIcon = t.componentId === 'data-table-view' ? Eye
+                                : t.componentId === 'pipeline-canvas' ? Code2
+                                : GitBranch;
+                              const IconComp = (t.icon && iconMap[t.icon]) ? iconMap[t.icon] : FallbackIcon;
+                              return <IconComp className="h-4 w-4" />;
+                            })()}
+                          </span>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
             )}
           </div>

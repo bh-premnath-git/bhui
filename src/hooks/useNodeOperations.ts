@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
-import { Node, Edge } from 'reactflow';
-import { CustomNodeData, MetaData, NodeFormData } from '@/types/flow.types';
+import { Node, Edge } from '@xyflow/react';
+import { CustomNodeData, MetaData, NodeFormData } from '@/types/designer/flow';
 
 export function useNodeOperations(
   nodes: Node<CustomNodeData>[],

@@ -10,19 +10,18 @@ import React, {
 } from 'react';
 import { usePipelineActions } from '@/hooks/usePipelineActions';
 import { convertPipelineToUIJson} from '@/lib/pipelineJsonConverter';
-import { CATALOG_LIVE_API_URL, CATALOG_REMOTE_API_URL, USE_SECURE } from '@/config/platformenv';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import {
     useNodesState,
     useEdgesState,
     useReactFlow,
     Connection,
     addEdge
-} from 'reactflow';
+} from '@xyflow/react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import schemaData from '@/pages/designers/data-pipeline/data/mdata.json';
-import axios from 'axios';
 import { convertOptimisedPipelineJsonToPipelineJson, resolveRefsPipelineJson, convertUIToPipelineJsonUpToNode } from '@/lib/convertUIToPipelineJson';
 import { validatePipelineConnections } from '@/lib/validatePipelineConnections';
 import { validateFormData } from '@/components/bh-reactflow-comps/builddata/validation';
@@ -36,7 +35,6 @@ import { random } from 'lodash';
 import { usePipelineOperations } from '@/hooks/usePipelineOperations';
 import { useFlowAlignment } from '@/hooks/useFlowAlignment';
 import { Pipeline } from '@/types/designer/pipeline';
-import { debug } from 'console';
 
 interface UIProperties {
     color: string;
@@ -118,7 +116,7 @@ interface bnPipelineContextProps {
     handleStop: () => void;
     handleNext: () => void;
     handleRefreshNode: (nodeId: string) => Promise<void>;
-    fetchSourceColumns: (nodes: any) => void;
+    fetchSourceColumns: () => void;
     handleLeavePage: () => void;
     getTransformationName: (moduleName: string) => string;
     addNodeToHistory: () => void;
@@ -195,6 +193,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const location = useLocation()
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    // Only enable autosave when on pipeline canvas routes
+    const isOnPipelineCanvas = useMemo(() => {
+        const path = location.pathname || ''; 
+        return path.startsWith('/designers/build-playground') || path.startsWith('/designers/data-flow-playground');
+    }, [location.pathname]);
     const [nodeCounters, setNodeCounters] = useState<{ [key: string]: number }>({});
     const reactFlowInstance = useReactFlow();
     const [debuggedNodes, setDebuggedNodes] = useState<string[]>([]);
@@ -237,6 +241,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isCanvasLoading, setIsCanvasLoading] = useState(false);
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [initialDataMap, setInitialDataMap] = useState<{ [key: string]: any }>({});
+
+    // Single autosave timer ref to ensure only one interval at a time
+    const autoSaveTimerRef = useRef<number | null>(null);
 
     const [isSaving, setIsSaving] = useState(false); 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -380,6 +387,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Add this at the component level, outside any callbacks
     const { selectedPipeline } = useAppSelector((state) => state.pipeline);
     const fetchedIdsRef = useRef(new Set<string>());
+    const isHydratingRef = useRef(false);
     const setSaving = useCallback(() => {
         setIsSaving(true);
         setHasUnsavedChanges(true);
@@ -457,26 +465,29 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Update the auto-save effect
     useEffect(() => {
-        // Skip auto-save if isFlow is true
-        if (isFlow) {
+        // Enable auto-save only on canvas routes and when not in flow mode
+        if (!isOnPipelineCanvas || isFlow) {
+            // Ensure no timer is running when not on canvas
+            if (autoSaveTimerRef.current) {
+                window.clearInterval(autoSaveTimerRef.current);
+                autoSaveTimerRef.current = null;
+            }
             return;
         }
 
-        const intervalId = setInterval(async () => {
-            console.log('🔧 AutoSave - Interval triggered:', {
-                hasUnsavedChanges,
-                id,
-                nodesLength: nodes?.length,
-                edgesLength: edges?.length,
-                pipelineName,
-                
-                isFlow
-            });
-            
+        // Avoid creating multiple intervals
+        if (autoSaveTimerRef.current) {
+            window.clearInterval(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = null;
+        }
+
+        const intervalId = window.setInterval(async () => {
+            // Only log and act when on canvas to avoid noise while chatting
+            if (!isOnPipelineCanvas) return;
+
             if (hasUnsavedChanges) {
-                console.log('🔧 AutoSave - Starting save process...',selectedPipeline);
+                console.log('🔧 AutoSave - Starting save process...', selectedPipeline);
                 
-                // Check if there's meaningful content to save
                 const pipelineId = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
                 if (!pipelineId) {
                     console.warn('🔧 AutoSave - No pipeline ID available, cannot save');
@@ -484,11 +495,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     return;
                 }
                 
-                
                 try {
                     setSaving();
 
-                    // Convert nodes to ensure all data is serializable
                     const serializedNodes = nodes.map(node => ({
                         ...node,
                         data: {
@@ -500,92 +509,61 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                                     : []
                         }
                     }));
-                    // Your save logic here
-                    console.log('🔧 AutoSave - Converting pipeline JSON...');
+
                     const pipeline_json: any = await convertOptimisedPipelineJsonToPipelineJson(serializedNodes, edges, pipelineDtl, pipelineName);
-                    console.log('🔧 AutoSave - Pipeline JSON converted:', !!pipeline_json);
 
                     if (pipeline_json?.pipeline_json?.transformations) {
                         pipeline_json.pipeline_json.transformations = pipeline_json.pipeline_json.transformations.map(transform => {
                             if (transform.transformation.toLowerCase() === "target") {
-                                return {
-                                    ...transform,
-                                    transformation: "Writer"
-                                };
+                                return { ...transform, transformation: "Writer" };
                             }
                             return transform;
                         });
                     }
 
-                    // Try to get pipeline ID from multiple sources
-                    const pipelineId = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
-                    
-                    if(pipelineId){
-                        console.log('🔧 AutoSave - Making API call to save pipeline...', {
-                            pipelineId,
-                            url: `/pipeline/${pipelineId}`,
-                            dataSize: JSON.stringify(pipeline_json).length,
-                            nodesCount: serializedNodes.length,
-                            edgesCount: edges.length
-                        });
-                        
+                    const pipelineIdFinal = id || pipeline_id || pipelineDtl?.pipeline_id || selectedPipeline.pipeline_id || localStorage.getItem("pipeline_id");
+                    if (pipelineIdFinal) {
                         await apiService.patch({
                             baseUrl: CATALOG_REMOTE_API_URL,
-                            url: `/pipeline/${pipelineId}`,
+                            url: `/pipeline/${pipelineIdFinal}`,
                             usePrefix: true,
                             method: 'PATCH',
                             data: pipeline_json
                         });
-                        
-                        console.log('🔧 AutoSave - API call completed successfully');
                     } else {
-                        console.warn('🔧 AutoSave - No pipeline ID available in any source:', {
-                            id,
-                            pipeline_id,
-                            pipelineDtl_id: pipelineDtl?.pipeline_id,
-                            localStorage_id: localStorage.getItem("pipeline_id")
-                        });
-                        // Don't mark as saved if we couldn't save
                         setSaveError('No pipeline ID available for saving');
                         return;
                     }
+
                     if ('pipeline_json' in pipeline_json) {
                         let optimised = await resolveRefsPipelineJson(pipeline_json.pipeline_json, pipeline_json.pipeline_json)
                         setPipelineJson(optimised);
                     }
 
-                    // Ensure we're updating the save status after successful save
-                    // Add a small delay to ensure UI updates properly
-                    // setTimeout(() => {
                     setLastSaved(new Date());
                     setSaved();
-                    console.log('🔧 AutoSave - Save completed successfully at:', new Date().toISOString());
-                    // }, 100);
-
                 } catch (error) {
                     console.error('🔧 AutoSave - Error in auto-save:', error);
-                    console.error('🔧 AutoSave - Error details:', {
-                        message: error.message,
-                        stack: error.stack
-                    });
                     setSaveError(error.message || 'Unknown error occurred during save');
                 }
-            } else {
-                console.log('🔧 AutoSave - No unsaved changes, skipping save');
             }
         }, autoSaveInterval);
 
-        return () => clearInterval(intervalId);
-    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow, formStates]);
+        autoSaveTimerRef.current = intervalId;
+        return () => {
+            if (autoSaveTimerRef.current) {
+                window.clearInterval(autoSaveTimerRef.current);
+                autoSaveTimerRef.current = null;
+            } else {
+                window.clearInterval(intervalId);
+            }
+        };
+    }, [nodes, edges, hasUnsavedChanges, autoSaveInterval, setSaving, setSaved, setSaveError, id, pipelineDtl, isFlow, formStates, isOnPipelineCanvas]);
     
     // Track formStates changes to trigger autosave
     useEffect(() => {
         // Skip if this is the initial load or if it's a flow
         if (isFlow || Object.keys(formStates).length === 0) {
-            console.log('🔧 AutoSave - Skipping formStates change tracking:', { 
-                isFlow, 
-                formStatesCount: Object.keys(formStates).length 
-            });
             return;
         }
         
@@ -681,7 +659,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     // Flow alignment helpers based on current nodes/edges
-    const { alignHorizontal: alignHorizontalFlow } = useFlowAlignment({
+    const { alignHorizontal: alignHorizontalFlow, alignTopLeftHierarchical } = useFlowAlignment({
         nodes,
         edges,
         updateNodes: updateSetNode,
@@ -718,58 +696,73 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 
     const makePipeline = async (result: any, isModify = true) => {
-        let optimised;
-        optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
-        let uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+        // Set a global hydration flag to guard source updates during initial apply
+        (window as any).__bh_isHydratingPipeline = true;
+        isHydratingRef.current = true;
+        try {
+            const optimised = await resolveRefsPipelineJson(result.pipeline_definition, result.pipeline_definition);
+            const uiJson = await convertPipelineToUIJson(optimised, handleSourceUpdate);
+            // Set the pipeline JSON first
+            setPipelineJson(optimised);
 
-        // Set the pipeline JSON first
-        setPipelineJson(optimised);
-
-        if (!uiJson || !uiJson.nodes) {
-            throw new Error('Failed to convert pipeline to UI format');
-        }
-
-        const nodesWithTitles = await uiJson.nodes.map(node => {
-            const matchingTransformation = result.pipeline_definition.transformations?.find(
-                (t: any) => t?.title === node?.data?.title && t?.name
-            );
-
-            if (matchingTransformation) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        title: matchingTransformation.name,
-                        transformationData: {
-                            ...node.data.transformationData,
-                            name: matchingTransformation.name
-                        }
-                    }
-                };
+            if (!uiJson || !uiJson.nodes) {
+                throw new Error('Failed to convert pipeline to UI format');
             }
-            return node;
-        });
 
-        if (result.pipeline_definition == null) {
-            setPipelineJson(null);
-            setNodes([]);
-            setEdges([]);
-        } else {
-            setNodes([]);
+            const nodesWithTitles = uiJson.nodes.map(node => {
+                const matchingTransformation = result.pipeline_definition.transformations?.find(
+                    (t: any) => t?.title === node?.data?.title && t?.name
+                );
 
-            // Set nodes and edges with the new data
-            await setNodes(nodesWithTitles);
-            await setEdges(uiJson.edges);
+                if (matchingTransformation) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            title: matchingTransformation.name,
+                            transformationData: {
+                                ...node.data.transformationData,
+                                name: matchingTransformation.name
+                            }
+                        }
+                    };
+                }
+                return node;
+            });
 
-            // Center and align the nodes
-            await handleCenter();
-            // Prefer alignment from useFlowAlignment for better layout
-            await alignHorizontalFlow({ startX: 50, startY: 50, levelWidth: 240, nodeSpacing: 160, fitView: true, distribution: 'compact' });
-        }
+            if (result.pipeline_definition == null) {
+                setPipelineJson(null);
+                setNodes([]);
+                setEdges([]);
+            } else {
+                console.log(nodesWithTitles)
+                // Apply nodes and edges atomically without intermediate clears
+                setNodes(nodesWithTitles);
+                setEdges(uiJson.edges);
+updateSetNode(nodesWithTitles, uiJson.edges);
+                // Defer layout until after nodes/edges are committed
+                // setTimeout(async () => {
+                //     try {
+                //         await handleCenter();
+                //         await alignTopLeftHierarchical({ 
+                //             startX: 0, 
+                //             startY: 0, 
+                //             direction: 'RIGHT',
+                //             nodeNodeSpacing: 120,
+                //             layerSpacing: 200,
+                //             fitView: true 
+                //         });
+                //     } finally {
+                //         // Release hydration guard after layout
+                //         (window as any).__bh_isHydratingPipeline = false;
+                //         isHydratingRef.current = false;
+                //     }
+                // }, 0);
+            }
 
-        // Initialize form states for the new nodes
-        const initialFormStates = {};
-        const getInitialFormState = (transformation: any, nodeId: string, matchingNode?: any) => {
+            // Initialize form states for the new nodes
+            const initialFormStates = {};
+            const getInitialFormState = (transformation: any, nodeId: string, matchingNode?: any) => {
             if (!transformation || !nodeId) {
                 return {};
             }
@@ -963,7 +956,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Set the form states with the new data
         setFormStates(initialFormStates);
+    } finally {
+        // Ensure hydration flag is cleared even if errors occur
+        if ((window as any).__bh_isHydratingPipeline) {
+            (window as any).__bh_isHydratingPipeline = false;
+        }
+        if (isHydratingRef.current) {
+            isHydratingRef.current = false;
+        }
     }
+    };
 
 
  const updateAllNodeDependencies = useCallback(() => {
@@ -1731,7 +1733,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleRun,
         handleStop,
         handleNext,
-        // fetchSourceColumns,
+        fetchSourceColumns: () => {}, // Add empty function for now
         handleLeavePage,
         getTransformationName,
         addNodeToHistory,
@@ -1796,6 +1798,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         detachCluster,
         pipelines,
         setPipelines,
+        initialDataMap,
+        setInitialDataMap,
+        getInitialDataForNode: (nodeId: string, source: any) => initialDataMap[nodeId] || null,
+        createInitialDataForNode: (nodeId: string, source: any) => {
+            const initialData = { nodeId, source, timestamp: Date.now() };
+            setInitialDataMap(prev => ({ ...prev, [nodeId]: initialData }));
+            return initialData;
+        },
         triggerManualSave
     }), [
         nodes,

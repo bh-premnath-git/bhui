@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate} from 'react-router-dom';
 import { navigationItems } from '@/config/navigation';
 import { useReports, NewReport } from './useReports';
 import type { NavItem } from '@/types/navigation';
@@ -21,7 +21,6 @@ export interface NavigationHook {
 export function useNavigation(): NavigationHook {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
-  const location = useLocation();
   const [items, setItems] = useState<NavItem[]>(navigationItems);
   const { reports, loading, addReport, setLoading, setError } = useReports();
 

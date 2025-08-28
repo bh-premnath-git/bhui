@@ -96,6 +96,11 @@ export const ActionsList: React.FC<ActionsListProps> = ({ variant = 'card' }) =>
     dispatch(setSelectedActionTitle(actionTitle));
     dispatch(setContext(`action-${actionId}`));
     
+    if (actionId === 'explore-data') {
+      // For explore-data, only set context without triggering service call
+      return;
+    }
+    
     // Optional: Handle with chat service if available
     try {
       const { getChatService } = await import('@/services/chatService');

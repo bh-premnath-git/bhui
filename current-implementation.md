@@ -1,217 +1,193 @@
-# Current Implementation Documentation
+# ExploreDataComponent (Streaming Data Exploration)
 
-## OverviewTab Chart Integration System
+## Overview
 
-### Overview
-The OverviewTab component integrates with the bh-plotly-charts system to provide real-time data visualization for streaming analysis results from the ExploreDataComponent.
+- Location: `src/components/chat/ExploreDataComponent.tsx`
+- Purpose: Real-time, multi-step AI-driven data exploration with progressive streaming UI and a completed, tabbed results view.
 
-**Location**: `src/components/chat/tabs/OverviewTab.tsx`
+## Public API
 
-### Data Flow Architecture
+- Props: `{ query?: string; connection?: { id: number | string; connection_config_name: string }; threadId?: string }`
 
-#### Streaming Data Structure
-The OverviewTab receives streaming data with the following structure:
-```typescript
-interface TableEvent['content'] {
-  column_names: string[];           // ["Product Name", "Unit Price"]
-  column_values: (string | number | null)[][];  // [["Côte de Blaye", "263.5"], ...]
-  metadata: {
-    total_rows: number;             // 10
-    columns_count: number;          // 2
-  };
-}
-```
+## Internal Types
 
-#### Data Processing Pipeline
-1. **FieldTypeDetector**: Analyzes sample data to determine field types (string/number)
-2. **DataNormalizer**: Converts column-based data to row-based objects for chart processing
-3. **DataAggregator**: Handles data aggregation (sum, avg, min, max)
-4. **ColorProvider**: Manages color schemes (default, viridis, plasma, blues, greens, custom)
-5. **PlotlyChartRenderer**: Renders interactive charts using Plotly.js
+- `StreamResponse` (component state)
+  - `status?: 'streaming' | 'complete' | 'error'`
+  - `error?: string`
+  - From `MetaStartedEvent`: `title?`, `input_question?`, `request_id?`
+  - Step content: `identify?`, `sql?`, `table?`, `explanation?`
+  - From `MetaCompletedEvent`: `duration_ms?`, `results_summary?`
+  - Progressive state: `currentStep?: StreamingStep`, `completedSteps?: string[]`
 
-### bh-plotly-charts System Architecture
+## Key Dependencies
 
-#### Core Components
+- `useConversation` (SSE): `src/hooks/useConversation.ts`
+- Streaming event types/guards: `src/types/streaming.ts`
+- UI: `StreamingStepIndicator`, `StreamingContent`, `CompletedAnalysis`, `AnalysisMetrics`
+- Tabs: `OverviewTab`, `TableTab`, `SqlTab`
+- Util: `toNumber` from `src/lib/utils.ts`
 
-##### 1. FieldTypeDetector (`src/components/bh-plotly-charts/FieldTypeDetector.ts`)
-- **Purpose**: Automatic field type detection from data samples
-- **Interface**: `IFieldTypeDetector`
-- **Method**: `detectTypes(data: any[]): FieldTypes`
-- **Logic**: Samples up to 10 rows to determine if fields are numeric or string
-- **Output**: `{ [fieldName: string]: 'string' | 'number' }`
+## Core Logic
 
-##### 2. DataNormalizer (`src/components/bh-plotly-charts/DataNormalizer.ts`)
-- **Purpose**: Converts streaming table format to chart-ready row objects
-- **Interface**: `IDataNormalizer`
-- **Method**: `normalize(data: TableContent): NormalizedData`
-- **Transformation**: `column_names + column_values` → `rows[]` with field type metadata
-- **Output**: 
-  ```typescript
-  {
-    rows: any[];
-    fieldTypes: FieldTypes;
-    numericFields: string[];
-    stringFields: string[];
-  }
-  ```
+1. Validation
+   - Requires `connection?.id`, `query`, and `threadId` to initiate streaming.
+   - Converts `connection.id` via `toNumber()`; if `null`, sets `status: 'error'` and stops.
 
-##### 3. DataAggregator (`src/components/bh-plotly-charts/DataAggregator.ts`)
-- **Purpose**: Data aggregation and grouping operations
-- **Interface**: `IDataAggregator`
-- **Methods**:
-  - `aggregate(values: number[], method: AggregationMethod): number`
-  - `groupBy<T>(data: T[], keys: string[]): GroupedData<T>`
-- **Aggregation Types**: sum, avg, min, max
-- **Grouping**: Creates key-based data groups for chart rendering
+2. Start Streaming (useEffect)
+   - Sets state: `{ status: 'streaming', currentStep: undefined, completedSteps: [] }`.
+   - Calls `streamConversation(connId, query, threadId, onChunk, onComplete, onError)`.
+   - Stores abort function in `streamAbortRef`.
+   - Cleanup on unmount/deps change: calls abort (try/catch no-op) and clears ref.
 
-##### 4. ColorProvider (`src/components/bh-plotly-charts/ColorProvider.ts`)
-- **Purpose**: Color scheme management for charts
-- **Interface**: `IColorProvider`
-- **Method**: `getColors(scheme: ColorScheme, customColor?: string): string[]`
-- **Schemes**: default, viridis, plasma, blues, greens, custom
-- **Output**: Array of hex color codes for chart styling
+3. Event Handling (onChunk with type guards)
+   - `isMetaStarted` → `handleMetaStarted(evt)`:
+     - Sets `status: 'streaming'`, copies `title`, `input_question`, `request_id`.
+     - Sets `currentStep: 'thinking'` and `completedSteps: []`.
+   - `isIdentify` → `handleIdentify(evt)`:
+     - Sets `identify` and `currentStep: 'identifying'`.
+     - Ensures `'thinking'` is included in `completedSteps`.
+   - `isSql` → `handleSql(evt)`:
+     - Sets `sql` and `currentStep: 'generating_sql'`.
+     - Ensures `'thinking'`, `'identifying'` are in `completedSteps`.
+   - `isTable` → `handleTable(evt)`:
+     - Sets `table` and `currentStep: 'fetching_data'`.
+     - Ensures `'thinking'`, `'identifying'`, `'generating_sql'` are in `completedSteps`.
+   - `isExplanation` → `handleExplanation(evt)`:
+     - Sets `explanation` and `currentStep: 'explaining'`.
+     - Ensures previous steps plus `'fetching_data'` are in `completedSteps`.
+   - `isMetaCompleted` → `handleMetaCompleted(evt)`:
+     - Sets `status: 'complete'`, `duration_ms`, `results_summary`.
+     - Sets `currentStep: 'complete'` and `completedSteps` to all prior steps.
 
-##### 5. PlotlyChartRenderer (`src/components/bh-plotly-charts/PlotlyChartRenderer.ts`)
-- **Purpose**: Chart rendering using Plotly.js library
-- **Interface**: `IChartRenderer`
-- **Methods**:
-  - `render(container: HTMLElement, data: ChartRenderData): void`
-  - `download(container: HTMLElement, filename: string): void`
-- **Chart Types**: bar, column, line, scatter, pie, histogram, box, heatmap, number
-- **Features**: Responsive design, error handling, custom HTML for number charts
+4. Completion and Errors
+   - `onComplete`: sets `status: 'complete'`, `currentStep: 'complete'`, clears abort ref.
+   - `onError`: stringifies error to a message and sets `status: 'error'`, `error`.
 
-##### 6. ChartControls (`src/components/bh-plotly-charts/ChartControls.tsx`)
-- **Purpose**: Interactive chart configuration UI
-- **Controls**:
-  - Chart type selection (9 types)
-  - X/Y axis field selection
-  - Aggregation method selection
-  - Color scheme selection
-  - Custom color picker
-- **Layout**: Responsive grid layout with proper form controls
+5. Copy Helper
+   - `handleCopy(text?)`: writes to clipboard if `text` is present; best-effort, silent on failure.
 
-### Chart Type Implementations
+## Rendering Flow
 
-#### Supported Chart Types
-1. **Bar Chart**: Horizontal bars with aggregated data
-2. **Column Chart**: Vertical bars with aggregated data
-3. **Line Chart**: Connected data points with markers
-4. **Scatter Plot**: Individual data points without aggregation
-5. **Pie Chart**: Circular segments showing proportions
-6. **Histogram**: Frequency distribution of numeric values
-7. **Box Plot**: Statistical distribution visualization
-8. **Heatmap**: 2D data visualization with color intensity
-9. **Number Chart**: Large numeric display with custom HTML
+- Container: `Card` with `StreamingStepIndicator` in header; content body from `renderContent()`.
+- `renderContent()` branches:
+  - Missing inputs (no `connection` or no `query`): guidance message + dashed bordered placeholder.
+  - Streaming (`status === 'streaming'`): `StreamingContent` with `currentStep`, and any of `identify/sql/table/explanation` so far. `onCopy` supplied.
+  - Completed or error: `AnalysisMetrics` (identify + duration + summary), then `CompletedAnalysis` with `sql`, `table`, `explanation`, `error`.
 
-#### Chart Configuration
-```typescript
-interface ChartConfig {
-  type: ChartType;
-  xField: string;           // Selected field for X-axis
-  yField: string;           // Selected field for Y-axis (must be numeric)
-  seriesField?: string;     // Optional series field for heatmaps
-  aggregation: AggregationMethod;  // sum, avg, min, max
-}
-```
+## Visual Components
 
-### OverviewTab Implementation Details
+- `StreamingStepIndicator` (`src/components/chat/features/StreamingStepIndicator.tsx`)
+  - Types: `StreamingStep = 'thinking' | 'identifying' | 'generating_sql' | 'fetching_data' | 'explaining' | 'complete'`
+  - `StreamingStatus = 'streaming' | 'complete' | 'error'`
+  - Maps status/step to lucide icon and label; shows spinner while unknown; error icon on failure.
 
-#### Component State Management
-```typescript
-// Auto-configuration based on detected field types
-const [chartConfig, setChartConfig] = useState<ChartConfig>(() => {
-  const firstStringField = normalizedData?.stringFields[0] || '';
-  const firstNumericField = normalizedData?.numericFields[0] || '';
-  
-  return {
-    type: 'column',
-    xField: firstStringField,
-    yField: firstNumericField,
-    aggregation: 'sum'
-  };
-});
-```
+- `StreamingContent` (`src/components/chat/features/StreamingContent.tsx`)
+  - Props: `currentStep`, `identify?`, `sql?`, `table?`, `explanation?`, `onCopy?`.
+  - Step UIs:
+    - thinking: spinner + "AI is analyzing..."
+    - identifying: shows identified source if available.
+    - generating_sql: shows source and a `SqlBlock` titled "Generated SQL".
+    - fetching_data: shows source, `SqlBlock` ("SQL Query"), and `DataTable`.
+    - explaining: shows source, `SqlBlock`, `DataTable`, and narrative analysis.
 
-#### Real-time Chart Rendering
-```typescript
-useEffect(() => {
-  if (chartContainerRef.current && normalizedData && chartConfig.xField && chartConfig.yField) {
-    const colors = colorProvider.getColors(colorScheme, customColor);
-    
-    renderer.render(chartContainerRef.current, {
-      config: chartConfig,
-      data: normalizedData.rows,
-      colors
-    });
-  }
-}, [chartConfig, normalizedData, colorScheme, customColor]);
-```
+- `CompletedAnalysis` (`src/components/chat/features/CompletedAnalysis.tsx`)
+  - Tabs: Overview (`OverviewTab`), Table (`TableTab`), SQL (`SqlTab`). Default: `overview`.
+  - Shows error banner if `error` prop is set.
 
-#### Key Features
-1. **Auto-field Selection**: Automatically selects appropriate X/Y fields based on data types
-2. **Real-time Updates**: Charts re-render when streaming data changes
-3. **Interactive Controls**: Full user customization of chart appearance and configuration
-4. **Responsive Design**: Charts adapt to container size (minimum 384px height)
-5. **Error Handling**: Graceful fallbacks for missing data or rendering errors
-6. **Data Summary**: Displays metadata about columns, rows, and field types
-7. **Memory Optimization**: Uses useMemo for expensive operations
+- `AnalysisMetrics` (`src/components/chat/features/AnalysisMetrics.tsx`)
+  - Displays identify source and duration badge (seconds with 1 decimal). Hides if nothing to show.
 
-### Integration Points
+## Tabs
 
-#### ExploreDataComponent Integration
-- **Data Source**: Receives processed streaming data from analysis pipeline
-- **Display Context**: Shown in CompletedAnalysis component's Overview tab
-- **Real-time Updates**: Responds to streaming data changes automatically
+- `OverviewTab` (`src/components/chat/tabs/OverviewTab.tsx`)
+  - Inputs: `{ table?: TableEvent['content']; explanation?: string | null }`.
+  - Uses bh-plotly-charts pipeline: `FieldTypeDetector` → `DataNormalizer` → `DataAggregator` → `PlotlyChartRenderer`.
+  - `ChartControls` to configure: chart type, X/Y fields, aggregation, color scheme, custom color.
+  - Auto-selects first string field as `xField` and first numeric as `yField` when data is present.
+  - Renders Plotly chart to `chartContainerRef` when config is valid; handles errors.
+  - Shows explanation text block below the chart.
 
-#### Type System Integration
-```typescript
-// Shared types from streaming system
-import type { TableEvent } from '@/types/streaming';
+- `TableTab` (`src/components/chat/tabs/TableTab.tsx`)
+  - Props: `{ table?: TableEvent['content'] | null }`.
+  - If missing table, shows muted "No table results available." Else renders `DataTable` in a bordered, scrollable container.
 
-// Chart system types
-import type {
-  TableContent,
-  ChartConfig,
-  ChartType,
-  ColorScheme,
-} from '@/types/plotly/systemtype';
-```
+- `SqlTab` (`src/components/chat/tabs/SqlTab.tsx`)
+  - Props: `{ sql?: string | null }`.
+  - If `sql === undefined`, shows muted "SQL not available." Else shows `SqlBlock` with title "SQL", content or "(no SQL generated)", and `canCopy={!!sql}`.
 
-### Performance Optimizations
+## SSE Hook: useConversation
 
-#### Memory Management
-- **useMemo**: Expensive operations cached (data normalization, component instances)
-- **useEffect Dependencies**: Precise dependency arrays prevent unnecessary re-renders
-- **Component Instances**: Chart system components instantiated once and reused
+- Location: `src/hooks/useConversation.ts`
+- `createConversation()`: POST to `${AGENT_REMOTE_URL}${API_PREFIX_URL}/conversation/create-conversation` (returns `{ thread_id, messages }`).
+- `streamConversation(connectionId, userRequest, threadId, onChunk, onComplete?, onError?, module?)`:
+  - URL: `${AGENT_REMOTE_URL}${API_PREFIX_URL}/conversation/conversation/query/stream` (+ `?connection_config_id=` unless `module === 'dataops'`).
+  - Headers: `Content-Type: application/json`, `Authorization: Bearer ${sessionStorage.getItem('kc_token')}`.
+  - Body: `{ user_request, thread_id, module: module ?? 'explorer' }`.
+  - Reads `ReadableStream` with `TextDecoder`, buffers by `\n\n`, parses `data:` lines as JSON.
+  - Supports single object or array per event; calls `onChunk` for each.
+  - On end: flushes buffer and calls `onComplete`. Returns `() => abortController.abort()`.
+  - Errors: non-OK throws; parse errors logged with payload; catch emits toast unless `onError` supplied.
 
-#### Rendering Optimizations
-- **Container Refs**: Direct DOM manipulation for Plotly charts
-- **Error Boundaries**: Isolated error handling prevents component crashes
-- **Progressive Enhancement**: Placeholder shown while data loads
+## Streaming Types and Guards
 
-### Error Handling Strategy
+- Location: `src/types/streaming.ts`
+- Types:
+  - MetaStarted/Completed events with `meta.status: 'started' | 'completed'`.
+  - Step events: `IdentifyEvent ('IDENTIFY')`, `SqlEvent ('SQL')`, `TableEvent ('TABLE')`, `ExplanationEvent ('EXPLANATION')`.
+  - `TableContent` payload: `{ column_names: string[]; column_values: (string|number|null)[][]; metadata: { total_rows; columns_count } }`.
+- Guards: `isMetaStarted`, `isMetaCompleted`, `isIdentify`, `isSql`, `isTable`, `isExplanation`.
 
-#### Data Validation
-- **Null Checks**: Handles missing or invalid streaming data
-- **Type Validation**: Ensures proper field types before chart rendering
-- **Empty State**: Shows appropriate messages when no data available
+## Utilities
 
-#### Chart Rendering Errors
-- **Try-Catch Blocks**: Wraps chart rendering operations
-- **Error Display**: Shows user-friendly error messages in chart container
-- **Fallback UI**: Maintains layout integrity during error states
+- `toNumber(v: number | string): number | null` (from `src/lib/utils.ts`)
+  - Returns finite number or `null` if invalid; used to validate `connection.id` before streaming.
 
-### Future Extensibility
+## Error Handling & Cleanup
 
-#### Plugin Architecture
-The system is designed for easy extension:
-- **New Chart Types**: Add to PlotlyChartRenderer chart builders
-- **Custom Aggregations**: Extend DataAggregator methods
-- **Color Schemes**: Add to ColorProvider schemes object
-- **Field Types**: Extend FieldTypeDetector logic
+- Input validation errors set `status: 'error'` with a message.
+- Streaming errors: handled by `onError` and `useConversation` catch/toast; UI shows error banner in `CompletedAnalysis`.
+- Abort controller is always cleared on completion or unmount.
 
-#### API Integration
-Ready for backend integration:
-- **Chart Persistence**: Save/load chart configurations
-- **Export Functionality**: Download charts as images
-- **Sharing**: Generate shareable chart URLs
+## Data Flow Summary
+
+1. Inputs validated; `connection.id` converted via `toNumber`.
+2. SSE stream opened with `useConversation.streamConversation`.
+3. Incoming SSE chunks parsed; type guards dispatch to handlers.
+4. UI updates progressively via `StreamingContent`.
+5. When completed: `AnalysisMetrics` + `CompletedAnalysis` tabs (Overview/Table/SQL).
+6. `OverviewTab` normalizes and charts the final table with Plotly; `TableTab` renders table; `SqlTab` shows SQL.
+
+---
+
+## bh-plotly-charts Overview (used by OverviewTab)
+
+- Pipeline: `FieldTypeDetector` → `DataNormalizer` → `DataAggregator` → `ColorProvider` → `PlotlyChartRenderer`.
+- Charts: bar, column, line, scatter, pie, histogram, box, heatmap, number.
+- `ChartControls`: chart type, X/Y fields, aggregation, color scheme, custom color.
+- Behavior in `OverviewTab`:
+  - Auto-picks first string for X and first numeric for Y.
+  - Renders responsively (min height ≈ 384px), with try/catch around render.
+  - Explanation text rendered below the chart.
+
+---
+
+## CompletedAnalysis (Tabs)
+
+- Location: `src/components/chat/features/CompletedAnalysis.tsx`
+- Tabs: Overview (`OverviewTab`), Table (`TableTab`), SQL (`SqlTab`). Default to `overview`.
+- Error-first rendering: red banner if `error` prop provided.
+
+---
+
+## Auxiliary UI Components
+
+- `DataTable` (used in streaming and Table tab): renders `TableContent` (`column_names`, `column_values`, `metadata`).
+- `SqlBlock` (used in streaming and SQL tab): shows syntax-highlighted SQL with copy option.
+
+---
+
+## Extensibility & Notes
+
+- Stream parser supports arrays or single objects per SSE event.
+- Easy to add new steps or metrics by extending streaming types and UI switch cases.
+- Plotly layer is modular; can add chart types, aggregations, or color schemes without touching streaming.

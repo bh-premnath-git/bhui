@@ -1,4 +1,4 @@
-import { ChartConfig, ColorScheme, ChartType, AggregationMethod } from "@/types/plotly/systemtype";
+import type { ChartConfig, ColorScheme, ChartType } from "@/types/plotly/systemtype";
 
 interface ChartControlsProps {
     config: ChartConfig;
@@ -24,13 +24,17 @@ interface ChartControlsProps {
     };
   
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 p-6 bg-gray-50 border-b">
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Color Scheme</label>
-          <select 
-            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+      <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+        {/* Color Scheme */}
+        <div className="inline-flex items-center gap-2">
+          <label className="sr-only" htmlFor="chart-color-scheme">Color Scheme</label>
+          <select
+            id="chart-color-scheme"
+            className="h-8 rounded-md border border-muted-foreground/30 bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring/40"
             value={colorScheme}
             onChange={(e) => onColorSchemeChange(e.target.value as ColorScheme)}
+            aria-label="Color Scheme"
+            title="Color Scheme"
           >
             <option value="default">Default</option>
             <option value="viridis">Viridis</option>
@@ -41,24 +45,35 @@ interface ChartControlsProps {
           </select>
         </div>
   
+        {/* Custom Color (only when custom) */}
         {colorScheme === 'custom' && (
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Custom Color</label>
-            <input 
-              type="color" 
-              className="w-full h-10 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none"
+          <div className="inline-flex items-center gap-2">
+            <label className="sr-only" htmlFor="chart-custom-color">Custom Color</label>
+            <input
+              id="chart-custom-color"
+              type="color"
+              className="h-8 w-10 cursor-pointer rounded-md border border-muted-foreground/30 bg-background p-0"
               value={customColor}
               onChange={(e) => onCustomColorChange(e.target.value)}
+              aria-label="Custom Color"
+              title="Custom Color"
             />
           </div>
         )}
   
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Chart Type</label>
-          <select 
-            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+        {/* Divider */}
+        <div className="mx-1 hidden h-5 w-px bg-muted-foreground/20 sm:block" />
+  
+        {/* Chart Type */}
+        <div className="inline-flex items-center gap-2">
+          <label className="sr-only" htmlFor="chart-type">Chart Type</label>
+          <select
+            id="chart-type"
+            className="h-8 rounded-md border border-muted-foreground/30 bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring/40"
             value={config.type}
             onChange={(e) => updateConfig({ type: e.target.value as ChartType })}
+            aria-label="Chart Type"
+            title="Chart Type"
           >
             <option value="bar">Bar</option>
             <option value="column">Column</option>
@@ -66,51 +81,49 @@ interface ChartControlsProps {
             <option value="scatter">Scatter</option>
             <option value="pie">Pie</option>
             <option value="histogram">Histogram</option>
-            <option value="box">Box Plot</option>
+            <option value="box">Box</option>
             <option value="heatmap">Heatmap</option>
             <option value="number">Number</option>
           </select>
         </div>
   
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">X Axis</label>
-          <select 
-            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+        {/* X Axis */}
+        <div className="inline-flex items-center gap-2">
+          <label className="sr-only" htmlFor="chart-x">X Axis</label>
+          <select
+            id="chart-x"
+            className="h-8 min-w-[10rem] rounded-md border border-muted-foreground/30 bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring/40"
             value={config.xField}
             onChange={(e) => updateConfig({ xField: e.target.value })}
+            aria-label="X Axis"
+            title="X Axis"
           >
-            <option value="">Select Field</option>
-            {[...fields.string, ...fields.numeric].map(field => (
-              <option key={field} value={field}>{field}</option>
+            <option value="">X Axis</option>
+            {[...fields.string, ...fields.numeric].map((field) => (
+              <option key={field} value={field}>
+                {field}
+              </option>
             ))}
           </select>
         </div>
   
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Y Axis</label>
-          <select 
-            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+        {/* Y Axis */}
+        <div className="inline-flex items-center gap-2">
+          <label className="sr-only" htmlFor="chart-y">Y Axis</label>
+          <select
+            id="chart-y"
+            className="h-8 min-w-[10rem] rounded-md border border-muted-foreground/30 bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring/40"
             value={config.yField}
             onChange={(e) => updateConfig({ yField: e.target.value })}
+            aria-label="Y Axis"
+            title="Y Axis"
           >
-            <option value="">Select Field</option>
-            {fields.numeric.map(field => (
-              <option key={field} value={field}>{field}</option>
+            <option value="">Y Axis</option>
+            {fields.numeric.map((field) => (
+              <option key={field} value={field}>
+                {field}
+              </option>
             ))}
-          </select>
-        </div>
-  
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Aggregation</label>
-          <select 
-            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
-            value={config.aggregation}
-            onChange={(e) => updateConfig({ aggregation: e.target.value as AggregationMethod })}
-          >
-            <option value="sum">Sum</option>
-            <option value="avg">Average</option>
-            <option value="min">Minimum</option>
-            <option value="max">Maximum</option>
           </select>
         </div>
       </div>

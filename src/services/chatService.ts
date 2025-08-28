@@ -6,12 +6,11 @@ import {
   setLoading, 
   setRightComponent,
   setCurrentInputStep,
-  setContext,
   RightComponent 
 } from '@/store/slices/chat/chatSlice';
 import { apiService } from '@/lib/api/api-service';
 import { CATALOG_REMOTE_API_URL, AGENT_REMOTE_URL } from '@/config/platformenv';
-import { insertPipeline, setBuildPipeLineDtl, setPipeLineType, setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
+import {  setBuildPipeLineDtl, setPipeLineType, setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 
 export class ChatService {
@@ -596,7 +595,7 @@ export class ChatService {
 
       // Call localhost:8011/api/v1/pipeline (no prefix)
       const response: any = await apiService.post({
-        baseUrl: 'http://localhost:8011',
+        baseUrl: CATALOG_REMOTE_API_URL,
         url: '/api/v1/pipeline',
         method: 'POST',
         usePrefix: false,
@@ -649,9 +648,9 @@ export class ChatService {
 
       const response: any = await apiService.post({
         url: '/api/v1/pipeline_schema/pipeline',
-        baseUrl: window.location.origin.includes('localhost') ? 'http://localhost:8090' : AGENT_REMOTE_URL,
+        baseUrl: AGENT_REMOTE_URL,
         method: 'POST',
-        usePrefix: window.location.origin.includes('localhost') ? false : true,
+        usePrefix: false,
         data
       });
 

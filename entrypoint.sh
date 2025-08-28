@@ -133,5 +133,4 @@ fi
  
 # --- Run Application ---
 echo "🚀 Starting the application..."
-npm run build
-npm run preview
+npm run dev

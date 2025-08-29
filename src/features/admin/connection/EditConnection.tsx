@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useConnectionType } from './hooks/useConnection';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ConnectionForm } from './components/ConnectionForm';
-import { ConnectionPageLayout } from './components/ConnectionPageLayout';
+import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiService } from '@/lib/api/api-service';
-import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
-import { ROUTES } from '@/config/routes';
-import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
   AlertTriangle, 
@@ -16,99 +10,117 @@ import {
   History, 
   RotateCw, 
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+
+import { useConnectionType } from './hooks/useConnection';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { ConnectionForm } from './components/ConnectionForm';
+import { ConnectionPageLayout } from './components/ConnectionPageLayout';
+import { apiService } from '@/lib/api/api-service';
+import { CATALOG_REMOTE_API_URL } from '@/config/platformenv';
+import { ROUTES } from '@/config/routes';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { decrypt_string } from '@/lib/encryption';
+
+/* -----------------------------------------------------------
+   Helper: map API response -> form-friendly shape
+----------------------------------------------------------- */
+type ApiConnection = {
+  id: string | number;
+  connection_type: string;
+  connection_name?: string;
+  connection_config_name?: string;
+  connection_description?: string;
+  custom_metadata?: Record<string, any>;
+  config?: string;
+  init_vector?: string;
+};
+
+function mapApiToForm(resp: ApiConnection) {
+  const meta = resp.custom_metadata ?? {};
+  let decryptedConfig = {};
+  
+  // Decrypt the config if it exists
+  if (resp.config && resp.init_vector) {
+    try {
+      decryptedConfig = JSON.parse(
+        decrypt_string(resp.config, resp.init_vector)
+      );
+    } catch (error) {
+      console.error('Failed to decrypt connection config:', error);
+      // Continue with empty config if decryption fails
+    }
+  }
+
+  return {
+    id: resp.id,
+    connection_type: resp.connection_type,
+    connection_name: resp.connection_name?.toLowerCase() ?? '',
+    connection_display_name: resp.connection_config_name ?? '',
+    connection_description: resp.connection_description ?? '',
+    file_path_prefix: meta.file_path_prefix,
+    ...meta,
+    ...decryptedConfig, // Spread decrypted config values
+  };
+}
 
 export function EditConnection() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const { connectionTypes, isLoading: isTypesLoading } = useConnectionType();
-  const [selectedType, setSelectedType] = useState<any | null>(null);
-  const [connectionConfigName, setConnectionConfigName] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-  // Go back to connection list
-  const handleBack = () => {
-    navigate(ROUTES.ADMIN.CONNECTION.INDEX);
-  };
-
-  const refreshConnectionData = async () => {
-    // Reset states for refresh
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      await fetchConnectionData();
-      setLastRefreshed(new Date());
-    } catch (error) {
-      console.error("Error refreshing connection data:", error);
-      setError("Failed to refresh connection data. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchConnectionData = async () => {
-    if (!id) {
-      setError("Invalid connection ID");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response: any = await apiService.get({
+  const {
+    data,
+    error,
+    isLoading,
+    isFetching,
+    refetch,
+    dataUpdatedAt,
+  } = useQuery({
+    queryKey: ['connection_config', id],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      if (!id) throw new Error('Invalid connection ID');
+      const resp = await apiService.get<ApiConnection>({
         url: `/connection_registry/connection_config/${id}`,
         method: 'GET',
         baseUrl: CATALOG_REMOTE_API_URL,
-        usePrefix: true
+        usePrefix: true,
       });
-      
-      if (!response || !response.connection_type) {
-        console.error("Invalid connection data:", response);
-        setError("Failed to load connection details. Invalid data structure.");
-        return;
+      if (!resp || !resp.connection_type) {
+        throw new Error('Failed to load connection details. Invalid data structure.');
       }
+      return resp as ApiConnection;
+    },
+    // If you want to always show a spinner on refetch in foreground:
+    // refetchOnWindowFocus: false,
+  });
 
-      setSelectedType({
-        id: response.id,
-        connection_type: response.connection_type,
-        connection_name: response.connection_name?.toLowerCase(),
-        connection_display_name: response.connection_config_name,
-        connection_description: response.connection_description,
-        file_path_prefix: response.custom_metadata?.file_path_prefix,
-        // Include other necessary fields from the response
-        ...response.custom_metadata,
-      });
+  const selectedType = useMemo(() => (data ? mapApiToForm(data) : null), [data]);
 
-      // Set the connection config name
-      setConnectionConfigName(response.connection_config_name || "");
-    } catch (error) {
-      console.error("Error fetching connection data:", error);
-      throw error;
-    }
-  };
+  const connectionConfigName = selectedType?.connection_display_name ?? '';
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        await fetchConnectionData();
-      } catch (error: any) {
-        setError("Failed to load connection. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [id]);
-
-  // Get the connection type info
-  const connectionTypeInfo = connectionTypes?.find(
-    type => type.connection_name?.toLowerCase() === selectedType?.connection_name?.toLowerCase()
+  const connectionTypeInfo = useMemo(
+    () =>
+      connectionTypes?.find(
+        (t) =>
+          t.connection_name?.toLowerCase() ===
+          selectedType?.connection_name?.toLowerCase()
+      ),
+    [connectionTypes, selectedType]
   );
+
+  const lastRefreshed = useMemo(
+    () => (dataUpdatedAt ? new Date(dataUpdatedAt) : new Date()),
+    [dataUpdatedAt]
+  );
+
+  const handleBack = () => navigate(ROUTES.ADMIN.CONNECTION.INDEX);
+
+  const refreshConnectionData = async () => {
+    await refetch();
+  };
 
   const connectionIcon = connectionTypeInfo ? (
     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
@@ -116,11 +128,11 @@ export function EditConnection() {
     </div>
   ) : null;
 
-  // Display loading state
+  // Loading
   if (isLoading || isTypesLoading) {
     return (
-      <ConnectionPageLayout description='Loading connection details...'>
-        <motion.div 
+      <ConnectionPageLayout description="Loading connection details...">
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center h-64"
@@ -132,10 +144,12 @@ export function EditConnection() {
     );
   }
 
-  // Display error state
+  // Error
   if (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load connection. Please try again.';
     return (
-      <ConnectionPageLayout description='There was an error loading the connection details.'>
+      <ConnectionPageLayout description="There was an error loading the connection details.">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -148,7 +162,9 @@ export function EditConnection() {
                 <AlertTriangle className="h-6 w-6 text-destructive" />
                 <CardTitle>Error Loading Connection</CardTitle>
               </div>
-              <CardDescription className="mt-2 text-destructive/90">{error}</CardDescription>
+              <CardDescription className="mt-2 text-destructive/90">
+                {message}
+              </CardDescription>
             </CardHeader>
             <CardContent className="border-t border-muted/30 pt-4">
               <p className="text-sm text-muted-foreground mb-4">
@@ -161,11 +177,7 @@ export function EditConnection() {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Connections
               </Button>
-              <Button 
-                onClick={refreshConnectionData}
-                variant="default"
-                className="gap-1.5"
-              >
+              <Button onClick={refreshConnectionData} variant="default" className="gap-1.5">
                 <RotateCw className="h-4 w-4" />
                 Retry
               </Button>
@@ -176,10 +188,10 @@ export function EditConnection() {
     );
   }
 
-  // If no connection type is selected or found
+  // Not found / invalid (should be caught by error branch above, but keep UX)
   if (!selectedType) {
     return (
-      <ConnectionPageLayout description='Connection not found or invalid ID.'>
+      <ConnectionPageLayout description="Connection not found or invalid ID.">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -212,11 +224,10 @@ export function EditConnection() {
       </ConnectionPageLayout>
     );
   }
-  
+
   return (
-    <ConnectionPageLayout description='Edit your database connection here.'>
+    <ConnectionPageLayout description="Edit your database connection here.">
       <div className="mb-6">
-    
         <div className="flex flex-col space-y-1 mb-6">
           <div className="flex items-center">
             {connectionIcon}
@@ -242,14 +253,15 @@ export function EditConnection() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <History className="h-3 w-3" />
               Last refreshed {lastRefreshed.toLocaleTimeString()}
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-7 px-2 text-xs gap-1" 
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs gap-1"
                 onClick={refreshConnectionData}
-                disabled={isLoading}
+                disabled={isFetching}
+                aria-label="Refresh connection details"
               >
-                <RotateCw className={cn("h-3 w-3", isLoading && "animate-spin")} />
+                <RotateCw className={cn('h-3 w-3', isFetching && 'animate-spin')} />
                 Refresh
               </Button>
             </div>
@@ -257,20 +269,16 @@ export function EditConnection() {
         </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <ConnectionForm 
-          connectionId={selectedType?.id?.toString() ?? ""}
-          connectionType={selectedType?.connection_type ?? ""}
-          connectionDisplayName={selectedType?.connection_display_name ?? ""}
-          connectionName={selectedType?.connection_name ?? ""}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <ConnectionForm
+          connectionId={String(selectedType?.id ?? '')}
+          connectionType={selectedType?.connection_type ?? ''}
+          connectionDisplayName={selectedType?.connection_display_name ?? ''}
+          connectionName={selectedType?.connection_name ?? ''}
           onBack={handleBack}
           connectionConfigName={connectionConfigName}
           formData={selectedType}
-          isEdit={true}
+          isEdit
           mode="edit"
         />
       </motion.div>

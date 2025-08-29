@@ -57,8 +57,7 @@ export function FormFields({ schema, form, parentKey = '', twoColumnLayout = tru
   const isSensitiveField = (key: string, field: any): boolean => {
     // Check field key names that typically contain sensitive data
     const sensitiveKeys = [
-      'credentials', 'secret', 'key', 'token', 'auth',
-      'host', 'port', 'username', 'bucket', 'schema'
+      'credentials', 'secret', 'key', 'token', 'auth', 'password', 'private'
     ];
     
     // Check if any of the sensitive keys are present in the field key

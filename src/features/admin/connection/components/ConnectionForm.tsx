@@ -33,7 +33,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
-import { debug } from 'console';
 
 interface ConnectionFormProps {
   connectionType: string;
@@ -42,7 +41,7 @@ interface ConnectionFormProps {
   connectionId: string;
   onBack: () => void;
   connectionConfigName: string;
-  selectedEnvironment: string;
+  selectedEnvironment?: string;
   isEdit?: boolean;
   formData?: any;
   mode?: 'edit' | 'new';
@@ -67,6 +66,7 @@ export function ConnectionForm({
   mode = 'new'
 }: ConnectionFormProps) {
   const { handleCreateConnection, handleUpdateConnection } = useConnections();
+  const [isFormReady, setIsFormReady] = useState(false);
   const [schema, setSchema] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,6 +125,9 @@ export function ConnectionForm({
             toast.error('Invalid schema format');
           }
         }
+        if (schema) {
+          setIsFormReady(true);
+        }
       } catch (error) {
         console.error('Failed to load schema:', error);
         setSchema(null);
@@ -162,12 +165,15 @@ export function ConnectionForm({
 
   const form = useForm({
     resolver: schema ? zodResolver(generateFormSchema(schema)) : undefined,
-    defaultValues: isEdit && formData
-      ? {
-        ...generateInitialValues(schema),
-        ...formData
-      }
-      : generateInitialValues(schema),
+    defaultValues: async () => {
+      if (!schema) return {};
+      return isEdit && formData
+        ? {
+            ...generateInitialValues(schema),
+            ...formData
+          }
+        : generateInitialValues(schema);
+    },
     mode: 'onChange'
   });
 

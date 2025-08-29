@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, FileText, GitBranch, Table as TableIcon, Eye, Code2 } from 'lucide-react';
+import { X, FileText, GitBranch, Table as TableIcon, Eye, Code2, Loader2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { setRightComponent, addMessage, openChatBottomDrawer, closeChatBottomDrawer, setChatBottomDrawerHeight } from '@/store/slices/chat/chatSlice';
 import { getChatService } from '@/services/chatService';
@@ -47,6 +47,13 @@ export const RightAsideComponent: React.FC = () => {
 
   // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
   const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
+
+  const [exploreTitle, setExploreTitle] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (rightComponent?.componentId !== 'explore-data') {
+      setExploreTitle(null);
+    }
+  }, [rightComponent?.componentId]);
   
   React.useEffect(() => {
     if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
@@ -169,10 +176,11 @@ export const RightAsideComponent: React.FC = () => {
         );
       case 'explore-data':
         return (
-          <ExploreDataComponent 
+          <ExploreDataComponent
             query={(rightComponent as any).extra?.query}
             connection={(rightComponent as any).extra?.connection}
             threadId={(rightComponent as any).extra?.threadId}
+            onTitleChange={setExploreTitle}
           />
         );
       default:
@@ -202,8 +210,13 @@ export const RightAsideComponent: React.FC = () => {
           className="flex p-1 flex-row items-center justify-between space-y-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <CardTitle className="text-base font-medium truncate min-w-0" title={rightComponent.title}>
-              {rightComponent.title}
+            <CardTitle
+              className="text-base font-medium truncate min-w-0"
+              title={rightComponent.componentId === 'explore-data' ? exploreTitle ?? undefined : rightComponent.title}
+            >
+              {rightComponent.componentId === 'explore-data'
+                ? (exploreTitle ? exploreTitle : <Loader2 className="h-4 w-4 animate-spin" />)
+                : rightComponent.title}
             </CardTitle>
             {/* Segmented toggle (visible when extra.toggles is provided) */}
             {Array.isArray((rightComponent as any).extra?.toggles) && (

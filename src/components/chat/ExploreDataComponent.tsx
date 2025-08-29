@@ -35,6 +35,7 @@ interface ExploreDataComponentProps {
   query?: string;
   connection?: Connection;
   threadId?: string;
+  onTitleChange?: (title?: string) => void;
 }
 
 interface StreamResponse {
@@ -47,7 +48,7 @@ interface StreamResponse {
   request_id?: MetaStartedEvent["meta"]["request_id"];
 
   // derive from individual events
-  identify?: IdentifyEvent["content"];
+  identify?: IdentifyEvent["content"][];
   sql?: SqlEvent["content"];
   table?: TableEvent["content"];
   explanation?: ExplanationEvent["content"];
@@ -61,7 +62,7 @@ interface StreamResponse {
   completedSteps?: string[];
 }
 
-export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ query, connection, threadId }) => {
+export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ query, connection, threadId, onTitleChange }) => {
   const { streamConversation } = useConversation();
   const streamAbortRef = useRef<(() => void) | null>(null);
   const [response, setResponse] = useState<StreamResponse>({});
@@ -90,9 +91,11 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
       title: evt.meta.title,
       input_question: evt.data.input_question,
       request_id: evt.meta.request_id,
+      identify: [],
       currentStep: 'thinking',
       completedSteps: [],
     }));
+    onTitleChange?.(evt.meta.title);
   };
 
   const handleMetaCompleted = (evt: MetaCompletedEvent) => {
@@ -109,7 +112,7 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
   const handleIdentify = (evt: IdentifyEvent) => {
     setResponse(prev => ({
       ...prev,
-      identify: evt.content,
+      identify: [...(prev.identify || []), evt.content],
       currentStep: 'identifying',
       completedSteps: [...new Set([...(prev.completedSteps || []), 'thinking'])]
     }));
@@ -164,8 +167,10 @@ export const ExploreDataComponent: React.FC<ExploreDataComponentProps> = ({ quer
       ...prev,
       status: 'streaming',
       currentStep: undefined,
-      completedSteps: []
+      completedSteps: [],
+      identify: [],
     }));
+    onTitleChange?.(undefined);
 
     streamAbortRef.current = streamConversation(
       connId,

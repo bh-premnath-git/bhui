@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import type { IdentifyEvent, MetaCompletedEvent } from '@/types/streaming';
 
 interface AnalysisMetricsProps {
-  identify?: IdentifyEvent['content'];
+  identify?: IdentifyEvent['content'][];
   duration_ms?: MetaCompletedEvent['data']['duration_ms'];
   results_summary?: MetaCompletedEvent['data']['results_summary'];
 }
@@ -15,16 +15,18 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
 }) => {
   const duration = typeof duration_ms === 'number' ? `${(duration_ms / 1000).toFixed(1)}s` : undefined;
   const tablesGenerated = results_summary?.tables_generated;
+  const identifyLabel = identify?.join(', ');
+  const identifyPlural = (identify?.length || 0) > 1;
 
-  if (!identify && !duration && !tablesGenerated) {
+  if (!identifyLabel && !duration && !tablesGenerated) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="text-left text-sm text-muted-foreground">
-        {identify && (
-          <>Identified source: <span className="font-medium text-foreground">{identify}</span></>
+        {identifyLabel && (
+          <>Identified {identifyPlural ? 'sources' : 'source'}: <span className="font-medium text-foreground">{identifyLabel}</span></>
         )}
       </div>
       <div className="flex flex-wrap gap-2">

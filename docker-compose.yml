@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  vite_app:
+    container_name: vite_react_app
+    build:
+      context: .
+      args:
+        # Pass AWS credentials as build args for CodeArtifact authentication
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - AWS_REGION=us-east-1
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      # Runtime environment variables
+      - NODE_ENV=development
+      # CodeArtifact variables (if needed at runtime)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./key.pem:/app/key.pem
+      - ./cert.pem:/app/cert.pem

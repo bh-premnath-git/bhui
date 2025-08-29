@@ -1,0 +1,134 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "Schema for Target",
+    "type": "object",
+    "title": "Target",
+    "properties": {
+        "target_name": {
+            "type": "string",
+            "description": "Target Name",
+            "minLength": 1
+        },
+        "target_type": {
+            "type": "string",
+            "enum": [
+                "File",
+                "Relational"
+            ]
+        },
+        "connection": {
+            "type": "object",
+            "ui-hint": "endpoint",
+            "endpoint": "connection_registry/connection_config/list/",
+            "items": {
+                "$ref": "Connection.json"
+            }
+        },
+        "load_mode": {
+            "type": "string",
+            "enum": [
+                "append",
+                "merge",
+                "overwrite",
+                "ignore",
+                "error"
+            ],
+            "default": "append"
+        },
+        "merge_keys": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        }
+    },
+    "required": [
+        "target_name",
+        "type",
+        "connection",
+        "load_mode"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "load_mode": {
+                        "const": "merge"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "merge_keys"
+                ]
+            }            
+        },
+        {
+            "if": {
+                "properties": {
+                    "target_type": {
+                        "const": "File"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "file_name": {
+                        "type": "string",
+                        "description": "Name of the output file",
+                        "minLength": 1
+                    },
+                    "format": {
+                        "type": "string",
+                        "description": "File format",
+                        "enum": [
+                            "CSV",
+                            "JSON",
+                            "Parquet",
+                            "ORC",
+                            "Avro",
+                            "Excel",
+                            "XML",
+                            "FixedWidth"
+                        ],
+                        "default": "CSV"
+                    },
+                    "partition_by": {
+                        "type": "array",
+                        "description": "Columns to partition the data by",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": []
+                    }
+                },
+                "required": ["file_name", "format"]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "target_type": {
+                        "const": "Relational"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Name of the target table",
+                        "minLength": 1
+                    },
+                    "schema_name": {
+                        "type": "string",
+                        "description": "Database schema name (optional)",
+                        "default": ""
+                    }
+                },
+                "required": ["table_name"]
+            }
+        }
+    ]
+}

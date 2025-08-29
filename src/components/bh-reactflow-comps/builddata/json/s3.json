@@ -1,0 +1,103 @@
+{
+   "$schema": "http://json-schema.org/draft-07/schema#",
+    "documentationUrl": "N/A",
+    "supportsIncremental": true,
+    "supportsNormalization": false,
+    "supportsDBT": false,
+    "supported_destination_sync_modes": ["overwrite", "append"],
+    "connectionSpecification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "S3 Destination Spec",
+      "type": "object",
+      "required": [
+        "s3_bucket_name",
+        "s3_bucket_path",
+        "s3_bucket_region",
+        "format"
+      ],
+      "properties": {
+        "access_key": {
+          "type": "string",
+          "description": "The access key ID to access the S3 bucket. BigHammer requires Read and Write permissions to the given bucket.",
+          "title": "Access Key",
+          "bh_secret": true,
+          "always_show": true,
+          "examples": ["A012345678910EXAMPLE"],
+          "order": 0
+        },
+        "secret_key": {
+          "type": "string",
+          "description": "The corresponding secret to the access key ID.",
+          "title": "Secret Access Key",
+          "bh_secret": true,
+          "always_show": true,
+          "examples": ["a012345678910ABCDEFGH/AbCdEfGhEXAMPLEKEY"],
+          "order": 1
+        },
+        "role_arn": {
+          "type": "string",
+          "description": "The Role ARN",
+          "title": "Role ARN",
+          "examples": ["arn:aws:iam::123456789:role/ExternalIdIsYourWorkspaceId"],
+          "order": 2
+        },
+        "bucket_name": {
+          "title": "S3 Bucket Name",
+          "type": "string",
+          "description": "The name of the S3 bucket.",
+          "examples": ["bh_sync"],
+          "order": 3
+        },
+        "file_path_prefix": {
+          "title": "File Path Prefix",
+          "type": "string",
+          "description": "The path within the S3 bucket where data will be written.",
+          "examples": ["/data/bighammer"],
+          "order": 4
+        },
+        "region": {
+          "title": "Region",
+          "type": "string",
+          "default": "us-east-1",
+          "description": "The region of the S3 bucket.",
+          "enum": [
+            "",
+            "af-south-1",
+            "ap-east-1",
+            "ap-northeast-1",
+            "ap-northeast-2",
+            "ap-northeast-3",
+            "ap-south-1",
+            "ap-south-2",
+            "ap-southeast-1",
+            "ap-southeast-2",
+            "ap-southeast-3",
+            "ap-southeast-4",
+            "ca-central-1",
+            "ca-west-1",
+            "cn-north-1",
+            "cn-northwest-1",
+            "eu-central-1",
+            "eu-central-2",
+            "eu-north-1",
+            "eu-south-1",
+            "eu-south-2",
+            "eu-west-1",
+            "eu-west-2",
+            "eu-west-3",
+            "il-central-1",
+            "me-central-1",
+            "me-south-1",
+            "sa-east-1",
+            "us-east-1",
+            "us-east-2",
+            "us-gov-east-1",
+            "us-gov-west-1",
+            "us-west-1",
+            "us-west-2"
+          ],
+          "order": 5
+        }
+      }
+    }
+  }

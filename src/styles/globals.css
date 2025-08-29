@@ -1,0 +1,104 @@
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Monaco Editor suggestion dropdown z-index fix */
+.monaco-editor .suggest-widget {
+  z-index: 9999 !important;
+}
+
+.monaco-editor .suggest-widget.visible {
+  z-index: 9999 !important;
+}
+
+.monaco-editor .context-view {
+  z-index: 9999 !important;
+}
+
+.monaco-editor .monaco-hover {
+  z-index: 9999 !important;
+}
+
+.monaco-editor .parameter-hints-widget {
+  z-index: 9999 !important;
+}
+
+.monaco-editor .monaco-menu {
+  z-index: 9999 !important;
+}
+
+/* Ensure Monaco Editor containers don't clip overflow */
+.monaco-editor-container {
+  position: relative;
+  z-index: 1;
+}
+
+.monaco-editor .overflow-guard {
+  overflow: visible !important;
+}
+
+/* Additional fixes for suggestion widget positioning */
+.monaco-editor .suggest-widget .monaco-list {
+  max-height: 200px !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row {
+  padding: 4px 8px !important;
+}
+
+/* Ensure form containers don't interfere with Monaco suggestions */
+.form-field {
+  position: relative;
+  z-index: auto;
+}
+
+.form-field .monaco-editor-container {
+  z-index: 1;
+}
+
+/* Autocomplete dropdown styles */
+.autocomplete-dropdown {
+  z-index: 9999 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.autocomplete-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.autocomplete-suggestion:focus {
+  background-color: #f3f4f6;
+  outline: none;
+}
+
+/* Node component styles */
+.react-flow__node-custom {
+  overflow: visible !important;
+}
+
+/* Ensure toolbar is always above row count badge */
+.react-flow__node-custom .z-50 {
+  z-index: 50 !important;
+}
+
+/* Set row count badge z-index */
+.react-flow__node-custom .z-10 {
+  z-index: 10 !important;
+}

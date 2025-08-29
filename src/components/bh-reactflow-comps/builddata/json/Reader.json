@@ -1,0 +1,127 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "ui_type": "tab-container",
+    "properties": {
+        "reader_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source": {
+            "type": "object",
+            "$ref": "schemas/Source.json"
+        },
+        "select_columns": {
+            "type": "array",
+            "description": "List of column names to select from the dataset",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            },
+            "uniqueItems": true
+        },
+        "drop_columns": {
+            "type": "array",
+            "description": "List of column names to drop from the dataset",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            },
+            "uniqueItems": true
+        },
+        "rename_columns": {
+            "type": "object",
+            "description": "Mapping of old column names to new column names",
+            "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+            }
+        }
+    },
+    "required": [
+        "reader_name",
+        "source"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "source": {
+                        "properties": {
+                            "type": {
+                                "const": "File"
+                            }
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "file_type": {
+                        "type": "string",
+                        "description": "File Type",
+                        "enum": [
+                            "CSV",
+                            "JSON",
+                            "Parquet",
+                            "ORC",
+                            "Avro",
+                            "Excel",
+                            "XML",
+                            "FixedWidth"
+                        ]
+                    }
+                },
+                "required": [
+                    "file_type"
+                ],
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "file_type": {
+                                    "const": "CSV"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "read_options": {
+                                    "type": "object",
+                                    "items": {
+                                        "$ref": "transformations/readers/CSVOptions.json"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "read_options"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "source": {
+                        "properties": {
+                            "type": {
+                                "const": "Relational"
+                            }
+                        }
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Query",
+                        "minLength": 1
+                    }
+                }
+            }
+        }
+    ]
+}

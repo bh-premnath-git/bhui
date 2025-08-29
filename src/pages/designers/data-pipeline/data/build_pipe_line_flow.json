@@ -1,0 +1,141 @@
+{
+    "purpose": "Flow Configuration - All the nodes in flow screen is driven by this json file",
+    "module": [
+        {
+            "id": 1,
+            "icon": "/assets/buildPipeline/6.svg",
+            "expandIcon": "#f7a01f",
+            "text": "Source",
+            "className": "text-white",
+            "title": "Source"
+        },
+        {
+            "id": 2,
+            "icon": "/assets/buildPipeline/7.svg",
+            "expandIcon": "#07a260",
+            "text": "Target",
+            "title": "Target"
+        },
+        {
+            "id": 3,
+            "icon": "/assets/buildPipeline/display/filter.svg",
+            "expandIcon": "#f5bc2a",
+            "text": "Filter",
+            "title": "Filter"
+        },
+        {
+            "id": 4,
+            "icon": "/assets/buildPipeline/display/join.svg",
+            "expandIcon": "#ff7396",
+            "text": "Join",
+            "title": "Join"
+        },
+        {
+            "id": 5,
+            "icon": "/assets/buildPipeline/display/route.svg",
+            "expandIcon": "#804fbf",
+            "text": "Router",
+            "title": "Router"
+        },
+        {
+            "id": 6,
+            "icon": "/assets/buildPipeline/display/transform.svg",
+            "expandIcon": "#06babd",
+            "text": "Transform",
+            "title": "Transform"
+        },
+        
+        {
+            "id": 8,
+            "icon": "/assets/buildPipeline/28.svg",
+            "expandIcon": "#32D1A4",
+            "text": "Schama Transformation",
+            "title": "Schama Transformation"
+        },
+        {
+            "id": 9,
+            "icon": "/assets/buildPipeline/add.svg",
+            "expandIcon": "/assets/buildPipeline/add.svg",
+            "text": "",
+            "title": "Transformation"
+           
+        }
+       
+    ],
+     "transformList": [
+        {
+            "id": 1,
+            "lead": "/assets/buildPipeline/squre/1.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Sort"
+        },
+        {
+            "id": 2,
+            "lead": "/assets/buildPipeline/squre/2.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Aggregate"
+        },
+        {
+            "id": 3,
+            "lead": "/assets/buildPipeline/squre/3.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Lookup"
+        },
+        
+        {
+            "id": 5,
+            "lead": "/assets/buildPipeline/squre/5.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Deduplicator"
+        },
+        {
+            "id": 6,
+            "lead": "/assets/buildPipeline/squre/6.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Repartition "
+        },
+        {
+            "id": 7,
+            "lead": "/assets/buildPipeline/squre/7.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "SQLTransformation"
+        },
+        {
+            "id": 8,
+            "lead": "/assets/buildPipeline/squre/8.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Union"
+        },
+        {
+            "id": 9,
+            "lead": "/assets/buildPipeline/squre/9.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Limit"
+        },
+        {
+            "id": 10,
+            "lead": "/assets/buildPipeline/squre/10.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Change Detection"
+        },
+        {
+            "id": 11,
+            "lead": "/assets/buildPipeline/squre/11.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "select"
+        },      
+        {
+            "id": 12,
+            "lead": "/assets/buildPipeline/squre/12.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "SequenceGenerator"
+        },
+        {
+            "id": 13,
+            "lead": "/assets/buildPipeline/squre/13.svg",
+            "line": "/assets/buildPipeline/Line 7.png",
+            "title": "Drop"
+        }
+      
+    ]
+}

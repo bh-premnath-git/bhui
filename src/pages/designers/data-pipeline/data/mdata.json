@@ -1,0 +1,1233 @@
+{
+  "schema": [
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Filter",
+      "description": "",
+      "type": "object",
+      "ui_type": "normal",
+      "properties": {
+        "condition": {
+          "type": "expression",
+          "minLength": 1,
+          "ui_type": "full-width"
+        }
+      },
+      "required": [
+        "condition"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SQLTransformation",
+      "description": "",
+      "type": "object",
+      "ui_type": "normal",
+      "properties": {
+        "query": {
+          "type": "expression",
+          "minLength": 1,
+          "ui_type": "full-width"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Router",
+      "ui_type": "tab-container",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "condition": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "condition"
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "conditions"
+      ]
+    },
+    {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "",
+  "type": "object",
+  "title": "SchemaTransformation",
+  "ui_type": "tab-container",
+  "properties": {
+    "derived_fields": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "required": [
+          "name",
+          "expression"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expression": {
+            "type": "expression",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "select_columns": {
+      "type": "array",
+      "description": "List of column names to select from the dataset",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "drop_columns": {
+      "type": "array",
+      "description": "List of column names to drop from the dataset",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "rename_columns": {
+      "type": "object",
+      "description": "Mapping of old column names to new column names",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "derived_fields"
+  ]
+},
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Aggregator",
+      "ui_type": "tab-container",
+      "properties": {
+        "aggregations": {
+          "type": "array",
+          "items": {
+            "target_column": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            }
+          },
+          "required": [
+            "target_column",
+            "expression"
+          ]
+        },
+        "group_by": {
+          "type": "array",
+          "items": {
+            "group_by": {
+              "type": "autocomplete",
+              "minLength": 1
+            }
+          }
+        },
+        "pivot_by": {
+          "type": "array",
+          "items": {
+            "pivot_column": {
+              "type": "autocomplete",
+              "minLength": 1
+            },
+            "pivot_values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "group_by",
+        "aggregations"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Joiner",
+      "ui_type": "tab-container",
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "join_input": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The name of input dataframe to join"
+            },
+            "join_condition": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            },
+            "join_type": {
+              "type": "select",
+              "minLength": 1,
+              "enum": [
+                "inner",
+                "left",
+                "right",
+                "full",
+                "left_semi",
+                "left_anti"
+              ]
+            }
+          }
+        },
+        "expressions": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expression": {
+              "type": "string",
+              "minLength": 1,
+              "ui-hint": "expression"
+            }
+          }
+        },
+        "advanced": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "join_input": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hint_type": {
+              "type": "select",
+              "minLength": 1,
+              "enum": [
+                "broadcast",
+                "merge",
+                "shuffle_hash",
+                "shuffle_replicate_nl",
+                "None"
+              ]
+            },
+            "propagate_all_columns": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "hints"
+          ]
+        }
+      },
+      "required": [
+        "conditions"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Sorter",
+      "ui_type": "array-container",
+      "properties": {
+        "sort_columns": {
+          "type": "array",
+          "items": {
+            "column": {
+              "type": "autocomplete",
+              "minLength": 1
+            },
+            "order": {
+              "type": "select",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "sort_columns"
+      ]
+    },
+   {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  
+  "title": "DQCheck",
+  "type": "object",
+  "ui_type": "tab-container",
+  "properties": {
+    "transformation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limit": {
+      "type": "number"
+    },
+    "dq_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_name": { "type": "string", "minLength": 1 },
+          "column": { "type": "string", "minLength": 1 },
+          "column_type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean", "timestamp", "date"]
+          },
+          "action": {
+            "type": "string",
+            "enum": ["error", "warning"],
+            "default": "warning"
+          }
+        },
+        "required": ["rule_name", "column", "column_type"],
+        "allOf": [
+          {
+            "if": { "properties": { "column_type": { "const": "string" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": [
+                    "equals", "not_equals", "minlength", "maxlength", "lengthequals",
+                    "equalsignorecase", "matches", "startswith", "endswith", "beginswith", "contains",
+                    "notnull", "isempty", "belongsto", "lowercase", "uppercase"
+                  ]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "const": "belongsto" } } },
+                  "then": {
+                    "properties": {
+                      "value": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "minItems": 1
+                      }
+                    },
+                    "required": ["value"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["notnull", "isempty", "lowercase", "uppercase", "belongsto"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["notnull", "isempty", "lowercase", "uppercase"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "number" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": [
+                    "equals", "not_equals", "greaterthan", "lessthan", "greaterthanorequals", "lessthanorequals", "notnull", "between"
+                  ]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["notnull"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "const": "between" } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "number" },
+                      "value2": { "type": "number" }
+                    },
+                    "required": ["value", "value2"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["notnull", "between"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "number" }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "boolean" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": ["istrue", "isfalse", "notnull"]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["notnull"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["istrue", "isfalse"] } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "boolean" }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "timestamp" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": ["timestampequals", "timestampbefore", "timestampafter", "timestampwithin", "timestampnotnull", "timestampisempty"]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["timestampnotnull", "timestampisempty"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "const": "timestampwithin" } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 },
+                      "value2": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value", "value2"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["timestampnotnull", "timestampisempty", "timestampwithin"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": { "properties": { "column_type": { "const": "date" } } },
+            "then": {
+              "properties": {
+                "rule_type": {
+                  "type": "string",
+                  "enum": ["dateequals", "datebefore", "dateafter", "datewithin", "datenotnull", "dateisempty"]
+                }
+              },
+              "required": ["rule_type"],
+              "allOf": [
+                {
+                  "if": { "properties": { "rule_type": { "enum": ["datenotnull", "dateisempty"] } } },
+                  "then": {
+                    "not": { "required": ["value"] }
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "const": "datewithin" } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 },
+                      "value2": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value", "value2"]
+                  }
+                },
+                {
+                  "if": { "properties": { "rule_type": { "not": { "enum": ["datenotnull", "dateisempty", "datewithin"] } } } },
+                  "then": {
+                    "properties": {
+                      "value": { "type": "string", "minLength": 1 }
+                    },
+                    "required": ["value"]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": ["transformation", "name", "dq_rules"]
+}   ,
+  
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Deduplicator",
+      "ui_type": "object",
+      "properties": {
+        "keep": {
+          "type": "select",
+          "minLength": 1,
+          "enum": [
+            "any",
+            "first",
+            "last",
+            "distinct",
+            "unique_only"
+          ],
+          "default": "any"
+        },
+        "dedup_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "order_by": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "autocomplete",
+                "minLength": 1
+              },
+              "order": {
+                "type": "select",
+                "enum": [
+                  "asc",
+                  "desc"
+                ]
+              }
+            },
+            "required": [
+              "column",
+              "order"
+            ]
+          }
+        }
+      },
+      "required": [
+        "keep",
+        "dedup_by"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "keep": {
+                "const": "first"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "order_by"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keep": {
+                "const": "last"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "order_by"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "file://repartition_schema.json",
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Repartition",
+      "properties": {
+        "repartition_type": {
+          "type": "select",
+          "minLength": 1,
+          "enum": [
+            "repartition",
+            "coalesce",
+            "hash_repartition",
+            "repartition_by_range"
+          ],
+          "default": "repartition"
+        },
+        "repartition_value": {
+          "type": "number"
+        },
+        "override_partition": {
+          "type": "string"
+        },
+        "repartition_expression": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "required": [
+              "expression",
+              "sort_order"
+            ],
+            "properties": {
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "ui-hint": "expression"
+              },
+              "sort_order": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              }
+            }
+          }
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "repartition_type"
+      ],
+      "anyOf": [
+        {
+          "if": {
+            "properties": {
+              "repartition_type": {
+                "const": "repartition"
+              }
+            },
+            "required": [
+              "repartition_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "repartition_value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "repartition_type": {
+                "const": "coalesce"
+              }
+            },
+            "required": [
+              "repartition_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "repartition_value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "repartition_type": {
+                "const": "hash_repartition"
+              }
+            },
+            "required": [
+              "repartition_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "repartition_value"
+            ],
+            "properties": {
+              "repartition_expression": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "repartition_type": {
+                "const": "repartition_by_range"
+              }
+            },
+            "required": [
+              "repartition_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "repartition_value"
+            ],
+            "properties": {
+              "repartition_expression": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "Schema for Lookup transformation",
+      "type": "object",
+      "title": "Lookup",
+      "ui_type": "tab-container",
+      "properties": {
+        "lookup_type": {
+          "type": "select",
+          "minLength": 1,
+          "enum": [
+            "Column Based",
+            "Literal"
+          ],
+          "default": "Column Based",
+          "description": "The type of lookup to perform."
+        },
+        "lookup_config": {
+          "type": "object",
+          "description": "Configuration for reading the lookup data (only for Column Based lookup).",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The name of the lookup configuration."
+            },
+            "source": {
+              "type": "object",
+              "description": "Reference to the source of the lookup data."
+            },
+            "read_options": {
+              "type": "object",
+              "description": "Options for reading the lookup data.",
+              "properties": {
+                "header": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether the lookup data has a header row."
+                }
+              }
+            }
+          },
+          "required": ["name", "source"]
+        },
+        "lookup_data": {
+          "type": "array",
+          "description": "Literal data for lookup (only for Literal lookup).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "department": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "lookup_conditions": {
+          "type": "object",
+          "description": "Conditions for joining the main DataFrame with the lookup DataFrame.",
+          "properties": {
+            "column_name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The column in the main DataFrame to join on."
+            },
+            "lookup_with": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The column in the lookup DataFrame to join with."
+            }
+          },
+          "required": [
+            "column_name",
+            "lookup_with"
+          ]
+        },
+        "lookup_columns": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "Columns to select and rename after the lookup.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The column to select."
+              },
+              "out_column_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name of the output column."
+              }
+            },
+            "required": [
+              "column",
+              "out_column_name"
+            ]
+          }
+        },
+        "keep": {
+          "type": "select",
+          "enum": [
+            "First",
+            "Last",
+            "All"
+          ],
+          "description": "Specifies which rows to keep when there are multiple matches in the lookup."
+        }
+      },
+      "required": [
+        "lookup_type",
+        "lookup_columns",
+        "lookup_conditions"
+      ],
+      "if": {
+        "properties": { 
+          "lookup_type": { 
+            "const": "Column Based" 
+          } 
+        }
+      },
+      "then": {
+        "required": [
+          "lookup_config",
+          "lookup_conditions"
+        ]
+      },
+      "else": {
+        "required": [
+          "lookup_data",
+          "lookup_conditions"
+        ]
+      }
+    },
+    {
+      "$schema": "https://json-schema.org/draft-07/schema#",
+      "description": "Schema for SetCombiner transformation",
+      "type": "object",
+      "title": "SetCombiner",
+      "properties": {
+        "operation_type": {
+          "type": "select",
+          "enum": [
+            "Union",
+            "Union All",
+            "Union By Name",
+            "Intersect",
+            "Intersect All",
+            "Except",
+            "Except All"
+          ],
+          "description": "The type of set operation to perform."
+        },
+        "allow_missing_columns": {
+          "type": "boolean",
+          "description": "Whether to allow missing columns in the input datasets. Only applicable for 'Union By Name'.",
+          "default": false
+        }
+      },
+      "required": [
+        "operation_type"
+      ]
+    },
+    {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Schema for Custom transformation",
+  "type": "object",
+  "title":"CustomPySpark",
+  "properties": {
+    "user_code": {
+      "type": "python_editor",
+      "minLength": 1,
+      "description": "The Python code to execute for the custom transformation."
+    }
+  },
+  "required": [
+    "user_code"
+  ]
+},
+    {
+      "$schema": "https://json-schema.org/draft-07/schema#",
+      "description": "Schema for Lookup transformation",
+      "type": "object",
+      "title":"Lookup",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the transformation."
+        },
+        "dependent_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of transformations this transformation depends on."
+        },
+        "transformation": {
+          "type": "string",
+          "enum": [
+            "Lookup"
+          ],
+          "description": "The type of transformation."
+        },
+        "lookup_type": {
+          "type": "string",
+          "enum": [
+            "Column Based",
+            "Literal"
+          ],
+          "description": "The type of lookup to perform."
+        },
+        "lookup_config": {
+          "type": "object",
+          "description": "Configuration for reading the lookup data (only for Column Based lookup).",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the lookup configuration."
+            },
+            "source": {
+              "type": "object",
+              "description": "Reference to the source of the lookup data."
+            },
+            "read_options": {
+              "type": "object",
+              "description": "Options for reading the lookup data.",
+              "properties": {
+                "header": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether the lookup data has a header row."
+                }
+              }
+            }
+          },
+          "required": [
+            "name",
+            "source"
+          ]
+        },
+        "lookup_data": {
+          "type": "array",
+          "description": "Literal data for lookup (only for Literal lookup).",
+          "items": {
+            "type": "object",
+            "description": "A row of literal data."
+          }
+        },
+        "lookup_conditions": {
+          "description": "Conditions for joining the main DataFrame with the lookup DataFrame.",
+          "oneOf": [
+            {
+              "type": "array",
+              "description": "Conditions for Column Based lookup.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "column_name": {
+                    "type": "string",
+                    "description": "The column in the main DataFrame to join on."
+                  },
+                  "lookup_with": {
+                    "type": "string",
+                    "description": "The column in the lookup DataFrame to join with."
+                  }
+                },
+                "required": [
+                  "column_name",
+                  "lookup_with"
+                ]
+              }
+            },
+            {
+              "type": "object",
+              "description": "Condition for Literal lookup.",
+              "properties": {
+                "column_name": {
+                  "type": "string",
+                  "description": "The column in the main DataFrame to join on."
+                },
+                "lookup_with": {
+                  "type": "string",
+                  "description": "The column in the literal data to join with."
+                }
+              },
+              "required": [
+                "column_name",
+                "lookup_with"
+              ]
+            }
+          ]
+        },
+        "lookup_columns": {
+          "type": "array",
+          "description": "Columns to select and rename after the lookup.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "column": {
+                "type": "autocomplete",
+                "description": "The column to select."
+              },
+              "out_column_name": {
+                "type": "string",
+                "description": "The name of the output column."
+              }
+            },
+            "required": [
+              "column",
+              "out_column_name"
+            ]
+          }
+        },
+        "keep": {
+          "type": "string",
+          "enum": [
+            "First",
+            "Last",
+            "All"
+          ],
+          "description": "Specifies which rows to keep when there are multiple matches in the lookup."
+        }
+      },
+      "required": [
+        "name",
+        "dependent_on",
+        "transformation",
+        "lookup_columns",
+        "lookup_type",
+        "lookup_conditions"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "lookup_type": {
+            "const": "Column Based"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "lookup_config",
+          "lookup_conditions"
+        ]
+      },
+      "else": {
+        "required": [
+          "lookup_data",
+          "lookup_conditions"
+        ]
+      }
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "title": "Select",
+      "ui_type": "object",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "column_list": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expression": {
+                "type": "string",
+                "minLength": 1,
+                "ui-hint": "expression"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "transformation",
+        "column_list"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "object",
+      "title": "SequenceGenerator",
+      "properties": {
+        "for_column_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order_by": {
+          "type": "array-container",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "required": [],
+            "properties": {
+              "column": {
+                "type": "autocomplete",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              }
+            }
+          }
+        },
+        "start_with": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "transformation",
+        "for_column_name",
+        "order_by",
+        "start_with"
+      ]
+    },
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "description": "",
+      "type": "object",
+      "ui_type": "object",
+      "title": "Drop",
+      "properties": {
+        "transformation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "column": {
+          "type": "array",
+          "items": {
+            "column_list": {
+              "type": "autocomplete",
+              "minLength": 1
+            }
+          },
+          "minItems": 1
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "transformation",
+        "column_list"
+      ]
+    }
+  ]
+}

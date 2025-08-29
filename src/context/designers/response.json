@@ -1,0 +1,241 @@
+{
+    "success": true,
+    "data": {
+        "pipeline_id": "45",
+        "messages": [
+            {
+                "id": "94",
+                "role": "assistant",
+                "content": "Perfect! I've successfully configured and added the \"input.csv\" data source to your pipeline. Now let's add a transformation.",
+                "timestamp": "2025-07-09T16:12:56.460869",
+                "suggestions": [],
+                "formData": {
+                    "schema": {
+                        "module_name": "Reader",
+                        "title": "Reader",
+                        "type": "reader_configuration"
+                    },
+                    "sourceColumns": [],
+                    "currentNodeId": "reader-1752077575410",
+                    "initialValues": {
+                        "nodeId": "reader-1752077575410",
+                        "reader_name": "input.csv",
+                        "name": "input.csv",
+                        "source_type": "Relational",
+                        "file_type": "CSV",
+                        "connection_config_id": 0,
+                        "data_src_id": 22,
+                        "sourceConfiguration": {
+                            "data_src_id": 22,
+                            "data_src_name": "input.csv",
+                            "source_name": "input.csv",
+                            "data_src_desc": "input.csv",
+                            "connection_type": "Local",
+                            "connection_config_id": null,
+                            "file_name": "input.csv",
+                            "file_path_prefix": "example",
+                            "file_type": "CSV",
+                            "table_name": "input.csv",
+                            "type": "Relational",
+                            "total_records": 0,
+                            "data_src_quality": "80",
+                            "data_source_layout": [
+                                {
+                                    "data_src_lyt_id": 222,
+                                    "data_src_lyt_name": "input.csv",
+                                    "data_src_lyt_fmt_cd": 0,
+                                    "data_src_lyt_delimiter_cd": 0,
+                                    "data_src_lyt_cust_delimiter": ",",
+                                    "data_src_lyt_header": true,
+                                    "data_src_lyt_encoding": null,
+                                    "data_src_lyt_quote_chars_cd": 1,
+                                    "data_src_lyt_escape_chars_cd": 1,
+                                    "data_src_lyt_regex": "",
+                                    "data_src_lyt_pk": false,
+                                    "data_src_lyt_total_records": 50,
+                                    "data_src_lyt_type_cd": 1,
+                                    "data_src_lyt_is_mandatory": true,
+                                    "data_src_id": 22
+                                }
+                            ],
+                            "bh_project_id": 1,
+                            "connection_config": {
+                                "custom_metadata": {},
+                                "connection_config_name": ""
+                            },
+                            "name": "input.csv"
+                        }
+                    },
+                    "isTarget": false
+                },
+                "msg_owner": "bighammer-admin"
+            },
+            {
+                "id": "95",
+                "role": "assistant",
+                "content": "",
+                "timestamp": "2025-07-09T16:19:10.756134",
+                "suggestions": [],
+                "formData": {
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "Filter",
+                        "description": "",
+                        "type": "object",
+                        "ui_type": "normal",
+                        "properties": {
+                            "condition": {
+                                "type": "expression",
+                                "minLength": 1,
+                                "ui_type": "full-width"
+                            }
+                        },
+                        "required": [
+                            "condition"
+                        ],
+                        "nodeId": "Filter_1752077578455"
+                    },
+                    "sourceColumns": [
+                        {
+                            "name": "id",
+                            "dataType": "string"
+                        },
+                        {
+                            "name": "name",
+                            "dataType": "string"
+                        },
+                        {
+                            "name": "age",
+                            "dataType": "string"
+                        },
+                        {
+                            "name": "city",
+                            "dataType": "string"
+                        },
+                        {
+                            "name": "address",
+                            "dataType": "string"
+                        },
+                        {
+                            "name": "state",
+                            "dataType": "string"
+                        },
+                        {
+                            "name": "zip",
+                            "dataType": "string"
+                        }
+                    ],
+                    "currentNodeId": "Filter_1752077578455",
+                    "initialValues": {
+                        "nodeId": "Filter_1752077578455",
+                        "dependent_on": [
+                            {
+                                "source": "Reader_1752077575410",
+                                "targetHandle": "input-1"
+                            }
+                        ],
+                        "condition": "age>25",
+                        "name": "Filter"
+                    },
+                    "isTarget": false
+                },
+                "msg_owner": "bighammer-admin"
+            },
+            {
+                "id": "96",
+                "role": "assistant",
+                "content": "",
+                "timestamp": "2025-07-09T16:19:45.435476",
+                "suggestions": [],
+                "formData": {
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "description": "",
+                        "type": "object",
+                        "title": "SchemaTransformation",
+                        "ui_type": "tab-container",
+                        "properties": {
+                            "derived_fields": {
+                                "type": "array",
+                                "uniqueItems": true,
+                                "minItems": 1,
+                                "items": {
+                                    "required": [
+                                        "name",
+                                        "expression"
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "minLength": 1
+                                        },
+                                        "expression": {
+                                            "type": "expression",
+                                            "minLength": 1
+                                        }
+                                    }
+                                }
+                            },
+                            "select_columns": {
+                                "type": "array",
+                                "description": "List of column names to select from the dataset",
+                                "items": {
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "uniqueItems": true
+                            },
+                            "drop_columns": {
+                                "type": "array",
+                                "description": "List of column names to drop from the dataset",
+                                "items": {
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "uniqueItems": true
+                            },
+                            "rename_columns": {
+                                "type": "object",
+                                "description": "Mapping of old column names to new column names",
+                                "additionalProperties": {
+                                    "type": "string",
+                                    "minLength": 1
+                                }
+                            }
+                        },
+                        "required": [
+                            "derived_fields"
+                        ],
+                        "nodeId": "SchemaTransformation_1752077957248"
+                    },
+                    "sourceColumns": [],
+                    "currentNodeId": "SchemaTransformation_1752077957248",
+                    "initialValues": {
+                        "nodeId": "SchemaTransformation_1752077957248",
+                        "dependent_on": [
+                            {
+                                "source": "Filter_1752077578455",
+                                "targetHandle": "input-0"
+                            }
+                        ],
+                        "derived_fields": [
+                            {
+                                "name": "full_address",
+                                "expression": "concat_ws(\" \", address, city, state, zip)"
+                            }
+                        ],
+                        "select_columns": [],
+                        "drop_columns": [],
+                        "rename_columns": {},
+                        "name": "SchemaTransformation"
+                    },
+                    "isTarget": false
+                },
+                "msg_owner": "bighammer-admin"
+            }
+        ],
+        "created_at": null,
+        "updated_at": null,
+        "total_messages": 3
+    }
+}

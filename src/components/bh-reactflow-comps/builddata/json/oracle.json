@@ -1,0 +1,65 @@
+{
+    "documentationUrl": "N/A",
+    "connectionSpecification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Oracle Source Spec",
+      "type": "object",
+      "required": [
+        "service_name",
+        "password",
+        "db_schema",
+        "host",
+        "port",
+        "sid",
+        "username"
+      ],
+      "properties": {
+        "host": {
+          "title": "Host",
+          "description": "Hostname of the database.",
+          "type": "string",
+          "order": 0
+        },
+        "port": {
+          "title": "Port",
+          "description": "Port of the database.",
+          "type": "string",
+          "minimum": 0,
+          "maximum": 65536,
+          "examples": ["1521"],
+          "order": 1
+        },
+        "service_name": {
+          "title": "Service Name",
+          "description": "Oracle service name.",
+          "type": "string",
+          "order": 2
+        },
+        "sid": {
+          "title": "SID",
+          "description": "Oracle system identifier.",
+          "type": "string",
+          "order": 3
+        },
+        "username": {
+          "title": "Username",
+          "description": "Username to access the database.",
+          "type": "string",
+          "order": 4
+        },
+        "password": {
+          "title": "Password",
+          "description": "Password associated with the username.",
+          "type": "string",
+          "bh_secret": true,
+          "order": 5
+        },
+        "db_schema": {
+          "title": "Schema",
+          "description": "Database schema name.",
+          "type": "string",
+          "order": 6
+        }
+      }
+    }
+  } 

@@ -1,0 +1,104 @@
+{
+  "id" : "file://repartition_schema.json",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "",
+  "type": "object",
+  "properties": {
+    "repartition_type": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "repartition",
+        "coalesce",
+        "hash_repartition",
+        "repartition_by_range"
+      ],
+      "default": "repartition"
+    },
+    "repartition_value": {
+      "type": "number"
+    },
+    "override_partition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repartition_expression": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "required": [
+          "expression",
+          "sort_order",
+          "order"
+        ],
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sort_order": {
+            "type": "string",
+            "minLength": 1
+          },
+          "order": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "limit": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "repartition_type",
+    "override_partition"
+  ],
+  "anyOf": [
+    {
+      "if": {
+        "properties": {
+          "repartition_type": { "const": "repartition" }
+        },
+        "required": ["repartition_type"]
+      },
+      "then": {
+        "required": ["repartition_value"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repartition_type": { "const": "coalesce" }
+        },
+        "required": ["repartition_type"]
+      },
+      "then": {
+        "required": ["repartition_value"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repartition_type": { "const": "hash_repartition" }
+        },
+        "required": ["repartition_type"]
+      },
+      "then": {
+        "required": ["repartition_expression", "repartition_value"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repartition_type": { "const": "repartition_by_range" }
+        },
+        "required": ["repartition_type"]
+      },
+      "then": {
+        "required": ["repartition_expression", "repartition_value"]
+      }
+    }
+  ]
+}

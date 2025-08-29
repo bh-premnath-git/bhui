@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "",
+  "type": "object",
+  "title": "Aggregator",
+  "ui_type": "tab-container",
+  "properties": {
+    "aggregations": {
+      "type": "array",
+      "items": {
+        "target_column": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expression": {
+          "type": "string",
+          "minLength": 1,
+          "ui-hint": "expression"
+        }
+      }
+    },
+    "group_by": {
+      "type": "array",
+      "items": {
+        "group_by": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "pivot_by": {
+      "type": "array",
+      "items": {
+        "pivot_column": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pivot_values": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "group_by",
+    "aggregations"
+  ]
+}

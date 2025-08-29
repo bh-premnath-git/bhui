@@ -1,0 +1,176 @@
+ReactFlow Performance Optimizations
+
+/* Enable hardware acceleration for smoother canvas operations */
+.react-flow {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimize panning and zooming */
+.react-flow__pane {
+  will-change: transform;
+  cursor: grab;
+  z-index: 0 !important; /* Ensure pane is at the base layer */
+}
+
+.react-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+/* Optimize node rendering */
+.react-flow__node {
+  will-change: transform;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  transform: translateZ(0);
+}
+
+/* Optimize edge rendering */
+.react-flow__edge {
+  will-change: transform;
+  pointer-events: stroke;
+  z-index: -20 !important; /* Negative z-index but still visible */
+}
+
+.react-flow__edge-path {
+  transition: stroke 0.2s, stroke-width 0.2s;
+  stroke-width: 2px !important;
+  stroke: #b1b1b7 !important;
+  z-index: -20 !important;
+}
+
+/* Optimize handle interactions */
+.react-flow__handle {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  pointer-events: all !important;
+  z-index: -10 !important; /* Negative z-index to ensure it's behind the node image */
+}
+
+/* Specifically target source handles to ensure they're clickable */
+.react-flow__handle-source {
+  pointer-events: all !important;
+  cursor: crosshair !important;
+  z-index: -10 !important;
+}
+
+/* Specifically target target handles to ensure they're clickable */
+.react-flow__handle-target {
+  pointer-events: all !important;
+  z-index: -10 !important;
+}
+
+/* Output handle specific styles */
+.handle-output {
+  width: 12px !important; /* Reduced size */
+  height: 12px !important; /* Reduced size */
+  background-color: #777777 !important; /* Changed to match the component style */
+  border-radius: 0 !important;
+  clip-path: polygon(0 0, 0 100%, 100% 50%) !important;
+  box-shadow: 0 0 3px rgba(119, 119, 119, 0.4) !important;
+  z-index: -15 !important; /* Negative z-index to ensure it's behind the node image */
+}
+
+.handle-output:hover {
+  transform: translateX(50%) translateY(-50%) scale(1.2) !important;
+  filter: brightness(1.2) !important;
+  box-shadow: 0 0 5px rgba(119, 119, 119, 0.6) !important;
+  z-index: -15 !important; /* Keep negative z-index even on hover */
+}
+
+/* Output handle connection indicator */
+.handle-output::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  transform: translate(100%, -50%) scale(0);
+  transition: transform 0.2s ease;
+  z-index: 20;
+}
+
+.handle-output:hover::after {
+  transform: translate(100%, -50%) scale(1);
+}
+
+/* Optimize connection line */
+.react-flow__connection-path {
+  stroke-width: 2px !important;
+  stroke: #b1b1b7 !important;
+  stroke-dasharray: 5 3;
+  animation: flowConnection 1s infinite linear;
+  z-index: -20 !important;
+}
+
+/* Ensure connection lines are visible but behind nodes */
+.react-flow__connection {
+  z-index: -20 !important;
+}
+
+@keyframes flowConnection {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Optimize selection */
+.react-flow__selection {
+  border: 1px dashed #1a192b;
+  border-radius: 4px;
+  background: rgba(26, 25, 43, 0.08);
+}
+
+/* Optimize controls */
+.react-flow__controls {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.3s;
+}
+
+.react-flow__controls button {
+  transition: all 0.2s ease;
+}
+
+/* Optimize minimap */
+.react-flow__minimap {
+  transition: opacity 0.3s;
+}
+
+/* Smooth drag-and-drop */
+.react-flow__node.dragging {
+  z-index: 1000;
+  cursor: grabbing;
+  opacity: 0.8;
+  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+}
+
+/* Optimize background */
+.react-flow__background {
+  will-change: transform;
+}
+
+/* Prevent splashing effect when clicking on canvas */
+.react-flow {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.react-flow__pane {
+  -webkit-tap-highlight-color: transparent;
+  transition: none !important;
+}
+
+.react-flow__node {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.react-flow__handle {
+  -webkit-tap-highlight-color: transparent;
+}

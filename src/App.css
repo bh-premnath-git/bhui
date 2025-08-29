@@ -1,0 +1,85 @@
+/* Normalize and base styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Document root styling */
+:root {
+  
+  /* Default font size for responsive typography */
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  /* Font smoothing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Text rendering */
+  text-rendering: optimizeLegibility;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add this to your global CSS or as a styled component */
+pre, code {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+}
+
+/* dnd-kit animations and styles */
+.dragging-active {
+  cursor: grabbing !important;
+}
+
+.resizing {
+  cursor: nwse-resize !important;
+}
+
+/* Animation for when an item is being dragged */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.dragging {
+  z-index: 999 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  animation: pulse 1.5s infinite;
+}
+
+.dragging-active {
+  cursor: grabbing !important;
+}
+
+.dragging-active * {
+  cursor: grabbing !important;
+}
+
+.dragging-active .recharts-wrapper {
+  pointer-events: none;
+}
+
+textarea:focus {
+  outline: none !important;
+  border: none !important;
+
+}

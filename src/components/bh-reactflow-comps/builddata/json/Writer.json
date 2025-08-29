@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "type": "object",
+      "$ref": "@/components/bh-reactflow-comps/builddata/json/Target.json"
+    }
+  },
+  "required": [
+    "name",
+    "target"
+  ],
+  "allOf": [
+    {
+        "if": {
+            "properties": {
+                "target": {
+                    "properties": {
+                        "target_type": {
+                            "const": "File"
+                        }
+                    }
+                }
+            }
+        },
+        "then": {
+            "properties": {
+                "file_type": {
+                    "type": "string",
+                    "description": "File Type",
+                    "enum": [
+                        "CSV",
+                        "JSON",
+                        "Parquet",
+                        "ORC",
+                        "Avro",
+                        "Excel",
+                        "XML",
+                        "FixedWidth"
+                    ]
+                }
+            },
+            "required": ["file_type"],
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "file_type": {
+                                "const": "CSV"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "write_options": {
+                                "type": "object",
+                                "items": {
+                                    "$ref": "transformations/writers/CSVOptions.json"
+                                }
+                            }
+                        },
+                        "required": ["write_options"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "file_type": {
+                                "const": "JSON"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "write_options": {
+                                "type": "object",
+                                "items": {
+                                    "$ref": "transformations/writers/JSONOptions.json"
+                                }
+                            }
+                        },
+                        "required": ["write_options"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "file_type": {
+                                "const": "Parquet"
+                            }
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "write_options": {
+                                "type": "object",
+                                "items": {
+                                    "$ref": "transformations/writers/ParquetOptions.json"
+                                }
+                            }
+                        },
+                        "required": ["write_options"]
+                    }
+                }
+            ]
+        }
+    }
+  ]
+}

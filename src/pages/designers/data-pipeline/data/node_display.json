@@ -1,0 +1,188 @@
+{
+  "nodes": [
+    {
+      "ui_properties": {
+        "module_name": "Reader",
+        "color": "#f7a01f",
+        "icon": "/assets/buildPipeline/6.svg",
+        "ports": {
+          "inputs": 0,
+          "outputs": 1,
+          "maxInputs": 0
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Target",
+        "color": "#07a260",
+        "icon": "/assets/buildPipeline/7.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 0,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Filter",
+        "color": "#f5bc2a",
+        "icon": "/assets/buildPipeline/display/filter.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Joiner",
+        "color": "#ff7396",
+        "icon": "/assets/buildPipeline/display/join.svg",
+        "ports": {
+          "inputs": 2,
+          "outputs": 1,
+          "maxInputs": "unlimited"
+        }
+      }
+    },
+    
+    {
+      "ui_properties": {
+        "module_name": "SchemaTransformation",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/28.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Sorter",
+        "color": "#219fe7",
+        "icon": "/assets/buildPipeline/squre/1.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Aggregator",
+        "color": "#d43faa",
+        "icon": "/assets/buildPipeline/squre/2.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    
+    {
+      "ui_properties": {
+        "module_name": "Deduplicator",
+        "color": "#614EA7",
+        "icon": "/assets/buildPipeline/squre/5.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "Repartition",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/6.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "SQLTransformation",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/7.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": "unlimited"
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "SetCombiner",
+        "color": "#32D1A4",
+        "icon": "/assets/buildPipeline/squre/8.svg",
+        "ports": {
+          "inputs": 2,
+          "outputs": 1,
+          "maxInputs": "unlimited"
+        }
+      }
+    },
+    
+    {
+      "ui_properties": {
+        "module_name": "SequenceGenerator",
+        "color": "#905aee",
+        "icon": "/assets/buildPipeline/squre/12.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    
+    {
+      "ui_properties": {
+        "module_name": "Lookup",
+        "color": "#4a6bdf",
+        "icon": "/assets/buildPipeline/squre/3.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "CustomPySpark",
+        "color": "#614EA7",
+        "icon": "/assets/buildPipeline/squre/4.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": "unlimited"
+        }
+      }
+    },
+    {
+      "ui_properties": {
+        "module_name": "DQCheck",
+        "color": "#ff6b6b",
+        "icon": "/assets/buildPipeline/squre/10.svg",
+        "ports": {
+          "inputs": 1,
+          "outputs": 1,
+          "maxInputs": 1
+        }
+      }
+    }
+  ]
+}

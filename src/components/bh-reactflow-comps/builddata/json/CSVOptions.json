@@ -1,0 +1,232 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": "CSV Reader Options",
+    "properties": {
+        "sep": {
+            "enum": [
+                ",",
+                ";",
+                "\t",
+                "|",
+                " "
+            ],
+            "description": "Sets a separator for each field and value. This separator can be one or more characters.",
+            "default": ","
+        },
+        "encoding": {
+            "enum": [
+                "UTF-8",
+                "ISO-8859-1",
+                "ASCII",
+                "UTF-16"
+            ],
+            "description": "Sets the encoding to be used for CSV files.",
+            "default": "UTF-8"
+        },
+        "quote": {
+            "enum": [
+                "\"",
+                "'"
+            ],
+            "description": "Sets a single character used for escaping quoted values where the separator can be part of the value.",
+            "default": "\""
+        },
+        "escape": {
+            "enum": [
+                "\\",
+                "/",
+                "\""
+            ],
+            "description": "Sets a single character used for escaping quotes inside an already quoted value.",
+            "default": "\\"
+        },
+        "comment": {
+            "enum": [
+                "#",
+                "//",
+                ";",
+                ""
+            ],
+            "description": "Sets a single character used for skipping lines beginning with this character. By default, it is disabled.",
+            "default": ""
+        },
+        "header": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "Uses the first line of the CSV file as the names of the columns.",
+            "default": "false"
+        },
+        "inferSchema": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "Infers the input schema automatically from data. It requires one extra pass over the data. CSV built-in functions ignore this option.",
+            "default": "false"
+        },
+        "preferDate": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "During schema inference (inferSchema), attempts to infer string columns that contain dates as Date if the values satisfy the dateFormat option or default date format.",
+            "default": "true"
+        },
+        "enforceSchema": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "If it is set to true, the specified or inferred schema will be forcibly applied to datasource files, and headers in CSV files will be ignored.",
+            "default": "false"
+        },
+        "ignoreLeadingWhiteSpace": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "Ignores leading whitespaces in CSV fields. By default, it is false.",
+            "default": "false"
+        },
+        "ignoreTrailingWhiteSpace": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "Ignores trailing whitespaces in CSV fields. By default, it is false.",
+            "default": "false"
+        },
+        "nullValue": {
+            "enum": [
+                "null",
+                "NULL",
+                "\\N"
+            ],
+            "description": "Sets the string representation of a null value. By default, it is empty string.",
+            "default": ""
+        },
+        "nanValue": {
+            "enum": [
+                "NaN",
+                "nan",
+                "NAN"
+            ],
+            "description": "Sets the string representation of a non-number value. By default, it is 'NaN'.",
+            "default": "NaN"
+        },
+        "positiveInf": {
+            "enum": [
+                "Inf",
+                "Infinity",
+                "+Inf",
+                "+Infinity"
+            ],
+            "description": "Sets the string representation of a positive infinity value. By default, it is 'Inf'.",
+            "default": "Inf"
+        },
+        "negativeInf": {
+            "enum": [
+                "-Inf",
+                "-Infinity"
+            ],
+            "description": "Sets the string representation of a negative infinity value. By default, it is '-Inf'.",
+            "default": "-Inf"
+        },
+        "dateFormat": {
+            "enum": [
+                "yyyy-MM-dd",
+                "MM/dd/yyyy",
+                "dd-MM-yyyy"
+            ],
+            "description": "Sets the string that indicates a date format.",
+            "default": "yyyy-MM-dd"
+        },
+        "timestampFormat": {
+            "enum": [
+                "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+                "yyyy-MM-dd HH:mm:ss",
+                "MM/dd/yyyy HH:mm:ss"
+            ],
+            "description": "Sets the string that indicates a timestamp format.",
+            "default": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+        },
+        "timestampNTZFormat": {
+            "enum": [
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",
+                "MM/dd/yyyy HH:mm:ss"
+            ],
+            "description": "Sets the string that indicates a timestamp format for TIMESTAMP_NTZ type.",
+            "default": "yyyy-MM-dd'T'HH:mm:ss.SSS"
+        },
+        "mode": {
+            "enum": [
+                "PERMISSIVE",
+                "DROPMALFORMED",
+                "FAILFAST"
+            ],
+            "description": "Specifies the behavior when parsing malformed records.",
+            "default": "PERMISSIVE"
+        },
+        "columnNameOfCorruptRecord": {
+            "enum": [
+                "_corrupt_record",
+                "error_field"
+            ],
+            "description": "Sets the name of a field in which the malformed string is stored.",
+            "default": "_corrupt_record"
+        },
+        "multiLine": {
+            "enum": [
+                "true",
+                "false"
+            ],
+            "description": "Parse one record, which may span multiple lines, per file.",
+            "default": "false"
+        },
+        "emptyValue": {
+            "enum": [
+                "EMPTY",
+                "null"
+            ],
+            "description": "Sets the string representation of an empty value. By default, it is empty string.",
+            "default": ""
+        },
+        "locale": {
+            "enum": [
+                "en-US",
+                "en-GB",
+                "fr-FR",
+                "de-DE"
+            ],
+            "description": "Sets the locale of the data when reading CSV files.",
+            "default": "en-US"
+        },
+        "lineSep": {
+            "enum": [
+                "\n",
+                "\r\n",
+                "\r"
+            ],
+            "description": "Sets the line separator for CSV files.",
+            "default": "\n"
+        },
+        "unescapedQuoteHandling": {
+            "enum": [
+                "STOP_AT_DELIMITER",
+                "BACK_TO_DELIMITER",
+                "BACK_TO_CLOSEST_QUOTE"
+            ],
+            "description": "Sets the mode for handling unescaped quotes inside CSV fields.",
+            "default": "STOP_AT_DELIMITER"
+        }
+    },
+    "required": [
+        "sep",
+        "encoding",
+        "header",
+        "inferSchema"
+    ]
+}

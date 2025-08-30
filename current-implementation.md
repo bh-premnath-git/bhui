@@ -22,3 +22,4 @@
 7. **Chat message interaction**
    - `ChatMessages` still routes card clicks for other workflows; data exploration now skips the card step and opens the panel directly when the user submits a query
 
+

@@ -11,7 +11,7 @@
    - Choosing a connection triggers `createConversation` to obtain a thread ID, while `ChatInput` later submits the user’s query to `processExploreQuery` when in explorer context
 
 4. **Chat service hand‑off**
-   - `ChatService.processExploreQuery` stores the query/connection and injects a clickable card (`explore-data-card`) into the chat. Clicking it calls `handleExploreCardClick`, which opens a `RightAsideComponent` of type `explore-data` and passes the query, connection, and thread ID
+   - `ChatService.processExploreQuery` shows a short assistant message and immediately opens a `RightAsideComponent` of type `explore-data`, passing the query, connection, and thread ID with no intermediate card
 
 5. **Right‑side rendering**
    - `RightAsideComponent` switches on `componentId`; for `explore-data` it renders `ExploreDataComponent`, keeping the panel open until closed and relaying success messages as needed
@@ -20,5 +20,6 @@
    - `ExploreDataComponent` streams results via `useConversation.streamConversation`, parsing SSE chunks (`MetaStarted`, `Identify`, `SQL`, `TABLE`, `EXPLANATION`, `MetaCompleted`) to update state and display progress with `StreamingStepIndicator`, final metrics, tables, SQL, and Plotly‑based charts in `OverviewTab`
 
 7. **Chat message interaction**
-   - `ChatMessages` routes card clicks (such as the exploration card) through `chatService.handleCardClick`, ensuring the correct side panel opens when the user interacts with chat UI components
+   - `ChatMessages` still routes card clicks for other workflows; data exploration now skips the card step and opens the panel directly when the user submits a query
+
 

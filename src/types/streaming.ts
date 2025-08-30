@@ -68,7 +68,7 @@ export interface TableContent {
 
 export interface IdentifyEvent {
   response_type: "IDENTIFY";
-  content: string;                // e.g., "public.products"
+  content: string[];                // e.g., "public.products"
   timestamp: ISODateTimeString;
 }
 

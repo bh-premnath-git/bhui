@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import type { IdentifyEvent, MetaCompletedEvent } from '@/types/streaming';
 
 interface AnalysisMetricsProps {
-  identify?: IdentifyEvent['content'];
+  identify?: IdentifyEvent['content'][];
   duration_ms?: MetaCompletedEvent['data']['duration_ms'];
   results_summary?: MetaCompletedEvent['data']['results_summary'];
 }
@@ -23,8 +23,10 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="text-left text-sm text-muted-foreground">
-        {identify && (
-          <>Identified source: <span className="font-medium text-foreground">{identify}</span></>
+        {identify && identify.length > 0 && (
+          <>Identified source: <span className="font-medium text-foreground">
+            {identify.flat().filter(Boolean).join(', ')}
+          </span></>
         )}
       </div>
       <div className="flex flex-wrap gap-2">

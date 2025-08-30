@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, FileText, GitBranch, Table as TableIcon, Eye, Code2 } from 'lucide-react';
+import { X, FileText, GitBranch, Table as TableIcon, Eye, Code2, Loader2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { setRightComponent, addMessage, openChatBottomDrawer, closeChatBottomDrawer, setChatBottomDrawerHeight } from '@/store/slices/chat/chatSlice';
 import { getChatService } from '@/services/chatService';
@@ -47,12 +47,18 @@ export const RightAsideComponent: React.FC = () => {
 
   // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
   const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
-  
+  const [exploreTitle, setExploreTitle] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (rightComponent?.componentId !== 'explore-data') {
+      setExploreTitle(null);
+    }
+  }, [rightComponent?.componentId]);
+
   React.useEffect(() => {
     if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
     if (!bottomDrawer.isOpen && isBottomDrawerOpen) closeBottomDrawer();
   }, [bottomDrawer.isOpen, isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer]);
-  
+
   React.useEffect(() => {
     // push height to context for consistent internal behavior of BottomDrawer
     updateBottomDrawerHeight(`${bottomDrawer.height}px`);
@@ -132,7 +138,7 @@ export const RightAsideComponent: React.FC = () => {
               Project_Name: project.bh_project_name
             })) : []}
             closeImportSection={handleClose}
-            onRefetch={() => {}}
+            onRefetch={() => { }}
           />
         );
       case 'pipeline-form':
@@ -141,12 +147,12 @@ export const RightAsideComponent: React.FC = () => {
         return (
           <div className="flex flex-col h-full w-full">
             {/* Conditionally show playground header only when not in designer mode */}
-                <PlaygroundHeader playGroundHeader="pipeline" />
+            <PlaygroundHeader playGroundHeader="pipeline" />
             {/* Canvas below header; hide its internal header */}
             <div className="flex-1 overflow-hidden">
-              <PipelineCanvasWrapper 
-                onClose={handleClose} 
-                hideHeader 
+              <PipelineCanvasWrapper
+                onClose={handleClose}
+                hideHeader
                 pipelineType={rightComponent.extra?.pipelineType}
                 hideIcons={rightComponent.extra?.hideIcons}
               />
@@ -169,10 +175,11 @@ export const RightAsideComponent: React.FC = () => {
         );
       case 'explore-data':
         return (
-          <ExploreDataComponent 
+          <ExploreDataComponent
             query={(rightComponent as any).extra?.query}
             connection={(rightComponent as any).extra?.connection}
             threadId={(rightComponent as any).extra?.threadId}
+            onTitleChange={setExploreTitle}
           />
         );
       default:
@@ -198,12 +205,17 @@ export const RightAsideComponent: React.FC = () => {
   return (
     <div className="w-full h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ring-1 ring-border/20">
       <Card className="h-full rounded-none border-0 shadow-none">
-        <CardHeader 
+        <CardHeader
           className="flex p-1 flex-row items-center justify-between space-y-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent"
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <CardTitle className="text-base font-medium truncate min-w-0" title={rightComponent.title}>
-              {rightComponent.title}
+            <CardTitle
+              className="text-base font-medium truncate min-w-0"
+              title={rightComponent.componentId === 'explore-data' ? exploreTitle ?? undefined : rightComponent.title}
+            >
+              {rightComponent.componentId === 'explore-data'
+                ? (exploreTitle ? exploreTitle : <Loader2 className="h-4 w-4 animate-spin" />)
+                : rightComponent.title}
             </CardTitle>
             {/* Segmented toggle (visible when extra.toggles is provided) */}
             {Array.isArray((rightComponent as any).extra?.toggles) && (
@@ -227,7 +239,7 @@ export const RightAsideComponent: React.FC = () => {
                       return (
                         <button
                           key={t.id || t.componentId}
-                          onClick={onClick} 
+                          onClick={onClick}
                           className={`${commonClasses} ${radius} ${isActive ? activeClasses : inactiveClasses}`}
                           title={t.title}
                           aria-label={t.title}
@@ -244,7 +256,7 @@ export const RightAsideComponent: React.FC = () => {
                               };
                               const FallbackIcon = t.componentId === 'data-table-view' ? Eye
                                 : t.componentId === 'pipeline-canvas' ? Code2
-                                : GitBranch;
+                                  : GitBranch;
                               const IconComp = (t.icon && iconMap[t.icon]) ? iconMap[t.icon] : FallbackIcon;
                               return <IconComp className="h-4 w-4" />;
                             })()}
@@ -273,7 +285,7 @@ export const RightAsideComponent: React.FC = () => {
           {/* Scoped Bottom Drawer controlled by Redux */}
           {bottomDrawer.isOpen && bottomDrawer.content && (
             <div id="bottom-drawer-container" className="flex-shrink-0 w-full">
-              <BottomDrawer 
+              <BottomDrawer
                 title={bottomDrawer.title}
                 height={`h-[${bottomDrawer.height}px]`}
                 onClose={() => dispatch(closeChatBottomDrawer())}

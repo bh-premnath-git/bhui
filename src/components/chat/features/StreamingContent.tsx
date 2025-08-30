@@ -7,7 +7,7 @@ import type { TableEvent, SqlEvent, IdentifyEvent, ExplanationEvent } from '@/ty
 
 interface StreamingContentProps {
   currentStep?: StreamingStep;
-  identify?: IdentifyEvent['content'];
+  identify?: IdentifyEvent['content'][];
   sql?: SqlEvent['content'];
   table?: TableEvent['content'];
   explanation?: ExplanationEvent['content'];
@@ -22,6 +22,9 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
   explanation,
   onCopy
 }) => {
+  const identifyLabel = identify?.join(', ');
+  const identifyPlural = (identify?.length || 0) > 1;
+
   if (!currentStep) {
     return (
       <div className="flex flex-col items-center space-y-4 py-8">
@@ -48,9 +51,9 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
               <Search className="w-8 h-8 text-green-500" />
               <p className="text-sm text-muted-foreground">Identifying data sources...</p>
             </div>
-            {identify && (
+            {identifyLabel && (
               <div className="text-sm text-muted-foreground animate-in fade-in duration-300">
-                Identified source: <span className="font-medium text-foreground">{identify}</span>
+                Identified {identifyPlural ? 'sources' : 'source'}: <span className="font-medium text-foreground">{identifyLabel}</span>
               </div>
             )}
           </div>
@@ -63,9 +66,9 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
               <Code className="w-8 h-8 text-yellow-500" />
               <p className="text-sm text-muted-foreground">Generating SQL query...</p>
             </div>
-            {identify && (
+            {identifyLabel && (
               <div className="text-sm text-muted-foreground">
-                Source: <span className="font-medium text-foreground">{identify}</span>
+                Source{identifyPlural ? 's' : ''}: <span className="font-medium text-foreground">{identifyLabel}</span>
               </div>
             )}
             {sql && (
@@ -83,9 +86,9 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
               <Database className="w-8 h-8 text-purple-500" />
               <p className="text-sm text-muted-foreground">Executing query and fetching data...</p>
             </div>
-            {identify && (
+            {identifyLabel && (
               <div className="text-sm text-muted-foreground">
-                Source: <span className="font-medium text-foreground">{identify}</span>
+                Source{identifyPlural ? 's' : ''}: <span className="font-medium text-foreground">{identifyLabel}</span>
               </div>
             )}
             {sql && <SqlBlock title="SQL Query" sql={sql} canCopy={!!onCopy} />}
@@ -105,9 +108,9 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
               <FileText className="w-8 h-8 text-orange-500" />
               <p className="text-sm text-muted-foreground">Generating explanation...</p>
             </div>
-            {identify && (
+            {identifyLabel && (
               <div className="text-sm text-muted-foreground">
-                Source: <span className="font-medium text-foreground">{identify}</span>
+                Source{identifyPlural ? 's' : ''}: <span className="font-medium text-foreground">{identifyLabel}</span>
               </div>
             )}
             {sql && <SqlBlock title="SQL Query" sql={sql} canCopy={!!onCopy} />}

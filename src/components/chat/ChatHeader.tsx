@@ -4,8 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 export const ChatHeader: React.FC = () => {
   const { getUserInfo } = useAuth();
   const userInfo = getUserInfo();
-  const userName = (userInfo?.name || userInfo?.username).toLowerCase();
-
+  const userName = (userInfo.name.split(' ')[0]).toLowerCase();
+// console.log(userInfo.name.split(' ')[0])
   const [greeting, setGreeting] = useState("Hello");
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Menu } from 'lucide-react';
+
 
 const chatHistory = [
   { id: 1, title: 'Chat sidebar with toggle and new', date: 'Today' },
@@ -22,7 +22,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChat,
 }) => {
   const [showToggleTooltip, setShowToggleTooltip] = useState(false);
-  const [showNewChatTooltip, setShowNewChatTooltip] = useState(false);
 
   return (
     <div className="relative h-full">
@@ -55,27 +54,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             )}
           </div> */}
           
-          <div className="relative top-24">
-              <Button
-              variant="ghost"
-              size="icon"
-              className="ml-2 hover:bg-gray-100 text-white h-6 w-6 bg-gray-600 rounded-full"
-              onClick={onNewChat}
-              aria-label="New Chat"
-              onMouseEnter={() => !open && setShowNewChatTooltip(true)}
-              onMouseLeave={() => setShowNewChatTooltip(false)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            
-            {/* Tooltip for new chat button */}
-            {showNewChatTooltip && !open && (
-              <div className="absolute left-12 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg shadow-lg border border-gray-300 whitespace-nowrap z-50">
-                New Chat
-                <div className="absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-gray-800"></div>
-              </div>
-            )}
-          </div>
+
         </div>
 
         {/* Chat History List */}

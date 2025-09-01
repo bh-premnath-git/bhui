@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { shouldShowAdminNavItems } from "@/utils/roleUtils";
 import { useLocation } from "react-router-dom";
-import { LogOut, Sun, Moon, Search, PlusCircle, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
+import { LogOut, Sun, Moon, Search, PlusCircle, Plus, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -203,6 +203,7 @@ export function Sidebar() {
               <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap">
                 Bighammer.ai
               </h1>
+
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -220,7 +221,7 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex items-center justify-center">
-            {/* Home icon and toggle when collapsed */}
+            {/* Home and New Chat icons when collapsed */}
             <div className="fixed top-4 left-4 z-[110] flex flex-col items-center gap-2">
               <Button
                 variant="ghost"
@@ -230,9 +231,14 @@ export function Sidebar() {
                   "h-8 w-8 transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
                 )}
                 style={{ boxShadow: "none", border: "none", background: "transparent" }}
+                title="Open Sidebar"
               >
                 <PanelRight className="h-5 w-5" />
               </Button>
+
+             
+
+              {/* Home (collapsed) */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -251,12 +257,39 @@ export function Sidebar() {
                         "h-8 w-8 transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
                       )}
                       style={{ boxShadow: "none", border: "none", background: "transparent" }}
+                      title="Home"
                     >
                       <Home className="h-5 w-5 text-gray-800 dark:text-gray-100" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="text-gray-900">
                     <p>Home</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+               {/* New Chat (collapsed) */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        dispatch(setContext(''));
+                        dispatch(setOtherActions(null));
+                        dispatch(setSelectedActionTitle(null));
+                        dispatch(clearMessages());
+                        dispatch(setIsRightAsideComponent(false));
+                        navigation.handleNavigation(ROUTES.HOME);
+                      }}
+                      className={cn("h-8 w-8 rounded-full bg-gray-600 text-white hover:bg-gray-700")}
+                      title="New Chat"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-gray-900">
+                    <p>New Chat</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -314,6 +347,37 @@ export function Sidebar() {
           "space-y-1",
           isExpanded ? "px-3" : "flex flex-col items-center px-2"
         )}>
+          {/* New Chat as first menu item */}
+          {isExpanded ? (
+            <>
+              <li>
+                <a
+                  href={ROUTES.CHAT.HISTORY}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch(setContext(''));
+                    dispatch(setOtherActions(null));
+                    dispatch(setSelectedActionTitle(null));
+                    dispatch(clearMessages());
+                    dispatch(setIsRightAsideComponent(false));
+                    navigation.handleNavigation(ROUTES.CHAT.HISTORY);
+                    toggleSidebar();
+                  }}
+                  className={cn(
+                    "flex items-center rounded-lg transition-all duration-200",
+                    "group relative text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white",
+                    "px-3 py-2"
+                  )}
+                >
+                  <Plus className=" h-6 w-6 rounded-full bg-gray-600 p-1 text-white hover:bg-gray-700" />
+                  <span className="ml-3 font-medium">New Chat</span>
+                </a>
+              </li>
+
+
+            </>
+          ) : null}
+
           {navItems.map((item) => {
             const shouldShow = isExpanded;
 
@@ -628,38 +692,59 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Settings Footer - only show when expanded */}
+      {/* Recent activities moved to bottom */}
       {isExpanded && (
         <div className="border-t border-gray-100 dark:border-gray-800 p-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full flex items-center justify-start gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-all duration-200"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="text-sm font-medium">Settings</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="top" className="z-[120] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mb-2">
-              <DropdownMenuItem className="flex items-center gap-2" onClick={() => toggleTheme()}>
-                <Sun className="h-4 w-4" />
-                <span>Toggle Theme</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2" onClick={() => setThemeMode('light')}>
-                <Sun className="h-4 w-4" />
-                <span>Light</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2" onClick={() => setThemeMode('dark')}>
-                <Moon className="h-4 w-4" />
-                <span>Dark</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2" onClick={async () => { await logout(); navigation.handleNavigation('/'); }}>
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="px-1 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Recent activities
+          </div>
+          <ul className="space-y-1 max-h-40 overflow-y-auto pr-1">
+            {[
+              { id: '1', title: 'Discuss deployment strategy' },
+              { id: '2', title: 'Data model refinement notes' },
+              { id: '3', title: 'Investigate query performance' },
+              { id: '4', title: 'Pipeline schedule adjustments' },
+              { id: '5', title: 'ETL error triage session' },
+              { id: '6', title: 'Design dashboard KPIs' },
+              { id: '7', title: 'Explore catalog entities' },
+              { id: '8', title: 'Draft onboarding checklist' },
+              { id: '9', title: 'Policy and access mapping' },
+              { id: '10', title: 'Service SLA clarifications' },
+            ].map((c) => (
+              <li key={c.id}>
+                <a
+                  href={ROUTES.CHAT.HISTORY}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch(setIsRightAsideComponent(false));
+                    navigation.handleNavigation(ROUTES.CHAT.HISTORY);
+                    toggleSidebar();
+                  }}
+                  className={cn(
+                    "flex items-center rounded-md transition-colors",
+                    "px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                  title={c.title}
+                >
+                  <span className="truncate">{c.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2">
+            <a
+              href={ROUTES.CHAT.ALL}
+              onClick={(e) => {
+                e.preventDefault();
+                dispatch(setIsRightAsideComponent(false));
+                navigation.handleNavigation(ROUTES.CHAT.ALL);
+                toggleSidebar();
+              }}
+              className="block px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 rounded-md"
+            >
+              All chats
+            </a>
+          </div>
         </div>
       )}
 

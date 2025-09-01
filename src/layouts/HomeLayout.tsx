@@ -184,12 +184,12 @@ export const HomeLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) 
   if (!context) {
     return (
       <div className="flex h-[calc(100vh-4rem)] bg-chat-background">
-        <ChatSidebar
+        {/* <ChatSidebar
           open={sidebarOpen}
           onToggle={toggleSidebar}
           onNewChat={handleNewChat}
           onSelectChat={() => {}}
-        />
+        /> */}
         <main className="flex-1 flex flex-col">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
             <div className="space-y-10">

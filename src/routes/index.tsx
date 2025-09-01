@@ -13,6 +13,7 @@ import { DesignerRoutes } from './designerRoutes';
 import { DataOpsRoutes } from './dataOpsRoutes';
 import { AdminRoutes } from './adminRoutes';
 import { RequirementRoutes } from './requirementRoutes'
+import {ChatRoutes} from './chatRoutes';
 
 export const AppRoutes = () => {
   const protectedRoutes = useMemo(() => (
@@ -23,6 +24,7 @@ export const AppRoutes = () => {
       {DataOpsRoutes}
       {AdminRoutes}
       {RequirementRoutes}
+      {ChatRoutes}
     </>
   ), []);
 

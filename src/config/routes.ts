@@ -64,5 +64,11 @@ export const ROUTES = {
        ADD: '/admin-console/llm/add',
       EDIT: (id: string) => `/admin-console/llm/edit/${id}`
     },
+  },
+  CHAT: {
+    HISTORY: '/chat-history',
+    ALL: '/chat-history/all',
+    MY_PIPELINE: '/chat-history/my-pipeline',
+    DATA_ONBOARD: '/chat-history/data-onboard'
   }
 } as const;

@@ -20,7 +20,7 @@ import { PlaygroundHeader } from '@/components/headers/playground-header';
 import RequirementForm from '@/pages/designers/requirements/RequirementForm';
 import { ExploreDataComponent } from './ExploreDataComponent';
 import SampleDataTableView from './SampleDataTableView';
-// import { SampleDataTableView } from './SampleDataTableView';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // Component to trigger table import using existing data catalog functionality
 const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -38,6 +38,89 @@ const TableImportTrigger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// Dummy preview data component for pipeline canvas
+const PipelinePreviewData: React.FC = () => {
+  const dummyData = [
+    {
+      id: 1,
+      customer_name: 'John Doe',
+      product: 'Laptop',
+      amount: 1299.99,
+      status: 'Completed'
+    },
+    {
+      id: 2,
+      customer_name: 'Jane Smith',
+      product: 'Smartphone',
+      amount: 899.99,
+      status: 'Processing'
+    },
+    {
+      id: 3,
+      customer_name: 'Bob Johnson',
+      product: 'Headphones',
+      amount: 249.99,
+      status: 'Shipped'
+    },
+    {
+      id: 4,
+      customer_name: 'Alice Brown',
+      product: 'Monitor',
+      amount: 349.99,
+      status: 'Delivered'
+    },
+    {
+      id: 5,
+      customer_name: 'Charlie Wilson',
+      product: 'Keyboard',
+      amount: 129.99,
+      status: 'Processing'
+    }
+  ];
+
+  return (
+    <div className="p-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Pipeline Preview Data</h3>
+        <p className="text-sm text-gray-600">Sample data showing the expected output format</p>
+      </div>
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Customer Name</TableHead>
+              <TableHead>Product</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {dummyData.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="font-medium">{row.id}</TableCell>
+                <TableCell>{row.customer_name}</TableCell>
+                <TableCell>{row.product}</TableCell>
+                <TableCell>${row.amount.toFixed(2)}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    row.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                    row.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
+                    row.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {row.status}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
 export const RightAsideComponent: React.FC = () => {
   const dispatch = useAppDispatch();
   const rightComponent = useAppSelector((state) => state.chat.rightComponent);
@@ -48,15 +131,45 @@ export const RightAsideComponent: React.FC = () => {
   // sync SidebarContext open/close with Redux bottom drawer so DataPipelineCanvasNew controls still work if needed
   const { isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer, updateBottomDrawerHeight } = useSidebar();
   const [exploreTitle, setExploreTitle] = React.useState<string | null>(null);
+  const [hasManuallyClosed, setHasManuallyClosed] = React.useState(false);
+  
   React.useEffect(() => {
     if (rightComponent?.componentId !== 'explore-data') {
       setExploreTitle(null);
     }
   }, [rightComponent?.componentId]);
 
+  // Auto-open bottom drawer with preview data when pipeline canvas is opened
   React.useEffect(() => {
-    if (bottomDrawer.isOpen && !isBottomDrawerOpen) openBottomDrawer();
-    if (!bottomDrawer.isOpen && isBottomDrawerOpen) closeBottomDrawer();
+    if (rightComponent?.componentId === 'pipeline-canvas' && !bottomDrawer.isOpen && !hasManuallyClosed) {
+      // Small delay to ensure the canvas is fully rendered
+      const timer = setTimeout(() => {
+        dispatch(openChatBottomDrawer({
+          title: 'Pipeline Preview Data',
+          content: <PipelinePreviewData />,
+          height: 400
+        }));
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [rightComponent?.componentId, bottomDrawer.isOpen, hasManuallyClosed, dispatch]);
+
+  // Fix the synchronization conflict by using a ref to prevent infinite loops
+  const syncRef = React.useRef(false);
+  
+  React.useEffect(() => {
+    if (syncRef.current) return;
+    
+    if (bottomDrawer.isOpen && !isBottomDrawerOpen) {
+      syncRef.current = true;
+      openBottomDrawer();
+      setTimeout(() => { syncRef.current = false; }, 100);
+    } else if (!bottomDrawer.isOpen && isBottomDrawerOpen) {
+      syncRef.current = true;
+      closeBottomDrawer();
+      setTimeout(() => { syncRef.current = false; }, 100);
+    }
   }, [bottomDrawer.isOpen, isBottomDrawerOpen, openBottomDrawer, closeBottomDrawer]);
 
   React.useEffect(() => {
@@ -118,6 +231,12 @@ export const RightAsideComponent: React.FC = () => {
         chatService.executeStep(nextStep);
       }, 1000); // Small delay to show the success message first
     }
+  };
+
+  const handleDrawerClose = () => {
+    // Mark that user has manually closed the drawer
+    setHasManuallyClosed(true);
+    dispatch(closeChatBottomDrawer());
   };
 
   const renderComponent = () => {
@@ -288,7 +407,7 @@ export const RightAsideComponent: React.FC = () => {
               <BottomDrawer
                 title={bottomDrawer.title}
                 height={`h-[${bottomDrawer.height}px]`}
-                onClose={() => dispatch(closeChatBottomDrawer())}
+                onClose={handleDrawerClose}
               >
                 {bottomDrawer.content}
               </BottomDrawer>

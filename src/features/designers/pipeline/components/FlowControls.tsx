@@ -11,6 +11,7 @@ import {
   MdVerticalAlignTop,
   MdAdd
 } from 'react-icons/md'
+import { FaTable } from 'react-icons/fa'
 
 // shadcn/ui imports (adjust import paths to match your project setup)
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,8 @@ import { useEventStream } from '@/features/admin/connection/hooks/useEventStream
 import { useSidebar } from '@/context/SidebarContext'
 import { API_PREFIX_URL, CATALOG_REMOTE_API_URL } from '@/config/platformenv';
 import { useFlowAlignment } from '@/hooks/useFlowAlignment';
+import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { openChatBottomDrawer, closeChatBottomDrawer } from '@/store/slices/chat/chatSlice';
 
 interface Log {
   timestamp: string
@@ -58,6 +61,7 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
 }) => {
   const [isLogsOpen, setIsLogsOpen] = useState(false)
   const [isPipelineFormOpen, setIsPipelineFormOpen] = useState(false)
+  const dispatch = useAppDispatch();
   const { 
     pipelineDtl, 
     pipelineName, 
@@ -87,6 +91,104 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   // --- LOGS (Custom Terminal) ---
   const { setBottomDrawerContent, closeBottomDrawer } = useSidebar();
   
+  // Drawer toggle handler
+  const handleDrawerToggle = () => {
+    const isOpen = isChatDrawerOpen
+    if (isOpen) {
+      dispatch(closeChatBottomDrawer())
+      return
+    }
+    // Create dummy preview data component
+    const PreviewDataComponent = () => {
+      const dummyData = [
+        {
+          id: 1,
+          customer_name: 'John Doe',
+          product: 'Laptop',
+          amount: 1299.99,
+          status: 'Completed'
+        },
+        {
+          id: 2,
+          customer_name: 'Jane Smith',
+          product: 'Smartphone',
+          amount: 899.99,
+          status: 'Processing'
+        },
+        {
+          id: 3,
+          customer_name: 'Bob Johnson',
+          product: 'Headphones',
+          amount: 249.99,
+          status: 'Shipped'
+        },
+        {
+          id: 4,
+          customer_name: 'Alice Brown',
+          product: 'Monitor',
+          amount: 349.99,
+          status: 'Delivered'
+        },
+        {
+          id: 5,
+          customer_name: 'Charlie Wilson',
+          product: 'Keyboard',
+          amount: 129.99,
+          status: 'Processing'
+        }
+      ];
+
+      return (
+        <div className="p-4">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Pipeline Preview Data</h3>
+            <p className="text-sm text-gray-600">Sample data showing the expected output format</p>
+          </div>
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {dummyData.map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-4 py-2 text-sm font-medium text-gray-900">{row.id}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">{row.customer_name}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">{row.product}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">${row.amount.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        row.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                        row.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
+                        row.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {row.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    // Open the bottom drawer with preview data
+    dispatch(openChatBottomDrawer({
+      title: 'Pipeline Preview Data',
+      content: <PreviewDataComponent />,
+      height: 400
+    }));
+  };
+
   const handleLogsClick = async () => {
     await handleCenterClick();
 // await handleAlignTopLeftClick();
@@ -214,204 +316,99 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
   };
   
   const handleZoomOutClick = () => {
-    console.log("Zoom Out clicked");
+    console.log("Zoom Out clicked")
     try {
-      // Try the provided handler
-      if (onZoomOut) {
-        console.log("Calling onZoomOut handler");
-        onZoomOut();
-      }
-      
-      // Also try direct DOM manipulation
-      const reactFlowViewport = document.querySelector('.react-flow__viewport');
+      if (onZoomOut) onZoomOut()
+      const reactFlowViewport = document.querySelector('.react-flow__viewport')
       if (reactFlowViewport) {
-        console.log("Found reactFlowViewport, applying direct zoom out");
-        const currentTransform = reactFlowViewport.getAttribute('transform');
+        const currentTransform = reactFlowViewport.getAttribute('transform')
         if (currentTransform) {
-          const match = currentTransform.match(/scale\(([^)]+)\)/);
+          const match = currentTransform.match(/scale\(([^)]+)\)/)
           if (match && match[1]) {
-            const currentScale = parseFloat(match[1]);
-            const newScale = currentScale / 1.2; // Decrease zoom by 20%
-            
-            // Update the transform attribute
-            const newTransform = currentTransform.replace(
-              /scale\([^)]+\)/, 
-              `scale(${newScale})`
-            );
-            reactFlowViewport.setAttribute('transform', newTransform);
+            const currentScale = parseFloat(match[1])
+            const newScale = currentScale / 1.2
+            const newTransform = currentTransform.replace(/scale\([^)]+\)/, `scale(${newScale})`)
+            reactFlowViewport.setAttribute('transform', newTransform)
           }
         }
       }
-      
-      // Try to click the zoom out button directly
-      const zoomOutButton = document.querySelector('.react-flow__controls-button[data-action="zoomOut"]');
-      if (zoomOutButton instanceof HTMLElement) {
-        console.log("Clicking zoomOut button");
-        zoomOutButton.click();
-      }
-      
-      // Dispatch a custom event for any listeners
-      const zoomEvent = new CustomEvent('flowControlZoomOut', {
-        bubbles: true,
-        detail: { timestamp: Date.now() }
-      });
-      document.dispatchEvent(zoomEvent);
-      
-      // Try to access the ReactFlow instance through the window
-      try {
-        // @ts-ignore - Access any potential global ReactFlow instance
-        if (window.reactFlowInstance && window.reactFlowInstance.zoomOut) {
-          console.log("Using global reactFlowInstance.zoomOut");
-          // @ts-ignore
-          window.reactFlowInstance.zoomOut();
-        }
-      } catch (e) {
-        console.error("Error accessing global reactFlowInstance:", e);
-      }
+      const zoomOutButton = document.querySelector('.react-flow__controls-button[data-action="zoomOut"]')
+      if (zoomOutButton instanceof HTMLElement) zoomOutButton.click()
+      const zoomEvent = new CustomEvent('flowControlZoomOut', { bubbles: true, detail: { timestamp: Date.now() } })
+      document.dispatchEvent(zoomEvent)
     } catch (error) {
-      console.error("Error in zoom out:", error);
+      console.error("Error in zoom out:", error)
     }
-  };
-  
+  }
+
   const handleCenterClick = () => {
-    console.log("Center clicked");
+    console.log("Center clicked")
     try {
-      // First, try the provided handler from props
-      if (onCenter) {
-        console.log("Calling onCenter handler");
-        onCenter();
-      }
-      
-      // Then, try to click the fitView button directly
-      const fitViewButton = document.querySelector('.react-flow__controls-fitview');
-      if (fitViewButton instanceof HTMLElement) {
-        console.log("Clicking fitView button");
-        fitViewButton.click();
-      }
-      
-      // Force a resize event to ensure ReactFlow recalculates dimensions
-      window.dispatchEvent(new Event('resize'));
-      
-      // Additional approach: try to manipulate the viewport directly
-      const reactFlowViewport = document.querySelector('.react-flow__viewport');
-      if (reactFlowViewport) {
-        console.log("Manipulating viewport directly");
-        // Get all nodes to calculate their bounding box
-        const nodes = document.querySelectorAll('.react-flow__node');
-        if (nodes.length > 0) {
-          // Reset transform to a reasonable default if we can't calculate
-          reactFlowViewport.setAttribute('transform', 'translate(0,0) scale(0.85)');
-        }
-      }
-      
-      // Dispatch a custom event for any listeners
-      const centerEvent = new CustomEvent('flowControlCenter', {
-        bubbles: true,
-        detail: { timestamp: Date.now() }
-      });
-      document.dispatchEvent(centerEvent);
-      
-      // Try again after a short delay to ensure everything has rendered
-      setTimeout(() => {
-        if (onCenter) onCenter();
-        if (fitViewButton instanceof HTMLElement) fitViewButton.click();
-      }, 300);
-      
-      // Try one more time after a longer delay
-      setTimeout(() => {
-        if (onCenter) onCenter();
-        
-        // Also try to access the ReactFlow instance through the window
-        try {
-          // @ts-ignore - Access any potential global ReactFlow instance
-          if (window.reactFlowInstance && window.reactFlowInstance.fitView) {
-            // @ts-ignore
-            window.reactFlowInstance.fitView();
-          }
-        } catch (e) {
-          console.error("Error accessing global reactFlowInstance:", e);
-        }
-      }, 800);
+      if (onCenter) onCenter()
+      const fitViewButton = document.querySelector('.react-flow__controls-fitview')
+      if (fitViewButton instanceof HTMLElement) fitViewButton.click()
+      window.dispatchEvent(new Event('resize'))
     } catch (error) {
-      console.error("Error in center:", error);
+      console.error("Error in center:", error)
     }
-  };
-  
+  }
+
   const handleAlignHorizontalClick = () => {
-    console.log("Align Horizontal clicked");
+    console.log("Align Horizontal clicked")
     try {
       alignHorizontal({
         startX: 50,
         startY: 50,
-        levelWidth: 300,        // Increased from 220 to prevent edge overlaps
-        nodeSpacing: 200,       // Increased from 150 for better spacing
+        levelWidth: 300,
+        nodeSpacing: 200,
         fitView: true,
         distribution: 'even',
         fitViewOptions: { padding: 0.15, duration: 600 },
-      });
-      handleCenterClick();
+      })
+      handleCenterClick()
     } catch (error) {
-      console.error("Error in align horizontal:", error);
+      console.error("Error in align horizontal:", error)
     }
-  };
-  
+  }
+
   const handleAlignVerticalClick = () => {
-    console.log("Align Vertical clicked");
+    console.log("Align Vertical clicked")
     try {
       alignVertical({
         startX: 50,
         startY: 50,
-        levelHeight: 240,       // Increased from 180 to prevent edge overlaps
-        nodeSpacing: 200,       // Increased from 150 for better spacing
+        levelHeight: 240,
+        nodeSpacing: 200,
         fitView: true,
         fitViewOptions: { padding: 0.15, duration: 600 },
-      });
-           handleCenterClick();
+      })
+      handleCenterClick()
     } catch (error) {
-      console.error("Error in align vertical:", error);
+      console.error("Error in align vertical:", error)
     }
-  };
+  }
 
   const handleAlignTopLeftClick = () => {
-    console.log("Align Top Left clicked");
+    console.log("Align Top Left clicked")
     try {
-      // Grid from top-left
-      alignTopLeftGrid({ startX: 0, startY: 0, spacing: 140, columns: 4, fitView: true });
+      alignTopLeftGrid({ startX: 0, startY: 0, spacing: 140, columns: 4, fitView: true })
     } catch (error) {
-      console.error("Error in align top left:", error);
+      console.error("Error in align top left:", error)
     }
-  };
+  }
 
-  const handleAlignTopLeftHierarchical = () => {
-    console.log("🔧 Hierarchical Top Left alignment triggered");
-    try {
-      // ELK-based layered layout from top-left
-      alignTopLeftHierarchical({
-        startX: 0,
-        startY: 0,
-        direction: 'RIGHT',
-        nodeNodeSpacing: 80,
-        layerSpacing: 140,
-        fitView: true,
-      });
-    } catch (error) {
-      console.error("Error in hierarchical top left alignment:", error);
-    }
-  };
+  const isChatDrawerOpen = useAppSelector((state) => state.chat.bottomDrawer.isOpen)
 
   const actions = [
-    // { key: 'add-node', icon: MdAdd, handler: handleAddNodeClick },
     { key: 'zoom-in', icon: BiZoomIn, handler: handleZoomInClick },
     { key: 'zoom-out', icon: BiZoomOut, handler: handleZoomOutClick },
     { key: 'center', icon: MdOutlineCenterFocusStrong, handler: handleCenterClick },
     { key: 'align-horizontal', icon: MdAlignHorizontalCenter, handler: handleAlignHorizontalClick },
     { key: 'align-vertical', icon: MdAlignVerticalCenter, handler: handleAlignVerticalClick },
-    // { key: 'run', icon: HiOutlinePlay, handler: handleRunClick },
-    // { key: 'stop', icon: MdOutlineStop, handler: onStop },
-    // { key: 'next', icon: MdOutlineSkipNext, handler: onNext },
+    { key: isChatDrawerOpen ? 'drawer-close' : 'drawer-open', icon: FaTable, handler: handleDrawerToggle },
     { key: 'logs', icon: MdTerminal, handler: handleLogsClick },
-  ]
-  console.log(logs)
+  ] as const
+
   return (
     <>
       <div
@@ -427,47 +424,14 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
               className="group relative flex items-center justify-center w-8 h-8 
                          hover:bg-gray-900 active:bg-gray-800 
                          transition-all duration-200 ease-in-out p-0"
-              title={action.key
-                .split('-')
-                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ')}
-              disabled={
-                (action.key === 'run' && isLoading) ||
-                (action.key === 'next' && !isPipelineRunning) ||
-                (action.key === 'stop' && !isPipelineRunning)
-
-              }
+              title={action.key.replace('-', ' ')}
             >
-              <span
-                className="
-                  absolute -top-10 scale-0 transition-all 
-                  rounded bg-gray-800 p-2 text-xs text-white 
-                  group-hover:scale-100
-                "
-              >
-                {action.key
-                  .split('-')
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(' ')}
-                <span
-                  className="
-                    absolute bottom-[-4px] left-1/2 -translate-x-1/2 
-                    rotate-45 w-2 h-2 bg-gray-800
-                  "
-                />
-              </span>
               <span className="text-gray-700 group-hover:text-white transition-colors">
-                <action.icon
-                  size={20}
-                  className={
-                    action.key === 'stop' && isPipelineRunning ? 'text-red-500' : ''
-                  }
-                />
+                <action.icon size={20} />
               </span>
             </Button>
           </React.Fragment>
         ))}
-
       </div>
 
       {/* Logs Terminal */}
@@ -488,3 +452,4 @@ export const FlowControls: React.FC<FlowControlsProps> = ({
     </>
   )
 }
+ 

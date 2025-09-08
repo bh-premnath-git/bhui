@@ -31,8 +31,8 @@ interface EnvironmentFormProps {
 export function EnvironmentForm({ initialData, onSubmit, ...props }: EnvironmentFormProps) {
   const form = useForm<EnvironmentFormValues>({
     resolver: zodResolver(environmentFormSchema),
-    mode: "onChange", // Validate on each field change
-    reValidateMode: "onChange", // Revalidate on subsequent changes
+    mode: "onSubmit", // Changed from "onChange" to prevent navigation blocking
+    reValidateMode: "onBlur", // Changed from "onChange" to "onBlur" for better UX
     defaultValues: initialData || {
       environmentName: '',
       environment: '',
@@ -89,14 +89,26 @@ export function EnvironmentForm({ initialData, onSubmit, ...props }: Environment
 
   // Clear AWS-specific fields when switching away from AWS
   useEffect(() => {
-    if (platformType && platformType !== "101") {
-      form.setValue("platform.region", "");
-      form.setValue("credentials.publicId", "");
-      form.setValue("credentials.accessKey", "");
-      form.setValue("credentials.secretKey", "");
-      form.setValue("advancedSettings.airflowName", "");
-      form.setValue("advancedSettings.airflowBucketName", "");
-      form.setValue("advancedSettings.airflowBucketUrl", "");
+    if (platformType && platformType !== "AWS") {
+      // Clear form state to prevent navigation blocking
+      form.reset({
+        ...form.getValues(),
+        platform: {
+          ...form.getValues().platform,
+          region: "",
+        },
+        credentials: {
+          publicId: "",
+          accessKey: "",
+          secretKey: "",
+          pvtKey: "",
+        },
+        advancedSettings: {
+          airflowName: "",
+          airflowBucketName: "",
+          airflowBucketUrl: "",
+        }
+      });
     }
   }, [platformType, form]);
 
@@ -136,7 +148,7 @@ export function EnvironmentForm({ initialData, onSubmit, ...props }: Environment
       <CardContent className="p-4">
         <FormProvider {...form}>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" autoComplete="off">
               <EnvironmentDetailsFields 
                 control={form.control} 
                 existingEnvironments={props.existingEnvironments}

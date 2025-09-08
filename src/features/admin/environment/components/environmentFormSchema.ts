@@ -32,8 +32,8 @@ export const environmentFormSchema = z.object({
     .default([]),
   status: z.enum(["active", "inactive"]).default("active"),
 }).superRefine((data, ctx) => {
-  // If AWS is selected (platform type "101"), validate required fields
-  if (data.platform.type === "101") {
+  // If AWS is selected (platform type "AWS"), validate required fields
+  if (data.platform.type === "AWS") {
     if (!data.platform.region) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -187,5 +187,3 @@ export const transformApiDataToForm = (apiData: EnvironmentWithAirflow | Environ
   }
   return formData
 }
-
-

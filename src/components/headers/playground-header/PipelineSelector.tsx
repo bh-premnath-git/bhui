@@ -43,7 +43,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { setSelectedPipeline } from '@/store/slices/designer/pipelineSlice';
 import { setSelectedEngineType } from '@/store/slices/designer/buildPipeLine/BuildPipeLineSlice';
-import { setIsRightAsideComponent } from '@/store/slices/chat/chatSlice';
+import { setIsRightAsideComponent } from '@/store/slices/chat/layoutSlice';
 import CreatePipelineDialog from '@/features/designers/pipeline/components/CreatePipelineDialog';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useDeletePipeline } from '@/hooks/useDeletePipeline';

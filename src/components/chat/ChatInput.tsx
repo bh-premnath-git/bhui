@@ -1,540 +1,410 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu";
-import { Send, Mic, MicOff, Plus, Sliders, Loader2, Database, AlertTriangle } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { Connection, setSelectedConnection, setCurrentInput, addMessage, addMessageWithId, updateMessageContent, setTyping, setContext, setOtherActions, clearMessages, setSelectedActionTitle, setRightComponent, clearSelectedConnection, setThreadId, clearThreadId } from "@/store/slices/chat/chatSlice";
-import { ActionsList } from "./ActionsList";
-import { useConnections as useAdminConnections } from '@/features/admin/connection/hooks/useConnection';
+import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Plus, Mic, MicOff, Send, User, Database, FolderPlus, Settings, ArrowLeft } from 'lucide-react';
+import { ChatMode } from '@/store/slices/chat/chatSlice';
+import { chatService } from '@/services/chatService';
+import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { setInput, setThreadId, clearThreadId } from '@/store/slices/chat/chatSlice';
+import { useChatController } from '@/context/ChatControllerContext';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useConversation } from '@/hooks/useConversation';
 
-export const ChatInput: React.FC = () => {
-  const { currentInput, isLoading, context, selectedConnection, threadId,currentInputStep } = useAppSelector((state) => state.chat);
+interface ChatInputProps {
+  onSend?: (message: string) => void;
+  placeholder?: string;
+  className?: string;
+  centered?: boolean;
+  showLeftIcons?: boolean;
+  layoutMode?: 'one-column' | 'multi-column';
+  onModeSelect?: (mode: string) => void;
+  onBackToDefault?: () => void;
+  currentMode?: ChatMode;
+}
 
-  const {
-    connections: hookConnections = [] as Connection[],
-    isLoading: hookIsLoading,
-    isFetching: hookIsFetching,
-    isError: hookIsError
-  } = useAdminConnections();
-
-  const { createConversation } = useConversation();
-
+const ChatInputComponent: React.FC<ChatInputProps> = ({
+  onSend,
+  placeholder = "How Can I Help You ?",
+  className = "",
+  centered = false,
+  showLeftIcons = true,
+  layoutMode = 'multi-column',
+  onModeSelect,
+  onBackToDefault,
+  currentMode = 'default'
+}) => {
   const dispatch = useAppDispatch();
+  const message = useAppSelector(state => state.chat.input);
+  const currentModeFromRedux = useAppSelector(state => state.chat.currentMode);
+  const { view } = useAppSelector(state => state.home);
+  const { selectMode, sendMessage, backToDefault } = useChatController();
+  const { createConversation, streamConversation } = useConversation();
+  const selectedConnection = useAppSelector(state => (state.render.data as any)?.selectedConnection);
+  const threadId = useAppSelector(state => state.chat.threadId);
+  // Voice recording via shared hook
+  const {
+    isListening: isRecording,
+    transcript,
+    isSupported,
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useSpeechRecognition();
 
-  const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionEvent | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Use Redux state for current mode, fallback to prop
+  const activeMode = currentModeFromRedux || currentMode || 'default';
 
-  // Auto-grow the textarea with smooth height control
-  const autoGrow = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto"; // reset first to get the correct scrollHeight
-    const max = 240; // up to ~10-12 lines (increased from 160px)
-    el.style.height = Math.min(el.scrollHeight, max) + "px";
-  };
+  // Use controller methods if props not provided
+  const handleModeSelect = onModeSelect || selectMode;
+  const handleBackToDefault = onBackToDefault || backToDefault;
+  const handleSendMessage = onSend || sendMessage;
 
+  // For welcome view, use centered layout
+  const isWelcomeView = view === 'welcome';
+  const shouldCenter = isWelcomeView || centered;
+  const shouldShowLeftIcons = isWelcomeView && activeMode === 'default' && (showLeftIcons !== false);
+
+  // Update chat input whenever speech transcript changes
   useEffect(() => {
-    autoGrow();
-  }, [currentInput]);
-
-  // Cleanup recording on unmount
-  useEffect(() => {
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
-    };
-  }, []);
+    if (transcript) {
+      dispatch(setInput((message ? message + ' ' : '') + transcript.trim()));
+    }
+  }, [transcript, message, dispatch]);
 
   const startRecording = () => {
-    const SR: typeof window.SpeechRecognition | typeof window.webkitSpeechRecognition | undefined =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SR) {
-      console.warn("Speech recognition not supported in this browser.");
+    if (!isSupported) {
+      console.warn('Speech recognition not supported in this browser.');
       return;
     }
-
-    const recognition = new SR();
-    recognition.lang = "en-IN";
-    recognition.interimResults = true;
-    recognition.continuous = false;
-
-    recognition.onresult = (e: SpeechRecognitionEvent) => {
-      let transcript = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-      }
-      dispatch(setCurrentInput((currentInput ? currentInput + " " : "") + transcript.trim()));
-    };
-
-    recognition.onend = () => setIsRecording(false);
-    recognition.onerror = () => setIsRecording(false);
-
-    recognitionRef.current = recognition;
-    setIsRecording(true);
-    recognition.start();
+    resetTranscript();
+    startListening();
   };
 
   const stopRecording = () => {
-    recognitionRef.current?.stop();
-    setIsRecording(false);
+    stopListening();
   };
 
-  const handleSubmit = async () => {
-    const input = currentInput.trim();
-    if (!input || isLoading) return;
+  const handleSend = useCallback(() => {
+    if (!message.trim() || !chatService.canSendMessage()) return;
 
-    // Clear input immediately for better UX
-    dispatch(setCurrentInput(""));
+    // For explore-data route, ensure thread + connection exist, then stream
+    if (activeMode === 'explore-data' && selectedConnection?.id && threadId) {
+      // Optimistically add user message via controller
+      handleSendMessage(message);
+      dispatch(setInput(''));
 
-    if (currentInputStep) {
-      // Route to workflow system with captured input
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      await chatService.handleInputSubmit(currentInputStep.stepId, input);
-      return;
-    }
-
-    // Default behavior for general chat (when not in a workflow)
-    // User message
-    dispatch(
-      addMessage({
-        content: input,
-        isUser: true,
-      })
-    );
-
-    if (context === 'action-explore-data') {
-      const query = input;
-
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-
-      // Run the actual explore flow now
-      await chatService.processExploreQuery(query, selectedConnection, threadId);
-
-      // Don't reset context - keep it as 'action-explore-data' for follow-up queries
-      return;
-    }
-
-    // If the user was answering the 'explore data' question, reset the context.
-    if (context === 'explore-data-question') {
-      dispatch(setContext('idle'));
-    }
-    // Streaming AI response (simulated)
-    const id = crypto.randomUUID();
-    dispatch(
-      addMessageWithId({
-        id,
-        message: {
-          content: "",
-          isUser: false,
-          isStreaming: true,
+      // Start streaming conversation
+      streamConversation(
+        selectedConnection.id,
+        message,
+        threadId,
+        (chunk) => {
+          // TODO: Dispatch chunk updates to Redux – placeholder for now
+          console.log('SSE chunk:', chunk);
         },
-      })
-    );
+        () => console.log('Stream complete'),
+        (err) => console.error('Stream error', err),
+        'explorer'
+      );
 
-    // Show thinking dots before streaming starts
-    dispatch(setTyping(true));
+      return;
+    }
 
-    const chunks = [
-      "I'd be happy to help you build that! ",
-      "Let me break down your request ",
-      "and create something amazing.",
-    ];
-    let buffer = "";
-    let i = 0;
+    // Fallback to existing logic
+    handleSendMessage(message);
+    dispatch(setInput(''));
+  }, [message, activeMode, selectedConnection, threadId, handleSendMessage, dispatch, streamConversation]);
 
-    const interval = setInterval(() => {
-      if (i < chunks.length) {
-        buffer += chunks[i++];
-        dispatch(updateMessageContent({ id, content: buffer, isStreaming: true }));
-      } else {
-        clearInterval(interval);
-        dispatch(updateMessageContent({ id, content: buffer, isStreaming: false }));
-        dispatch(setTyping(false));
-      }
-    }, 350);
-  };
-
-  const handleInputChange = (value: string) => {
-    dispatch(setCurrentInput(value));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      handleSubmit();
+      handleSend();
     }
-  };
+  }, [handleSend]);
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    handleSubmit();
-  };
+  const containerClasses = useMemo(() => shouldCenter
+    ? "flex h-full items-center justify-center p-2"
+    : "border-t bg-card/50 p-4 backdrop-blur-sm", [shouldCenter]);
 
-  // Handler functions for dropdown actions
-  const handleCreatePipeline = async () => {
-    const actionId = 'create-pipeline';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
+  const isOneColumn = layoutMode === 'one-column';
+  const isDefaultMode = activeMode === 'default';
 
-    try {
-      dispatch(setSelectedActionTitle('Create pipeline'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('create-pipeline'));
-      console.error('Failed to start create pipeline action', e);
+  const handleOptionClick = useCallback((option: string) => {
+    const modeMap: Record<string, ChatMode> = {
+      'create pipeline': 'create-pipeline',
+      'explore data': 'explore-data',
+      'check jobs': 'check-jobs',
+      'Add user or role': 'add-user',
+      'Add new connection': 'add-connection',
+      'Onboard new dataset': 'onboard-dataset',
+      'Add project': 'add-project',
+      'Add environment': 'add-environment'
+    };
+
+    const mode = modeMap[option];
+    if (mode) {
+      handleModeSelect(mode);
     }
-  };
+  }, [handleModeSelect]);
 
-  const handleSelectExploreConnection = (connection: Connection) => {
-    const actionId = 'explore-data';
-    dispatch(setSelectedConnection(connection));
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
-    dispatch(setSelectedActionTitle('Explore Data'));
-    // Arm the input mode; do NOT call the service here
-    dispatch(setContext(`action-${actionId}`));
-    createConversation()
-      .then(res => {
-        dispatch(setThreadId(res.data.thread_id));
-      })
-      .catch(err => {
-        console.error('Failed to create conversation thread:', err);
-        dispatch(clearThreadId());
-      });
-  };
+  // Left Icons Component
+  const LeftIcons = () => shouldShowLeftIcons ? (
+    <div className="flex items-center gap-1.5">
+      {isDefaultMode ? (
+        <>
+          {/* Text boxes */}
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="pl-0 pr-2.5 py-1 h-7 text-xs rounded-lg hover:bg-muted/60 transition-colors duration-200 font-medium"
+              onClick={() => handleOptionClick('create pipeline')}
+            >
+              Create Pipeline
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2.5 py-1 h-7 text-xs rounded-lg hover:bg-muted/60 transition-colors duration-200 font-medium"
+              onClick={() => handleOptionClick('explore data')}
+            >
+              Explore Data
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2.5 py-1 h-7 text-xs rounded-lg hover:bg-muted/60 transition-colors duration-200 font-medium"
+              onClick={() => handleOptionClick('check jobs')}
+            >
+              Check Jobs
+            </Button>
+          </div>
 
-  const handleCheckJob = async () => {
-    const actionId = 'check-job-statistics';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
+          {/* Plus icon dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`p-0 rounded-full hover:bg-muted/60 transition-colors duration-200 ${shouldCenter ? 'h-7 w-7' : 'h-8 w-8'
+                  }`}
+              >
+                <Plus className={shouldCenter ? "h-4 w-4" : "h-4 w-4"} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-48 bg-background border shadow-lg rounded-lg p-1"
+            >
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 rounded-md transition-colors cursor-pointer"
+                onClick={() => handleOptionClick('Add user or role')}
+              >
+                <User className="h-4 w-4" />
+                Add User or Roles
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 rounded-md transition-colors cursor-pointer"
+                onClick={() => handleOptionClick('Add new connection')}
+              >
+                <Database className="h-4 w-4" />
+                Add New Connection
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 rounded-md transition-colors cursor-pointer"
+                onClick={() => handleOptionClick('Onboard new dataset')}
+              >
+                <FolderPlus className="h-4 w-4" />
+                Onboard New Dataset
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 rounded-md transition-colors cursor-pointer"
+                onClick={() => handleOptionClick('Add project')}
+              >
+                <FolderPlus className="h-4 w-4" />
+                Add Project
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/60 rounded-md transition-colors cursor-pointer"
+                onClick={() => handleOptionClick('Add environment')}
+              >
+                <Settings className="h-4 w-4" />
+                Add Environment
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      ) : (
+        /* Back button when not in default mode */
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-2 px-2.5 py-1 h-7 text-xs rounded-lg hover:bg-muted/60 transition-colors duration-200 font-medium"
+          onClick={handleBackToDefault}
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back
+        </Button>
+      )}
+    </div>
+  ) : null;
 
-    try {
-      dispatch(setSelectedActionTitle('Check Job Statistics'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('check-jobs'));
-      console.error('Failed to start check job action', e);
+  useEffect(() => {
+    if (activeMode === 'explore-data' && !threadId) {
+      createConversation()
+        .then(res => dispatch(setThreadId(res.data.thread_id)))
+        .catch(() => dispatch(clearThreadId()));
     }
-  };
-
-  const handleAddUserOrRole = async () => {
-    const actionId = 'add-users-roles';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
-
-    try {
-      dispatch(setSelectedActionTitle('Add Users or roles'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('add-users-roles'));
-      console.error('Failed to start add user or role action', e);
-    }
-  };
-
-  const handleAddNewConnection = async () => {
-    const actionId = 'add-connections';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
-
-    try {
-      dispatch(setSelectedActionTitle('Add new Connections'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('add-connections'));
-      console.error('Failed to start add new connection action', e);
-    }
-  };
-
-  const handleOnboardNewDataset = async () => {
-    const actionId = 'onboard-dataset';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
-
-    try {
-      dispatch(setSelectedActionTitle('Onboard new dataset'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('onboard-dataset'));
-      console.error('Failed to start onboard new dataset action', e);
-    }
-  };
-
-  const handleAddProject = async () => {
-    const actionId = 'add-project';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
-
-    try {
-      dispatch(setSelectedActionTitle('Add Project'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('add-project'));
-      console.error('Failed to start add new project action', e);
-    }
-  };
-
-  const handleAddEnvironment = async () => {
-    const actionId = 'add-environment';
-    dispatch(clearSelectedConnection());
-    dispatch(setOtherActions(null));
-    dispatch(clearMessages());
-
-    try {
-      dispatch(setSelectedActionTitle('Add Environment'));
-      const { getChatService } = await import('@/services/chatService');
-      const chatService = getChatService(dispatch);
-      dispatch(setContext(`action-${actionId}`));
-      await chatService.processAction(actionId);
-    } catch (e) {
-      dispatch(setContext('add-environment'));
-      console.error('Failed to start add new environment action', e);
-    }
-  };
-
-  // Function to close right aside panel when dropdown menus are opened
-  const handleCloseRightAside = () => {
-    dispatch(setRightComponent(null));
-  };
-
-  const placeholderText =
-    context === 'action-explore-data' ? selectedConnection ? `Ask about data in ${selectedConnection.connection_config_name}`
-      : 'e.g., "Show me total sales by region for the last quarter"'
-      : 'How Can I Help You ?';
+  }, [activeMode, threadId, createConversation, dispatch])
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-2">
-      {/* Inline suggestion chips (when a category is selected) */}
-      <div className="pb-1">
-        {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-        {/* @ts-ignore - dynamic import prevents circular complaints */}
-        <ActionsList variant="compact" />
-      </div>
+    <div className={`${containerClasses} ${className}`}>
+      <div className={`w-full ${isOneColumn && shouldCenter ? 'max-w-md mx-auto' :
+          shouldCenter ? 'max-w-2xl mx-auto' : 'max-w-4xl mx-auto'
+        }`}>
+        {/* Single container for all layouts */}
+        <div className={`
+          bg-background border rounded-xl shadow-lg backdrop-blur-sm
+          ${shouldCenter
+            ? 'px-4 py-3 shadow-xl border-2 hover:shadow-2xl transition-all duration-300'
+            : 'px-4 py-3 shadow-md'
+          }
+          ${isOneColumn && shouldCenter ? 'min-h-[90px] flex flex-col gap-3' : shouldCenter ? 'flex flex-col gap-3' : 'flex items-center gap-3'}
+        `}>
+          {shouldCenter ? (
+            /* Centered layout - input on top, buttons below */
+            <>
+              {/* Input and right icons row */}
+              <div className="flex items-center gap-3">
+                {/* Input field */}
+                <div className="flex-1 px-3 flex items-center min-h-[32px]">
+                  <Textarea
+                    value={message}
+                    onChange={(e) => dispatch(setInput(e.target.value))}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    className="border-0 bg-transparent resize-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 p-0 w-full text-base min-h-[32px] max-h-[340px] font-medium leading-8"
+                    rows={1}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      paddingTop: '0',
+                      paddingBottom: '0'
+                    }}
+                  />
+                </div>
 
-      <form
-        onSubmit={handleFormSubmit}
-        className="rounded-2xl border border-chat-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all shadow-md"
-        aria-label="Chat input form"
-      >
-        {/* Input area */}
-        <div className="flex flex-col gap-2 px-3 py-1.5">
-          {/* Textarea */}
-          <Textarea
-            ref={textareaRef}
-            value={currentInput}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onInput={autoGrow}
-            placeholder={placeholderText}
-            rows={2}
-            className="flex-1 resize-none border-0 bg-transparent pl-0 pr-2 py-1.5 text-sm leading-5 placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[56px] max-h-60 overflow-y-auto"
-            aria-label="Chat message"
-          />
-
-          {/* Controls row */}
-          <div className="flex items-center justify-between">
-            {/* Left side icons */}
-            <div className="flex items-center gap-1">
-              {/* Plus icon with dropdown */}
-              <DropdownMenu onOpenChange={(open) => open && handleCloseRightAside()}>
-                <DropdownMenuTrigger asChild>
+                {/* Right side buttons */}
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`p-0 rounded-full hover:bg-muted/60 transition-colors duration-200 h-9 w-9 ${isRecording ? "bg-primary/10" : ""}`}
+                      onClick={isRecording ? stopRecording : startRecording}
+                      aria-label={isRecording ? "Stop voice input" : "Start voice input"}
+                    >
+                      {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    </Button>
+                    <span
+                      className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 transition-opacity ${isRecording ? "opacity-100" : "opacity-0"
+                        }`}
+                      aria-hidden
+                    />
+                  </div>
                   <Button
-                    type="button"
                     variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded hover:bg-primary/10 border"
-                    aria-label="Create actions"
+                    onClick={handleSend}
+                    disabled={!message.trim() || !chatService.canSendMessage()}
+                    size="sm"
+                    className="p-0 rounded-full bg-transparent hover:bg-muted/60 disabled:opacity-50 transition-all duration-200 hover:scale-105 active:scale-95 h-6 w-6"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Send className="text-foreground h-4 w-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={handleCreatePipeline}>
-                    Create Pipeline
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Database className="mr-2 h-4 w-4" />
-                      <span>Explore Data</span>
-                    </DropdownMenuSubTrigger>
+                </div>
+              </div>
 
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent className="w-72 p-0 border border-border/50 shadow-lg">
-                        {/* Loading */}
-                        {(hookIsLoading || hookIsFetching) && (
-                          <div className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground border-b border-border/30">
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            <span>Loading connections…</span>
-                          </div>
-                        )}
+              {/* Left icons row - at bottom */}
+              {shouldShowLeftIcons && (
+                <div className="flex justify-start px-1 pt-1 border-t border-border/30">
+                  <LeftIcons />
+                </div>
+              )}
+            </>
+          ) : (
+            /* Multi-column layout - all in one row */
+            <>
+              <LeftIcons />
 
-                        {/* Error */}
-                        {hookIsError && !(hookIsLoading || hookIsFetching) && (
-                          <div className="flex items-center gap-3 px-4 py-3 text-sm text-destructive border-b border-border/30">
-                            <AlertTriangle className="h-4 w-4" />
-                            <span>Failed to load connections</span>
-                          </div>
-                        )}
-
-                        {/* Empty */}
-                        {!hookIsError && !(hookIsLoading || hookIsFetching) && hookConnections.length === 0 && (
-                          <div className="px-4 py-3 text-sm text-muted-foreground">
-                            No connections found
-                          </div>
-                        )}
-
-                        {/* List - Show max 3 items, scroll for more */}
-                        {!hookIsError && !(hookIsLoading || hookIsFetching) && hookConnections.length > 0 && (
-                          <div className="max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                            {hookConnections.map((c, index) => (
-                              <DropdownMenuItem
-                                key={String(c.id)}
-                                onClick={() => handleSelectExploreConnection(c)}
-                                className={`
-                                  flex items-center gap-3 px-4 py-3 cursor-pointer
-                                  hover:bg-accent/50 focus:bg-accent/50 transition-colors
-                                  ${index < hookConnections.length - 1 ? 'border-b border-border/20' : ''}
-                                `}
-                              >
-                                <div className="flex-shrink-0">
-                                  <Database className="h-4 w-4 text-primary/70" />
-                                </div>
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <span className="text-sm font-medium text-foreground truncate">
-                                    {c.connection_config_name}
-                                  </span>
-                                </div>
-                              </DropdownMenuItem>
-                            ))}
-                            {hookConnections.length > 3 && (
-                              <div className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border/20 bg-muted/20">
-                                Scroll to see more connections
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem onClick={handleCheckJob}>
-                    Check Job
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Sliders icon with dropdown */}
-              <DropdownMenu onOpenChange={(open) => open && handleCloseRightAside()}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded hover:bg-primary/10 border"
-                    aria-label="Settings actions"
-                  >
-                    <Sliders className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuItem onClick={handleAddUserOrRole}>
-                    Add User or Role
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleAddNewConnection}>
-                    Add New Connection
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleOnboardNewDataset}>
-                    Onboard New Dataset
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleAddProject}>
-                    Add Project
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleAddEnvironment}>
-                    Add Environment
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Right side icons */}
-            <div className="flex items-center gap-1">
-              {/* Mic */}
-              <div className="relative">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className={`h-8 w-8 rounded-full hover:bg-primary/10 ${isRecording ? "bg-primary/10" : ""}`}
-                  aria-label={isRecording ? "Stop voice input" : "Start voice input"}
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isLoading}
-                >
-                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </Button>
-                <span
-                  className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 transition-opacity ${isRecording ? "opacity-100" : "opacity-0"
-                    }`}
-                  aria-hidden
+              {/* Input field */}
+              <div className="flex-1 px-3 flex items-center min-h-[32px]">
+                <Textarea
+                  value={message}
+                  onChange={(e) => dispatch(setInput(e.target.value))}
+                  onKeyDown={handleKeyDown}
+                  placeholder={placeholder}
+                  className="border-0 bg-transparent resize-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 p-0 w-full flex items-center text-sm min-h-[24px] max-h-[100px] leading-6"
+                  rows={1}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    paddingTop: '0',
+                    paddingBottom: '0'
+                  }}
                 />
               </div>
 
-              {/* Send */}
-              <Button
-                type="submit"
-                disabled={!currentInput.trim() || isLoading}
-                className="bg-[#009f59] text-white rounded-full px-3 h-8 text-xs hover:bg-[#00864d] disabled:opacity-50"
-                aria-label="Send message"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+              {/* Right side buttons */}
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`p-0 rounded-full hover:bg-muted/60 transition-colors duration-200 h-8 w-8 ${isRecording ? "bg-primary/10" : ""}`}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    aria-label={isRecording ? "Stop voice input" : "Start voice input"}
+                  >
+                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                  <span
+                    className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 transition-opacity ${isRecording ? "opacity-100" : "opacity-0"
+                      }`}
+                    aria-hidden
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={handleSend}
+                  disabled={!message.trim() || !chatService.canSendMessage()}
+                  size="sm"
+                  className="p-0 rounded-full bg-transparent hover:bg-muted/60 disabled:opacity-50 transition-all duration-200 hover:scale-105 active:scale-95 h-7 w-7"
+                >
+                  <Send className="text-foreground h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Footer: hint and categories */}
+        {!shouldCenter && (
+          <p className="mt-2 text-xs text-muted-foreground text-center">
+            Press Cmd+Enter to send
+          </p>
+        )}
 
-
-
-      </form>
+        {/* Enterprise-level branding for centered mode */}
+        {shouldCenter && (
+          <div className="mt-6 text-center">
+            <p className="text-xs text-muted-foreground/80 font-medium">
+              AI-powered assistant ready to help
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
+export const ChatInput = React.memo(ChatInputComponent);
+ChatInput.displayName = 'ChatInput';

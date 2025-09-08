@@ -2,7 +2,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Connection } from '@/types/admin/connection';
 
-interface ConnectionState {
+export interface ConnectionState {
   connection: Connection[];
   selectedconnection: Connection | null;
   loading: boolean;

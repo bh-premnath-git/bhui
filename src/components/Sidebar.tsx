@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { shouldShowAdminNavItems } from "@/utils/roleUtils";
 import { useLocation } from "react-router-dom";
-import { LogOut, Sun, Moon, Search, PlusCircle, Plus, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
+import { Search, PlusCircle, Plus, MoreHorizontal, Check, X, Edit, Trash2, PanelRight, PanelLeft, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,25 +20,32 @@ import {
 import { useSidebar } from "@/context/SidebarContext";
 import { useNavigation } from "@/hooks/useNavigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/context/ThemeContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ROUTES } from "@/config/routes";
+import { setDisplayName, setRoles } from "@/store/slices/chat/userSlice"
 import { useCreateDashboard, useListDashboards, useUpdateDashboard, useDeleteDashboard } from "@/hooks/ueDashboard";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch } from "@/hooks/useRedux";
-import { clearMessages, setContext, setOtherActions, setSelectedActionTitle, setIsRightAsideComponent } from "@/store/slices/chat/chatSlice";
+import { setIsRightAsideComponent } from "@/store/slices/chat/layoutSlice";
+import { useLayoutControl } from "@/hooks/useLayoutControl";
+// Sidebar.tsx – new imports
+import { clearState as clearChatState } from '@/store/slices/chat/chatSlice';
+import { clearState as clearHomeState } from '@/store/slices/chat/homeSlice';
+import { clearState as clearLayoutState } from '@/store/slices/chat/layoutSlice';
+import { clearState as clearRenderState } from '@/store/slices/chat/renderSlice';
+import { clearState as clearInspectorState } from '@/store/slices/chat/inspectorSlice';
+import { clearState as clearAssetsState } from '@/store/slices/chat/assetsSlice';
 
 export function Sidebar() {
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { toggleTheme, setThemeMode } = useTheme();
   const navigation = useNavigation();
   const { getUserInfo, logout } = useAuth();
   const userInfo = getUserInfo();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { navigationItems: dynamicBaseItems = []} = navigation;
+  const { navigationItems: dynamicBaseItems = [] } = navigation;
   const {
     mutateAsync: createDashboard,
     isPending: creatingReport,
@@ -53,13 +60,16 @@ export function Sidebar() {
   const [editingReportName, setEditingReportName] = useState("");
   const [xplorerSearchTerm, setXplorerSearchTerm] = useState("");
   const [openParents, setOpenParents] = useState<Record<string, boolean>>({});
- 
+
+  const { setOneColumn } = useLayoutControl();
+
+
   const showAdminNavItems = shouldShowAdminNavItems(userInfo?.roles || []);
   const dispatch = useAppDispatch();
   const navItems = useMemo(() => {
     const items: any[] = [];
     const seen = new Set<string>();
-    
+
     const push = (item: any) => {
       if (!item?.path) return;
       if (seen.has(item.path)) return; // skip duplicates
@@ -91,7 +101,7 @@ export function Sidebar() {
       });
 
     });
-    
+
     return items;
   }, [dynamicBaseItems, showAdminNavItems]);
 
@@ -176,7 +186,24 @@ export function Sidebar() {
     setEditingReportName("");
   };
 
+  const handleHomeReset = () => {
+    dispatch(clearChatState());
+    dispatch(clearHomeState());
+    dispatch(clearLayoutState());
+    dispatch(clearRenderState());
+    dispatch(clearInspectorState());
+    dispatch(clearAssetsState());
+
+    setOneColumn();
+    navigation.handleNavigation(ROUTES.HOME);
+  };
+
   const userName = userInfo?.name || userInfo?.username || "John Doe";
+  useEffect(() => {
+    dispatch(setDisplayName(userName));
+    dispatch(setRoles(userInfo?.roles || []));
+  }, [userName, userInfo, dispatch]);
+
 
   return (
     <div className={cn(
@@ -190,15 +217,7 @@ export function Sidebar() {
       <div className="h-16 flex items-center px-4 border-b border-gray-100 dark:border-gray-800">
         {isExpanded ? (
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 cursor-pointer overflow-hidden" onClick={() =>{
-              
-                  dispatch(setContext(''));
-                  dispatch(setOtherActions(null));
-                  dispatch(setSelectedActionTitle(null));
-                  dispatch(clearMessages());
-                  dispatch(setIsRightAsideComponent(false));
-              
-              navigation.handleNavigation(ROUTES.HOME)}}>
+            <div className="flex items-center gap-2 cursor-pointer overflow-hidden" onClick={handleHomeReset}>
               <Home className="h-4 w-4 text-gray-800 dark:text-gray-100" />
               <h1 className="text-lg font-semibold font-sans text-gray-900 dark:text-white transition-all duration-300 ease-in-out whitespace-nowrap">
                 Bighammer.ai
@@ -236,8 +255,6 @@ export function Sidebar() {
                 <PanelRight className="h-5 w-5" />
               </Button>
 
-             
-
               {/* Home (collapsed) */}
               <TooltipProvider>
                 <Tooltip>
@@ -245,14 +262,7 @@ export function Sidebar() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        dispatch(setContext(''));
-                        dispatch(setOtherActions(null));
-                        dispatch(setSelectedActionTitle(null));
-                        dispatch(clearMessages());
-                        dispatch(setIsRightAsideComponent(false));
-                        navigation.handleNavigation(ROUTES.HOME);
-                      }}
+                      onClick={handleHomeReset}
                       className={cn(
                         "h-8 w-8 transition-transform duration-200 shadow-none border-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent"
                       )}
@@ -267,21 +277,14 @@ export function Sidebar() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-               {/* New Chat (collapsed) */}
+              {/* New Chat (collapsed) */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        dispatch(setContext(''));
-                        dispatch(setOtherActions(null));
-                        dispatch(setSelectedActionTitle(null));
-                        dispatch(clearMessages());
-                        dispatch(setIsRightAsideComponent(false));
-                        navigation.handleNavigation(ROUTES.HOME);
-                      }}
+                      onClick={handleHomeReset}
                       className={cn("h-8 w-8 rounded-full bg-gray-600 text-white hover:bg-gray-700")}
                       title="New Chat"
                     >
@@ -352,16 +355,10 @@ export function Sidebar() {
             <>
               <li>
                 <a
-                  href={ROUTES.CHAT.HISTORY}
+                  href={ROUTES.HOME}
                   onClick={(e) => {
                     e.preventDefault();
-                    dispatch(setContext(''));
-                    dispatch(setOtherActions(null));
-                    dispatch(setSelectedActionTitle(null));
-                    dispatch(clearMessages());
-                    dispatch(setIsRightAsideComponent(false));
-                    navigation.handleNavigation(ROUTES.CHAT.HISTORY);
-                    toggleSidebar();
+                    handleHomeReset();
                   }}
                   className={cn(
                     "flex items-center rounded-lg transition-all duration-200",
@@ -493,7 +490,7 @@ export function Sidebar() {
                                 disabled={creatingReport}
                               >
                                 {creatingReport ? (
-                                  <Spinner className="h-4 w-4 mr-2" />
+                                  <Spinner className="h-4 w-4" />
                                 ) : (
                                   <PlusCircle className="h-4 w-4" />
                                 )}
@@ -543,7 +540,7 @@ export function Sidebar() {
                         {listError ? (
                           <div className="px-2 py-2 text-xs text-center text-red-500 dark:text-red-400">
                             <p>Failed to load reports</p>
-                            <button 
+                            <button
                               onClick={() => queryClient.invalidateQueries({ queryKey: ['dashboardslist'] })}
                               className="text-xs underline hover:no-underline mt-1"
                             >

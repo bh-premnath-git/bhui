@@ -6,7 +6,7 @@ type SizeUnit = 'px' | '%' | 'rem' | 'em' | 'vw' | 'vh' | 'vmin' | 'vmax';
 /**
  * Size value can be number (pixels), string with unit, or CSS calc expression
  */
-type SizeValue = number | string;
+export type SizeValue = number | string;
 
 /**
  * Configuration for size conversion context

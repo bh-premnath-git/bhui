@@ -19,7 +19,12 @@ import dashboardReducer from './slices/dataops/dashboardSlice';
 import llmReducer from './slices/admin/llmSlice';
 import gitReducer from './slices/gitSlice';
 import chatReducer from './slices/chat/chatSlice';
-import communityReducer from './slices/chat/communitySlice';
+import homeReducer from './slices/chat/homeSlice';
+import inspectorReducer from './slices/chat/inspectorSlice';
+import layoutReducer from './slices/chat/layoutSlice';
+import renderReducer from './slices/chat/renderSlice';
+import assetsReducer from './slices/chat/assetsSlice';
+import userReducer from './slices/chat/userSlice';
 
 export const store = configureStore({
   reducer: {
@@ -43,7 +48,12 @@ export const store = configureStore({
     llms: llmReducer,
     git: gitReducer,
     chat: chatReducer,
-    community: communityReducer,
+    home: homeReducer,
+    inspector: inspectorReducer,
+    layout: layoutReducer,
+    render: renderReducer,
+    assets: assetsReducer,
+    user: userReducer,
   },
 });
 

@@ -14,7 +14,7 @@ const path=location.pathname;
   return (
     <div className={cn(
       "flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden",
-      isExpanded ? "ml-64" : "ml-0",
+      isExpanded ? "ml-64" : "ml-16",
     )}>
       <div className={cn("flex-shrink-0 ",path=="/home" ? " " : "mt-12")}> 
         <Header />
@@ -61,7 +61,7 @@ const LayoutWrapper = () => {
             id="bottom-drawer-container"
             className={cn(
               "flex-shrink-0 transition-all duration-300",
-              isExpanded ? "pl-[9%]" : "pl-[0.5%]",
+              isExpanded ? "pl-[9%]" : "pl-16",
               "w-full"
             )}
           >

@@ -12,7 +12,6 @@ import {
   FolderGit2,
   Settings2,
   Cable,
-  BarChart,
   BookMarked,
   Server,
   ShieldCheck,

@@ -1,236 +1,139 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { type LucideIcon } from 'lucide-react';
+
+export type MessageRole = 'user' | 'assistant' | 'system';
+export type MessageStage = 'idle' | 'thinking' | 'tool' | 'rendering' | 'complete' | 'error';
+export type ChatMode = 'create-pipeline' | 'explore-data' | 'analyze-code' | 'generate-report' | 'optimize-query' | 'check-jobs' | 'add-user' | 'add-connection' | 'onboard-dataset' | 'add-project' | 'add-environment' | 'default';
 
 export interface Message {
   id: string;
+  role: MessageRole;
   content: string;
-  timestamp: string;
-  isUser: boolean;
-  // Indicates content is being streamed (partial)
-  isStreaming?: boolean;
-  options?: string[];
-  uiComponent?: (
-    {
-      type: 'Card';
-      props: {
-        title?: string;
-        description?: string;
-      };
-      stepId?: string;
-    } |
-    {
-      type: 'Input';
-      props: {
-        placeholder?: string;
-        buttonLabel?: string;
-      };
-      stepId?: string;
-    } |
-    {
-      type: 'TextArea';
-      props: {
-        placeholder?: string;
-        buttonLabel?: string;
-        rows?: number;
-      };
-      stepId?: string;
-    }
-  );
+  timestamp: number;
+  stage?: MessageStage;
+  metadata?: Record<string, unknown>;
 }
 
-export interface RightComponent {
-  componentType: 'RightAsideComponent';
-  componentId: string;
-  title: string;
-  isVisible: boolean;
-  // Optional extra configuration passed from workflow (e.g., toggle targets)
-  extra?: any;
-}
-
-export interface ActionItem {
-  id: number;
-  title: string;
-  icon: LucideIcon;
-}
-
-export interface Connection {
-  id: number | string;
-  connection_config_name: string;
+interface Suggestion {
+  id: string;
+  text: string;
+  mode?: ChatMode;
+  icon?: string;
 }
 
 interface ChatState {
-  messages: Message[];
-  currentInput: string;
-  isTyping: boolean;
-  isLoading: boolean;
-  context: string;
-  rightComponent: RightComponent | null;
-  isRightAsideComponent: boolean; // Track if right aside component is open
-  layoutMode: 'centered' | 'split';
-  otherActions: ActionItem[] | null;
-  selectedActionTitle: string | null;
-  // Current workflow step that expects input
-  currentInputStep: {
-    stepId: string;
-    inputKey: string;
-  } | null;
-  selectedConnection: Connection | null;
   threadId: string | null;
-  // Bottom drawer (scoped to RightAsideComponent)
-  bottomDrawer: {
-    isOpen: boolean;
-    title: string;
-    height: number; // in px
-    content: any | null; // JSX content; kept as any for flexibility
-  };
+  messages: Message[];
+  input: string;
+  currentMode: ChatMode;
+  isStreaming: boolean;
+  messageStages: Record<string, MessageStage>;
+  suggestions: Suggestion[];
+  virtualizedItems: (Message | { id: string; isStreamingIndicator: true })[];
 }
 
+const defaultSuggestions: Suggestion[] = [
+  { id: 'create-pipeline', text: 'Create Pipeline', mode: 'create-pipeline', icon: 'Pipeline' },
+  { id: 'explore-data', text: 'Explore Data', mode: 'explore-data', icon: 'BarChart3' },
+  { id: 'analyze-code', text: 'Analyze Code', mode: 'analyze-code', icon: 'Code' },
+  { id: 'generate-report', text: 'Generate Report', mode: 'generate-report', icon: 'FileText' },
+  { id: 'optimize-query', text: 'Optimize Query', mode: 'optimize-query', icon: 'Zap' },
+];
+
 const initialState: ChatState = {
-  messages: [],
-  currentInput: '',
-  isTyping: false,
-  isLoading: false,
-  context: '',
-  rightComponent: null,
-  isRightAsideComponent: false,
-  layoutMode: 'centered',
-  otherActions: null,
-  selectedActionTitle: null,
-  currentInputStep: null,
-  selectedConnection: null,
   threadId: null,
-  bottomDrawer: {
-    isOpen: false,
-    title: '',
-    height: 300,
-    content: null,
-  },
+  messages: [],
+  input: '',
+  currentMode: 'default',
+  isStreaming: false,
+  messageStages: {},
+  suggestions: defaultSuggestions,
+  virtualizedItems: [],
 };
 
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
-    setCurrentInput: (state, action: PayloadAction<string>) => {
-      state.currentInput = action.payload;
+    setInput: (state, action: PayloadAction<string>) => {
+      state.input = action.payload;
+    },
+    setMode: (state, action: PayloadAction<ChatMode>) => {
+      state.currentMode = action.payload;
     },
     addMessage: (state, action: PayloadAction<Omit<Message, 'id' | 'timestamp'>>) => {
-      const newMessage: Message = {
+      const message: Message = {
         ...action.payload,
         id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
+        timestamp: Date.now(),
       };
-      state.messages.push(newMessage);
-    },
-    // Add message with a specific id (for streaming updates)
-    addMessageWithId: (
-      state,
-      action: PayloadAction<{ id: string; message: Omit<Message, 'id' | 'timestamp'> }>
-    ) => {
-      const { id, message } = action.payload;
-      const newMessage: Message = {
-        ...message,
-        id,
-        timestamp: new Date().toISOString(),
-      };
-      state.messages.push(newMessage);
-    },
-    setTyping: (state, action: PayloadAction<boolean>) => {
-      state.isTyping = action.payload;
-    },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload;
-    },
-    // Update last AI message by ID (for streaming)
-    updateMessageContent: (
-      state,
-      action: PayloadAction<{ id: string; content: string; isStreaming?: boolean }>
-    ) => {
-      const { id, content, isStreaming } = action.payload;
-      const msg = state.messages.find((m) => m.id === id);
-      if (msg && !msg.isUser) {
-        msg.content = content;
-        if (typeof isStreaming !== 'undefined') msg.isStreaming = isStreaming;
+      state.messages.push(message);
+      // Update virtualized items
+      state.virtualizedItems = [...state.messages];
+      if (state.isStreaming) {
+        state.virtualizedItems.push({ id: 'streaming', isStreamingIndicator: true });
       }
     },
-    setContext: (state, action: PayloadAction<string>) => {
-      state.context = action.payload;
+    updateMessage: (state, action: PayloadAction<{ id: string; updates: Partial<Message> }>) => {
+      const { id, updates } = action.payload;
+      const messageIndex = state.messages.findIndex(m => m.id === id);
+      if (messageIndex !== -1) {
+        state.messages[messageIndex] = { ...state.messages[messageIndex], ...updates };
+        // Update virtualized items
+        state.virtualizedItems = [...state.messages];
+        if (state.isStreaming) {
+          state.virtualizedItems.push({ id: 'streaming', isStreamingIndicator: true });
+        }
+      }
     },
-    setRightComponent: (state, action: PayloadAction<RightComponent | null>) => {
-      state.rightComponent = action.payload;
-      state.isRightAsideComponent = action.payload !== null;
-      state.layoutMode = action.payload ? 'split' : 'centered';
+    setMessageStage: (state, action: PayloadAction<{ messageId: string; stage: MessageStage }>) => {
+      const { messageId, stage } = action.payload;
+      state.messageStages[messageId] = stage;
     },
-    setIsRightAsideComponent: (state, action: PayloadAction<boolean>) => {
-      state.isRightAsideComponent = action.payload;
+    setStreaming: (state, action: PayloadAction<boolean>) => {
+      state.isStreaming = action.payload;
+      // Update virtualized items based on streaming state
+      state.virtualizedItems = [...state.messages];
+      if (action.payload) {
+        state.virtualizedItems.push({ id: 'streaming', isStreamingIndicator: true });
+      }
     },
-    setLayoutMode: (state, action: PayloadAction<'centered' | 'split'>) => {
-      state.layoutMode = action.payload;
-    },
-    setOtherActions: (state, action: PayloadAction<ActionItem[] | null>) => {
-      state.otherActions = action.payload;
-    },
-    setSelectedActionTitle: (state, action: PayloadAction<string | null>) => {
-      state.selectedActionTitle = action.payload;
+    setSuggestions: (state, action: PayloadAction<Suggestion[]>) => {
+      state.suggestions = action.payload;
     },
     clearMessages: (state) => {
       state.messages = [];
+      state.messageStages = {};
+      state.virtualizedItems = [];
     },
-    setCurrentInputStep: (state, action: PayloadAction<{ stepId: string; inputKey: string } | null>) => {
-      state.currentInputStep = action.payload;
+    createNewThread: (state) => {
+      state.threadId = state.threadId ? state.threadId : null;
+      state.messages = [];
+      state.messageStages = {};
+      state.currentMode = 'default';
+      state.virtualizedItems = [];
     },
-    setSelectedConnection: (state, action: PayloadAction<Connection | null>) => {
-      state.selectedConnection = action.payload;
-    },
-    clearSelectedConnection: (state) => {
-      state.selectedConnection = null;
-    },
-    setThreadId: (state, action: PayloadAction<string | null>) => {
+    setThreadId: (state, action: PayloadAction<string>) => {
       state.threadId = action.payload;
     },
     clearThreadId: (state) => {
       state.threadId = null;
     },
-    // Bottom drawer reducers (RightAside scoped)
-    openChatBottomDrawer: (state, action: PayloadAction<{ title?: string; content: any; height?: number }>) => {
-      state.bottomDrawer.isOpen = true;
-      state.bottomDrawer.title = action.payload.title ?? state.bottomDrawer.title;
-      state.bottomDrawer.content = action.payload.content;
-      if (action.payload.height) state.bottomDrawer.height = action.payload.height;
-    },
-    closeChatBottomDrawer: (state) => {
-      state.bottomDrawer.isOpen = false;
-      state.bottomDrawer.content = null;
-      state.bottomDrawer.title = '';
-    },
-    setChatBottomDrawerHeight: (state, action: PayloadAction<number>) => {
-      state.bottomDrawer.height = Math.max(100, Math.min(action.payload, Math.floor(window.innerHeight * 0.8)));
-    },
+    clearState: () => initialState,
   },
 });
 
 export const {
-  setCurrentInput,
+  setInput,
+  setMode,
   addMessage,
-  addMessageWithId,
-  setTyping,
-  setLoading,
-  updateMessageContent,
-  setContext,
-  setRightComponent,
-  setIsRightAsideComponent,
-  setLayoutMode,
-  setOtherActions,
-  setSelectedActionTitle,
+  updateMessage,
+  setMessageStage,
+  setStreaming,
+  setSuggestions,
   clearMessages,
-  setCurrentInputStep,
-  setSelectedConnection,
-  clearSelectedConnection,
+  createNewThread,
+  clearState,
   setThreadId,
-  clearThreadId,
-  openChatBottomDrawer,
-  closeChatBottomDrawer,
-  setChatBottomDrawerHeight,
+  clearThreadId
 } = chatSlice.actions;
-
 export default chatSlice.reducer;

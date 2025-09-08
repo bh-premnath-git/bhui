@@ -114,15 +114,15 @@ export const PlatformFields = ({ control }: { control: Control<EnvironmentFormVa
                 key={platform.value}
                 type="button"
                 onClick={() => {
-                  if (platform.value !== "102") { 
+                  if (platform.value !== "GCP") { 
                     field.onChange(platform.value);
                   }
                 }}
                 className={`border rounded-lg p-3 flex flex-col items-center justify-center ${field.value === platform.value
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
-                  } transition-colors w-28 h-20 ${platform.value === "102" ? "opacity-50 cursor-not-allowed" : ""}`}
-                disabled={platform.value === "102"}
+                  } transition-colors w-28 h-20 ${platform.value === "GCP" ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={platform.value === "GCP"}
               >
                 <img
                   src={platform.image || "/placeholder.svg"}
@@ -157,6 +157,18 @@ export function CredentialsFields({
 }: ValidateFieldsProps) {
   const form = useFormContext<EnvironmentFormValues>();
   const [validationError, setValidationError] = useState<string | null>(null);
+  
+  // Watch platform type to conditionally handle Project ID
+  const platformType = form.watch("platform.type");
+  const isAWS = platformType === "AWS";
+
+  // Set Project ID to "101" when AWS is selected
+  useEffect(() => {
+    if (isAWS) {
+      form.setValue("credentials.publicId", "101");
+    }
+  }, [isAWS, form]);
+
   const handleValidation = async () => {
     try {
       setValidationError(null);
@@ -176,7 +188,11 @@ export function CredentialsFields({
             <FormItem>
               <RequiredFormLabel>Project Id</RequiredFormLabel>
               <FormControl>
-                <Input placeholder="e.g. Aws Project Id" {...field} />
+                <Input 
+                  placeholder={isAWS ? "Auto-set for AWS" : "e.g. GCP Project Id"} 
+                  {...field} 
+                  disabled={isAWS}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -216,7 +232,7 @@ export function CredentialsFields({
             <FormItem>
               <RequiredFormLabel>Access Key</RequiredFormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input type="password" autoComplete="off" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -229,7 +245,7 @@ export function CredentialsFields({
             <FormItem>
               <RequiredFormLabel>Secret Key</RequiredFormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input type="password" autoComplete="off" {...field} />
               </FormControl>
               <div className="flex justify-end mt-1">
                 <ValidationButton
@@ -272,7 +288,7 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
     }
   }, [isTokenValidated, bhEnvName, regionLabel]);
 
-  const { data: mwaaEnvironments } = useMwaaEnvironments({
+  const { data: mwaaEnvironments, isLoading: isMwaaLoading, error: mwaaError } = useMwaaEnvironments({
     mwaaQueryParams: mwaaQueryParams ?? undefined,
   });
 
@@ -301,6 +317,14 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
       setValue("advancedSettings.airflowBucketName", bucketName || '');
     }
   }, [airflowData, setValue]);
+
+  // Helper function to get placeholder text
+  const getMwaaPlaceholder = () => {
+    if (isMwaaLoading) return "Loading environments...";
+    if (mwaaError) return "Failed to load environments - Try again";
+    if (!mwaaEnvironments || mwaaEnvironments.length === 0) return "No MWAA environments found";
+    return "Select MWAA Environment";
+  };
   
   return (
     <div className="space-y-3">
@@ -314,20 +338,32 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
               <Select
                 value={field.value?.toString() || ""}
                 onValueChange={field.onChange}
+                disabled={isMwaaLoading || !mwaaEnvironments || mwaaEnvironments.length === 0}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select MWAA Environment" />
+                    <SelectValue placeholder={getMwaaPlaceholder()} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="z-[9999]">
-                  {mwaaEnvironments?.map((env, key) => (
-                    <SelectItem key={key} value={env}>
-                      {env}
+                  {mwaaEnvironments && mwaaEnvironments.length > 0 ? (
+                    mwaaEnvironments.map((env, key) => (
+                      <SelectItem key={key} value={env}>
+                        {env}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-environments" disabled>
+                      {mwaaError ? "Error loading environments" : "No environments available"}
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
+              {mwaaError && (
+                <div className="text-red-500 text-sm mt-1">
+                  Failed to load MWAA environments. Please check your credentials and try again.
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -341,7 +377,7 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
             <FormItem>
               <RequiredFormLabel>Airflow URL</RequiredFormLabel>
               <FormControl>
-                <Input {...field} disabled />
+                <Input {...field} disabled placeholder="Auto-generated from selected MWAA environment" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -354,7 +390,7 @@ export const AdvancedSettingsFields = ({ control, isTokenValidated }: { control:
             <FormItem>
               <RequiredFormLabel>Airflow Bucket Name</RequiredFormLabel>
               <FormControl>
-                <Input {...field} disabled />
+                <Input {...field} disabled placeholder="Auto-generated from selected MWAA environment" />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -33,7 +33,7 @@ import { ROUTES } from '@/config/routes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { setSelectedFlow } from '@/store/slices/designer/flowSlice';
-import { setIsRightAsideComponent } from '@/store/slices/chat/chatSlice';
+import { setIsRightAsideComponent } from '@/store/slices/chat/layoutSlice';
 import { useFlow } from '@/context/designers/FlowContext';
 import { useFlow as useFlowApi } from '@/features/designers/flow/hooks/useFlow';
 import { CreateFlowDialog } from '@/features/designers/flow/components/CreateFlowDialog';

@@ -29,6 +29,13 @@ interface ChatState {
   messageStages: Record<string, MessageStage>;
   suggestions: Suggestion[];
   virtualizedItems: (Message | { id: string; isStreamingIndicator: true })[];
+  // Bottom drawer scoped to right-aside components
+  bottomDrawer: {
+    isOpen: boolean;
+    title: string;
+    height: number; // px
+    content: any | null;
+  };
 }
 
 const defaultSuggestions: Suggestion[] = [
@@ -48,6 +55,12 @@ const initialState: ChatState = {
   messageStages: {},
   suggestions: defaultSuggestions,
   virtualizedItems: [],
+  bottomDrawer: {
+    isOpen: false,
+    title: '',
+    height: 300,
+    content: null,
+  },
 };
 
 const chatSlice = createSlice({
@@ -100,6 +113,25 @@ const chatSlice = createSlice({
     setSuggestions: (state, action: PayloadAction<Suggestion[]>) => {
       state.suggestions = action.payload;
     },
+    // Bottom drawer reducers
+    openChatBottomDrawer: (
+      state,
+      action: PayloadAction<{ title?: string; content: any; height?: number }>
+    ) => {
+      state.bottomDrawer.isOpen = true;
+      state.bottomDrawer.title = action.payload.title ?? state.bottomDrawer.title;
+      state.bottomDrawer.content = action.payload.content;
+      if (action.payload.height) {
+        state.bottomDrawer.height = Math.max(100, Math.min(action.payload.height, Math.floor(window.innerHeight * 0.8)));
+      }
+    },
+    closeChatBottomDrawer: (state) => {
+      state.bottomDrawer.isOpen = false;
+      state.bottomDrawer.content = null;
+    },
+    setChatBottomDrawerHeight: (state, action: PayloadAction<number>) => {
+      state.bottomDrawer.height = Math.max(100, Math.min(action.payload, Math.floor(window.innerHeight * 0.8)));
+    },
     clearMessages: (state) => {
       state.messages = [];
       state.messageStages = {};
@@ -134,6 +166,9 @@ export const {
   createNewThread,
   clearState,
   setThreadId,
-  clearThreadId
+  clearThreadId,
+  openChatBottomDrawer,
+  closeChatBottomDrawer,
+  setChatBottomDrawerHeight,
 } = chatSlice.actions;
 export default chatSlice.reducer;

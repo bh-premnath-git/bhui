@@ -242,11 +242,9 @@ export function BottomDrawer({
           </div>
         </div>
         
-        {/* Content area takes remaining space and scrolls */}
+        {/* Content area takes remaining space and scrolls - removed the conditional hiding */}
         <div className={cn(
-          "flex-1 overflow-y-auto relative",
-          // Hide content visually if not open, though parent controls rendering
-          !isBottomDrawerOpen && "hidden" 
+          "flex-1 overflow-y-auto relative"
         )}>
           {children}
         </div>

@@ -1,9 +1,11 @@
 import { createContext, useContext, ReactNode, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
-import { setMode, addMessage, updateMessage, setStreaming, setMessageStage, clearMessages, createNewThread } from '@/store/slices/chat/chatSlice';
-import { switchToChat, setView } from '@/store/slices/chat/homeSlice';
-import { setRenderer, updateData, setActiveMessage, setStatus } from '@/store/slices/chat/renderSlice';
-import { setTwoColumn, setOneColumn } from '@/store/slices/chat/layoutSlice';
+import { setMode, addMessage, updateMessage, setStreaming, setMessageStage, clearState as clearChatState } from '@/store/slices/chat/chatSlice';
+import { switchToChat, clearState as clearHomeState } from '@/store/slices/chat/homeSlice';
+import { setRenderer, updateData, setActiveMessage, setStatus, clearState as clearRenderState } from '@/store/slices/chat/renderSlice';
+import { setTwoColumn, clearState as clearLayoutState } from '@/store/slices/chat/layoutSlice';
+import { clearState as clearInspectorState } from '@/store/slices/chat/inspectorSlice';
+import { clearState as clearAssetsState } from '@/store/slices/chat/assetsSlice';
 import { chatService } from '@/services/chatService';
 import { usePipelineWizardContext } from '@/context/PipelineWizardContext';
 import type { ChatMode } from '@/store/slices/chat/chatSlice';
@@ -37,14 +39,25 @@ export const ChatControllerProvider = ({ children }: ChatControllerProviderProps
   const pipelineWizard = usePipelineWizardContext();
   const { messages, currentMode } = useAppSelector((state) => state.chat);
   const { data } = useAppSelector((state) => state.render);
-  
+
   // Track if we're currently processing a message to prevent duplicates
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const resetStates = () => {
+    dispatch(clearChatState());
+    dispatch(clearHomeState());
+    dispatch(clearLayoutState());
+    dispatch(clearRenderState());
+    dispatch(clearInspectorState());
+    dispatch(clearAssetsState());
+    if (pipelineWizard.isActive()) pipelineWizard.reset();
+  };
+
   const selectMode = (mode: ChatMode) => {
+    resetStates();
     dispatch(setMode(mode));
     dispatch(switchToChat());
-    
+
     // Use the appropriate manager to set up the mode
     chatService.selectMode(mode, dispatch);
 
@@ -59,24 +72,13 @@ export const ChatControllerProvider = ({ children }: ChatControllerProviderProps
   };
 
   const backToDefault = () => {
+    resetStates();
     dispatch(setMode('default'));
     chatService.selectMode('default', dispatch);
-    if (pipelineWizard.isActive()) pipelineWizard.reset();
   };
 
   const backToHome = () => {
-    // Clear all chat state
-    dispatch(clearMessages());
-    dispatch(createNewThread());
-    dispatch(setMode('default'));
-    
-    // Reset layout to single column
-    dispatch(setOneColumn());
-    
-    // Go back to home view
-    dispatch(setView('welcome'));
-    
-    // Reset renderer
+    resetStates();
     chatService.selectMode('default', dispatch);
   };
 
